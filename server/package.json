@@ -1,0 +1,22 @@
+{
+  "name": "server",
+  "scripts": {
+    "dev": "bun run --hot src/index.ts"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.4.2",
+    "@prisma/client": "^7.4.2",
+    "@types/node": "^25.2.3",
+    "@types/nodemailer": "^7.0.9",
+    "cuid": "^3.0.0",
+    "hono": "^4.11.9",
+    "nodemailer": "^8.0.1",
+    "pg": "^8.20.0",
+    "prisma": "^7.4.2",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/pg": "^8.18.0"
+  }
+}
