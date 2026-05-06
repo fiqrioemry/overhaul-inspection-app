@@ -1,7 +1,7 @@
 import { RedisClient } from "bun";
-import constant from "@/config/constant";
+import dbConfig from "../constant/redis";
 
-export const redisClient = new RedisClient(constant.REDIS_URL);
+export const redisClient = new RedisClient(dbConfig.redisUrl);
 
 redisClient
   .send("PING", [])

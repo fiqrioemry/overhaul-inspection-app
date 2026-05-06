@@ -1,7 +1,6 @@
 import { SQL } from "bun";
+import dbConfig from "../constant/database";
 
-import constant from "@/config/constant";
-
-const db = new SQL(constant.DB_URL);
+const db = new SQL(dbConfig.dbUrl);
 
 export default db;
