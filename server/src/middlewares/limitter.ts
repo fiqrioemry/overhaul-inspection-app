@@ -1,8 +1,9 @@
 import { Context } from "hono";
 import { cache } from "@/utils/cache";
-import constant from "@/config/constant";
 import { getCookie, setCookie } from "hono/cookie";
 import { HTTPException } from "hono/http-exception";
+import redisConfig from "@/config/constant/redis";
+import errorMessages from "@/config/constant/errorMessage";
 
 export function limitter({ limit, windowSec }: { limit: number; windowSec: number }) {
   return async (c: Context, next: () => Promise<void>) => {
@@ -15,7 +16,7 @@ export function limitter({ limit, windowSec }: { limit: number; windowSec: numbe
       return;
     }
 
-    const key = `${constant.REDIS_KEY_LIMITTER}${userId}:${c.req.path}`;
+    const key = `${redisConfig.redisKeyLimiter}${userId}:${c.req.path}`;
 
     const current = await cache.incr(key);
 
@@ -24,7 +25,7 @@ export function limitter({ limit, windowSec }: { limit: number; windowSec: numbe
     }
 
     if (current > limit) {
-      throw new HTTPException(429, { message: constant.ERROR_MESSAGES.TOO_MANY_REQUESTS });
+      throw new HTTPException(429, { message: errorMessages.tooManyRequests });
     }
     await next();
   };

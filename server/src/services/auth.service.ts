@@ -1,7 +1,5 @@
 import { Context } from "hono";
 import cuid from "cuid";
-import common from "@/config/common";
-import constant from "@/config/constant";
 import { setCookie } from "hono/cookie";
 import { prisma } from "@/config/database/prisma";
 import { generateSessionToken } from "@/utils/jwt";
@@ -12,6 +10,12 @@ import { UserRepository } from "@/repositories/user.repository";
 import { hashPassword, hashToken, verifyPassword } from "@/utils/hash";
 import { SessionRepository } from "@/repositories/session.repository";
 import { RegisterRequest, UserResponse, userResponse } from "@/schema/auth.validation";
+import errorMessages from "@/config/constant/errorMessage";
+import errorCodes from "@/config/constant/errorCode";
+import tokenLimit from "@/config/common/tokenLimit";
+import mailer from "@/config/constant/email";
+import dbConfig from "@/config/constant/database";
+import redisConfig from "@/config/constant/redis";
 
 export class AuthService {
   static async createUser(c: Context, request: RegisterRequest): Promise<{ message: string }> {
@@ -19,7 +23,7 @@ export class AuthService {
 
     const isEmailExist = await UserRepository.findByEmail(request.email);
     if (isEmailExist) {
-      throw new HTTPException(400, { message: constant.ERROR_MESSAGES.EMAIL_EXISTS, cause: "EMAIL_EXISTS" });
+      throw new HTTPException(400, { message: errorMessages.emailExists, cause: errorCodes.emailExists });
     }
 
     // hash password
@@ -43,7 +47,7 @@ export class AuthService {
 
       // throw error if failed
       if (!newUser) {
-        throw new HTTPException(500, { message: constant.ERROR_MESSAGES.USER_CREATION_FAILED, cause: constant.AUTH_CODES.USER_CREATION_FAILED });
+        throw new HTTPException(500, { message: errorMessages.userCreationFailed, cause: errorCodes.userCreationFailed });
       }
 
       // generate verification
@@ -51,14 +55,14 @@ export class AuthService {
       const hashedToken = hashToken(randomToken);
 
       // create verification data
-      const createUserVerificationData = {
+      const userVerificationData = {
         userId: newUser.id,
         token: hashedToken,
         type: "EMAIL_VERIFICATION" as VerificationType,
-        expiresAt: new Date(Date.now() + common.TTL.VERIFY_EMAIL),
+        expiresAt: new Date(Date.now() + tokenLimit.verifyEmail),
       };
 
-      await UserRepository.createUserVerification(tx, createUserVerificationData);
+      await UserRepository.createUserVerification(tx, userVerificationData);
 
       return randomToken;
     });
@@ -66,8 +70,8 @@ export class AuthService {
     // config email data
     const mailConfig = {
       to: request.email,
-      subject: "Verify your email",
-      url: `${constant.CLIENT_URL}/verify-email?token=${randomToken}`,
+      subject: mailer.emailVerificationSubject,
+      url: `${dbConfig.clientUrl}/verify-email?token=${randomToken}`,
     };
 
     // send email synchronously
@@ -84,7 +88,7 @@ export class AuthService {
     // get verification data record
     const isValid = await UserRepository.findUserVerification(hashedToken, "EMAIL_VERIFICATION");
     if (!isValid) {
-      throw new HTTPException(400, { message: constant.ERROR_MESSAGES.INVALID_TOKEN, cause: constant.AUTH_CODES.INVALID_TOKEN });
+      throw new HTTPException(400, { message: errorMessages.invalidToken, cause: errorCodes.invalidToken });
     }
 
     prisma.$transaction(async (tx) => {
@@ -103,14 +107,14 @@ export class AuthService {
     // check email
     const user = await UserRepository.findByEmail(request.email);
     if (!user) {
-      throw new HTTPException(400, { message: constant.ERROR_MESSAGES.INVALID_CREDENTIALS, cause: constant.AUTH_CODES.INVALID_CREDENTIALS });
+      throw new HTTPException(400, { message: errorMessages.invalidCredentials, cause: errorCodes.invalidCredentials });
     }
 
     const isValid = await verifyPassword({ password: request.password, hash: user.passwordHash });
 
     // check password
     if (!isValid) {
-      throw new HTTPException(400, { message: constant.ERROR_MESSAGES.INVALID_CREDENTIALS, cause: constant.AUTH_CODES.INVALID_CREDENTIALS });
+      throw new HTTPException(400, { message: errorMessages.invalidCredentials, cause: errorCodes.invalidCredentials });
     }
 
     const randomToken = crypto.randomUUID();
@@ -120,14 +124,14 @@ export class AuthService {
       userId: user.id,
       token: hashedToken,
       userAgent: c.req.header("user-agent") || "unknown",
-      expiresAt: new Date(Date.now() + common.TTL.SESSION_TOKEN),
+      expiresAt: new Date(Date.now() + tokenLimit.sessionToken),
     };
 
     const newSession = await SessionRepository.createSession(sessionPayload);
 
     const sessionToken = await generateSessionToken({ sub: user.id, sid: newSession.id });
 
-    setCookie(c, constant.TOKEN_PREFIX_DEFAULT, sessionToken);
+    setCookie(c, redisConfig.tokenPrefixDefault, sessionToken);
 
     const response = userResponse.parse(user);
 
