@@ -1,9 +1,10 @@
 import { Context } from "hono";
 import { sign } from "hono/jwt";
 import { verify } from "hono/jwt";
-import common from "@/config/common";
-import constant from "@/config/constant";
 import { deleteCookie, setCookie } from "hono/cookie";
+import redisConfig from "@/config/constant/redis";
+import dbConfig from "@/config/constant/database";
+import tokenLimit from "@/config/common/tokenLimit";
 
 // types/jwt.ts
 export type SessionTokenPayload = {
@@ -19,15 +20,15 @@ export const generateTTL = (seconds: number) => {
 export async function generateSessionToken(data: Object): Promise<string> {
   const payload = {
     ...data,
-    exp: Math.floor(Date.now() / 1000) + parseInt(constant.SESSION_EXPIRES_IN!),
+    exp: Math.floor(Date.now() / 1000) + redisConfig.sessionExpiresIn,
   };
 
-  return sign(payload, constant.SESSION_SECRET, "HS256");
+  return sign(payload, dbConfig.sessionSecret, "HS256");
 }
 
 export async function verifySessionToken(token: string): Promise<SessionTokenPayload | null> {
   try {
-    const payload = (await verify(token, constant.SESSION_SECRET, "HS256")) as SessionTokenPayload;
+    const payload = (await verify(token, dbConfig.sessionSecret, "HS256")) as SessionTokenPayload;
     return payload;
   } catch (err) {
     return null;
@@ -35,18 +36,18 @@ export async function verifySessionToken(token: string): Promise<SessionTokenPay
 }
 
 export function setSessionToken(c: Context, token: string) {
-  setCookie(c, constant.TOKEN_PREFIX_DEFAULT, token, {
+  setCookie(c, redisConfig.tokenPrefixDefault, token, {
     path: "/",
-    secure: constant.NODE_ENV === "production" ? true : false,
+    secure: dbConfig.mode ? true : false,
     httpOnly: true,
-    maxAge: common.TTL.SESSION_TOKEN,
-    sameSite: constant.NODE_ENV === "production" ? "lax" : "strict",
+    maxAge: tokenLimit.sessionToken,
+    sameSite: dbConfig.mode ? "lax" : "strict",
   });
 }
 
 export function clearSessionToken(c: Context) {
-  deleteCookie(c, constant.TOKEN_PREFIX_DEFAULT, {
+  deleteCookie(c, redisConfig.tokenPrefixDefault, {
     path: "/",
-    secure: constant.NODE_ENV === "production" ? true : false,
+    secure: dbConfig.mode ? true : false,
   });
 }
