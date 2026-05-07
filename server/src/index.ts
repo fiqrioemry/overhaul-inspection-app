@@ -6,6 +6,7 @@ import { prettyJSON } from "hono/pretty-json";
 import { corsMiddleware } from "@/middlewares/cors";
 import { errorHandler, notFoundHandler } from "./middlewares/error";
 import dbConfig from "./config/constant/database";
+import { startFileCleanupWorker } from "@/workers/file-cleanup.worker";
 
 const app = new Hono();
 app.use(prettyJSON());
@@ -52,3 +53,4 @@ const server = Bun.serve({
 console.log(`✅ Server running on ${dbConfig.serverUrl || `http://localhost:8000`}`);
 
 eventBus.setServer(server);
+startFileCleanupWorker();
