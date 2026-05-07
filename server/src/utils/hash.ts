@@ -13,6 +13,6 @@ export async function verifyPassword(data: { password: string; hash: string }) {
   return result;
 }
 
-export function hashToken(token: string) {
+export async function hashToken(token: string) {
   return crypto.createHash("sha256").update(token).digest("hex");
 }
