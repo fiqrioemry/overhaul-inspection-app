@@ -1,54 +1,73 @@
 import { Context } from "hono";
-import { successResponse } from "@/utils/response";
+import { responseCreated, responseOK } from "@/utils/response";
 import { AuthService } from "@/services/auth.service";
-import { loginRequest, registerRequest } from "@/schema/auth.validation";
+import successMessages from "@/config/constant/successMessage";
+import { loginRequest, registerRequest, resendVerificationEmailRequest } from "@/schema/auth.validation";
 
 export class AuthController {
   static async register(c: Context) {
     const request = registerRequest.parse(await c.req.json());
     const response = await AuthService.createUser(c, request);
-    return successResponse(c, response.message);
+    return responseCreated(c, successMessages.registerSuccess, response.data.email);
   }
 
   static async verifyEmail(c: Context) {
     const token = c.req.query("token") || "";
-    const response = await AuthService.verifyEmail(c, token);
-    return successResponse(c, "Verify email successful", response);
+    await AuthService.verifyEmail(c, token);
+    return responseOK(c, successMessages.emailVerified);
+  }
+
+  static async resendVerificationEmail(c: Context) {
+    const email = resendVerificationEmailRequest.parse(await c.req.json()).email;
+    await AuthService.resendVerificationEmail(c, email);
+    return responseOK(c, successMessages.emailSent);
   }
 
   static async login(c: Context) {
     const request = loginRequest.parse(await c.req.json());
     const response = await AuthService.login(c, request);
-    return successResponse(c, "Login successful", response);
+    return responseOK(c, successMessages.loginSuccess, response);
   }
 
   static async logout(c: Context) {
-    return successResponse(c, "Logout successful");
+    const user = await c.get("user");
+    await AuthService.logout(c, user.ssid);
+    return responseOK(c, successMessages.logoutSuccess);
   }
 
   static async logoutAll(c: Context) {
-    return successResponse(c, "Logout all sessions successful");
+    const user = await c.get("user");
+    await AuthService.logoutAll(c, user.userId);
+    return responseOK(c, successMessages.logoutAll);
   }
 
   static async getSessions(c: Context) {
-    return successResponse(c, "Get sessions successful");
+    const user = await c.get("user");
+    const response = await AuthService.getSessions(c, user.userId);
+    return responseOK(c, successMessages.getSessions, response);
+  }
+
+  static async deleteSession(c: Context) {
+    const sessionId = c.req.param("sessionId");
+    await AuthService.deleteSession(c, sessionId);
+    return responseOK(c, successMessages.deleteSession);
   }
 
   static async changePassword(c: Context) {
-    return successResponse(c, "Change password successful");
+    return responseOK(c, successMessages.changePassword);
   }
 
   static async resetPassword(c: Context) {
-    return successResponse(c, "Reset password successful");
+    return responseOK(c, successMessages.resetPassword);
   }
 
   static async forgotPassword(c: Context) {
-    return successResponse(c, "Forgot password successful");
+    return responseOK(c, successMessages.forgotPassword);
   }
 
   static async getMe(c: Context) {
     const user = c.get("user");
-    const response = {};
-    return successResponse(c, "Get me successful", response);
+    const response = await AuthService.getMe(c, user.userId);
+    return responseOK(c, "Get me successful", response);
   }
 }

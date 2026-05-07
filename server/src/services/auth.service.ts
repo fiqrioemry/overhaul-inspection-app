@@ -1,6 +1,6 @@
 import { Context } from "hono";
 import cuid from "cuid";
-import { setCookie } from "hono/cookie";
+import { deleteCookie, setCookie } from "hono/cookie";
 import { prisma } from "@/config/database/prisma";
 import { generateSessionToken } from "@/utils/jwt";
 import { HTTPException } from "hono/http-exception";
@@ -16,11 +16,11 @@ import tokenLimit from "@/config/common/tokenLimit";
 import mailer from "@/config/constant/email";
 import dbConfig from "@/config/constant/database";
 import redisConfig from "@/config/constant/redis";
+import { SessionResponse, sessionResponse } from "@/schema/session.validation";
 
 export class AuthService {
-  static async createUser(c: Context, request: RegisterRequest): Promise<{ message: string }> {
+  static async createUser(c: Context, request: RegisterRequest): Promise<{ data: { email: string } }> {
     // cek if email exist
-
     const isEmailExist = await UserRepository.findByEmail(request.email);
     if (isEmailExist) {
       throw new HTTPException(400, { message: errorMessages.emailExists, cause: errorCodes.emailExists });
@@ -41,7 +41,7 @@ export class AuthService {
       username: username,
     };
 
-    const randomToken = prisma.$transaction(async (tx) => {
+    const randomToken = await prisma.$transaction(async (tx) => {
       // create user into database
       const newUser = await UserRepository.create(tx, userData);
 
@@ -52,7 +52,7 @@ export class AuthService {
 
       // generate verification
       const randomToken = crypto.randomUUID();
-      const hashedToken = hashToken(randomToken);
+      const hashedToken = await hashToken(randomToken);
 
       // create verification data
       const userVerificationData = {
@@ -77,33 +77,26 @@ export class AuthService {
     // send email synchronously
     sendVerificationLink(mailConfig);
 
-    return { message: "Verification email sent. Please check your inbox." };
+    return { data: { email: request.email } };
   }
 
   // 2. verify email
-  static async verifyEmail(c: Context, token: string): Promise<{ message: string }> {
-    // hash the token to look up the cached registration data
-    const hashedToken = hashToken(token);
+  static async verifyEmail(c: Context, token: string) {
+    const hashedToken = await hashToken(token);
 
-    // get verification data record
     const isValid = await UserRepository.findUserVerification(hashedToken, "EMAIL_VERIFICATION");
+
     if (!isValid) {
       throw new HTTPException(400, { message: errorMessages.invalidToken, cause: errorCodes.invalidToken });
     }
 
     prisma.$transaction(async (tx) => {
-      // mark the token as used
       await UserRepository.UpdateUserVerification(tx, isValid.id, new Date());
-
-      // update user to verified and isActive
-      // verifiedAt = new Date();
       await UserRepository.updateUserActive(tx, { userId: isValid.userId, status: "ACTIVE" });
     });
-
-    return { message: "Email verified successfully" };
   }
 
-  static async login(c: Context, request: { email: string; password: string }): Promise<{ data: UserResponse; message: string }> {
+  static async login(c: Context, request: { email: string; password: string }): Promise<{ data: UserResponse }> {
     // check email
     const user = await UserRepository.findByEmail(request.email);
     if (!user) {
@@ -118,7 +111,7 @@ export class AuthService {
     }
 
     const randomToken = crypto.randomUUID();
-    const hashedToken = hashToken(randomToken);
+    const hashedToken = await hashToken(randomToken);
     const sessionPayload = {
       id: cuid(),
       userId: user.id,
@@ -127,7 +120,10 @@ export class AuthService {
       expiresAt: new Date(Date.now() + tokenLimit.sessionToken),
     };
 
-    const newSession = await SessionRepository.createSession(sessionPayload);
+    const newSession = await prisma.$transaction(async (tx) => {
+      await UserRepository.updateLastLogin(tx, user.id, new Date());
+      return await SessionRepository.createSession(tx, sessionPayload);
+    });
 
     const sessionToken = await generateSessionToken({ sub: user.id, sid: newSession.id });
 
@@ -135,6 +131,72 @@ export class AuthService {
 
     const response = userResponse.parse(user);
 
-    return { data: response, message: "Login successful" };
+    return { data: response };
+  }
+
+  static async resendVerificationEmail(c: Context, email: string) {
+    const user = await UserRepository.findByEmail(email);
+    if (!user) {
+      // for security reason, we will not return error if email not found
+      return;
+    }
+
+    const randomToken = crypto.randomUUID();
+    const hashedToken = await hashToken(randomToken);
+
+    const userVerificationData = {
+      userId: user.id,
+      token: hashedToken,
+      type: "EMAIL_VERIFICATION" as VerificationType,
+      expiresAt: new Date(Date.now() + tokenLimit.verifyEmail),
+    };
+
+    await UserRepository.createUserVerification(prisma, userVerificationData);
+
+    const mailConfig = {
+      to: email,
+      subject: mailer.emailVerificationSubject,
+      url: `${dbConfig.clientUrl}/verify-email?token=${randomToken}`,
+    };
+
+    sendVerificationLink(mailConfig);
+  }
+
+  static async getMe(c: Context, userId: string): Promise<UserResponse> {
+    const user = await UserRepository.findById(userId);
+    if (!user) {
+      throw new HTTPException(404, { message: errorMessages.userNotFound, cause: errorCodes.userNotFound });
+    }
+    const response = userResponse.parse(user);
+
+    return response;
+  }
+
+  static async logout(c: Context, sessionId: string): Promise<void> {
+    deleteCookie(c, redisConfig.tokenPrefixDefault);
+    await SessionRepository.deleteSessionBySessionId(sessionId);
+  }
+
+  static async logoutAll(c: Context, userId: string): Promise<void> {
+    deleteCookie(c, redisConfig.tokenPrefixDefault);
+    await SessionRepository.deleteSessionsByUserId(userId);
+  }
+
+  static async getSessions(c: Context, userId: string) {
+    const result = await SessionRepository.findSessionsByUserId(userId);
+    const response = result.map((session) => {
+      return {
+        id: session.id,
+        userId: session.userId,
+        userAgent: session.userAgent,
+        expiresAt: session.expiresAt,
+        loginAt: session.createdAt,
+      };
+    });
+    return response;
+  }
+
+  static async deleteSession(c: Context, sessionId: string): Promise<void> {
+    await SessionRepository.deleteSessionBySessionId(sessionId);
   }
 }

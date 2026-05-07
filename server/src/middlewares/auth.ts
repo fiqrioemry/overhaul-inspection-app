@@ -1,38 +1,40 @@
 import { Context } from "hono";
 import { getCookie } from "hono/cookie";
-import constant from "@/config/constant";
 import { verifySessionToken } from "@/utils/jwt";
 import { HTTPException } from "hono/http-exception";
 import { SessionRepository } from "@/repositories/session.repository";
+import redisConfig from "@/config/constant/redis";
+import errorMessages from "@/config/constant/errorMessage";
 
 const sessionRepo = SessionRepository;
 
 export async function protect(c: Context, next: () => Promise<void>) {
-  const authHeader = getCookie(c, constant.TOKEN_PREFIX_DEFAULT);
-  const token = authHeader?.split(" ")[1];
+  const token = getCookie(c, redisConfig.tokenPrefixDefault);
 
   if (!token) {
-    throw new HTTPException(401, { message: constant.ERROR_MESSAGES.UNAUTHORIZED, cause: constant.ERROR_CODES.UNAUTHORIZED });
+    throw new HTTPException(401, { message: errorMessages.unauthorized, cause: errorMessages.unauthorized });
   }
 
   const payload = await verifySessionToken(token);
 
+  console.log("payload", payload);
+
   if (!payload) {
-    throw new HTTPException(401, { message: constant.ERROR_MESSAGES.INVALID_TOKEN, cause: constant.ERROR_CODES.INVALID_TOKEN });
+    throw new HTTPException(401, { message: errorMessages.invalidToken, cause: errorMessages.invalidToken });
   }
 
   const session = await sessionRepo.findSessionWithUser(payload.sid);
   if (!session || session.expiresAt < new Date()) {
     throw new HTTPException(401, {
-      message: constant.ERROR_MESSAGES.SESSION_REVOKED,
-      cause: { code: constant.ERROR_CODES.SESSION_REVOKED },
+      message: errorMessages.sessionRevoked,
+      cause: { code: errorMessages.sessionRevoked },
     });
   }
 
-  if (!session || !session.user.isActive) {
+  if (!session || session.user.status === "BANNED") {
     throw new HTTPException(403, {
-      message: constant.ERROR_MESSAGES.ACCOUNT_DISABLED,
-      cause: { code: constant.ERROR_CODES.ACCOUNT_DISABLED },
+      message: errorMessages.accountBanned,
+      cause: { code: errorMessages.accountBanned },
     });
   }
   c.set("user", {
@@ -54,8 +56,8 @@ export function permissions(requiredPermissions: string[]) {
 
     if (!hasPermissions) {
       throw new HTTPException(403, {
-        message: constant.ERROR_MESSAGES.FORBIDDEN,
-        cause: { code: constant.ERROR_CODES.FORBIDDEN },
+        message: errorMessages.forbidden,
+        cause: { code: errorMessages.forbidden },
       });
     }
 

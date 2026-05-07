@@ -9,6 +9,7 @@ export const userResponse = z.object({
   bio: z.string().nullable(),
   status: z.enum(["ACTIVE", "INACTIVE", "BANNED"]),
   lastLogin: z.date().nullable(),
+  verifiedAt: z.date().nullable(),
   createdAt: z.date(),
 });
 
@@ -67,6 +68,12 @@ export const loginRequest = z.object({
 });
 
 export type LoginRequest = z.infer<typeof loginRequest>;
+
+export const resendVerificationEmailRequest = z.object({
+  email: z.email("Invalid email address"),
+});
+
+export type ResendVerificationEmailRequest = z.infer<typeof resendVerificationEmailRequest>;
 
 export type CreateUserData = {
   email: string;

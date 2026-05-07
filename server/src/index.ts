@@ -1,11 +1,11 @@
 import { Hono } from "hono";
-import constant from "@/config/constant";
-import "@/config/database/redis";
 import router from "@/routes";
+import "@/config/database/redis";
 import { eventBus } from "./config/socket/socket";
 import { prettyJSON } from "hono/pretty-json";
 import { corsMiddleware } from "@/middlewares/cors";
 import { errorHandler, notFoundHandler } from "./middlewares/error";
+import dbConfig from "./config/constant/database";
 
 const app = new Hono();
 app.use(prettyJSON());
@@ -19,7 +19,7 @@ app.onError(errorHandler);
 app.notFound(notFoundHandler);
 
 const server = Bun.serve({
-  port: constant.PORT,
+  port: dbConfig.port || 8000,
 
   fetch(req, server) {
     // websocket endpoint
@@ -49,6 +49,6 @@ const server = Bun.serve({
   },
 });
 
-console.log(`✅ Server running on ${constant.SERVER_URL || `http://localhost:8000`}`);
+console.log(`✅ Server running on ${dbConfig.serverUrl || `http://localhost:8000`}`);
 
 eventBus.setServer(server);

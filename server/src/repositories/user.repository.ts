@@ -18,6 +18,7 @@ export class UserRepository {
         lastLogin: true,
         role: true,
         createdAt: true,
+        verifiedAt: true,
       },
     });
   }
@@ -44,11 +45,13 @@ export class UserRepository {
         status: true,
         lastLogin: true,
         createdAt: true,
+        verifiedAt: true,
       },
     });
 
     return result;
   }
+
   static async findById(id: string): Promise<UserResponse | null> {
     return await prisma.user.findUnique({
       where: { id },
@@ -62,6 +65,7 @@ export class UserRepository {
         status: true,
         lastLogin: true,
         createdAt: true,
+        verifiedAt: true,
       },
     });
   }
@@ -82,7 +86,7 @@ export class UserRepository {
 
   static async findUserVerification(token: string, type: VerificationType): Promise<{ id: string; userId: string; token: string; expiresAt: Date } | null> {
     return await prisma.userVerification.findFirst({
-      where: { token, type, expiresAt: { gt: new Date() }, usedAt: null },
+      where: { token, type, usedAt: null },
       select: {
         id: true,
         userId: true,
@@ -103,13 +107,27 @@ export class UserRepository {
     });
   }
 
-  // update user isActive into true
+  static async updateLastLogin(tx: Prisma.TransactionClient | null, userId: string, lastLogin: Date): Promise<void> {
+    const db = tx ?? prisma;
+    await db.user.update({
+      where: { id: userId },
+      data: { lastLogin },
+    });
+  }
 
+  // update user isActive into true
   static async updateUserActive(tx: Prisma.TransactionClient | null, user: { userId: string; status: "ACTIVE" | "INACTIVE" | "BANNED" }): Promise<void> {
     const db = tx ?? prisma;
     await db.user.update({
       where: { id: user.userId },
-      data: { status: user.status },
+      data: { status: user.status, verifiedAt: new Date() },
+    });
+  }
+
+  static async deleteSessionBySessionId(tx: Prisma.TransactionClient | null, sessionId: string): Promise<void> {
+    const db = tx ?? prisma;
+    await db.session.delete({
+      where: { id: sessionId },
     });
   }
 }
