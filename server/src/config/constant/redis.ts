@@ -1,7 +1,7 @@
 const redisKeyPrefix = "social-media:";
 
 const redisConfig = {
-  tokenPrefixDefault: redisKeyPrefix,
+  tokenPrefixDefault: "sid-token",
   sessionExpiresIn: process.env.SESSION_EXPIRES_IN ? parseInt(process.env.SESSION_EXPIRES_IN) : 3600, // default 1 hour
   redisUrl: process.env.REDIS_URL || "redis://username:password@localhost:6379",
   redisKeyLimiter: `${redisKeyPrefix}limiter:`,

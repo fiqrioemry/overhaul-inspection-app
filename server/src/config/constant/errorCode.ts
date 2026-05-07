@@ -11,6 +11,7 @@ const errorCodes = {
   sessionRevoked: "SESSION_REVOKED",
   emailExists: "EMAIL_EXISTS",
   invalidCredentials: "INVALID_CREDENTIALS",
+  userNotFound: "USER_NOT_FOUND",
 };
 
 export default errorCodes;

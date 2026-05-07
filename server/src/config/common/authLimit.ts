@@ -23,6 +23,16 @@ const authLimiter = {
     limit: 5, // limit each IP to 5 email verification requests per windowSec
     windowSec: 60, // 60 seconds in seconds
   },
+
+  getMe: {
+    limit: 60,
+    windowSec: 60, // 60 seconds in seconds
+  },
+
+  resendVerificationEmail: {
+    limit: 3,
+    windowSec: 60, // 60 seconds in seconds
+  },
 };
 
 export default authLimiter;
