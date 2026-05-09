@@ -1,9 +1,9 @@
-import { prisma } from "@/config/database/prisma";
 import { Prisma } from "generated/prisma/edge";
-import { SessionResponse } from "@/schema/session.validation";
+import { prisma } from "@/config/database/prisma";
+import { createSessionData, sessionResponse } from "@/models/session.model";
 
 export class SessionRepository {
-  static async findSessionWithUser(sessionId: string): Promise<SessionResponse | null> {
+  static async findSessionWithUser(sessionId: string): Promise<sessionResponse | null> {
     return await prisma.session.findUnique({
       where: { id: sessionId },
       select: {
@@ -23,7 +23,7 @@ export class SessionRepository {
     });
   }
 
-  static async createSession(tx: Prisma.TransactionClient | null, sessions: { id: string; userId: string; token: string; userAgent: string; expiresAt: Date }): Promise<{ id: string }> {
+  static async createSession(tx: Prisma.TransactionClient | null, sessions: createSessionData): Promise<{ id: string }> {
     const db = tx ?? prisma;
     // create session in the database
     const session = await db.session.create({
@@ -39,7 +39,7 @@ export class SessionRepository {
     return { id: session.id };
   }
 
-  static async findSessionByToken(token: string): Promise<SessionResponse | null> {
+  static async findSessionByToken(token: string): Promise<sessionResponse | null> {
     return await prisma.session.findUnique({
       where: { token },
       select: {
@@ -59,7 +59,7 @@ export class SessionRepository {
     });
   }
 
-  static async findSessionsByUserId(userId: string): Promise<SessionResponse[]> {
+  static async findSessionsByUserId(userId: string): Promise<sessionResponse[]> {
     return await prisma.session.findMany({
       where: { userId },
       select: {
@@ -88,6 +88,15 @@ export class SessionRepository {
   static async deleteSessionBySessionId(sessionId: string): Promise<void> {
     await prisma.session.delete({
       where: { id: sessionId },
+    });
+  }
+
+  static async getSessionById(sessionId: string): Promise<{ id: string } | null> {
+    return await prisma.session.findUnique({
+      where: { id: sessionId },
+      select: {
+        id: true,
+      },
     });
   }
 }
