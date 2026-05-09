@@ -1,3 +1,5 @@
+import { password } from "bun";
+
 const authLimiter = {
   login: {
     limit: 5, // limit each IP to 5 login requests per windowSec
@@ -11,6 +13,16 @@ const authLimiter = {
 
   register: {
     limit: 10, // limit each IP to 10 registration requests per windowSec
+    windowSec: 60, // 60 seconds in seconds
+  },
+
+  passwordChange: {
+    limit: 5, // limit each user to 5 password change requests per windowSec
+    windowSec: 60, // 60 seconds in seconds
+  },
+
+  passwordForgot: {
+    limit: 3, // limit each IP to 3 password reset requests per windowSec
     windowSec: 60, // 60 seconds in seconds
   },
 

@@ -1,6 +1,7 @@
 const tokenLimit = {
-  verifyEmail: 15 * 60, // 15 minutes in seconds
+  verifyEmail: 60 * 60 * 1000, // 60 minutes in milliseconds
   sessionToken: 1000 * 60 * 60 * 24 * 7, // 7 days in milliseconds
+  passwordReset: 60 * 60 * 1000, // 60 minutes in milliseconds
 };
 
 export default tokenLimit;
