@@ -2,7 +2,7 @@ import { Context } from "hono";
 import { responseCreated, responseOK } from "@/utils/response";
 import { AuthService } from "@/services/auth.service";
 import successMessages from "@/config/constant/successMessage";
-import { loginRequest, registerRequest, resendVerificationEmailRequest } from "@/schema/auth.validation";
+import { changePasswordRequest, forgotPasswordRequest, loginRequest, registerRequest, resendVerificationEmailRequest, resetPasswordRequest } from "@/schema/auth.validation";
 
 export class AuthController {
   static async register(c: Context) {
@@ -54,20 +54,28 @@ export class AuthController {
   }
 
   static async changePassword(c: Context) {
+    const user = await c.get("user");
+    const request = changePasswordRequest.parse(await c.req.json());
+    await AuthService.changePassword(c, user.userId, request);
     return responseOK(c, successMessages.changePassword);
   }
 
   static async resetPassword(c: Context) {
+    const token = c.req.query("token") as string;
+    const request = resetPasswordRequest.parse(await c.req.json());
+    await AuthService.resetPassword(c, token, request);
     return responseOK(c, successMessages.resetPassword);
   }
 
   static async forgotPassword(c: Context) {
+    const request = forgotPasswordRequest.parse(await c.req.json());
+    await AuthService.forgotPassword(c, request.email);
     return responseOK(c, successMessages.forgotPassword);
   }
 
   static async getMe(c: Context) {
     const user = c.get("user");
     const response = await AuthService.getMe(c, user.userId);
-    return responseOK(c, "Get me successful", response);
+    return responseOK(c, successMessages.getProfile, response);
   }
 }
