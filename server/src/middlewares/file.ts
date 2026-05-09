@@ -17,7 +17,7 @@ type FileValidationOptions = {
  * @param options.field - Specific form field name to validate (validates all files if omitted)
  */
 
-export function singleFile(options: FileValidationOptions) {
+export function singleFile(options: FileValidationOptions, name: string) {
   const { maxSize = 5 * 1024 * 1024, allowedTypes, field } = options;
 
   return async (c: Context, next: () => Promise<void>) => {
@@ -45,7 +45,7 @@ export function singleFile(options: FileValidationOptions) {
       });
     }
 
-    c.set("file", file);
+    c.set(name, file);
     await next();
   };
 }

@@ -1,24 +1,25 @@
 import { Context } from "hono";
 import dbConfig from "@/config/constant/database";
+import { processImage } from "@/utils/file-processing";
 import { generateRandomFilename } from "@/utils/generator";
 import { FileRepository } from "@/repositories/file.repository";
 
 export class FileService {
-  static async uploadSingleFile(c: Context, userId: string, file: File, module: string): Promise<any> {
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-    const randomFileName = generateRandomFilename(file.name);
+  static async uploadSingleFile(c: Context, userId: string, file: File, module: string, targetId?: string): Promise<any> {
+    const imageProcessed = await processImage(file, 500, 500, "webp");
+    const randomFileName = generateRandomFilename(file.name, module, "webp");
     const filePath = `/uploads/${randomFileName}`;
-    await Bun.write(`.${filePath}`, buffer);
+    await Bun.write(`.${filePath}`, imageProcessed);
 
     const metadata = {
       originalName: file.name,
-      mimeType: file.type,
+      mimeType: "image/webp",
     };
 
     const fileRecord = {
+      targetId,
       url: `${dbConfig.serverUrl}${filePath}`,
-      size: file.size,
+      size: imageProcessed.length,
       path: filePath,
       metadata,
       module,
@@ -47,7 +48,7 @@ export class FileService {
       files.map(async (f) => {
         const arrayBuffer = await f.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
-        const randomFileName = generateRandomFilename(f.name);
+        const randomFileName = generateRandomFilename(f.name, module);
         const filePath = `/uploads/${randomFileName}`;
         await Bun.write(`.${filePath}`, buffer);
 

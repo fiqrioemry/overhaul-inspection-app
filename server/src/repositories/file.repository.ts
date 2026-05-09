@@ -6,14 +6,13 @@ export class FileRepository {
     const result = await prisma.fileStorage.create({
       data: {
         url: data.url,
-        targetId: "",
+        targetId: data.targetId,
         isUsed: false,
         path: data.path,
         meta: data.metadata,
         module: data.module,
         size: data.size,
         createdBy: data.createdBy,
-        expiredAt: data.expiredAt,
       },
       select: {
         id: true,
