@@ -21,7 +21,7 @@ export async function errorHandler(err: Error, c: Context) {
       errors[path] = issue.message;
     }
     console.error("Validation error:", errors);
-    return responseError(c, errorMessages.badRequest, 400, cause?.code || errorCodes.badRequest, { errors });
+    return responseError(c, errorMessages.badRequest, 400, cause?.code || errorCodes.badRequest, errors);
   }
 
   //   other errors

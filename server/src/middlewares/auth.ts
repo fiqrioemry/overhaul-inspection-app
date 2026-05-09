@@ -5,6 +5,7 @@ import { HTTPException } from "hono/http-exception";
 import { SessionRepository } from "@/repositories/session.repository";
 import redisConfig from "@/config/constant/redis";
 import errorMessages from "@/config/constant/errorMessage";
+import errorCodes from "@/config/constant/errorCode";
 
 const sessionRepo = SessionRepository;
 
@@ -17,8 +18,6 @@ export async function protect(c: Context, next: () => Promise<void>) {
 
   const payload = await verifySessionToken(token);
 
-  console.log("payload", payload);
-
   if (!payload) {
     throw new HTTPException(401, { message: errorMessages.invalidToken, cause: errorMessages.invalidToken });
   }
@@ -27,14 +26,14 @@ export async function protect(c: Context, next: () => Promise<void>) {
   if (!session || session.expiresAt < new Date()) {
     throw new HTTPException(401, {
       message: errorMessages.sessionRevoked,
-      cause: { code: errorMessages.sessionRevoked },
+      cause: errorCodes.sessionRevoked,
     });
   }
 
   if (!session || session.user.status === "BANNED") {
     throw new HTTPException(403, {
       message: errorMessages.accountBanned,
-      cause: { code: errorMessages.accountBanned },
+      cause: errorCodes.accountBanned,
     });
   }
   c.set("user", {
