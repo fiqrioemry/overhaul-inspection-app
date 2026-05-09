@@ -1,33 +1,20 @@
 import { z } from "zod";
 
-export const userResponse = z.object({
-  id: z.cuid(),
-  email: z.email(),
-  name: z.string(),
-  username: z.string(),
-  avatar: z.string().nullable(),
-  bio: z.string().nullable(),
-  status: z.enum(["ACTIVE", "INACTIVE", "BANNED"]),
-  lastLogin: z.date().nullable(),
-  verifiedAt: z.date().nullable(),
-  createdAt: z.date(),
-});
-
-export type UserResponse = z.infer<typeof userResponse>;
-
-export const userCredential = z.object({
-  id: z.cuid(),
-  email: z.email(),
-  passwordHash: z.string(),
-});
-
-export type UserCredential = z.infer<typeof userCredential>;
+const passwordValidation = z
+  .string()
+  .min(10, "Password must be at least 10 characters")
+  .refine((password) => /[A-Z]/.test(password), {
+    message: "Password must contain at least one uppercase letter",
+  })
+  .refine((password) => /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password), {
+    message: "Password must contain at least one special character",
+  });
 
 export const registerRequest = z
   .object({
     name: z.string().min(1, "Name is required"),
     email: z.email("Invalid email address"),
-    password: z.string().min(6, "Password must be at least 6 characters"),
+    password: passwordValidation,
     confirmPassword: z.string().min(1, "Password confirmation is required"),
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -39,9 +26,8 @@ export type RegisterRequest = z.infer<typeof registerRequest>;
 
 export const resetPasswordRequest = z
   .object({
-    token: z.uuid("Invalid token"),
-    password: z.string().min(6, "Password must be at least 6 characters long"),
-    confirmPassword: z.string().min(6, "Confirm Password must be at least 6 characters long"),
+    password: passwordValidation,
+    confirmPassword: z.string().min(1, "Password confirmation is required"),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords do not match",
@@ -53,7 +39,7 @@ export const changePasswordRequest = z
   .object({
     currentPassword: z.string().min(1, "Current password is required"),
     confirmPassword: z.string().min(1, "Please confirm your new password"),
-    newPassword: z.string().min(6, "New password must be at least 6 characters"),
+    newPassword: passwordValidation,
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
     message: "New passwords do not match",
@@ -73,12 +59,6 @@ export const resendVerificationEmailRequest = z.object({
   email: z.email("Invalid email address"),
 });
 
-export type ResendVerificationEmailRequest = z.infer<typeof resendVerificationEmailRequest>;
-
-export type CreateUserData = {
-  email: string;
-  passwordHash: string;
-  name: string;
-  username: string;
-  avatar: string;
-};
+export const forgotPasswordRequest = z.object({
+  email: z.email("Invalid email address"),
+});
