@@ -3,6 +3,8 @@ type createFileData = {
   size: number;
   url: string;
   path: string;
+  createdBy?: string;
+  expiredAt: Date;
   metadata: Record<string, any>;
 };
 type fileResponse = {
