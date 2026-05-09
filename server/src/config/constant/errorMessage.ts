@@ -1,3 +1,5 @@
+import { email } from "zod";
+
 const errorMessages = {
   userCreationFailed: "Failed to create user",
   internalServerError: "Internal Server Error",
@@ -12,7 +14,15 @@ const errorMessages = {
   sessionRevoked: "Session revoked",
   emailExists: "Email already exists",
   invalidCredentials: "Invalid email or password",
+  invalidCurrentPassword: "Invalid current password",
   userNotFound: "User not found",
+  emailAlreadyVerified: "Email is already verified",
+  sessionNotFound: "Session not found",
+  emailNotVerified: "Email not verified",
+  errorFileTooLarge: "File size exceeds the limit",
+  invalidFileType: "File type is not allowed",
+  fileNotFound: "File not found",
+  fileIdRequired: "File ID is required",
 };
 
 export default errorMessages;

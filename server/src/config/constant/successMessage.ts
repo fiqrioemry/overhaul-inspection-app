@@ -11,6 +11,10 @@ const successMessages = {
   deleteSession: "Delete session successful",
   changePassword: "Change password successful",
   getSessions: "Get sessions successful",
+  getProfile: "Get profile successful",
+  fileUploadSuccess: "File uploaded successfully",
+  fileDeleteSuccess: "File deleted successfully",
+  filesUploadSuccess: "Files uploaded successfully",
 };
 
 export default successMessages;

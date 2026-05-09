@@ -1,3 +1,5 @@
+import { email } from "zod";
+
 const errorCodes = {
   userCreationFailed: "USER_CREATION_FAILED",
   internalServerError: "INTERNAL_SERVER_ERROR",
@@ -12,6 +14,14 @@ const errorCodes = {
   emailExists: "EMAIL_EXISTS",
   invalidCredentials: "INVALID_CREDENTIALS",
   userNotFound: "USER_NOT_FOUND",
+  emailAlreadyVerified: "EMAIL_ALREADY_VERIFIED",
+  invalidCurrentPassword: "INVALID_CURRENT_PASSWORD",
+  sessionNotFound: "SESSION_NOT_FOUND",
+  accountBanned: "ACCOUNT_BANNED",
+  emailNotVerified: "EMAIL_NOT_VERIFIED",
+  fileNotFound: "FILE_NOT_FOUND",
+  fileTooLarge: "FILE_TOO_LARGE",
+  invalidFileType: "INVALID_FILE_TYPE",
 };
 
 export default errorCodes;
