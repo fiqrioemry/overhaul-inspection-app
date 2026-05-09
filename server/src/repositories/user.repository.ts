@@ -1,29 +1,22 @@
+import { Prisma } from "generated/prisma/edge";
 import { prisma } from "@/config/database/prisma";
-import { CreateUserData, UserCredential, UserResponse } from "@/schema/auth.validation";
-import { Prisma, VerificationType } from "generated/prisma/edge";
+import { createUserData, verificationType, createVerificationData, updateUserActiveData, userCredential, userResponse, userVerificationData } from "@/models/user.model";
 
 export class UserRepository {
-  static async findByEmail(email: string): Promise<UserCredential | null> {
+  static async findByEmail(email: string): Promise<userCredential | null> {
     return await prisma.user.findUnique({
       where: { email },
       select: {
         id: true,
         email: true,
-        name: true,
-        bio: true,
-        username: true,
         passwordHash: true,
         status: true,
-        avatar: true,
-        lastLogin: true,
-        role: true,
-        createdAt: true,
         verifiedAt: true,
       },
     });
   }
 
-  static async create(tx: Prisma.TransactionClient | null, user: CreateUserData): Promise<UserResponse> {
+  static async create(tx: Prisma.TransactionClient | null, user: createUserData): Promise<userResponse> {
     const db = tx ?? prisma;
 
     const result = await db.user.create({
@@ -52,7 +45,7 @@ export class UserRepository {
     return result;
   }
 
-  static async findById(id: string): Promise<UserResponse | null> {
+  static async findById(id: string): Promise<userResponse | null> {
     return await prisma.user.findUnique({
       where: { id },
       select: {
@@ -70,8 +63,7 @@ export class UserRepository {
     });
   }
 
-  // create user verification data
-  static async createUserVerification(tx: Prisma.TransactionClient | null, verificationData: { userId: string; token: string; type: VerificationType; expiresAt: Date }): Promise<void> {
+  static async createUserVerification(tx: Prisma.TransactionClient | null, verificationData: createVerificationData): Promise<void> {
     const db = tx ?? prisma;
 
     await db.userVerification.create({
@@ -84,13 +76,14 @@ export class UserRepository {
     });
   }
 
-  static async findUserVerification(token: string, type: VerificationType): Promise<{ id: string; userId: string; token: string; expiresAt: Date } | null> {
+  static async findUserVerification(token: string, type: verificationType): Promise<userVerificationData | null> {
     return await prisma.userVerification.findFirst({
-      where: { token, type, usedAt: null },
+      where: { token, type, usedAt: null, expiresAt: { gt: new Date() } },
       select: {
         id: true,
         userId: true,
         token: true,
+        type: true,
         expiresAt: true,
       },
     });
@@ -115,8 +108,7 @@ export class UserRepository {
     });
   }
 
-  // update user isActive into true
-  static async updateUserActive(tx: Prisma.TransactionClient | null, user: { userId: string; status: "ACTIVE" | "INACTIVE" | "BANNED" }): Promise<void> {
+  static async updateUserActive(tx: Prisma.TransactionClient | null, user: updateUserActiveData): Promise<void> {
     const db = tx ?? prisma;
     await db.user.update({
       where: { id: user.userId },
@@ -128,6 +120,24 @@ export class UserRepository {
     const db = tx ?? prisma;
     await db.session.delete({
       where: { id: sessionId },
+    });
+  }
+
+  static async getPasswordByUserId(userId: string): Promise<string | null> {
+    const result = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        passwordHash: true,
+      },
+    });
+
+    return result?.passwordHash || null;
+  }
+
+  static async updatePassword(userId: string, newPasswordHash: string): Promise<void> {
+    await prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash: newPasswordHash },
     });
   }
 }

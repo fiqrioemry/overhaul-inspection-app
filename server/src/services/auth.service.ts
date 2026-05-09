@@ -1,64 +1,61 @@
-import { Context } from "hono";
 import cuid from "cuid";
-import { deleteCookie, setCookie } from "hono/cookie";
-import { prisma } from "@/config/database/prisma";
-import { generateSessionToken } from "@/utils/jwt";
-import { HTTPException } from "hono/http-exception";
-import { sendVerificationLink } from "@/utils/mailer";
-import { VerificationType } from "generated/prisma/edge";
-import { UserRepository } from "@/repositories/user.repository";
-import { hashPassword, hashToken, verifyPassword } from "@/utils/hash";
-import { SessionRepository } from "@/repositories/session.repository";
-import { RegisterRequest, UserResponse, userResponse } from "@/schema/auth.validation";
-import errorMessages from "@/config/constant/errorMessage";
-import errorCodes from "@/config/constant/errorCode";
-import tokenLimit from "@/config/common/tokenLimit";
+import { Context } from "hono";
 import mailer from "@/config/constant/email";
-import dbConfig from "@/config/constant/database";
+import { prisma } from "@/config/database/prisma";
 import redisConfig from "@/config/constant/redis";
-import { SessionResponse, sessionResponse } from "@/schema/session.validation";
+import dbConfig from "@/config/constant/database";
+import { generateSessionToken } from "@/utils/jwt";
+import tokenLimit from "@/config/common/tokenLimit";
+import { HTTPException } from "hono/http-exception";
+import errorCodes from "@/config/constant/errorCode";
+import { sendVerificationLink } from "@/utils/mailer";
+import { deleteCookie, setCookie } from "hono/cookie";
+import errorMessages from "@/config/constant/errorMessage";
+import { UserRepository } from "@/repositories/user.repository";
+import { SessionRepository } from "@/repositories/session.repository";
+import { hashPassword, hashToken, verifyPassword } from "@/utils/hash";
+import { loginResponse, userResponse, verificationType } from "@/models/user.model";
+import { ChangePasswordRequest, LoginRequest, RegisterRequest, ResetPasswordRequest } from "@/schema/auth.validation";
+import { generateRandomAvatarURL, generateRandomToken, generateRandomUsername } from "@/utils/generator";
 
 export class AuthService {
   static async createUser(c: Context, request: RegisterRequest): Promise<{ data: { email: string } }> {
     // cek if email exist
     const isEmailExist = await UserRepository.findByEmail(request.email);
+
     if (isEmailExist) {
       throw new HTTPException(400, { message: errorMessages.emailExists, cause: errorCodes.emailExists });
     }
 
     // hash password
     const hashedPassword = await hashPassword(request.password);
-    const random = Math.floor(1000 + Math.random() * 9000); // generate a random 4-digit number
-    const randomAvatarURL = `https://api.dicebear.com/6.x/initials/svg?seed=${request.name}${random}`; // generate a random avatar URL using the name and random number
-    const username = `${request.name.replace(/\s+/g, "").toLowerCase()}${random}`;
+    const username = generateRandomUsername(request.name);
 
     // assign user data payload
     const userData = {
       email: request.email,
       passwordHash: hashedPassword,
       name: request.name,
-      avatar: randomAvatarURL,
+      avatar: generateRandomAvatarURL(username),
       username: username,
     };
 
     const randomToken = await prisma.$transaction(async (tx) => {
-      // create user into database
       const newUser = await UserRepository.create(tx, userData);
 
-      // throw error if failed
       if (!newUser) {
         throw new HTTPException(500, { message: errorMessages.userCreationFailed, cause: errorCodes.userCreationFailed });
       }
 
       // generate verification
-      const randomToken = crypto.randomUUID();
+      const randomToken = generateRandomToken();
       const hashedToken = await hashToken(randomToken);
 
       // create verification data
       const userVerificationData = {
         userId: newUser.id,
         token: hashedToken,
-        type: "EMAIL_VERIFICATION" as VerificationType,
+        type: "EMAIL_VERIFICATION" as verificationType,
         expiresAt: new Date(Date.now() + tokenLimit.verifyEmail),
       };
 
@@ -96,58 +93,73 @@ export class AuthService {
     });
   }
 
-  static async login(c: Context, request: { email: string; password: string }): Promise<{ data: UserResponse }> {
+  static async login(c: Context, request: LoginRequest): Promise<loginResponse> {
     // check email
-    const user = await UserRepository.findByEmail(request.email);
-    if (!user) {
+    const isEmailExist = await UserRepository.findByEmail(request.email);
+
+    if (!isEmailExist) {
       throw new HTTPException(400, { message: errorMessages.invalidCredentials, cause: errorCodes.invalidCredentials });
     }
 
-    const isValid = await verifyPassword({ password: request.password, hash: user.passwordHash });
+    const isValid = await verifyPassword({ password: request.password, hash: isEmailExist.passwordHash });
 
+    if (isEmailExist.status === "INACTIVE" || !isEmailExist.verifiedAt) {
+      throw new HTTPException(400, { message: errorMessages.emailNotVerified, cause: errorCodes.emailNotVerified });
+    }
+
+    if (isEmailExist.status === "BANNED") {
+      throw new HTTPException(403, { message: errorMessages.accountBanned, cause: errorCodes.accountBanned });
+    }
     // check password
     if (!isValid) {
       throw new HTTPException(400, { message: errorMessages.invalidCredentials, cause: errorCodes.invalidCredentials });
     }
 
-    const randomToken = crypto.randomUUID();
+    const randomToken = generateRandomToken();
     const hashedToken = await hashToken(randomToken);
+
     const sessionPayload = {
       id: cuid(),
-      userId: user.id,
+      userId: isEmailExist.id,
       token: hashedToken,
       userAgent: c.req.header("user-agent") || "unknown",
       expiresAt: new Date(Date.now() + tokenLimit.sessionToken),
     };
 
     const newSession = await prisma.$transaction(async (tx) => {
-      await UserRepository.updateLastLogin(tx, user.id, new Date());
+      await UserRepository.updateLastLogin(tx, isEmailExist.id, new Date());
       return await SessionRepository.createSession(tx, sessionPayload);
     });
 
-    const sessionToken = await generateSessionToken({ sub: user.id, sid: newSession.id });
+    const sessionToken = await generateSessionToken({ sub: isEmailExist.id, sid: newSession.id });
 
     setCookie(c, redisConfig.tokenPrefixDefault, sessionToken);
 
-    const response = userResponse.parse(user);
-
-    return { data: response };
+    return {
+      id: isEmailExist.id,
+      token: sessionToken,
+      expiredAt: sessionPayload.expiresAt,
+    };
   }
 
   static async resendVerificationEmail(c: Context, email: string) {
     const user = await UserRepository.findByEmail(email);
     if (!user) {
-      // for security reason, we will not return error if email not found
+      // return 200 even if the email is not found to prevent email enumeration
       return;
     }
 
-    const randomToken = crypto.randomUUID();
+    if (user.verifiedAt) {
+      throw new HTTPException(400, { message: errorMessages.emailAlreadyVerified, cause: errorCodes.emailAlreadyVerified });
+    }
+
+    const randomToken = generateRandomToken();
     const hashedToken = await hashToken(randomToken);
 
     const userVerificationData = {
       userId: user.id,
       token: hashedToken,
-      type: "EMAIL_VERIFICATION" as VerificationType,
+      type: "EMAIL_VERIFICATION" as verificationType,
       expiresAt: new Date(Date.now() + tokenLimit.verifyEmail),
     };
 
@@ -162,14 +174,14 @@ export class AuthService {
     sendVerificationLink(mailConfig);
   }
 
-  static async getMe(c: Context, userId: string): Promise<UserResponse> {
+  static async getMe(c: Context, userId: string): Promise<userResponse> {
     const user = await UserRepository.findById(userId);
+
     if (!user) {
       throw new HTTPException(404, { message: errorMessages.userNotFound, cause: errorCodes.userNotFound });
     }
-    const response = userResponse.parse(user);
 
-    return response;
+    return user;
   }
 
   static async logout(c: Context, sessionId: string): Promise<void> {
@@ -178,12 +190,13 @@ export class AuthService {
   }
 
   static async logoutAll(c: Context, userId: string): Promise<void> {
-    deleteCookie(c, redisConfig.tokenPrefixDefault);
     await SessionRepository.deleteSessionsByUserId(userId);
+    deleteCookie(c, redisConfig.tokenPrefixDefault);
   }
 
   static async getSessions(c: Context, userId: string) {
     const result = await SessionRepository.findSessionsByUserId(userId);
+
     const response = result.map((session) => {
       return {
         id: session.id,
@@ -197,6 +210,82 @@ export class AuthService {
   }
 
   static async deleteSession(c: Context, sessionId: string): Promise<void> {
+    const session = await SessionRepository.getSessionById(sessionId);
+
+    if (!session) {
+      throw new HTTPException(404, { message: errorMessages.sessionNotFound, cause: errorCodes.sessionNotFound });
+    }
+
     await SessionRepository.deleteSessionBySessionId(sessionId);
+  }
+
+  // change password
+  static async changePassword(c: Context, userId: string, request: ChangePasswordRequest): Promise<void> {
+    const passwordHash = await UserRepository.getPasswordByUserId(userId);
+
+    if (!passwordHash) {
+      throw new HTTPException(404, { message: errorMessages.userNotFound, cause: errorCodes.userNotFound });
+    }
+
+    const isValid = await verifyPassword({ password: request.currentPassword, hash: passwordHash });
+
+    if (!isValid) {
+      throw new HTTPException(400, { message: errorMessages.invalidCurrentPassword, cause: errorCodes.invalidCurrentPassword });
+    }
+
+    const hashedPassword = await hashPassword(request.newPassword);
+
+    await UserRepository.updatePassword(userId, hashedPassword);
+
+    // invalidate all sessions
+    await SessionRepository.deleteSessionsByUserId(userId);
+
+    deleteCookie(c, redisConfig.tokenPrefixDefault);
+  }
+
+  static async forgotPassword(c: Context, email: string): Promise<void> {
+    const user = await UserRepository.findByEmail(email);
+    if (!user) {
+      // return 200 even if the email is not found to prevent email enumeration
+      return;
+    }
+
+    const randomToken = generateRandomToken();
+    const hashedToken = await hashToken(randomToken);
+
+    const userVerificationData = {
+      userId: user.id,
+      token: hashedToken,
+      type: "PASSWORD_RESET" as verificationType,
+      expiresAt: new Date(Date.now() + tokenLimit.passwordReset),
+    };
+
+    await UserRepository.createUserVerification(prisma, userVerificationData);
+
+    const mailConfig = {
+      to: email,
+      subject: mailer.passwordResetSubject,
+      url: `${dbConfig.clientUrl}/reset-password?token=${randomToken}`,
+    };
+
+    sendVerificationLink(mailConfig);
+  }
+
+  static async resetPassword(c: Context, token: string, request: ResetPasswordRequest): Promise<void> {
+    const hashedToken = await hashToken(token);
+
+    const verification = await UserRepository.findUserVerification(hashedToken, "PASSWORD_RESET");
+
+    if (!verification) {
+      throw new HTTPException(400, { message: errorMessages.invalidToken, cause: errorCodes.invalidToken });
+    }
+
+    const hashedPassword = await hashPassword(request.password);
+
+    await prisma.$transaction(async (tx) => {
+      await UserRepository.UpdateUserVerification(tx, verification.id, new Date());
+      await UserRepository.updatePassword(verification.userId, hashedPassword);
+      await SessionRepository.deleteSessionsByUserId(verification.userId);
+    });
   }
 }
