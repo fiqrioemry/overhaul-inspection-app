@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import auth from "./auth.route";
+import file from "./file.route";
 
 const router = new Hono();
 
@@ -9,5 +10,6 @@ router.get("/", (c) => {
 });
 
 router.route("/v1/auth", auth);
+router.route("/v1/files", file);
 
 export default router;
