@@ -96,7 +96,7 @@ model Session {
   token     String   @unique
   userAgent String?  @map("user_agent")
   createdAt DateTime @default(now()) @map("created_at")
-  expiresAt DateTime @map("expires_at")
+  expiresAt DateTime @map("expires_at") 
 
   user      User @relation(fields: [userId], references: [id])
 
@@ -137,7 +137,7 @@ model Post {
 
 model fileStorage {
   id        String   @id @default(cuid())
-  targetId  String   @map("target_id")
+  targetId  String?  @map("target_id")
   url       String
   module    String
   size     Int
@@ -145,6 +145,8 @@ model fileStorage {
   path     String
   isUsed   Boolean  @default(false) @map("is_used")
   createdAt DateTime @default(now()) @map("created_at")
+  createdBy String?  @map("created_by")
+  updatedBy String?  @map("updated_by")
 
   @@map("file_storage")
 }
