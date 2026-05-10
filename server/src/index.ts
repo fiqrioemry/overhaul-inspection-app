@@ -1,11 +1,11 @@
 import { Hono } from "hono";
 import router from "@/routes";
 import "@/config/database/redis";
-import { eventBus } from "./config/socket/socket";
 import { prettyJSON } from "hono/pretty-json";
+import { eventBus } from "./config/socket/socket";
+import dbConfig from "./config/constant/database";
 import { corsMiddleware } from "@/middlewares/cors";
 import { errorHandler, notFoundHandler } from "./middlewares/error";
-import dbConfig from "./config/constant/database";
 import { startFileCleanupWorker } from "@/workers/file-cleanup.worker";
 
 const app = new Hono();
@@ -20,7 +20,7 @@ app.onError(errorHandler);
 app.notFound(notFoundHandler);
 
 const server = Bun.serve({
-  port: dbConfig.port || 8000,
+  port: dbConfig.port || 5000,
 
   fetch(req, server) {
     // websocket endpoint
@@ -50,7 +50,8 @@ const server = Bun.serve({
   },
 });
 
-console.log(`✅ Server running on ${dbConfig.serverUrl || `http://localhost:8000`}`);
+console.log(`✅ Server running on ${dbConfig.serverUrl || `http://localhost:5000`}`);
 
 eventBus.setServer(server);
+// worker
 startFileCleanupWorker();

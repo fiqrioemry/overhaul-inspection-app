@@ -37,12 +37,24 @@ type userResponse = {
   email: string;
   name: string;
   username: string;
+};
+
+type profileResponse = {
+  id: string;
+  email: string;
+  name: string;
+  username: string;
   avatar: string | null;
   bio: string | null;
-  status: UserStatus;
   lastLogin: Date | null;
   createdAt: Date;
-  verifiedAt: Date | null;
+  isPublic: boolean;
+  isOwner?: boolean;
+  _count?: {
+    followers?: number;
+    following?: number;
+    posts?: number;
+  };
 };
 
 type createUserData = {
@@ -53,4 +65,11 @@ type createUserData = {
   avatar: string;
 };
 
-export { verificationType, loginResponse, createUserData, userCredential, createVerificationData, userVerificationData, userResponse, UserStatus, updateUserActiveData };
+type searchResponse = {
+  id: string;
+  name: string;
+  username: string;
+  avatar: string | null;
+};
+
+export { verificationType, searchResponse, loginResponse, createUserData, profileResponse, userCredential, createVerificationData, userVerificationData, userResponse, UserStatus, updateUserActiveData };
