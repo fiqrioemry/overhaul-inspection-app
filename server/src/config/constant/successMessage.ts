@@ -1,6 +1,6 @@
 const successMessages = {
   // auth
-  registerSuccess: "Registration successful",
+  registerSuccess: "Registration successful, please check your email to verify your account.",
   emailSent: "Verification email sent. Please check your inbox.",
   emailVerified: "Email verified successfully",
   loginSuccess: "Login successful",
@@ -15,6 +15,19 @@ const successMessages = {
   fileUploadSuccess: "File uploaded successfully",
   fileDeleteSuccess: "File deleted successfully",
   filesUploadSuccess: "Files uploaded successfully",
+  updateAvatar: "Avatar updated successfully",
+  updateProfile: "Profile updated successfully",
+  createPost: "Post created successfully",
+  deletePost: "Post deleted successfully",
+  createComment: "Comment created successfully",
+  deleteComment: "Comment deleted successfully",
+  followUser: "Followed user successfully",
+  unfollowUser: "Unfollowed user successfully",
+  searchUsers: "Search users successfully",
+  getPosts: "Get posts successfully",
+  likePost: "Post liked successfully",
+  unlikePost: "Post unliked successfully",
+  updatePost: "Post updated successfully",
 };
 
 export default successMessages;

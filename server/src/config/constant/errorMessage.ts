@@ -1,5 +1,3 @@
-import { email } from "zod";
-
 const errorMessages = {
   userCreationFailed: "Failed to create user",
   internalServerError: "Internal Server Error",
@@ -23,6 +21,11 @@ const errorMessages = {
   invalidFileType: "File type is not allowed",
   fileNotFound: "File not found",
   fileIdRequired: "File ID is required",
+  invalidRecord: "Invalid file record",
+  invalidFileRecord: "Invalid file record for post",
+  postNotFound: "Post not found",
+  alreadyLikedPost: "You have already liked this post",
+  alreadyUnlikedPost: "You have already unliked this post",
 };
 
 export default errorMessages;

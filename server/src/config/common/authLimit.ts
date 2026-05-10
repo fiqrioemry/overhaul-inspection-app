@@ -1,5 +1,3 @@
-import { password } from "bun";
-
 const authLimiter = {
   login: {
     limit: 5, // limit each IP to 5 login requests per windowSec

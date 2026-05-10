@@ -1,5 +1,3 @@
-import { email } from "zod";
-
 const errorCodes = {
   userCreationFailed: "USER_CREATION_FAILED",
   internalServerError: "INTERNAL_SERVER_ERROR",
@@ -22,6 +20,11 @@ const errorCodes = {
   fileNotFound: "FILE_NOT_FOUND",
   fileTooLarge: "FILE_TOO_LARGE",
   invalidFileType: "INVALID_FILE_TYPE",
+  invalidFileRecord: "INVALID_FILE_RECORD",
+  validationError: "VALIDATION_ERROR",
+  postNotFound: "POST_NOT_FOUND",
+  alreadyLikedPost: "ALREADY_LIKED_POST",
+  alreadyUnlikedPost: "ALREADY_UNLIKED_POST",
 };
 
 export default errorCodes;

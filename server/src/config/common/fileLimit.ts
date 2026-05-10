@@ -1,3 +1,5 @@
+import { multipleFile } from "@/middlewares/file";
+import { file } from "bun";
 import { maxSize } from "zod";
 
 const fileLimiter = {
@@ -13,7 +15,17 @@ const fileLimiter = {
 
   fileOptions: {
     maxSize: 5 * 1024 * 1024, // 5MB
-    allowedTypes: ["image/jpeg", "image/png", "application/pdf"],
+    allowedTypes: ["image/jpeg", "image/png", "image/webp", "application/pdf"],
+  },
+
+  avatarOptions: {
+    maxSize: 1 * 1024 * 1024, // 1MB
+    allowedTypes: ["image/jpeg", "image/png"],
+  },
+
+  postFileOptions: {
+    maxSize: 2 * 1024 * 1024, // 2MB per file
+    allowedTypes: ["image/jpeg", "image/png"],
   },
 };
 
