@@ -71,6 +71,7 @@ export class PostService {
         id: post.id,
         title: request.title,
         content: request.content,
+        createdAt: post.createdAt,
       };
 
       await UserRepository.createActivityLog(tx, {
