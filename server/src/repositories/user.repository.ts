@@ -1,6 +1,7 @@
 import { Prisma } from "generated/prisma/edge";
 import { prisma } from "@/config/database/prisma";
-import { createUserData, verificationType, createVerificationData, updateUserActiveData, userCredential, userResponse, userVerificationData } from "@/models/user.model";
+import { CreateUserActivityLogRequest, UpdateProfileRequest } from "@/schema/user.validation";
+import { createUserData, searchResponse, verificationType, createVerificationData, updateUserActiveData, userCredential, userResponse, userVerificationData, profileResponse } from "@/models/user.model";
 
 export class UserRepository {
   static async findByEmail(email: string): Promise<userCredential | null> {
@@ -54,11 +55,30 @@ export class UserRepository {
         name: true,
         username: true,
         avatar: true,
+      },
+    });
+  }
+
+  static async getProfileByUsername(username: string): Promise<profileResponse | null> {
+    return await prisma.user.findUnique({
+      where: { username },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        isPublic: true,
+        username: true,
+        avatar: true,
         bio: true,
-        status: true,
         lastLogin: true,
         createdAt: true,
-        verifiedAt: true,
+        _count: {
+          select: {
+            followers: true,
+            following: true,
+            posts: true,
+          },
+        },
       },
     });
   }
@@ -89,7 +109,7 @@ export class UserRepository {
     });
   }
 
-  static async UpdateUserVerification(tx: Prisma.TransactionClient | null, verificationId: string, usedAt: Date): Promise<void> {
+  static async updateUserVerification(tx: Prisma.TransactionClient | null, verificationId: string, usedAt: Date): Promise<void> {
     const db = tx ?? prisma;
 
     await db.userVerification.update({
@@ -138,6 +158,61 @@ export class UserRepository {
     await prisma.user.update({
       where: { id: userId },
       data: { passwordHash: newPasswordHash },
+    });
+  }
+
+  static async updateAvatar(userId: string, avatarUrl: string): Promise<void> {
+    await prisma.user.update({
+      where: { id: userId },
+      data: { avatar: avatarUrl },
+    });
+  }
+
+  static async updateProfile(userId: string, request: UpdateProfileRequest): Promise<void> {
+    await prisma.user.update({
+      where: { id: userId },
+      data: { name: request.name, bio: request.bio },
+    });
+  }
+  static async searchUsersByUsername(username: string): Promise<searchResponse[]> {
+    return await prisma.user.findMany({
+      where: {
+        username: {
+          contains: username,
+          mode: "insensitive",
+        },
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        username: true,
+        avatar: true,
+      },
+      take: 10,
+      orderBy: {
+        username: "asc",
+      },
+    });
+  }
+
+  static async getUserByUsername(username: string): Promise<{ id: string } | null> {
+    return await prisma.user.findUnique({
+      where: { username },
+      select: {
+        id: true,
+      },
+    });
+  }
+
+  static async createActivityLog(tx: Prisma.TransactionClient | null, request: CreateUserActivityLogRequest): Promise<void> {
+    const db = tx ?? prisma;
+    await db.userActivityLog.create({
+      data: {
+        userId: request.userId,
+        action: request.action,
+        metadata: request.metadata,
+      },
     });
   }
 }

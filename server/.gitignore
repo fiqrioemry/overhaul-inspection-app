@@ -18,3 +18,9 @@ node_modules/
 /prisma/@/generated/prisma
 
 /prisma/@/generated/prisma
+
+
+.env
+.env.development
+.env.production
+/prisma/@/generated/prisma

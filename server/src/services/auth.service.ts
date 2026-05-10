@@ -88,7 +88,7 @@ export class AuthService {
     }
 
     prisma.$transaction(async (tx) => {
-      await UserRepository.UpdateUserVerification(tx, isValid.id, new Date());
+      await UserRepository.updateUserVerification(tx, isValid.id, new Date());
       await UserRepository.updateUserActive(tx, { userId: isValid.userId, status: "ACTIVE" });
     });
   }
@@ -283,7 +283,7 @@ export class AuthService {
     const hashedPassword = await hashPassword(request.password);
 
     await prisma.$transaction(async (tx) => {
-      await UserRepository.UpdateUserVerification(tx, verification.id, new Date());
+      await UserRepository.updateUserVerification(tx, verification.id, new Date());
       await UserRepository.updatePassword(verification.userId, hashedPassword);
       await SessionRepository.deleteSessionsByUserId(verification.userId);
     });
