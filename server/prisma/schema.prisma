@@ -35,6 +35,7 @@ model User {
   bio          String?
   status StatusEnum @default(ACTIVE)
   role         RoleEnum @default(USER)
+  isPublic     Boolean  @default(true) @map("is_public")
   verifiedAt  DateTime? @map("verified_at")
   lastLogin    DateTime? @map("last_login")
   createdAt    DateTime  @default(now()) @map("created_at")
@@ -44,6 +45,7 @@ model User {
   sessions     Session[]
   posts        Post[]
   comments     Comment[]
+  likes        Like[]
 
   verifications UserVerification[]
   followers    Following[] @relation("UserFollowers")
@@ -53,6 +55,8 @@ model User {
 
   @@map("users")
 }
+
+ 
 
 model Following {
   id          String   @id @default(cuid())
@@ -120,6 +124,7 @@ model UserActivityLog {
 model Post {
   id        String   @id @default(cuid())
   userId    String   @map("user_id")
+  title    String 
   content   String
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -128,6 +133,7 @@ model Post {
   user       User          @relation(fields: [userId], references: [id])
   comments   Comment[]
   galleries  PostGallery[]
+  likes      Like[]
 
   @@index([userId])
   @@map("posts")
@@ -135,7 +141,7 @@ model Post {
 
 
 
-model fileStorage {
+model FileStorage {
   id        String   @id @default(cuid())
   targetId  String?  @map("target_id")
   url       String
@@ -146,21 +152,37 @@ model fileStorage {
   isUsed   Boolean  @default(false) @map("is_used")
   createdAt DateTime @default(now()) @map("created_at")
   createdBy String?  @map("created_by")
-  updatedBy String?  @map("updated_by")
 
-  @@map("file_storage")
+  @@map("file_storages")
 }
 
 model PostGallery {
   id        String   @id @default(cuid())
   postId    String   @map("post_id")
   url       String
+  order    Int
   createdAt DateTime @default(now()) @map("created_at")
 
   post      Post @relation(fields: [postId], references: [id])
 
   @@index([postId])
   @@map("post_galleries")
+}
+
+model Like {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  postId    String   @map("post_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user      User @relation(fields: [userId], references: [id])
+  post      Post @relation(fields: [postId], references: [id])
+
+  @@unique([userId, postId])
+  @@index([userId])
+  @@index([postId])
+
+  @@map("likes")
 }
 
 model Comment {
