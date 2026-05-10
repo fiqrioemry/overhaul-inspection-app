@@ -1,10 +1,10 @@
-import { unlink } from "node:fs/promises";
 import { redisClient } from "@/config/database/redis";
 import { FileRepository } from "@/repositories/file.repository";
+import { minioClient, BUCKET } from "@/config/storage/minio";
 
 const LOCK_KEY = "worker:file-cleanup:lock";
-const LOCK_TTL_SECONDS = 10 * 60; // 10 minutes — same as interval, prevents overlap
-const INTERVAL_MS = 10 * 60 * 1000; // run every 10 minutes
+const LOCK_TTL_SECONDS = 1 * 60; // 1 minute — same as interval, prevents overlap
+const INTERVAL_MS = 1 * 60 * 1000; // run every 1 minute
 
 async function acquireLock(): Promise<boolean> {
   const result = await redisClient.send("SET", [LOCK_KEY, "1", "NX", "EX", String(LOCK_TTL_SECONDS)]);
@@ -32,34 +32,13 @@ async function runCleanup(): Promise<void> {
 
     console.log(`[file-cleanup] Found ${expiredFiles.length} expired file(s). Deleting...`);
 
-    const deletedPaths: string[] = [];
-    const failedIds: string[] = [];
-
-    await Promise.allSettled(
-      expiredFiles.map(async ({ id, path }) => {
-        try {
-          await unlink(`.${path}`);
-          deletedPaths.push(path);
-        } catch (err: any) {
-          // File already missing from disk — still remove DB record
-          if (err.code !== "ENOENT") {
-            console.error(`[file-cleanup] Failed to delete file ${path}:`, err.message);
-            failedIds.push(id);
-            return;
-          }
-        }
-      }),
-    );
-
-    const idsToDelete = expiredFiles.map((f) => f.id).filter((id) => !failedIds.includes(id));
-
-    if (idsToDelete.length > 0) {
-      const count = await FileRepository.deleteFileRecordsByIds(idsToDelete);
-      console.log(`[file-cleanup] Deleted ${count} record(s) from DB.`);
+    for (const file of expiredFiles) {
+      await minioClient.removeObject(BUCKET, file.path);
     }
 
-    if (failedIds.length > 0) {
-      console.warn(`[file-cleanup] ${failedIds.length} file(s) skipped due to errors.`);
+    if (expiredFiles.length > 0) {
+      const count = await FileRepository.deleteFileRecordsByIds(expiredFiles.map((f) => f.id));
+      console.log(`[file-cleanup] Deleted ${count} record(s) from DB.`);
     }
   } finally {
     await releaseLock();
@@ -67,9 +46,8 @@ async function runCleanup(): Promise<void> {
 }
 
 export function startFileCleanupWorker(): void {
-  console.log("[file-cleanup] Worker started. Interval: every 1 hour.");
+  console.log(`[file-cleanup] Worker started. Interval: every ${INTERVAL_MS / 1000 / 60} minute(s).`);
 
-  // Run once immediately on startup
   runCleanup().catch((err) => console.error("[file-cleanup] Error on startup run:", err));
 
   setInterval(() => {
