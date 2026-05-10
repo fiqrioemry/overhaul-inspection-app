@@ -1,9 +1,11 @@
 import { Context } from "hono";
-import dbConfig from "@/config/constant/database";
+import storageConfig from "@/config/constant/storage";
 import { processImage } from "@/utils/file-processing";
-import { minioClient, BUCKET } from "@/config/storage/minio";
 import { generateRandomFilename } from "@/utils/generator";
+import { minioClient, BUCKET } from "@/config/storage/minio";
 import { FileRepository } from "@/repositories/file.repository";
+import { Prisma } from "@prisma/client/scripts/default-index.js";
+import { prisma } from "@/config/database/prisma";
 
 export class FileService {
   static async uploadSingleFile(c: Context, userId: string, file: File, module: string, targetId?: string, isUsed?: boolean) {
@@ -16,17 +18,18 @@ export class FileService {
       "Content-Type": "image/webp",
     });
 
-    const url = `${process.env.MINIO_ENDPOINT}/${BUCKET}/${storageKey}`;
+    storageConfig;
+
+    const url = `${storageConfig.endpoint}/${BUCKET}/${storageKey}`;
 
     const fileRecord = {
       targetId,
       isUsed,
       url,
       size: imageProcessed.length,
-      path: storageKey, // simpan storageKey sebagai path
+      path: storageKey,
       metadata: { originalName: file.name, mimeType: "image/webp" },
       module,
-      expiredAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
       createdBy: userId,
     };
 
@@ -43,9 +46,9 @@ export class FileService {
     await FileRepository.deleteFileRecord(fileId);
   }
 
-  static async uploadMultipleFiles(c: Context, userId: string, files: File[], module: string) {
+  static async uploadMultipleFiles(c: Context, userId: string, files: File[], module: string, tx?: Prisma.TransactionClient) {
     return await Promise.all(
-      files.map(async (f) => {
+      files.map(async (f, index) => {
         const imageProcessed = await processImage(f, 500, 500, "webp");
         const randomFileName = generateRandomFilename(f.name, "webp");
         const storageKey = `${module}/${randomFileName}`;
@@ -56,7 +59,7 @@ export class FileService {
 
         const url = `${process.env.MINIO_ENDPOINT}/${BUCKET}/${storageKey}`;
 
-        return await FileRepository.createFileRecord({
+        const fileRecords = await FileRepository.createFileRecordWithTx(tx, {
           url,
           size: f.size,
           path: storageKey,
@@ -64,11 +67,17 @@ export class FileService {
           module,
           createdBy: userId,
         });
+
+        return { ...fileRecords, sequence: index };
       }),
     );
   }
 
   static async getFileRecordByTargetId(targetId: string, module: string) {
     return await FileRepository.getFileRecordByTargetId(targetId, module);
+  }
+
+  static getFileRecordByTargetIdDirectly(targetId: string, module: string) {
+    return FileRepository.getFileRecordByTargetId(targetId, module);
   }
 }

@@ -1,12 +1,13 @@
 // config/storage/minio.ts
 import { Client } from "minio";
+import storageConfig from "@/config/constant/storage";
 
 export const minioClient = new Client({
-  endPoint: process.env.MINIO_HOST!,
-  port: Number(process.env.MINIO_PORT),
-  useSSL: process.env.MINIO_SSL === "true",
-  accessKey: process.env.MINIO_ACCESS_KEY!,
-  secretKey: process.env.MINIO_SECRET_KEY!,
+  endPoint: storageConfig.host,
+  port: storageConfig.port,
+  useSSL: storageConfig.useSSL,
+  accessKey: storageConfig.accessKey,
+  secretKey: storageConfig.secretKey,
 });
 
-export const BUCKET = process.env.MINIO_BUCKET!;
+export const BUCKET = storageConfig.bucket;

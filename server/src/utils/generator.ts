@@ -28,9 +28,8 @@ export function generateRandomUsername(name: string): string {
   return `${baseUsername}${random}`;
 }
 
-export function generateRandomFilename(originalName: string): string {
+export function generateRandomFilename(originalName: string, extension?: string): string {
   const timestamp = Date.now();
-  const originalBaseName = originalName.split(".").slice(0, -1).join(".");
-  const extension = originalName.split(".").pop();
-  return `${originalBaseName}_${timestamp}.${extension}`;
+  const ext = extension ?? originalName.split(".").pop();
+  return `${timestamp}.${ext}`;
 }

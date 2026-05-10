@@ -50,36 +50,37 @@ export function singleFile(options: FileValidationOptions, name: string) {
   };
 }
 
-export function multipleFile(options: FileValidationOptions) {
+export function multipleFile(options: FileValidationOptions, name: string = "files") {
   const { maxSize = 5 * 1024 * 1024, allowedTypes, field } = options;
 
   return async (c: Context, next: () => Promise<void>) => {
     const body = await c.req.parseBody({ all: true });
 
-    const entries = field ? { [field]: body[field] } : body;
+    const raw = field ? body[field] : Object.values(body).flat();
+    const files = (Array.isArray(raw) ? raw : [raw]).filter((v) => v instanceof File) as File[];
 
-    for (const [, value] of Object.entries(entries)) {
-      const files = Array.isArray(value) ? value : [value];
+    if (files.length === 0) {
+      await next();
+      return;
+    }
 
-      for (const file of files) {
-        if (!(file instanceof File)) continue;
+    for (const file of files) {
+      if (file.size > maxSize) {
+        throw new HTTPException(413, {
+          message: errorMessages.errorFileTooLarge,
+          cause: errorCodes.fileTooLarge,
+        });
+      }
 
-        if (file.size > maxSize) {
-          throw new HTTPException(413, {
-            message: errorMessages.errorFileTooLarge,
-            cause: errorCodes.fileTooLarge,
-          });
-        }
-
-        if (!allowedTypes.includes(file.type)) {
-          throw new HTTPException(415, {
-            message: errorMessages.invalidFileType,
-            cause: errorCodes.invalidFileType,
-          });
-        }
+      if (!allowedTypes.includes(file.type)) {
+        throw new HTTPException(415, {
+          message: errorMessages.invalidFileType,
+          cause: errorCodes.invalidFileType,
+        });
       }
     }
-    c.set("files", entries);
+
+    c.set(name, files);
     await next();
   };
 }

@@ -1,10 +1,38 @@
 import { Prisma } from "generated/prisma/edge";
 import { prisma } from "@/config/database/prisma";
+import expConfig from "@/config/common/expiration";
 import { createFileData, fileResponse } from "@/models/file.model";
 
 export class FileRepository {
   static async createFileRecord(data: createFileData): Promise<fileResponse> {
     const result = await prisma.fileStorage.create({
+      data: {
+        url: data.url,
+        targetId: data.targetId,
+        isUsed: data.isUsed ?? false,
+        path: data.path,
+        meta: data.metadata,
+        module: data.module,
+        size: data.size,
+        createdBy: data.createdBy,
+      },
+      select: {
+        id: true,
+        url: true,
+        path: true,
+        createdAt: true,
+        module: true,
+        isUsed: true,
+      },
+    });
+
+    return result;
+  }
+
+  static async createFileRecordWithTx(tx: Prisma.TransactionClient, data: createFileData): Promise<fileResponse> {
+    const db = tx ?? prisma;
+
+    const result = await db.fileStorage.create({
       data: {
         url: data.url,
         targetId: data.targetId,
@@ -54,7 +82,7 @@ export class FileRepository {
     return prisma.fileStorage.findMany({
       where: {
         isUsed: false,
-        createdAt: { lt: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+        createdAt: { lt: expConfig.avatar ? new Date(Date.now() - expConfig.avatar * 1000) : new Date(Date.now() - 24 * 60 * 60 * 1000) },
       },
       select: { id: true, path: true },
     });
@@ -87,6 +115,13 @@ export class FileRepository {
     await prisma.fileStorage.updateMany({
       where: { id: { in: ids } },
       data: { isUsed: true },
+    });
+  }
+
+  static async markFilesAsUnused(ids: string[]): Promise<void> {
+    await prisma.fileStorage.updateMany({
+      where: { id: { in: ids } },
+      data: { isUsed: false },
     });
   }
 
