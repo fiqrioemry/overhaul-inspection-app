@@ -7,13 +7,13 @@ import successMessages from "@/config/constant/successMessage";
 
 export class FileController {
   static async singleUpload(c: Context) {
-    const userId = c.get("user")?.userId;
+    const user = c.get("user");
     const file = await c.get("file");
 
     if (!file) {
       return responseError(c, errorMessages.fileNotFound, 404, errorCodes.fileNotFound);
     }
-    const response = await FileService.uploadSingleFile(c, userId, file, c.req.param("module"));
+    const response = await FileService.uploadSingleFile(c, user.userId, file, c.req.param("module"));
     return responseOK(c, successMessages.fileUploadSuccess, response);
   }
 
