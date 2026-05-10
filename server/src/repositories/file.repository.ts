@@ -1,3 +1,4 @@
+import { Prisma } from "generated/prisma/edge";
 import { prisma } from "@/config/database/prisma";
 import { createFileData, fileResponse } from "@/models/file.model";
 
@@ -7,7 +8,7 @@ export class FileRepository {
       data: {
         url: data.url,
         targetId: data.targetId,
-        isUsed: false,
+        isUsed: data.isUsed ?? false,
         path: data.path,
         meta: data.metadata,
         module: data.module,
@@ -19,6 +20,8 @@ export class FileRepository {
         url: true,
         path: true,
         createdAt: true,
+        module: true,
+        isUsed: true,
       },
     });
 
@@ -33,6 +36,8 @@ export class FileRepository {
         url: true,
         createdAt: true,
         path: true,
+        isUsed: true,
+        module: true,
       },
     });
 
@@ -60,5 +65,69 @@ export class FileRepository {
       where: { id: { in: ids } },
     });
     return result.count;
+  }
+
+  static async getFileRecordsByIds(ids: string[]): Promise<fileResponse[]> {
+    const results = await prisma.fileStorage.findMany({
+      where: { id: { in: ids }, isUsed: false },
+      select: {
+        id: true,
+        url: true,
+        createdAt: true,
+        path: true,
+        isUsed: true,
+        module: true,
+      },
+    });
+
+    return results;
+  }
+
+  static async markFilesAsUsed(ids: string[]): Promise<void> {
+    await prisma.fileStorage.updateMany({
+      where: { id: { in: ids } },
+      data: { isUsed: true },
+    });
+  }
+
+  static async updateFileTargetIds(
+    tx: Prisma.TransactionClient,
+    updates: {
+      fileId: string;
+      targetId: string;
+    }[],
+  ): Promise<void> {
+    const db = tx ?? prisma;
+
+    // update satu per satu karena setiap file memiliki targetId berbeda
+    await Promise.all(
+      updates.map((item) =>
+        db.fileStorage.update({
+          where: {
+            id: item.fileId,
+          },
+          data: {
+            targetId: item.targetId,
+            isUsed: true,
+          },
+        }),
+      ),
+    );
+  }
+
+  static async getFileRecordByTargetId(targetId: string, module: string): Promise<fileResponse | null> {
+    const result = await prisma.fileStorage.findFirst({
+      where: { targetId, module },
+      select: {
+        id: true,
+        url: true,
+        createdAt: true,
+        path: true,
+        isUsed: true,
+        module: true,
+      },
+    });
+
+    return result;
   }
 }
