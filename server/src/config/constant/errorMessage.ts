@@ -26,6 +26,8 @@ const errorMessages = {
   postNotFound: "Post not found",
   alreadyLikedPost: "You have already liked this post",
   alreadyUnlikedPost: "You have already unliked this post",
+  commentNotFound: "Comment not found",
+  likeNotFound: "Like not found",
 };
 
 export default errorMessages;

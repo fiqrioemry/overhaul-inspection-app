@@ -25,6 +25,8 @@ const errorCodes = {
   postNotFound: "POST_NOT_FOUND",
   alreadyLikedPost: "ALREADY_LIKED_POST",
   alreadyUnlikedPost: "ALREADY_UNLIKED_POST",
+  commentNotFound: "COMMENT_NOT_FOUND",
+  likeNotFound: "LIKE_NOT_FOUND",
 };
 
 export default errorCodes;

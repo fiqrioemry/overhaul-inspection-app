@@ -2,9 +2,9 @@ const successMessages = {
   // auth
   registerSuccess: "Registration successful, please check your email to verify your account.",
   emailSent: "Verification email sent. Please check your inbox.",
-  emailVerified: "Email verified successfully",
-  loginSuccess: "Login successful",
-  logoutSuccess: "Logout successful",
+  emailVerified: "Email Verified Successfully",
+  loginSuccess: "Login Successfully",
+  logoutSuccess: "Logout Successfully",
   resetPassword: "Reset password successful",
   forgotPassword: "Forgot password successful",
   logoutAll: "Logout all sessions successful",
@@ -28,6 +28,13 @@ const successMessages = {
   likePost: "Post liked successfully",
   unlikePost: "Post unliked successfully",
   updatePost: "Post updated successfully",
+  getComments: "Comments retrieved successfully",
+  getFollowers: "Followers retrieved successfully",
+  getFollowings: "Followings retrieved successfully",
+  editComment: "Comment Edited Successfully",
+  likeComment: "Comment liked successfully",
+  unlikeComment: "Comment unliked successfully",
+  getPostById: "Get post successfully",
 };
 
 export default successMessages;
