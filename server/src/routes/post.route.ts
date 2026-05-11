@@ -8,14 +8,14 @@ import { PostController as ctrl } from "@/controllers/post.controller";
 
 const post = new Hono();
 
-post.post("", protect, limitter(postLimit.createPost), multipleFile(fileLimiter.postFileOptions, "posts"), ctrl.createPost);
 post.get("/following", protect, limitter(postLimit.getFollowingPosts), ctrl.getFollowingPosts);
-post.get("/public", ctrl.getPublicPosts);
-post.get("/:targetId/user", protect, ctrl.getPostsByUserId);
-post.get("/:postId", ctrl.getPostById);
+post.get("/public", protect, limitter(postLimit.getPublicPosts), ctrl.getPublicPosts);
+post.get("/:targetId/user", protect, limitter(postLimit.getPostByUserId), ctrl.getPostsByUserId);
+post.get("/:postId", protect, limitter(postLimit.getPostById), ctrl.getPostById);
+post.post("", protect, limitter(postLimit.createPost), multipleFile(fileLimiter.postFileOptions, "posts"), ctrl.createPost);
 post.put("/:postId", protect, limitter(postLimit.updatePost), ctrl.updatePost);
-post.delete("/:postId", protect, ctrl.deletePost);
-post.patch("/:postId/like", protect, ctrl.likePost);
-post.patch("/:postId/unlike", protect, ctrl.unlikePost);
+post.post("/:postId/like", protect, limitter(postLimit.likePost), ctrl.likePost);
+post.post("/:postId/unlike", protect, limitter(postLimit.unlikePost), ctrl.unlikePost);
+post.delete("/:postId", protect, limitter(postLimit.deletePost), ctrl.deletePost);
 
 export default post;
