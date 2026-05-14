@@ -4,9 +4,9 @@ import "@/config/database/redis";
 import { prettyJSON } from "hono/pretty-json";
 import { eventBus } from "./config/socket/socket";
 import dbConfig from "./config/constant/database";
-import { corsMiddleware } from "@/middlewares/cors";
-import { errorHandler, notFoundHandler } from "./middlewares/error";
+import corsMiddleware from "./middlewares/cors.middleware";
 import { startFileCleanupWorker } from "@/workers/file-cleanup.worker";
+import { errorHandler, notFoundHandler } from "./middlewares/error.middleware";
 
 const app = new Hono();
 app.use(prettyJSON());

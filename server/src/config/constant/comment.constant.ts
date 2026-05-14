@@ -20,6 +20,7 @@ const commentErrorCode = {
   INVALID_CONTENT: "INVALID_CONTENT",
   ALREADY_LIKED_COMMENT: "ALREADY_LIKED_COMMENT",
   LIKE_NOT_FOUND: "LIKE_NOT_FOUND",
+  CANNOT_REPLY_TO_REPLY: "CANNOT_REPLY_TO_REPLY",
 };
 
 const commentErrorMessage = {
@@ -28,6 +29,7 @@ const commentErrorMessage = {
   INVALID_CONTENT: "Comment content is invalid.",
   ALREADY_LIKED_COMMENT: "Comment already liked by the user.",
   LIKE_NOT_FOUND: "Like not found for the user on this comment.",
+  CANNOT_REPLY_TO_REPLY: "Cannot reply to a reply.",
 };
 
 export { commentAction, commentSuccessMessage, commentErrorCode, commentErrorMessage };
