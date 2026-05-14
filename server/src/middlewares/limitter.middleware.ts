@@ -1,9 +1,9 @@
 import { Context } from "hono";
 import { cache } from "@/utils/cache";
+import redisConfig from "@/config/constant/redis";
 import { getCookie, setCookie } from "hono/cookie";
 import { HTTPException } from "hono/http-exception";
-import redisConfig from "@/config/constant/redis";
-import errorMessages from "@/config/constant/errorMessage";
+import { authErrorMessage, authErrorCode } from "@/config/constant/auth.constant";
 
 export function limitter({ limit, windowSec }: { limit: number; windowSec: number }) {
   return async (c: Context, next: () => Promise<void>) => {
@@ -25,7 +25,7 @@ export function limitter({ limit, windowSec }: { limit: number; windowSec: numbe
     }
 
     if (current > limit) {
-      throw new HTTPException(429, { message: errorMessages.tooManyRequests });
+      throw new HTTPException(429, { message: authErrorMessage.TOO_MANY_REQUESTS, cause: authErrorCode.TOO_MANY_REQUESTS });
     }
     await next();
   };

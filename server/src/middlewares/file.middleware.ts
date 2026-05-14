@@ -1,7 +1,6 @@
 import { Context } from "hono";
-import errorCodes from "@/config/constant/errorCode";
 import { HTTPException } from "hono/http-exception";
-import errorMessages from "@/config/constant/errorMessage";
+import { fileErrorCode, fileErrorMessage } from "@/config/constant/file.constant";
 
 type FileValidationOptions = {
   maxSize?: number;
@@ -26,22 +25,22 @@ export function singleFile(options: FileValidationOptions, name: string) {
 
     if (!file || !(file instanceof File)) {
       throw new HTTPException(404, {
-        message: errorMessages.fileNotFound,
-        cause: errorCodes.fileNotFound,
+        message: fileErrorMessage.FILE_NOT_FOUND,
+        cause: fileErrorCode.FILE_NOT_FOUND,
       });
     }
 
     if (file.size > maxSize) {
       throw new HTTPException(413, {
-        message: errorMessages.errorFileTooLarge,
-        cause: errorCodes.fileTooLarge,
+        message: fileErrorMessage.FILE_TOO_LARGE,
+        cause: fileErrorCode.FILE_TOO_LARGE,
       });
     }
 
     if (!allowedTypes.includes(file.type)) {
       throw new HTTPException(415, {
-        message: errorMessages.invalidFileType,
-        cause: errorCodes.invalidFileType,
+        message: fileErrorMessage.FILE_TYPE_NOT_ALLOWED,
+        cause: fileErrorCode.FILE_TYPE_NOT_ALLOWED,
       });
     }
 
@@ -67,15 +66,15 @@ export function multipleFile(options: FileValidationOptions, name: string = "fil
     for (const file of files) {
       if (file.size > maxSize) {
         throw new HTTPException(413, {
-          message: errorMessages.errorFileTooLarge,
-          cause: errorCodes.fileTooLarge,
+          message: fileErrorMessage.FILE_TOO_LARGE,
+          cause: fileErrorCode.FILE_TOO_LARGE,
         });
       }
 
       if (!allowedTypes.includes(file.type)) {
         throw new HTTPException(415, {
-          message: errorMessages.invalidFileType,
-          cause: errorCodes.invalidFileType,
+          message: fileErrorMessage.FILE_TYPE_NOT_ALLOWED,
+          cause: fileErrorCode.FILE_TYPE_NOT_ALLOWED,
         });
       }
     }

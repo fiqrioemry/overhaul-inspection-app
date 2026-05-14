@@ -2,8 +2,7 @@ import { Context } from "hono";
 import { ZodError } from "zod";
 import { responseError } from "@/utils/response";
 import { HTTPException } from "hono/http-exception";
-import errorMessages from "@/config/constant/errorMessage";
-import errorCodes from "@/config/constant/errorCode";
+import { authErrorCode, authErrorMessage } from "@/config/constant/auth.constant";
 
 export async function errorHandler(err: Error, c: Context) {
   const cause = err.cause as any;
@@ -21,15 +20,15 @@ export async function errorHandler(err: Error, c: Context) {
       errors[path] = issue.message;
     }
     console.error("Validation error:", errors);
-    return responseError(c, errorMessages.badRequest, 400, cause?.code || errorCodes.badRequest, errors);
+    return responseError(c, authErrorMessage.BAD_REQUEST, 400, cause?.code || authErrorCode.BAD_REQUEST, errors);
   }
 
   //   other errors
   console.error("Unexpected error:", err);
-  return responseError(c, errorMessages.internalServerError, 500, cause?.code || errorCodes.internalServerError);
+  return responseError(c, authErrorMessage.INTERNAL_SERVER_ERROR, 500, cause?.code || authErrorCode.INTERNAL_SERVER_ERROR);
 }
 
 export async function notFoundHandler(c: Context) {
   console.warn(`Not found: ${c.req.method} ${c.req.url}`);
-  return responseError(c, `${c.req.method} - ${c.req.url}`, 404, errorCodes.notFound);
+  return responseError(c, `${c.req.method} - ${c.req.url}`, 404, authErrorCode.ROUTE_NOT_FOUND);
 }
