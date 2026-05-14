@@ -44,14 +44,19 @@ model User {
 
   sessions     Session[]
   posts        Post[]
+  notifications Notification[]
+  notificationSettings NotificationSetting[]
   comments     Comment[]
   likes        Like[]
+  chatParticipants ChatParticipant[]
+  createdChats Chat[] @relation("ChatCreator")
 
   verifications UserVerification[]
   followers    Following[] @relation("UserFollowers")
   following    Following[] @relation("UserFollowing")
 
   activities   UserActivityLog[]
+  sentMessages Message[]
 
   @@map("users")
 }
@@ -172,15 +177,19 @@ model PostGallery {
 model Like {
   id        String   @id @default(cuid())
   userId    String   @map("user_id")
-  postId    String   @map("post_id")
+  postId    String?  @map("post_id")
+  commentId String?  @map("comment_id")
   createdAt DateTime @default(now()) @map("created_at")
 
   user      User @relation(fields: [userId], references: [id])
-  post      Post @relation(fields: [postId], references: [id])
+  post      Post? @relation(fields: [postId], references: [id])
+  comment   Comment? @relation(fields: [commentId], references: [id])
 
   @@unique([userId, postId])
+  @@unique([userId, commentId])
   @@index([userId])
   @@index([postId])
+  @@index([commentId])
 
   @@map("likes")
 }
@@ -196,6 +205,7 @@ model Comment {
 
   post      Post     @relation(fields: [postId], references: [id])
   user      User     @relation(fields: [userId], references: [id])
+  likes      Like[]
 
   parent    Comment? @relation("CommentChildren", fields: [parentId], references: [id])
   children  Comment[] @relation("CommentChildren")
@@ -205,4 +215,131 @@ model Comment {
   @@index([parentId])
 
   @@map("comments")
+}
+
+enum ChatType {
+  PRIVATE
+  GROUP
+}
+model Chat {
+  id            String   @id @default(cuid())
+  type          ChatType @default(PRIVATE)
+  name          String?
+  avatar        String?
+  description   String?
+  createdById   String?  @map("created_by_id")
+
+  lastMessageId String?  @unique @map("last_message_id")
+
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  deletedAt     DateTime? @map("deleted_at")
+
+  createdBy     User? @relation("ChatCreator", fields: [createdById], references: [id])
+
+  participants  ChatParticipant[]
+  messages      Message[]
+
+  lastMessage   Message? @relation("LastMessage", fields: [lastMessageId], references: [id], onDelete: SetNull)
+
+  @@index([type])
+  @@index([updatedAt])
+  @@map("chats")
+}
+
+
+enum ParticipantRole {
+  MEMBER
+  ADMIN
+}
+model ChatParticipant {
+  id        String   @id @default(cuid())
+  chatId    String   @map("chat_id")
+  userId    String   @map("user_id")
+  role      ParticipantRole @default(MEMBER)
+  joinedAt  DateTime @default(now()) @map("joined_at")
+
+  chat      Chat @relation(fields: [chatId], references: [id])
+  user      User @relation(fields: [userId], references: [id])
+
+  @@unique([chatId, userId])
+  @@index([chatId])
+  @@index([userId])
+
+  @@map("chat_participants")
+}
+
+
+enum MessageType {
+  text
+  image
+  file
+}
+enum NotificationType {
+  LIKE
+  COMMENT
+  FOLLOW
+  MENTION
+  MESSAGE
+}
+
+enum NotificationChannel {
+  IN_APP
+}
+
+enum NotificationStatus {
+  ENABLED
+  DISABLED
+}
+model NotificationSetting {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  type      NotificationType
+  channel   NotificationChannel @default(IN_APP)
+  status    NotificationStatus @default(ENABLED)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type, channel])
+  @@index([userId])
+  @@map("notification_settings")
+}
+
+model Notification {
+  id String @id @default(cuid())
+  userId String @map("user_id")
+  title String
+  description String?
+  type NotificationType
+  metadata  Json?  // cover title, description, targetId (postId, commentId, userId, messageId), etc.
+  readAt    DateTime? @map("read_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  User User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([userId, type])
+  @@map("notifications")
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  chatId    String   @map("chat_id")
+  senderId  String   @map("sender_id")
+  type      MessageType @default(text)
+  text      String
+  mediaUrl String?  @map("media_url")
+  readBy    String[] @map("read_by")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  chat      Chat @relation(fields: [chatId], references: [id])
+  sender    User @relation(fields: [senderId], references: [id])
+  lastMessageInChat Chat? @relation("LastMessage")
+
+  @@index([chatId])
+  @@index([senderId])
+  @@map("messages")
 }
