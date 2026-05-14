@@ -1,0 +1,22 @@
+import { Hono } from "hono";
+import { protect } from "@/middlewares/auth.middleware";
+import { authLimit } from "@/config/constant/auth.constant";
+import { limitter } from "@/middlewares/limitter.middleware";
+import { AuthController as ctrl } from "@/controllers/auth.controller";
+
+const auth = new Hono();
+auth.post("/login", limitter(authLimit.LOGIN), ctrl.login);
+auth.post("/register", limitter(authLimit.REGISTER), ctrl.register);
+auth.post("/logout", protect, ctrl.logout);
+auth.post("/sessions/revoke", protect, ctrl.logoutAll);
+auth.delete("/sessions/:sessionId", protect, ctrl.deleteSession);
+auth.get("/sessions", protect, limitter(authLimit.SESSIONS), ctrl.getSessions);
+auth.patch("/change-password", protect, limitter(authLimit.PASSWORD_CHANGE), ctrl.changePassword);
+auth.post("/reset-password", limitter(authLimit.PASSWORD_RESET), ctrl.resetPassword);
+auth.post("/forgot-password", limitter(authLimit.PASSWORD_FORGOT), ctrl.forgotPassword);
+auth.post("/resend-verification-email", limitter(authLimit.RESEND_VERIFICATION_EMAIL), ctrl.resendVerificationEmail);
+auth.post("/verify-email", limitter(authLimit.VERIFY_EMAIL), ctrl.verifyEmail);
+auth.get("/me", protect, limitter(authLimit.GET_ME), ctrl.getMe);
+// total endpoints: 12
+
+export default auth;
