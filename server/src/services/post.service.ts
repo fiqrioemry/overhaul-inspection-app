@@ -1,14 +1,14 @@
 import { Context } from "hono";
 import { FileService } from "./file.service";
 import { pgsql as db } from "@/config/database/pgsql";
-import userAction from "@/config/constant/action";
 import { HTTPException } from "hono/http-exception";
-import errorCodes from "@/config/constant/errorCode";
-import errorMessages from "@/config/constant/errorMessage";
 import { UserRepository } from "@/repositories/user.repository";
 import { PostRepository } from "@/repositories/post.repository";
 import { GalleryRepository } from "@/repositories/gallery.repository";
 import { CreatePostRequest, GetFollowingPostsRequest, GetPublicPostsRequest, UpdatePostRequest } from "@/schema/post.validation";
+import { postAction, postErrorCode, postErrorMessage } from "@/config/constant/post.constant";
+import { NotificationRepository } from "@/repositories/notification.repository";
+import { NotificationType } from "generated/prisma";
 
 export class PostService {
   static async createPost(c: Context, userId: string, request: CreatePostRequest) {
@@ -22,7 +22,7 @@ export class PostService {
 
         await UserRepository.createActivityLog(tx, {
           userId,
-          action: userAction.createPost,
+          action: postAction.CREATE_POST,
           metadata: { title: request.title, content: post.content, galleries: galleries },
         });
       }
@@ -50,12 +50,10 @@ export class PostService {
 
     const meta = {
       pagination: {
-        page: parseInt(query.page!, 10),
-        limit: parseInt(query.limit!, 10),
+        page: Number(query.page!),
+        limit: Number(query.limit!),
         totalItems,
-        hasPrevPage: parseInt(query.page!, 10) > 1,
-        hasNextPage: parseInt(query.page!, 10) * parseInt(query.limit!, 10) < totalItems,
-        totalPages: totalItems > 0 ? Math.ceil(totalItems / parseInt(query.limit!, 10)) : 0,
+        totalPages: totalItems > 0 ? Math.ceil(totalItems / Number(query.limit!)) : 0,
       },
     };
 
@@ -83,12 +81,10 @@ export class PostService {
 
     const meta = {
       pagination: {
-        page: parseInt(query.page!, 10),
-        limit: parseInt(query.limit!, 10),
+        page: Number(query.page!),
+        limit: Number(query.limit!),
         totalItems,
-        hasPrevPage: parseInt(query.page!, 10) > 1,
-        hasNextPage: parseInt(query.page!, 10) * parseInt(query.limit!, 10) < totalItems,
-        totalPages: totalItems > 0 ? Math.ceil(totalItems / parseInt(query.limit!, 10)) : 0,
+        totalPages: totalItems > 0 ? Math.ceil(totalItems / Number(query.limit!)) : 0,
       },
     };
 
@@ -99,7 +95,7 @@ export class PostService {
     const post = await PostRepository.getPostById(postId, userId);
 
     if (!post) {
-      throw new HTTPException(404, { message: errorMessages.postNotFound, cause: errorCodes.postNotFound });
+      throw new HTTPException(404, { message: postErrorMessage.POST_NOT_FOUND, cause: postErrorCode.POST_NOT_FOUND });
     }
 
     return await db.$transaction(async (tx) => {
@@ -119,7 +115,7 @@ export class PostService {
 
       await UserRepository.createActivityLog(tx, {
         userId,
-        action: userAction.updatePost,
+        action: postAction.UPDATE_POST,
         metadata: { previousPost, updatedPost },
       });
 
@@ -131,30 +127,41 @@ export class PostService {
     const post = await PostRepository.getPostById(postId);
 
     if (!post) {
-      throw new HTTPException(404, { message: errorMessages.postNotFound, cause: errorCodes.postNotFound });
+      throw new HTTPException(404, { message: postErrorMessage.POST_NOT_FOUND, cause: postErrorCode.POST_NOT_FOUND });
     }
 
     const existingLike = await PostRepository.getLikeByUserId(postId, userId);
 
     if (existingLike) {
-      throw new HTTPException(400, { message: errorMessages.alreadyLikedPost, cause: errorCodes.alreadyLikedPost });
+      throw new HTTPException(409, { message: postErrorMessage.ALREADY_LIKED_POST, cause: postErrorCode.ALREADY_LIKED_POST });
     }
-    console.log("liking post", { userId, postId });
 
-    await PostRepository.likePost(userId, postId);
+    await db.$transaction(async (tx) => {
+      await PostRepository.likePost(userId, postId, tx);
+      // create notification record
+      if (post.userId !== userId) {
+        await NotificationRepository.createNotification(tx, {
+          userId: post.userId,
+          title: "New Like on Your Post",
+          description: `@${post.user.username} liked your post: ${post.title}`,
+          type: NotificationType.LIKE,
+          metadata: { postId, likerId: userId, path: `/posts/${postId}` },
+        });
+      }
+    });
   }
 
   static async unlikePost(c: Context, userId: string, postId: string) {
     const post = await PostRepository.getPostById(postId);
 
     if (!post) {
-      throw new HTTPException(404, { message: errorMessages.postNotFound, cause: errorCodes.postNotFound });
+      throw new HTTPException(404, { message: postErrorMessage.POST_NOT_FOUND, cause: postErrorCode.POST_NOT_FOUND });
     }
 
     const existingLike = await PostRepository.getLikeByUserId(postId, userId);
 
     if (!existingLike) {
-      throw new HTTPException(404, { message: errorMessages.likeNotFound, cause: errorCodes.likeNotFound });
+      throw new HTTPException(409, { message: postErrorMessage.ALREADY_UNLIKED_POST, cause: postErrorCode.ALREADY_UNLIKED_POST });
     }
 
     await PostRepository.unlikePost(userId, postId);
@@ -164,7 +171,7 @@ export class PostService {
     const post = await PostRepository.getPostDetailById(postId, userId!);
 
     if (!post) {
-      throw new HTTPException(404, { message: errorMessages.postNotFound, cause: errorCodes.postNotFound });
+      throw new HTTPException(404, { message: postErrorMessage.POST_NOT_FOUND, cause: postErrorCode.POST_NOT_FOUND });
     }
 
     return {
@@ -197,8 +204,6 @@ export class PostService {
   static async getPostsByUserId(c: Context, query: GetPublicPostsRequest, userId?: string) {
     const { posts, totalItems } = await PostRepository.getPostsByUserId(query);
 
-    console.log("fetched posts by user id", { userId: query.userId, totalItems });
-
     const data = posts.map((post) => ({
       id: post.id,
       title: post.title,
@@ -216,12 +221,10 @@ export class PostService {
 
     const meta = {
       pagination: {
-        page: parseInt(query.page!, 10),
+        page: Number(query.page!),
         totalItems,
-        limit: parseInt(query.limit!, 10),
-        hasPrevPage: parseInt(query.page!, 10) > 1,
-        hasNextPage: parseInt(query.page!, 10) * parseInt(query.limit!, 10) < totalItems,
-        totalPages: totalItems > 0 ? Math.ceil(totalItems / parseInt(query.limit!, 10)) : 0,
+        limit: Number(query.limit!),
+        totalPages: totalItems > 0 ? Math.ceil(totalItems / Number(query.limit!)) : 0,
       },
     };
 
@@ -232,7 +235,7 @@ export class PostService {
     const post = await PostRepository.getPostById(postId, userId);
 
     if (!post) {
-      throw new HTTPException(404, { message: errorMessages.postNotFound, cause: errorCodes.postNotFound });
+      throw new HTTPException(404, { message: postErrorMessage.POST_NOT_FOUND, cause: postErrorCode.POST_NOT_FOUND });
     }
 
     await db.$transaction(async (tx) => {
@@ -240,7 +243,7 @@ export class PostService {
 
       await UserRepository.createActivityLog(tx, {
         userId,
-        action: userAction.deletePost,
+        action: postAction.DELETE_POST,
         metadata: { postId, title: post.title, content: post.content },
       });
     });

@@ -4,8 +4,7 @@ import { processImage } from "@/utils/file-processing";
 import { generateRandomFilename } from "@/utils/generator";
 import { minioClient, BUCKET } from "@/config/storage/minio";
 import { FileRepository } from "@/repositories/file.repository";
-import { Prisma } from "@prisma/client/scripts/default-index.js";
-import { prisma } from "@/config/database/prisma";
+import { Prisma } from "generated/prisma/edge";
 
 export class FileService {
   static async uploadSingleFile(c: Context, userId: string, file: File, module: string, targetId?: string, isUsed?: boolean) {
@@ -30,6 +29,7 @@ export class FileService {
       path: storageKey,
       metadata: { originalName: file.name, mimeType: "image/webp" },
       module,
+
       createdBy: userId,
     };
 
@@ -59,12 +59,13 @@ export class FileService {
 
         const url = `${process.env.MINIO_ENDPOINT}/${BUCKET}/${storageKey}`;
 
-        const fileRecords = await FileRepository.createFileRecordWithTx(tx, {
+        const fileRecords = await FileRepository.createFileRecordWithTx(tx!, {
           url,
           size: f.size,
           path: storageKey,
           metadata: { originalName: f.name, mimeType: f.type },
           module,
+          isUsed: true,
           createdBy: userId,
         });
 

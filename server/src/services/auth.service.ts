@@ -1,22 +1,23 @@
 import cuid from "cuid";
 import { Context } from "hono";
 import mailer from "@/config/constant/email";
-import { prisma } from "@/config/database/prisma";
 import redisConfig from "@/config/constant/redis";
 import dbConfig from "@/config/constant/database";
 import { generateSessionToken } from "@/utils/jwt";
-import tokenLimit from "@/config/common/tokenLimit";
 import { HTTPException } from "hono/http-exception";
-import errorCodes from "@/config/constant/errorCode";
 import { sendVerificationLink } from "@/utils/mailer";
 import { deleteCookie, setCookie } from "hono/cookie";
-import errorMessages from "@/config/constant/errorMessage";
+import { pgsql as db } from "@/config/database/pgsql";
 import { UserRepository } from "@/repositories/user.repository";
 import { SessionRepository } from "@/repositories/session.repository";
 import { hashPassword, hashToken, verifyPassword } from "@/utils/hash";
+import { NotificationRepository } from "@/repositories/notification.repository";
 import { loginResponse, userResponse, verificationType } from "@/models/user.model";
-import { ChangePasswordRequest, LoginRequest, RegisterRequest, ResetPasswordRequest } from "@/schema/auth.validation";
+import { authErrorCode, authErrorMessage, authLimit } from "@/config/constant/auth.constant";
+import { NotificationChannel, NotificationStatus, NotificationType } from "generated/prisma/edge";
 import { generateRandomAvatarURL, generateRandomToken, generateRandomUsername } from "@/utils/generator";
+import { ChangePasswordRequest, LoginRequest, RegisterRequest, ResetPasswordRequest } from "@/schema/auth.validation";
+import { userAction } from "@/config/constant/user.constant";
 
 export class AuthService {
   static async createUser(c: Context, request: RegisterRequest): Promise<{ data: { email: string } }> {
@@ -24,7 +25,7 @@ export class AuthService {
     const isEmailExist = await UserRepository.findByEmail(request.email);
 
     if (isEmailExist) {
-      throw new HTTPException(400, { message: errorMessages.emailExists, cause: errorCodes.emailExists });
+      throw new HTTPException(400, { message: authErrorMessage.EMAIL_EXISTS, cause: authErrorCode.EMAIL_EXISTS });
     }
 
     // hash password
@@ -40,11 +41,11 @@ export class AuthService {
       username: username,
     };
 
-    const randomToken = await prisma.$transaction(async (tx) => {
+    const randomToken = await db.$transaction(async (tx) => {
       const newUser = await UserRepository.create(tx, userData);
 
       if (!newUser) {
-        throw new HTTPException(500, { message: errorMessages.userCreationFailed, cause: errorCodes.userCreationFailed });
+        throw new HTTPException(500, { message: authErrorMessage.USER_CREATION_FAILED, cause: authErrorCode.USER_CREATION_FAILED });
       }
 
       // generate verification
@@ -56,10 +57,20 @@ export class AuthService {
         userId: newUser.id,
         token: hashedToken,
         type: "EMAIL_VERIFICATION" as verificationType,
-        expiresAt: new Date(Date.now() + tokenLimit.verifyEmail),
+        expiresAt: new Date(Date.now() + authLimit.VERIFY_EMAIL_EXP),
       };
 
       await UserRepository.createUserVerification(tx, userVerificationData);
+
+      const payload = Object.values(NotificationType).map((type) => ({
+        userId: newUser.id,
+        type,
+        channel: NotificationChannel.IN_APP,
+        status: NotificationStatus.ENABLED,
+        createdAt: new Date(),
+      }));
+
+      await NotificationRepository.createNotificationSettings(tx, payload);
 
       return randomToken;
     });
@@ -79,15 +90,18 @@ export class AuthService {
 
   // 2. verify email
   static async verifyEmail(c: Context, token: string) {
+    if (!token) {
+      throw new HTTPException(400, { message: authErrorMessage.TOKEN_REQUIRED, cause: authErrorCode.TOKEN_REQUIRED });
+    }
     const hashedToken = await hashToken(token);
 
     const isValid = await UserRepository.findUserVerification(hashedToken, "EMAIL_VERIFICATION");
 
     if (!isValid) {
-      throw new HTTPException(400, { message: errorMessages.invalidToken, cause: errorCodes.invalidToken });
+      throw new HTTPException(400, { message: authErrorMessage.INVALID_TOKEN, cause: authErrorCode.INVALID_TOKEN });
     }
 
-    prisma.$transaction(async (tx) => {
+    db.$transaction(async (tx) => {
       await UserRepository.updateUserVerification(tx, isValid.id, new Date());
       await UserRepository.updateUserActive(tx, { userId: isValid.userId, status: "ACTIVE" });
     });
@@ -98,21 +112,21 @@ export class AuthService {
     const isEmailExist = await UserRepository.findByEmail(request.email);
 
     if (!isEmailExist) {
-      throw new HTTPException(400, { message: errorMessages.invalidCredentials, cause: errorCodes.invalidCredentials });
+      throw new HTTPException(400, { message: authErrorMessage.INVALID_CREDENTIALS, cause: authErrorCode.INVALID_CREDENTIALS });
     }
 
     const isValid = await verifyPassword({ password: request.password, hash: isEmailExist.passwordHash });
 
     if (isEmailExist.status === "INACTIVE" || !isEmailExist.verifiedAt) {
-      throw new HTTPException(400, { message: errorMessages.emailNotVerified, cause: errorCodes.emailNotVerified });
+      throw new HTTPException(400, { message: authErrorMessage.EMAIL_NOT_VERIFIED, cause: authErrorCode.EMAIL_NOT_VERIFIED });
     }
 
     if (isEmailExist.status === "BANNED") {
-      throw new HTTPException(403, { message: errorMessages.accountBanned, cause: errorCodes.accountBanned });
+      throw new HTTPException(403, { message: authErrorMessage.ACCOUNT_BANNED, cause: authErrorCode.ACCOUNT_BANNED });
     }
     // check password
     if (!isValid) {
-      throw new HTTPException(400, { message: errorMessages.invalidCredentials, cause: errorCodes.invalidCredentials });
+      throw new HTTPException(400, { message: authErrorMessage.INVALID_CREDENTIALS, cause: authErrorCode.INVALID_CREDENTIALS });
     }
 
     const randomToken = generateRandomToken();
@@ -123,12 +137,22 @@ export class AuthService {
       userId: isEmailExist.id,
       token: hashedToken,
       userAgent: c.req.header("user-agent") || "unknown",
-      expiresAt: new Date(Date.now() + tokenLimit.sessionToken),
+      expiresAt: new Date(Date.now() + authLimit.SESSION_TOKEN_EXP),
     };
 
-    const newSession = await prisma.$transaction(async (tx) => {
+    const newSession = await db.$transaction(async (tx) => {
       await UserRepository.updateLastLogin(tx, isEmailExist.id, new Date());
-      return await SessionRepository.createSession(tx, sessionPayload);
+      const session = await SessionRepository.createSession(tx, sessionPayload);
+
+      await UserRepository.createActivityLog(tx, {
+        userId: isEmailExist.id,
+        action: userAction.LOGIN,
+        metadata: {
+          userAgent: sessionPayload.userAgent,
+        },
+      });
+
+      return session;
     });
 
     const sessionToken = await generateSessionToken({ sub: isEmailExist.id, sid: newSession.id });
@@ -150,7 +174,7 @@ export class AuthService {
     }
 
     if (user.verifiedAt) {
-      throw new HTTPException(400, { message: errorMessages.emailAlreadyVerified, cause: errorCodes.emailAlreadyVerified });
+      throw new HTTPException(400, { message: authErrorMessage.EMAIL_ALREADY_VERIFIED, cause: authErrorCode.EMAIL_ALREADY_VERIFIED });
     }
 
     const randomToken = generateRandomToken();
@@ -160,10 +184,10 @@ export class AuthService {
       userId: user.id,
       token: hashedToken,
       type: "EMAIL_VERIFICATION" as verificationType,
-      expiresAt: new Date(Date.now() + tokenLimit.verifyEmail),
+      expiresAt: new Date(Date.now() + authLimit.VERIFY_EMAIL_EXP),
     };
 
-    await UserRepository.createUserVerification(prisma, userVerificationData);
+    await UserRepository.createUserVerification(db, userVerificationData);
 
     const mailConfig = {
       to: email,
@@ -178,7 +202,7 @@ export class AuthService {
     const user = await UserRepository.findById(userId);
 
     if (!user) {
-      throw new HTTPException(404, { message: errorMessages.userNotFound, cause: errorCodes.userNotFound });
+      throw new HTTPException(404, { message: authErrorMessage.USER_NOT_FOUND, cause: authErrorCode.USER_NOT_FOUND });
     }
 
     return user;
@@ -213,7 +237,7 @@ export class AuthService {
     const session = await SessionRepository.getSessionById(sessionId);
 
     if (!session) {
-      throw new HTTPException(404, { message: errorMessages.sessionNotFound, cause: errorCodes.sessionNotFound });
+      throw new HTTPException(404, { message: authErrorMessage.SESSION_NOT_FOUND, cause: authErrorCode.SESSION_NOT_FOUND });
     }
 
     await SessionRepository.deleteSessionBySessionId(sessionId);
@@ -224,13 +248,13 @@ export class AuthService {
     const passwordHash = await UserRepository.getPasswordByUserId(userId);
 
     if (!passwordHash) {
-      throw new HTTPException(404, { message: errorMessages.userNotFound, cause: errorCodes.userNotFound });
+      throw new HTTPException(404, { message: authErrorMessage.USER_NOT_FOUND, cause: authErrorCode.USER_NOT_FOUND });
     }
 
     const isValid = await verifyPassword({ password: request.currentPassword, hash: passwordHash });
 
     if (!isValid) {
-      throw new HTTPException(400, { message: errorMessages.invalidCurrentPassword, cause: errorCodes.invalidCurrentPassword });
+      throw new HTTPException(400, { message: authErrorMessage.INVALID_CREDENTIALS, cause: authErrorCode.INVALID_CREDENTIALS });
     }
 
     const hashedPassword = await hashPassword(request.newPassword);
@@ -257,10 +281,10 @@ export class AuthService {
       userId: user.id,
       token: hashedToken,
       type: "PASSWORD_RESET" as verificationType,
-      expiresAt: new Date(Date.now() + tokenLimit.passwordReset),
+      expiresAt: new Date(Date.now() + authLimit.RESET_PASSWORD_EXP),
     };
 
-    await UserRepository.createUserVerification(prisma, userVerificationData);
+    await UserRepository.createUserVerification(db, userVerificationData);
 
     const mailConfig = {
       to: email,
@@ -277,12 +301,12 @@ export class AuthService {
     const verification = await UserRepository.findUserVerification(hashedToken, "PASSWORD_RESET");
 
     if (!verification) {
-      throw new HTTPException(400, { message: errorMessages.invalidToken, cause: errorCodes.invalidToken });
+      throw new HTTPException(400, { message: authErrorMessage.INVALID_TOKEN, cause: authErrorCode.INVALID_TOKEN });
     }
 
     const hashedPassword = await hashPassword(request.password);
 
-    await prisma.$transaction(async (tx) => {
+    await db.$transaction(async (tx) => {
       await UserRepository.updateUserVerification(tx, verification.id, new Date());
       await UserRepository.updatePassword(verification.userId, hashedPassword);
       await SessionRepository.deleteSessionsByUserId(verification.userId);
