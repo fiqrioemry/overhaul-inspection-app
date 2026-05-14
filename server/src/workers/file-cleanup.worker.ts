@@ -1,10 +1,10 @@
 import { redisClient } from "@/config/database/redis";
-import { FileRepository } from "@/repositories/file.repository";
 import { minioClient, BUCKET } from "@/config/storage/minio";
+import { FileRepository } from "@/repositories/file.repository";
 
 const LOCK_KEY = "worker:file-cleanup:lock";
-const LOCK_TTL_SECONDS = 1 * 60; // 1 minute — same as interval, prevents overlap
-const INTERVAL_MS = 1 * 60 * 1000; // run every 1 minute
+const LOCK_TTL_SECONDS = 15 * 60;
+const INTERVAL_MS = 15 * 60 * 1000;
 
 async function acquireLock(): Promise<boolean> {
   const result = await redisClient.send("SET", [LOCK_KEY, "1", "NX", "EX", String(LOCK_TTL_SECONDS)]);

@@ -4,7 +4,7 @@ import { verify } from "hono/jwt";
 import { deleteCookie, setCookie } from "hono/cookie";
 import redisConfig from "@/config/constant/redis";
 import dbConfig from "@/config/constant/database";
-import tokenLimit from "@/config/common/tokenLimit";
+import { authLimit } from "@/config/constant/auth.constant";
 
 // types/jwt.ts
 export type SessionTokenPayload = {
@@ -40,7 +40,7 @@ export function setSessionToken(c: Context, token: string) {
     path: "/",
     secure: dbConfig.mode ? true : false,
     httpOnly: true,
-    maxAge: tokenLimit.sessionToken,
+    maxAge: authLimit.SESSION_TOKEN_EXP,
     sameSite: dbConfig.mode ? "lax" : "strict",
   });
 }
