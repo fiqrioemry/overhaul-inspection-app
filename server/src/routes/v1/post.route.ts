@@ -4,7 +4,7 @@ import { fileLimit } from "@/config/constant/file.constant";
 import { postLimit } from "@/config/constant/post.constant";
 import { limitter } from "@/middlewares/limitter.middleware";
 import { multipleFile } from "@/middlewares/file.middleware";
-import { PostController as ctrl } from "@/controllers/post.controller";
+import { PostController as ctrl } from "@/modules/posts/post.controller";
 
 const post = new Hono();
 

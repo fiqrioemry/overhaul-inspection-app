@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { protect } from "@/middlewares/auth.middleware";
 import { authLimit } from "@/config/constant/auth.constant";
 import { limitter } from "@/middlewares/limitter.middleware";
-import { AuthController as ctrl } from "@/controllers/auth.controller";
+import { AuthController as ctrl } from "@/modules/auth/auth.controller";
 
 const auth = new Hono();
 auth.post("/login", limitter(authLimit.LOGIN), ctrl.login);

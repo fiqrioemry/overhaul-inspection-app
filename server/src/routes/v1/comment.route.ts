@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { protect } from "@/middlewares/auth.middleware";
-import { CommentController as ctrl } from "@/controllers/comment.controller";
+import { CommentController as ctrl } from "@/modules/comments/comment.controller";
 
 const comment = new Hono();
 

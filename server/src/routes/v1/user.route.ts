@@ -4,7 +4,7 @@ import { singleFile } from "@/middlewares/file.middleware";
 import { limitter } from "@/middlewares/limitter.middleware";
 import { userLimit } from "@/config/constant/user.constant";
 import { fileLimit } from "@/config/constant/file.constant";
-import { UserController as ctrl } from "@/controllers/user.controller";
+import { UserController as ctrl } from "@/modules/users/user.controller";
 
 const user = new Hono();
 
