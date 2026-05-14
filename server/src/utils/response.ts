@@ -1,12 +1,12 @@
 import { Context } from "hono";
 
-export function responseOK(c: Context, message: string, data?: any, status: number = 200, meta?: any) {
-  const res = { success: true, message, data, status, meta };
+export function responseOK(c: Context, message: string, data?: any, meta?: any, status: number = 200) {
+  const res = { success: true, message, data, meta, status };
   return c.json(res, status as any);
 }
 
 export function responseCreated(c: Context, message: string, data?: any, status: number = 201, meta?: any) {
-  const res = { success: true, message, data, status, meta };
+  const res = { success: true, message, data, meta, status };
   return c.json(res, status as any);
 }
 
