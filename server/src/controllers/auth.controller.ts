@@ -1,81 +1,81 @@
 import { Context } from "hono";
-import { responseCreated, responseOK } from "@/utils/response";
 import { AuthService } from "@/services/auth.service";
-import successMessages from "@/config/constant/successMessage";
+import { responseCreated, responseOK } from "@/utils/response";
+import { authSuccessMessage } from "@/config/constant/auth.constant";
 import { changePasswordRequest, forgotPasswordRequest, loginRequest, registerRequest, resendVerificationEmailRequest, resetPasswordRequest } from "@/schema/auth.validation";
 
 export class AuthController {
   static async register(c: Context) {
     const request = registerRequest.parse(await c.req.json());
     const response = await AuthService.createUser(c, request);
-    return responseCreated(c, successMessages.registerSuccess, response.data.email);
+    return responseCreated(c, authSuccessMessage.REGISTER_SUCCESS, response.data.email);
   }
 
   static async verifyEmail(c: Context) {
     const token = c.req.query("token") || "";
     await AuthService.verifyEmail(c, token);
-    return responseOK(c, successMessages.emailVerified);
+    return responseOK(c, authSuccessMessage.EMAIL_VERIFICATION_SUCCESS);
   }
 
   static async resendVerificationEmail(c: Context) {
     const email = resendVerificationEmailRequest.parse(await c.req.json()).email;
     await AuthService.resendVerificationEmail(c, email);
-    return responseOK(c, successMessages.emailSent);
+    return responseOK(c, authSuccessMessage.RESEND_VERIFICATION_EMAIL_SUCCESS);
   }
 
   static async login(c: Context) {
     const request = loginRequest.parse(await c.req.json());
     const response = await AuthService.login(c, request);
-    return responseOK(c, successMessages.loginSuccess, response);
+    return responseOK(c, authSuccessMessage.LOGIN_SUCCESS, response);
   }
 
   static async logout(c: Context) {
     const user = await c.get("user");
     await AuthService.logout(c, user.ssid);
-    return responseOK(c, successMessages.logoutSuccess);
+    return responseOK(c, authSuccessMessage.LOGOUT_SUCCESS);
   }
 
   static async logoutAll(c: Context) {
     const user = await c.get("user");
     await AuthService.logoutAll(c, user.userId);
-    return responseOK(c, successMessages.logoutAll);
+    return responseOK(c, authSuccessMessage.LOGOUT_ALL_SUCCESS);
   }
 
   static async getSessions(c: Context) {
     const user = await c.get("user");
     const response = await AuthService.getSessions(c, user.userId);
-    return responseOK(c, successMessages.getSessions, response);
+    return responseOK(c, authSuccessMessage.GET_SESSIONS_SUCCESS, response);
   }
 
   static async deleteSession(c: Context) {
     const sessionId = c.req.param("sessionId");
     await AuthService.deleteSession(c, sessionId);
-    return responseOK(c, successMessages.deleteSession);
+    return responseOK(c, authSuccessMessage.DELETE_SESSION_SUCCESS);
   }
 
   static async changePassword(c: Context) {
     const user = await c.get("user");
     const request = changePasswordRequest.parse(await c.req.json());
     await AuthService.changePassword(c, user.userId, request);
-    return responseOK(c, successMessages.changePassword);
+    return responseOK(c, authSuccessMessage.CHANGE_PASSWORD_SUCCESS);
   }
 
   static async resetPassword(c: Context) {
     const token = c.req.query("token") as string;
     const request = resetPasswordRequest.parse(await c.req.json());
     await AuthService.resetPassword(c, token, request);
-    return responseOK(c, successMessages.resetPassword);
+    return responseOK(c, authSuccessMessage.RESET_PASSWORD_SUCCESS);
   }
 
   static async forgotPassword(c: Context) {
     const request = forgotPasswordRequest.parse(await c.req.json());
     await AuthService.forgotPassword(c, request.email);
-    return responseOK(c, successMessages.forgotPassword);
+    return responseOK(c, authSuccessMessage.FORGOT_PASSWORD_SUCCESS);
   }
 
   static async getMe(c: Context) {
     const user = c.get("user");
     const response = await AuthService.getMe(c, user.userId);
-    return responseOK(c, successMessages.getProfile, response);
+    return responseOK(c, authSuccessMessage.GET_ME_SUCCESS, response);
   }
 }

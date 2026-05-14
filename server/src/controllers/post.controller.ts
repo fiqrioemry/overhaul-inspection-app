@@ -1,8 +1,8 @@
 import { Context } from "hono";
 import { PostService } from "@/services/post.service";
-import { createPostRequest, getFollowingPostsRequest, getPublicPostsRequest, updatePostRequest } from "@/schema/post.validation";
-import successMessages from "@/config/constant/successMessage";
 import { responseCreated, responseOK } from "@/utils/response";
+import { postSuccessMessage } from "@/config/constant/post.constant";
+import { createPostRequest, getFollowingPostsRequest, getPublicPostsRequest, updatePostRequest } from "@/schema/post.validation";
 
 export class PostController {
   static async createPost(c: Context) {
@@ -17,7 +17,7 @@ export class PostController {
     });
 
     const response = await PostService.createPost(c, user.userId, request);
-    return responseCreated(c, successMessages.createPost, response);
+    return responseCreated(c, postSuccessMessage.CREATE_POST_SUCCESS, response);
   }
 
   static async getFollowingPosts(c: Context) {
@@ -25,7 +25,7 @@ export class PostController {
     const query = getFollowingPostsRequest.parse(c.req.query());
     query.userId = user?.userId;
     const response = await PostService.getFollowingPosts(c, query);
-    return responseOK(c, successMessages.getPosts, response.data, response.meta);
+    return responseOK(c, postSuccessMessage.GET_FOLLOWING_POSTS_SUCCESS, response.data, response.meta);
   }
 
   static async getPublicPosts(c: Context) {
@@ -33,7 +33,7 @@ export class PostController {
     const query = getPublicPostsRequest.parse(c.req.query());
     query.userId = user?.userId;
     const response = await PostService.getPublicPosts(c, query);
-    return responseOK(c, successMessages.getPosts, response.data, response.meta);
+    return responseOK(c, postSuccessMessage.GET_PUBLIC_POSTS_SUCCESS, response.data, response.meta);
   }
 
   static async getPostsByUserId(c: Context) {
@@ -42,14 +42,14 @@ export class PostController {
     const query = getPublicPostsRequest.parse(c.req.query());
     query.userId = targetId;
     const response = await PostService.getPostsByUserId(c, query, user?.userId);
-    return responseOK(c, successMessages.getPosts, response.data, response.meta);
+    return responseOK(c, postSuccessMessage.GET_PUBLIC_POSTS_SUCCESS, response.data, response.meta);
   }
 
   static async getPostById(c: Context) {
     const user = await c.get("user");
     const postId = c.req.param("postId");
     const response = await PostService.getPostDetailById(c, postId, user?.userId);
-    return responseOK(c, successMessages.getPostById, response);
+    return responseOK(c, postSuccessMessage.GET_POST_DETAIL_SUCCESS, response);
   }
 
   static async updatePost(c: Context) {
@@ -57,27 +57,27 @@ export class PostController {
     const postId = c.req.param("postId");
     const request = updatePostRequest.parse(await c.req.json());
     const response = await PostService.updatePost(c, user.userId, postId, request);
-    return responseOK(c, successMessages.updatePost, response);
+    return responseOK(c, postSuccessMessage.UPDATE_POST_SUCCESS, response);
   }
 
   static async deletePost(c: Context) {
     const user = await c.get("user");
     const postId = c.req.param("postId");
     await PostService.deletePost(c, user.userId, postId);
-    return responseOK(c, successMessages.deletePost);
+    return responseOK(c, postSuccessMessage.DELETE_POST_SUCCESS);
   }
 
   static async likePost(c: Context) {
     const user = await c.get("user");
     const postId = c.req.param("postId");
     await PostService.likePost(c, user.userId, postId);
-    return responseOK(c, successMessages.likePost);
+    return responseOK(c, postSuccessMessage.LIKE_POST_SUCCESS);
   }
 
   static async unlikePost(c: Context) {
     const user = await c.get("user");
     const postId = c.req.param("postId");
     await PostService.unlikePost(c, user.userId, postId);
-    return responseOK(c, successMessages.unlikePost);
+    return responseOK(c, postSuccessMessage.UNLIKE_POST_SUCCESS);
   }
 }
