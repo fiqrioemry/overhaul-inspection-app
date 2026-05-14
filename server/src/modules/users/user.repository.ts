@@ -1,11 +1,11 @@
 import { Prisma } from "generated/prisma/edge";
-import { prisma } from "@/config/database/prisma";
-import { CreateUserActivityLogRequest, UpdateProfileRequest } from "@/schema/user.validation";
+import { pgsql as database } from "@/config/database/pgsql";
+import { CreateUserActivityLogRequest, UpdateProfileRequest } from "@/modules/users/user.schema";
 import { createUserData, searchResponse, verificationType, createVerificationData, updateUserActiveData, userCredential, userResponse, userVerificationData, profileResponse } from "@/models/user.model";
 
 export class UserRepository {
   static async findByEmail(email: string): Promise<userCredential | null> {
-    return await prisma.user.findUnique({
+    return await database.user.findUnique({
       where: { email },
       select: {
         id: true,
@@ -18,7 +18,7 @@ export class UserRepository {
   }
 
   static async create(tx: Prisma.TransactionClient | null, user: createUserData): Promise<userResponse> {
-    const db = tx ?? prisma;
+    const db = tx ?? database;
 
     const result = await db.user.create({
       data: {
@@ -47,7 +47,7 @@ export class UserRepository {
   }
 
   static async findById(id: string): Promise<userResponse | null> {
-    return await prisma.user.findUnique({
+    return await database.user.findUnique({
       where: { id },
       select: {
         id: true,
@@ -59,8 +59,8 @@ export class UserRepository {
     });
   }
 
-  static async getProfileByUsername(username: string): Promise<profileResponse | null> {
-    return await prisma.user.findUnique({
+  static async getProfileByUsername(username: string, currentUserId?: string): Promise<profileResponse | null> {
+    return await database.user.findUnique({
       where: { username },
       select: {
         id: true,
@@ -72,6 +72,10 @@ export class UserRepository {
         bio: true,
         lastLogin: true,
         createdAt: true,
+        followers: {
+          where: { followerId: currentUserId ?? "" },
+          select: { id: true },
+        },
         _count: {
           select: {
             followers: true,
@@ -84,7 +88,7 @@ export class UserRepository {
   }
 
   static async createUserVerification(tx: Prisma.TransactionClient | null, verificationData: createVerificationData): Promise<void> {
-    const db = tx ?? prisma;
+    const db = tx ?? database;
 
     await db.userVerification.create({
       data: {
@@ -97,8 +101,8 @@ export class UserRepository {
   }
 
   static async findUserVerification(token: string, type: verificationType): Promise<userVerificationData | null> {
-    return await prisma.userVerification.findFirst({
-      where: { token, type, usedAt: null, expiresAt: { gt: new Date() } },
+    return await database.userVerification.findFirst({
+      where: { token, type, usedAt: null },
       select: {
         id: true,
         userId: true,
@@ -110,7 +114,7 @@ export class UserRepository {
   }
 
   static async updateUserVerification(tx: Prisma.TransactionClient | null, verificationId: string, usedAt: Date): Promise<void> {
-    const db = tx ?? prisma;
+    const db = tx ?? database;
 
     await db.userVerification.update({
       where: { id: verificationId },
@@ -121,7 +125,7 @@ export class UserRepository {
   }
 
   static async updateLastLogin(tx: Prisma.TransactionClient | null, userId: string, lastLogin: Date): Promise<void> {
-    const db = tx ?? prisma;
+    const db = tx ?? database;
     await db.user.update({
       where: { id: userId },
       data: { lastLogin },
@@ -129,7 +133,7 @@ export class UserRepository {
   }
 
   static async updateUserActive(tx: Prisma.TransactionClient | null, user: updateUserActiveData): Promise<void> {
-    const db = tx ?? prisma;
+    const db = tx ?? database;
     await db.user.update({
       where: { id: user.userId },
       data: { status: user.status, verifiedAt: new Date() },
@@ -137,14 +141,14 @@ export class UserRepository {
   }
 
   static async deleteSessionBySessionId(tx: Prisma.TransactionClient | null, sessionId: string): Promise<void> {
-    const db = tx ?? prisma;
+    const db = tx ?? database;
     await db.session.delete({
       where: { id: sessionId },
     });
   }
 
   static async getPasswordByUserId(userId: string): Promise<string | null> {
-    const result = await prisma.user.findUnique({
+    const result = await database.user.findUnique({
       where: { id: userId },
       select: {
         passwordHash: true,
@@ -155,28 +159,32 @@ export class UserRepository {
   }
 
   static async updatePassword(userId: string, newPasswordHash: string): Promise<void> {
-    await prisma.user.update({
+    await database.user.update({
       where: { id: userId },
       data: { passwordHash: newPasswordHash },
     });
   }
 
-  static async updateAvatar(userId: string, avatarUrl: string): Promise<void> {
-    await prisma.user.update({
+  static async updateAvatar(userId: string, avatarUrl: string, tx: Prisma.TransactionClient | null = null): Promise<void> {
+    const db = tx ?? database;
+    await db.user.update({
       where: { id: userId },
       data: { avatar: avatarUrl },
     });
   }
 
-  static async updateProfile(userId: string, request: UpdateProfileRequest): Promise<void> {
-    await prisma.user.update({
+  static async updateProfile(userId: string, request: UpdateProfileRequest, tx: Prisma.TransactionClient | null = null): Promise<void> {
+    const db = tx ?? database;
+    await db.user.update({
       where: { id: userId },
       data: { name: request.name, bio: request.bio },
     });
   }
-  static async searchUsersByUsername(username: string): Promise<searchResponse[]> {
-    return await prisma.user.findMany({
+
+  static async searchUsersByUsername(username: string, currentUserId?: string): Promise<searchResponse[]> {
+    return await database.user.findMany({
       where: {
+        status: "ACTIVE",
         username: {
           contains: username,
           mode: "insensitive",
@@ -188,8 +196,13 @@ export class UserRepository {
         name: true,
         username: true,
         avatar: true,
+        followers: {
+          where: { followerId: currentUserId ?? "" },
+          select: { id: true },
+        },
       },
       take: 10,
+      skip: 0,
       orderBy: {
         username: "asc",
       },
@@ -197,7 +210,7 @@ export class UserRepository {
   }
 
   static async getUserByUsername(username: string): Promise<{ id: string } | null> {
-    return await prisma.user.findUnique({
+    return await database.user.findUnique({
       where: { username },
       select: {
         id: true,
@@ -206,12 +219,78 @@ export class UserRepository {
   }
 
   static async createActivityLog(tx: Prisma.TransactionClient | null, request: CreateUserActivityLogRequest): Promise<void> {
-    const db = tx ?? prisma;
+    const db = tx ?? database;
     await db.userActivityLog.create({
       data: {
         userId: request.userId,
         action: request.action,
         metadata: request.metadata,
+      },
+    });
+  }
+
+  static async createFollow(tx: Prisma.TransactionClient | null, userId: string, targetUserId: string): Promise<void> {
+    const db = tx ?? database;
+    await db.following.create({
+      data: {
+        followerId: userId,
+        followingId: targetUserId,
+      },
+    });
+  }
+
+  static async deleteFollow(userId: string, targetUserId: string): Promise<void> {
+    await database.following.delete({
+      where: {
+        followerId_followingId: {
+          followerId: userId,
+          followingId: targetUserId,
+        },
+      },
+    });
+  }
+
+  static async getFollowings(viewerId: string, targetUserId: string) {
+    return await database.following.findMany({
+      where: {
+        followerId: targetUserId, // people that targetUser follows
+      },
+      select: {
+        following: {
+          select: {
+            id: true,
+            name: true,
+            username: true,
+            avatar: true,
+            // Check if viewer (userId) follows this person
+            followers: {
+              where: { followerId: viewerId },
+              select: { id: true },
+            },
+          },
+        },
+      },
+    });
+  }
+
+  static async getFollowers(viewerId: string, targetUserId: string) {
+    return await database.following.findMany({
+      where: {
+        followingId: targetUserId,
+      },
+      select: {
+        follower: {
+          select: {
+            id: true,
+            name: true,
+            username: true,
+            avatar: true,
+            followers: {
+              where: { followerId: viewerId },
+              select: { id: true },
+            },
+          },
+        },
       },
     });
   }

@@ -1,8 +1,8 @@
 import { Context } from "hono";
-import { AuthService } from "@/services/auth.service";
+import { AuthService } from "@/modules/auth/auth.service";
 import { responseCreated, responseOK } from "@/utils/response";
 import { authSuccessMessage } from "@/config/constant/auth.constant";
-import { changePasswordRequest, forgotPasswordRequest, loginRequest, registerRequest, resendVerificationEmailRequest, resetPasswordRequest } from "@/schema/auth.validation";
+import { changePasswordRequest, forgotPasswordRequest, loginRequest, registerRequest, resendVerificationEmailRequest, resetPasswordRequest } from "@/modules/auth/auth.schema";
 
 export class AuthController {
   static async register(c: Context) {

@@ -1,11 +1,11 @@
 import { Prisma } from "generated/prisma/edge";
-import { prisma } from "@/config/database/prisma";
-import expConfig from "@/config/common/expiration";
-import { createFileData, fileResponse } from "@/models/file.model";
+import { pgsql as database } from "@/config/database/pgsql";
+import { fileLimit } from "@/config/constant/file.constant";
+import { createFileData, fileResponse } from "@/modules/files/file.types";
 
 export class FileRepository {
   static async createFileRecord(data: createFileData): Promise<fileResponse> {
-    const result = await prisma.fileStorage.create({
+    const result = await database.fileStorage.create({
       data: {
         url: data.url,
         targetId: data.targetId,
@@ -30,7 +30,7 @@ export class FileRepository {
   }
 
   static async createFileRecordWithTx(tx: Prisma.TransactionClient, data: createFileData): Promise<fileResponse> {
-    const db = tx ?? prisma;
+    const db = tx ?? database;
 
     const result = await db.fileStorage.create({
       data: {
@@ -57,7 +57,7 @@ export class FileRepository {
   }
 
   static async getFileRecordById(fileId: string): Promise<fileResponse | null> {
-    const result = await prisma.fileStorage.findUnique({
+    const result = await database.fileStorage.findUnique({
       where: { id: fileId },
       select: {
         id: true,
@@ -73,30 +73,30 @@ export class FileRepository {
   }
 
   static async deleteFileRecord(fileId: string): Promise<void> {
-    await prisma.fileStorage.delete({
+    await database.fileStorage.delete({
       where: { id: fileId },
     });
   }
 
   static async findExpiredUnusedFiles(): Promise<{ id: string; path: string }[]> {
-    return prisma.fileStorage.findMany({
+    return database.fileStorage.findMany({
       where: {
         isUsed: false,
-        createdAt: { lt: expConfig.avatar ? new Date(Date.now() - expConfig.avatar * 1000) : new Date(Date.now() - 24 * 60 * 60 * 1000) },
+        createdAt: { lt: fileLimit.UNUSED_AVATAR_EXP ? new Date(Date.now() - fileLimit.UNUSED_AVATAR_EXP * 1000) : new Date(Date.now() - 24 * 60 * 60 * 1000) },
       },
       select: { id: true, path: true },
     });
   }
 
   static async deleteFileRecordsByIds(ids: string[]): Promise<number> {
-    const result = await prisma.fileStorage.deleteMany({
+    const result = await database.fileStorage.deleteMany({
       where: { id: { in: ids } },
     });
     return result.count;
   }
 
   static async getFileRecordsByIds(ids: string[]): Promise<fileResponse[]> {
-    const results = await prisma.fileStorage.findMany({
+    const results = await database.fileStorage.findMany({
       where: { id: { in: ids }, isUsed: false },
       select: {
         id: true,
@@ -112,14 +112,14 @@ export class FileRepository {
   }
 
   static async markFilesAsUsed(ids: string[]): Promise<void> {
-    await prisma.fileStorage.updateMany({
+    await database.fileStorage.updateMany({
       where: { id: { in: ids } },
       data: { isUsed: true },
     });
   }
 
   static async markFilesAsUnused(ids: string[]): Promise<void> {
-    await prisma.fileStorage.updateMany({
+    await database.fileStorage.updateMany({
       where: { id: { in: ids } },
       data: { isUsed: false },
     });
@@ -132,7 +132,7 @@ export class FileRepository {
       targetId: string;
     }[],
   ): Promise<void> {
-    const db = tx ?? prisma;
+    const db = tx ?? database;
 
     // update satu per satu karena setiap file memiliki targetId berbeda
     await Promise.all(
@@ -151,7 +151,7 @@ export class FileRepository {
   }
 
   static async getFileRecordByTargetId(targetId: string, module: string): Promise<fileResponse | null> {
-    const result = await prisma.fileStorage.findFirst({
+    const result = await database.fileStorage.findFirst({
       where: { targetId, module },
       select: {
         id: true,

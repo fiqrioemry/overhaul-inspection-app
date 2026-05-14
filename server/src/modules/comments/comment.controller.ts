@@ -1,8 +1,8 @@
 import { Context } from "hono";
-import { CommentService } from "@/services/comment.service";
 import { responseCreated, responseOK } from "@/utils/response";
+import { CommentService } from "@/modules/comments/comment.service";
 import { commentSuccessMessage } from "@/config/constant/comment.constant";
-import { createCommentRequest, editCommentRequest, getCommentsRequest } from "@/schema/comment.validation";
+import { createCommentRequest, editCommentRequest, getCommentsRequest } from "@/modules/comments/comment.schema";
 
 export class CommentController {
   static async createComment(c: Context) {

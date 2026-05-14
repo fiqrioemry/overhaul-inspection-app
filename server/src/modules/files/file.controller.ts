@@ -1,5 +1,5 @@
 import { Context } from "hono";
-import { FileService } from "@/services/file.service";
+import { FileService } from "@/modules/files/file.service";
 import { responseError, responseOK } from "@/utils/response";
 import { fileErrorMessage, fileSuccessMessage } from "@/config/constant/file.constant";
 

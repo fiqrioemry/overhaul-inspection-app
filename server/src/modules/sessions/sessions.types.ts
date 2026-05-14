@@ -5,6 +5,7 @@ type sessionResponse = {
   expiresAt: Date;
   createdAt: Date;
   user: {
+    username: string;
     email: string;
     role: string;
     status: string;

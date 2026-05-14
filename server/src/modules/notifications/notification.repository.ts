@@ -1,7 +1,7 @@
 import { Prisma } from "generated/prisma/edge";
 import { pgsql as database } from "@/config/database/pgsql";
-import { DeleteNotificationRequest, GetNotificationRequest, UpdateNotificationSettingRequest } from "@/schema/notification.validation";
 import { NotificationChannel, NotificationStatus, NotificationType } from "generated/prisma";
+import { DeleteNotificationRequest, GetNotificationRequest, UpdateNotificationSettingRequest } from "@/modules/notifications/notification.schema";
 
 export class NotificationRepository {
   static async getNotificationsByUserId(query: GetNotificationRequest) {

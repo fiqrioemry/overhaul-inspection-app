@@ -1,9 +1,9 @@
 import { Context } from "hono";
-import { UserService } from "@/services/user.service";
+import { UserService } from "@/modules/users/user.service";
 import { responseError, responseOK } from "@/utils/response";
 import { userSuccessMessage } from "@/config/constant/user.constant";
-import { followUserRequest, updateProfileRequest } from "@/schema/user.validation";
 import { fileErrorCode, fileErrorMessage } from "@/config/constant/file.constant";
+import { followUserRequest, updateProfileRequest } from "@/modules/users/user.schema";
 
 export class UserController {
   static async searchUsersByUsername(c: Context) {

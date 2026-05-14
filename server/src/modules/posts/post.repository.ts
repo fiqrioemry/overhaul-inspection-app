@@ -1,6 +1,6 @@
-import { Prisma } from "generated/pgsql/edge";
+import { Prisma } from "generated/prisma/edge";
 import { pgsql as database } from "@/config/database/pgsql";
-import { CreatePostRequest, GetFollowingPostsRequest, GetPublicPostsRequest, UpdatePostRequest } from "@/schema/post.validation";
+import { CreatePostRequest, GetFollowingPostsRequest, GetPublicPostsRequest, UpdatePostRequest } from "@/modules/posts/post.schema";
 
 export class PostRepository {
   static async createPost(tx: Prisma.TransactionClient, userId: string, request: CreatePostRequest) {
@@ -70,8 +70,8 @@ export class PostRepository {
             },
           },
         },
-        take: parseInt(limit!),
-        skip: (parseInt(page!) - 1) * parseInt(limit!),
+        take: Number(limit!),
+        skip: (Number(page!) - 1) * Number(limit!),
         orderBy: orderBy ? { [orderBy]: sortBy } : { createdAt: "desc" },
       }),
 
@@ -86,6 +86,12 @@ export class PostRepository {
       where: { id: postId, deletedAt: null },
       select: {
         id: true,
+        userId: true,
+        user: {
+          select: {
+            username: true,
+          },
+        },
         title: true,
         content: true,
       },
@@ -236,8 +242,8 @@ export class PostRepository {
             },
           },
         },
-        take: parseInt(limit!),
-        skip: (parseInt(page!) - 1) * parseInt(limit!),
+        take: Number(limit!),
+        skip: (Number(page!) - 1) * Number(limit!),
         orderBy: orderBy ? { [orderBy]: sortBy } : { createdAt: "desc" },
       }),
 
@@ -247,8 +253,9 @@ export class PostRepository {
     return { posts, totalItems };
   }
 
-  static async likePost(userId: string, postId: string) {
-    await database.like.create({
+  static async likePost(userId: string, postId: string, tx?: Prisma.TransactionClient) {
+    const db = tx ?? database;
+    await db.like.create({
       data: {
         userId,
         postId,
@@ -256,8 +263,9 @@ export class PostRepository {
     });
   }
 
-  static async unlikePost(userId: string, postId: string) {
-    await database.like.delete({
+  static async unlikePost(userId: string, postId: string, tx?: Prisma.TransactionClient) {
+    const db = tx ?? database;
+    await db.like.delete({
       where: {
         userId_postId: {
           userId,
@@ -306,8 +314,8 @@ export class PostRepository {
             },
           },
         },
-        take: parseInt(query.limit!),
-        skip: (parseInt(query.page!) - 1) * parseInt(query.limit!),
+        take: Number(query.limit!),
+        skip: (Number(query.page!) - 1) * Number(query.limit!),
         orderBy: query.orderBy ? { [query.orderBy]: query.sortBy } : { createdAt: "desc" },
       }),
       await database.post.count({ where }),
@@ -334,6 +342,35 @@ export class PostRepository {
           postId,
         },
       },
+    });
+  }
+
+  static async getGalleryRecordsByPostId(postId: string) {
+    return await database.postGallery.findMany({
+      where: { postId },
+      select: {
+        id: true,
+        postId: true,
+        url: true,
+      },
+    });
+  }
+
+  static async deleteGalleryRecordsByPostId(tx: Prisma.TransactionClient, postId: string) {
+    const db = tx ?? database;
+    await db.postGallery.deleteMany({
+      where: { postId },
+    });
+  }
+
+  static async bulkCreateGalleryRecords(tx: Prisma.TransactionClient, postId: string, galleries: { url: string; sequence: number }[]) {
+    const db = tx ?? database;
+    return await db.postGallery.createMany({
+      data: galleries.map((g) => ({
+        postId,
+        url: g.url,
+        order: g.sequence,
+      })),
     });
   }
 }

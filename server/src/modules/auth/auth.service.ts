@@ -8,16 +8,16 @@ import { HTTPException } from "hono/http-exception";
 import { sendVerificationLink } from "@/utils/mailer";
 import { deleteCookie, setCookie } from "hono/cookie";
 import { pgsql as db } from "@/config/database/pgsql";
-import { UserRepository } from "@/repositories/user.repository";
-import { SessionRepository } from "@/repositories/session.repository";
+import { userAction } from "@/config/constant/user.constant";
+import { UserRepository } from "@/modules/users/user.repository";
 import { hashPassword, hashToken, verifyPassword } from "@/utils/hash";
-import { NotificationRepository } from "@/repositories/notification.repository";
-import { loginResponse, userResponse, verificationType } from "@/models/user.model";
+import { SessionRepository } from "@/modules/sessions/sessions.repository";
+import { loginResponse, userResponse, verificationType } from "@/modules/users/user.types";
+import { NotificationRepository } from "@/modules/notifications/notification.repository";
 import { authErrorCode, authErrorMessage, authLimit } from "@/config/constant/auth.constant";
 import { NotificationChannel, NotificationStatus, NotificationType } from "generated/prisma/edge";
 import { generateRandomAvatarURL, generateRandomToken, generateRandomUsername } from "@/utils/generator";
-import { ChangePasswordRequest, LoginRequest, RegisterRequest, ResetPasswordRequest } from "@/schema/auth.validation";
-import { userAction } from "@/config/constant/user.constant";
+import { ChangePasswordRequest, LoginRequest, RegisterRequest, ResetPasswordRequest } from "@/modules/auth/auth.schema";
 
 export class AuthService {
   static async createUser(c: Context, request: RegisterRequest): Promise<{ data: { email: string } }> {

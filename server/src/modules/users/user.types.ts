@@ -55,6 +55,9 @@ type profileResponse = {
     following?: number;
     posts?: number;
   };
+  followers?: {
+    id: string;
+  }[];
 };
 
 type createUserData = {
@@ -70,6 +73,9 @@ type searchResponse = {
   name: string;
   username: string;
   avatar: string | null;
+  followers?: {
+    id: string;
+  }[];
 };
 
 export { verificationType, searchResponse, loginResponse, createUserData, profileResponse, userCredential, createVerificationData, userVerificationData, userResponse, UserStatus, updateUserActiveData };

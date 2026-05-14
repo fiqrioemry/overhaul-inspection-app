@@ -1,10 +1,10 @@
 import { Context } from "hono";
+import { Prisma } from "generated/prisma/edge";
 import storageConfig from "@/config/constant/storage";
 import { processImage } from "@/utils/file-processing";
 import { generateRandomFilename } from "@/utils/generator";
 import { minioClient, BUCKET } from "@/config/storage/minio";
-import { FileRepository } from "@/repositories/file.repository";
-import { Prisma } from "generated/prisma/edge";
+import { FileRepository } from "@/modules/files/file.repository";
 
 export class FileService {
   static async uploadSingleFile(c: Context, userId: string, file: File, module: string, targetId?: string, isUsed?: boolean) {

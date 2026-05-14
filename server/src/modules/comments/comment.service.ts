@@ -2,14 +2,14 @@ import { Context } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { NotificationType } from "generated/prisma";
 import { pgsql as db, pgsql } from "@/config/database/pgsql";
-import { PostRepository } from "@/repositories/post.repository";
-import { UserRepository } from "@/repositories/user.repository";
-import { CommentRepository } from "@/repositories/comment.repository";
-import { NotificationRepository } from "@/repositories/notification.repository";
+import { PostRepository } from "@/modules/posts/post.repository";
+import { UserRepository } from "@/modules/users/user.repository";
+import { CommentRepository } from "@/modules/comments/comment.repository";
+import { NotificationRepository } from "@/modules/notifications/notification.repository";
 import { postErrorCode, postErrorMessage } from "@/config/constant/post.constant";
-import { CreateCommentRequest, EditCommentRequest, GetCommentsRequest } from "@/schema/comment.validation";
 import { commentAction, commentErrorCode, commentErrorMessage } from "@/config/constant/comment.constant";
 import { notificationErrorCode, notificationErrorMessage } from "@/config/constant/notification.constant";
+import { CreateCommentRequest, EditCommentRequest, GetCommentsRequest } from "@/modules/comments/comment.schema";
 
 export class CommentService {
   static async createComment(c: Context, request: CreateCommentRequest) {
@@ -45,9 +45,10 @@ export class CommentService {
         });
       }
 
-      if (parentComment.commentId) {
+      if (parentComment.parentId) {
         throw new HTTPException(400, {
-          message: "Cannot reply to a reply",
+          message: commentErrorMessage.CANNOT_REPLY_TO_REPLY,
+          cause: commentErrorCode.CANNOT_REPLY_TO_REPLY,
         });
       }
 

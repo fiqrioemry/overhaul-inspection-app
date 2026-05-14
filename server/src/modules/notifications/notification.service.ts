@@ -1,9 +1,9 @@
 import { Context } from "hono";
 import { pgsql } from "@/config/database/pgsql";
-import { UserRepository } from "@/repositories/user.repository";
+import { UserRepository } from "@/modules/users/user.repository";
 import { notificationAction } from "@/config/constant/notification.constant";
-import { NotificationRepository } from "@/repositories/notification.repository";
-import { DeleteNotificationRequest, GetNotificationRequest, UpdateNotificationRequest, UpdateNotificationSettingRequest } from "@/schema/notification.validation";
+import { NotificationRepository } from "@/modules/notifications/notification.repository";
+import { DeleteNotificationRequest, GetNotificationRequest, UpdateNotificationRequest, UpdateNotificationSettingRequest } from "@/modules/notifications/notification.schema";
 
 export class NotificationService {
   static async getNotificationByUserId(c: Context, request: GetNotificationRequest) {

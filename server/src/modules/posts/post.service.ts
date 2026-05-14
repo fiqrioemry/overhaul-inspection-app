@@ -1,14 +1,13 @@
 import { Context } from "hono";
-import { FileService } from "./file.service";
-import { pgsql as db } from "@/config/database/pgsql";
-import { HTTPException } from "hono/http-exception";
-import { UserRepository } from "@/repositories/user.repository";
-import { PostRepository } from "@/repositories/post.repository";
-import { GalleryRepository } from "@/repositories/gallery.repository";
-import { CreatePostRequest, GetFollowingPostsRequest, GetPublicPostsRequest, UpdatePostRequest } from "@/schema/post.validation";
-import { postAction, postErrorCode, postErrorMessage } from "@/config/constant/post.constant";
-import { NotificationRepository } from "@/repositories/notification.repository";
 import { NotificationType } from "generated/prisma";
+import { HTTPException } from "hono/http-exception";
+import { FileService } from "@/modules/files/file.service";
+import { pgsql as db } from "@/config/database/pgsql";
+import { PostRepository } from "@/modules/posts/post.repository";
+import { UserRepository } from "@/modules/users/user.repository";
+import { NotificationRepository } from "@/modules/notifications/notification.repository";
+import { postAction, postErrorCode, postErrorMessage } from "@/config/constant/post.constant";
+import { CreatePostRequest, GetFollowingPostsRequest, GetPublicPostsRequest, UpdatePostRequest } from "@/modules/posts/post.schema";
 
 export class PostService {
   static async createPost(c: Context, userId: string, request: CreatePostRequest) {
@@ -18,7 +17,7 @@ export class PostService {
       if (request.galleries && request.galleries.length > 0) {
         const uploadResults = await FileService.uploadMultipleFiles(c, userId, request.galleries, "posts", tx);
 
-        const galleries = await GalleryRepository.bulkCreateGalleryRecords(tx, post.id, uploadResults);
+        const galleries = await PostRepository.bulkCreateGalleryRecords(tx, post.id, uploadResults);
 
         await UserRepository.createActivityLog(tx, {
           userId,

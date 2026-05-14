@@ -1,8 +1,8 @@
 import { Context } from "hono";
 import { responseOK } from "@/utils/response";
-import { NotificationService } from "@/services/notification.service";
+import { NotificationService } from "@/modules/notifications/notification.service";
 import { notificationSuccessMessage } from "@/config/constant/notification.constant";
-import { deleteNotificationRequest, getNotificationRequest, updateNotificationRequest, updateNotificationSettingRequest } from "@/schema/notification.validation";
+import { deleteNotificationRequest, getNotificationRequest, updateNotificationRequest, updateNotificationSettingRequest } from "@/modules/notifications/notification.schema";
 
 export class NotificationController {
   static async getUserNotifications(c: Context) {

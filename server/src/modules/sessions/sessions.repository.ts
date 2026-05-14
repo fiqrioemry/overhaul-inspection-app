@@ -1,10 +1,10 @@
 import { Prisma } from "generated/prisma/edge";
-import { prisma } from "@/config/database/prisma";
-import { createSessionData, sessionResponse } from "@/models/session.model";
+import { pgsql as database } from "@/config/database/pgsql";
+import { createSessionData, sessionResponse } from "@/modules/sessions/sessions.types";
 
 export class SessionRepository {
   static async findSessionWithUser(sessionId: string): Promise<sessionResponse | null> {
-    return await prisma.session.findUnique({
+    return await database.session.findUnique({
       where: { id: sessionId },
       select: {
         id: true,
@@ -14,6 +14,7 @@ export class SessionRepository {
         createdAt: true,
         user: {
           select: {
+            username: true,
             email: true,
             role: true,
             status: true,
@@ -24,7 +25,7 @@ export class SessionRepository {
   }
 
   static async createSession(tx: Prisma.TransactionClient | null, sessions: createSessionData): Promise<{ id: string }> {
-    const db = tx ?? prisma;
+    const db = tx ?? database;
     // create session in the database
     const session = await db.session.create({
       data: {
@@ -40,7 +41,7 @@ export class SessionRepository {
   }
 
   static async findSessionByToken(token: string): Promise<sessionResponse | null> {
-    return await prisma.session.findUnique({
+    return await database.session.findUnique({
       where: { token },
       select: {
         id: true,
@@ -50,6 +51,7 @@ export class SessionRepository {
         expiresAt: true,
         user: {
           select: {
+            username: true,
             email: true,
             role: true,
             status: true,
@@ -60,7 +62,7 @@ export class SessionRepository {
   }
 
   static async findSessionsByUserId(userId: string): Promise<sessionResponse[]> {
-    return await prisma.session.findMany({
+    return await database.session.findMany({
       where: { userId },
       select: {
         id: true,
@@ -70,6 +72,7 @@ export class SessionRepository {
         createdAt: true,
         user: {
           select: {
+            username: true,
             email: true,
             role: true,
             status: true,
@@ -80,19 +83,19 @@ export class SessionRepository {
   }
 
   static async deleteSessionsByUserId(userId: string): Promise<void> {
-    await prisma.session.deleteMany({
+    await database.session.deleteMany({
       where: { userId },
     });
   }
 
   static async deleteSessionBySessionId(sessionId: string): Promise<void> {
-    await prisma.session.delete({
+    await database.session.delete({
       where: { id: sessionId },
     });
   }
 
   static async getSessionById(sessionId: string): Promise<{ id: string } | null> {
-    return await prisma.session.findUnique({
+    return await database.session.findUnique({
       where: { id: sessionId },
       select: {
         id: true,

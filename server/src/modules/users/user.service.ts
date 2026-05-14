@@ -1,12 +1,12 @@
 import { Context } from "hono";
-import { FileService } from "./file.service";
 import { pgsql } from "@/config/database/pgsql";
 import { HTTPException } from "hono/http-exception";
-import { FollowUserRequest } from "@/schema/user.validation";
+import { FileService } from "@/modules/files/file.service";
 import { NotificationType, Prisma } from "generated/prisma";
-import { UserRepository } from "@/repositories/user.repository";
-import { FileRepository } from "@/repositories/file.repository";
-import { NotificationRepository } from "@/repositories/notification.repository";
+import { FollowUserRequest } from "@/modules/users/user.schema";
+import { FileRepository } from "@/modules/files/file.repository";
+import { UserRepository } from "@/modules/users/user.repository";
+import { NotificationRepository } from "@/modules/notifications/notification.repository";
 import { userAction, userErrorCode, userErrorMessage } from "@/config/constant/user.constant";
 
 export class UserService {

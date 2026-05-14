@@ -1,8 +1,8 @@
 import { Context } from "hono";
-import { PostService } from "@/services/post.service";
+import { PostService } from "@/modules/posts/post.service";
 import { responseCreated, responseOK } from "@/utils/response";
 import { postSuccessMessage } from "@/config/constant/post.constant";
-import { createPostRequest, getFollowingPostsRequest, getPublicPostsRequest, updatePostRequest } from "@/schema/post.validation";
+import { createPostRequest, getFollowingPostsRequest, getPublicPostsRequest, updatePostRequest } from "@/modules/posts/post.schema";
 
 export class PostController {
   static async createPost(c: Context) {
