@@ -3,7 +3,7 @@ import { protect } from "@/middlewares/auth.middleware";
 import { singleFile } from "@/middlewares/file.middleware";
 import { limitter } from "@/middlewares/limitter.middleware";
 import { fileLimit } from "@/config/constant/file.constant";
-import { FileController as ctrl } from "@/controllers/file.controller";
+import { FileController as ctrl } from "@/modules/files/file.controller";
 
 const file = new Hono();
 

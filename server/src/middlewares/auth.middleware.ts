@@ -3,7 +3,7 @@ import { getCookie } from "hono/cookie";
 import { verifySessionToken } from "@/utils/jwt";
 import redisConfig from "@/config/constant/redis";
 import { HTTPException } from "hono/http-exception";
-import { SessionRepository } from "@/repositories/session.repository";
+import { SessionRepository } from "@/modules/sessions/sessions.repository";
 import { authErrorCode, authErrorMessage } from "@/config/constant/auth.constant";
 
 const sessionRepo = SessionRepository;

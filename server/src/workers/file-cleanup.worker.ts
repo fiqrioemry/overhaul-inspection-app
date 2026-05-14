@@ -1,6 +1,6 @@
 import { redisClient } from "@/config/database/redis";
 import { minioClient, BUCKET } from "@/config/storage/minio";
-import { FileRepository } from "@/repositories/file.repository";
+import { FileRepository } from "@/modules/files/file.repository";
 
 const LOCK_KEY = "worker:file-cleanup:lock";
 const LOCK_TTL_SECONDS = 15 * 60;
