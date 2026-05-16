@@ -12,7 +12,7 @@ const passwordValidation = z
 
 export const registerRequest = z
   .object({
-    name: z.string().min(1, "Name is required"),
+    name: z.string().min(3, "Name must be at least 3 characters").max(50, "Name must be less than 50 characters"),
     email: z.email("Invalid email address"),
     password: passwordValidation,
     confirmPassword: z.string().min(1, "Password confirmation is required"),

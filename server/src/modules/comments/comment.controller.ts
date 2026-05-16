@@ -7,10 +7,8 @@ import { createCommentRequest, editCommentRequest, getCommentsRequest } from "@/
 export class CommentController {
   static async createComment(c: Context) {
     const user = await c.get("user");
-    const postId = c.req.param("postId");
     const request = createCommentRequest.parse(await c.req.json());
 
-    request.postId = postId;
     request.userId = user.userId;
 
     await CommentService.createComment(c, request);
@@ -31,11 +29,9 @@ export class CommentController {
 
   static async getChildComments(c: Context) {
     const user = await c.get("user");
-    const postId = c.req.param("postId");
     const commentId = c.req.param("commentId");
     const query = getCommentsRequest.parse(c.req.query());
 
-    query.postId = postId;
     query.userId = user.userId;
     query.commentId = commentId;
 

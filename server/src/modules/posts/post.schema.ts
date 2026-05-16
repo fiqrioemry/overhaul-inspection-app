@@ -25,6 +25,7 @@ export type UpdatePostRequest = z.infer<typeof updatePostRequest>;
 
 export const getPublicPostsRequest = z.object({
   userId: z.cuid().optional(),
+  targetUserId: z.cuid().optional(),
   page: z.string().default("1").optional(),
   limit: z.string().default("10").optional(),
   orderBy: z.enum(["createdAt"]).optional(),

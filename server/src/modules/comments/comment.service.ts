@@ -10,6 +10,7 @@ import { postErrorCode, postErrorMessage } from "@/config/constant/post.constant
 import { commentAction, commentErrorCode, commentErrorMessage } from "@/config/constant/comment.constant";
 import { notificationErrorCode, notificationErrorMessage } from "@/config/constant/notification.constant";
 import { CreateCommentRequest, EditCommentRequest, GetCommentsRequest } from "@/modules/comments/comment.schema";
+import { commentsResponse, repliesResponse } from "./comment.types";
 
 export class CommentService {
   static async createComment(c: Context, request: CreateCommentRequest) {
@@ -109,7 +110,7 @@ export class CommentService {
     });
   }
 
-  static async getParentComments(c: Context, query: GetCommentsRequest) {
+  static async getParentComments(c: Context, query: GetCommentsRequest): Promise<{ data: commentsResponse[]; meta: { pagination: { page: number; limit: number; totalItems: number; totalPages: number } } }> {
     const { comments, totalItems } = await CommentRepository.getCommentsByPostId(query);
 
     const data = comments.map((result) => ({
@@ -156,12 +157,12 @@ export class CommentService {
     return { data, meta };
   }
 
-  static async getChildComments(c: Context, query: GetCommentsRequest) {
+  static async getChildComments(c: Context, query: GetCommentsRequest): Promise<{ data: repliesResponse[]; meta: { pagination: { page: number; limit: number; totalItems: number; totalPages: number } } }> {
     const { comments, totalItems } = await CommentRepository.getCommentsByParentCommentId(query);
 
     const data = comments.map((result) => ({
       id: result.id,
-      parentId: result.parentId,
+      parentId: result.parentId!,
       content: result.content,
       createdAt: result.createdAt,
       user: {

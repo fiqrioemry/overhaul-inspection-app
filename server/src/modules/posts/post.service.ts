@@ -34,17 +34,20 @@ export class PostService {
     const { posts, totalItems } = await PostRepository.getPublicPosts(query);
     const data = posts.map((post) => ({
       id: post.id,
-      user: post.user,
+      user: {
+        id: post.user.id,
+        name: post.user.name,
+        username: post.user.username,
+        avatar: post.user.avatar,
+      },
       content: post.content,
       createdAt: post.createdAt,
       galleries: post.galleries,
-      counts: {
-        likes: post._count.likes,
-        comments: post._count.comments,
-        galleries: post._count.galleries,
-      },
+      totalLikes: post._count.likes,
+      totalComments: post._count.comments,
       isLiked: post.likes.length > 0,
       isEditable: post.userId === query.userId,
+      isFollowing: post.user.followers.some((follower) => follower.followerId === query.userId),
     }));
 
     const meta = {
@@ -65,17 +68,20 @@ export class PostService {
     // transform response
     const data = posts.map((post) => ({
       id: post.id,
-      user: post.user,
+      user: {
+        id: post.user.id,
+        name: post.user.name,
+        username: post.user.username,
+        avatar: post.user.avatar,
+      },
       content: post.content,
       createdAt: post.createdAt,
       galleries: post.galleries,
-      counts: {
-        likes: post._count.likes,
-        comments: post._count.comments,
-        galleries: post._count.galleries,
-      },
+      totalLikes: post._count.likes,
+      totalComments: post._count.comments,
       isLiked: post.likes.length > 0,
       isEditable: post.userId === query.userId,
+      isFollowing: post.user.followers.some((follower) => follower.followerId === query.userId),
     }));
 
     const meta = {
@@ -207,15 +213,19 @@ export class PostService {
       id: post.id,
       title: post.title,
       content: post.content,
+      user: {
+        id: post.user.id,
+        name: post.user.name,
+        username: post.user.username,
+        avatar: post.user.avatar,
+      },
       createdAt: post.createdAt,
       galleries: post.galleries,
-      counts: {
-        likes: post._count.likes,
-        comments: post._count.comments,
-        galleries: post._count.galleries,
-      },
+      totalLikes: post._count.likes,
+      totalComments: post._count.comments,
       isLiked: post.likes.length > 0,
       isEditable: post.userId === userId,
+      isFollowing: post.user.followers.some((follower) => follower.followerId === userId),
     }));
 
     const meta = {

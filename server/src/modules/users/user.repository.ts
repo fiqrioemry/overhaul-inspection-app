@@ -1,7 +1,7 @@
 import { Prisma } from "generated/prisma/edge";
 import { pgsql as database } from "@/config/database/pgsql";
 import { CreateUserActivityLogRequest, UpdateProfileRequest } from "@/modules/users/user.schema";
-import { createUserData, searchResponse, verificationType, createVerificationData, updateUserActiveData, userCredential, userResponse, userVerificationData, profileResponse } from "@/models/user.model";
+import { createUserData, searchResponse, verificationType, createVerificationData, updateUserActiveData, userCredential, userResponse, userVerificationData, profileResponse } from "@/modules/users/user.types";
 
 export class UserRepository {
   static async findByEmail(email: string): Promise<userCredential | null> {
@@ -10,6 +10,9 @@ export class UserRepository {
       select: {
         id: true,
         email: true,
+        avatar: true,
+        name: true,
+        username: true,
         passwordHash: true,
         status: true,
         verifiedAt: true,

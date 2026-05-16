@@ -12,6 +12,9 @@ type createVerificationData = {
 type userCredential = {
   id: string;
   email: string;
+  name: string;
+  username: string;
+  avatar: string | null;
   passwordHash: string;
   status: UserStatus;
   verifiedAt: Date | null;
@@ -27,16 +30,22 @@ type updateUserActiveData = {
 };
 
 type loginResponse = {
-  id: string;
   token: string;
   expiredAt: Date;
+  user: {
+    id: string;
+    name: string;
+    username: string;
+    avatar: string | null;
+    email: string;
+  };
 };
 
 type userResponse = {
   id: string;
-  email: string;
   name: string;
   username: string;
+  avatar: string | null;
 };
 
 type profileResponse = {

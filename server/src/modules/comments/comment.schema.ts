@@ -3,7 +3,7 @@ import { z } from "zod";
 export const createCommentRequest = z.object({
   userId: z.cuid().optional(),
   commentId: z.cuid().optional(),
-  postId: z.cuid().optional(),
+  postId: z.cuid().min(1, "Post ID is required"),
   content: z.string().min(1, "Content is required"),
 });
 

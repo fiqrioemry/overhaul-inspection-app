@@ -9,7 +9,6 @@ export class PostController {
     const user = c.get("user");
     const body = await c.req.parseBody({ all: true });
     const galleries = c.get("posts") as File[] | undefined;
-
     const request = createPostRequest.parse({
       title: body.title,
       content: body.content,
@@ -40,7 +39,8 @@ export class PostController {
     const user = await c.get("user");
     const targetId = c.req.param("targetId");
     const query = getPublicPostsRequest.parse(c.req.query());
-    query.userId = targetId;
+    query.targetUserId = targetId;
+    query.userId = user?.userId;
     const response = await PostService.getPostsByUserId(c, query, user?.userId);
     return responseOK(c, postSuccessMessage.GET_PUBLIC_POSTS_SUCCESS, response.data, response.meta);
   }

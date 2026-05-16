@@ -42,6 +42,14 @@ export class PostRepository {
               name: true,
               username: true,
               avatar: true,
+              followers: {
+                where: {
+                  followerId: query.userId,
+                },
+                select: {
+                  followerId: true,
+                },
+              },
             },
           },
 
@@ -215,6 +223,14 @@ export class PostRepository {
               name: true,
               username: true,
               avatar: true,
+              followers: {
+                where: {
+                  followerId: userId,
+                },
+                select: {
+                  followerId: true,
+                },
+              },
             },
           },
 
@@ -277,7 +293,7 @@ export class PostRepository {
 
   static async getPostsByUserId(query: GetPublicPostsRequest) {
     const where = {
-      userId: query.userId!,
+      userId: query.targetUserId!,
       deletedAt: null,
     };
     const [posts, totalItems] = await Promise.all([
@@ -289,7 +305,22 @@ export class PostRepository {
           content: true,
           createdAt: true,
           userId: true,
-
+          user: {
+            select: {
+              id: true,
+              name: true,
+              username: true,
+              avatar: true,
+              followers: {
+                where: {
+                  followerId: query.userId,
+                },
+                select: {
+                  followerId: true,
+                },
+              },
+            },
+          },
           galleries: {
             select: {
               id: true,

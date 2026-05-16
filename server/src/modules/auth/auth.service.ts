@@ -160,9 +160,15 @@ export class AuthService {
     setCookie(c, redisConfig.tokenPrefixDefault, sessionToken);
 
     return {
-      id: isEmailExist.id,
       token: sessionToken,
       expiredAt: sessionPayload.expiresAt,
+      user: {
+        id: isEmailExist.id,
+        name: isEmailExist.name,
+        username: isEmailExist.username,
+        avatar: isEmailExist.avatar,
+        email: isEmailExist.email,
+      },
     };
   }
 

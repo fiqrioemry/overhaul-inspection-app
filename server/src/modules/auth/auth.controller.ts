@@ -13,6 +13,7 @@ export class AuthController {
 
   static async verifyEmail(c: Context) {
     const token = c.req.query("token") || "";
+    console.log("Verification token:", token);
     await AuthService.verifyEmail(c, token);
     return responseOK(c, authSuccessMessage.EMAIL_VERIFICATION_SUCCESS);
   }
