@@ -85,6 +85,7 @@ export class PostController {
     const user = await c.get("user");
     const query = getSavedPostsRequest.parse(c.req.query());
     query.userId = user?.userId;
+    console.log("userId in controller:", query);
     const response = await PostService.getSavedPosts(c, query);
     return responseOK(c, postSuccessMessage.GET_SAVED_POSTS_SUCCESS, response.data, response.meta);
   }

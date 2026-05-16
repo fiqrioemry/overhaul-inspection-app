@@ -259,32 +259,38 @@ export class PostService {
   }
 
   static async getSavedPosts(c: Context, query: GetSavedPostsRequest) {
-    const { posts, totalItems } = await PostRepository.getSavedPosts(query);
+    const { bookmarks, totalItems, likedPostIds } = await PostRepository.getSavedPosts(query);
 
-    const data = posts.map((post) => ({
-      id: post.id,
-      title: post.title,
-      content: post.content,
+    const data = bookmarks.map((bm) => ({
+      id: bm.post.id,
+      bookmarkId: bm.id,
+      title: bm.post.title,
+      content: bm.post.content,
       user: {
-        id: post.user.id,
-        name: post.user.name,
-        username: post.user.username,
-        avatar: post.user.avatar,
+        id: bm.post.user.id,
+        name: bm.post.user.name,
+        username: bm.post.user.username,
+        avatar: bm.post.user.avatar,
       },
-      createdAt: post.createdAt,
-      galleries: post.galleries,
-      totalLikes: post._count.likes,
-      totalComments: post._count.comments,
-      isLiked: post.likes.length > 0,
+      galleries: bm.post.galleries,
+      counts: {
+        galleries: bm.post._count.galleries,
+        likes: bm.post._count.likes,
+        comments: bm.post._count.comments,
+      },
+      isLiked: likedPostIds.has(bm.post.id),
+      createdAt: bm.post.createdAt,
     }));
+
     const meta = {
       pagination: {
-        page: Number(query.page!),
+        page: Number(query.page),
         totalItems,
-        limit: Number(query.limit!),
-        totalPages: totalItems > 0 ? Math.ceil(totalItems / Number(query.limit!)) : 0,
+        limit: Number(query.limit),
+        totalPages: totalItems > 0 ? Math.ceil(totalItems / Number(query.limit)) : 0,
       },
     };
+
     return { data, meta };
   }
 

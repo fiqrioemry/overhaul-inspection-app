@@ -407,59 +407,102 @@ export class PostRepository {
 
   static async getSavedPosts(query: GetSavedPostsRequest) {
     const { userId, page, limit, orderBy, sortBy } = query;
+
+    // First, get valid post IDs (not deleted, not archived)
+    const validPostIds = await database.post.findMany({
+      where: {
+        deletedAt: null,
+        isArchived: false,
+        bookmarks: {
+          some: {
+            userId,
+          },
+        },
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    const postIds = validPostIds.map((p) => p.id);
+
+    if (postIds.length === 0) {
+      return { bookmarks: [], totalItems: 0, likedPostIds: new Set() };
+    }
+
+    // Now get bookmarks for these valid posts
     const where = {
       userId,
-      deletedAt: null,
+      postId: { in: postIds },
     };
-    const [posts, totalItems] = await Promise.all([
-      database.post.findMany({
+
+    const [bookmarks, totalItems] = await Promise.all([
+      database.bookmark.findMany({
         where,
         select: {
           id: true,
-          title: true,
-          content: true,
-          createdAt: true,
           userId: true,
-          user: {
+          createdAt: true,
+          post: {
             select: {
               id: true,
-              name: true,
-              username: true,
-              avatar: true,
-            },
-          },
-          galleries: {
-            select: {
-              id: true,
-              url: true,
-            },
-          },
-
-          likes: {
-            where: {
-              userId,
-            },
-            select: {
-              id: true,
-            },
-          },
-
-          _count: {
-            select: {
-              galleries: true,
-              likes: true,
-              comments: true,
+              title: true,
+              content: true,
+              createdAt: true,
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  username: true,
+                  avatar: true,
+                },
+              },
+              galleries: {
+                select: {
+                  id: true,
+                  url: true,
+                  order: true,
+                },
+                orderBy: {
+                  order: "asc",
+                },
+              },
+              _count: {
+                select: {
+                  galleries: true,
+                  likes: {
+                    where: {
+                      commentId: null,
+                    },
+                  },
+                  comments: true,
+                },
+              },
             },
           },
         },
-        take: Number(limit!),
-        skip: (Number(page!) - 1) * Number(limit!),
+        take: Number(limit),
+        skip: (Number(page) - 1) * Number(limit),
         orderBy: orderBy ? { [orderBy]: sortBy } : { createdAt: "desc" },
       }),
-      await database.post.count({ where }),
+      database.bookmark.count({ where }),
     ]);
 
-    return { posts, totalItems };
+    // Get user likes
+    const userLikes = await database.like.findMany({
+      where: {
+        userId,
+        postId: { in: postIds },
+        commentId: null,
+      },
+      select: {
+        postId: true,
+      },
+    });
+
+    const likedPostIds = new Set(userLikes.map((like) => like.postId).filter((id): id is string => id !== null));
+
+    return { bookmarks, totalItems, likedPostIds };
   }
 
   static async getBookmarkByUserId(postId: string, userId: string) {
