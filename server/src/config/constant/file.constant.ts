@@ -44,7 +44,7 @@ const fileLimit = {
   },
 
   POST_FILE_OPTIONS: {
-    maxSize: 2 * 1024 * 1024, // 2MB per file
+    maxSize: 5 * 1024 * 1024, // 5MB per file
     allowedTypes: ["image/jpeg", "image/png"],
   },
 };

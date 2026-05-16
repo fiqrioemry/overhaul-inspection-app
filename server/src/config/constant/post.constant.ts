@@ -5,8 +5,8 @@ const postSuccessMessage = {
   CREATE_POST_SUCCESS: "Post created successfully",
   UPDATE_POST_SUCCESS: "Post updated successfully",
   DELETE_POST_SUCCESS: "Post deleted successfully",
-  LIKE_POST_SUCCESS: "Post liked successfully",
-  UNLIKE_POST_SUCCESS: "Post unliked successfully",
+  LIKE_POST_SUCCESS: "You liked the post",
+  UNLIKE_POST_SUCCESS: "You unliked the post",
 };
 
 const postErrorMessage = {
@@ -42,31 +42,31 @@ const postLimit = {
   },
 
   GET_FOLLOWING_POSTS: {
-    limit: 30,
+    limit: 120,
     windowSec: 60,
   },
 
   LIKE_POST: {
-    limit: 50,
+    limit: 60,
     windowSec: 60,
   },
 
   UNLIKE_POST: {
-    limit: 50,
+    limit: 60,
     windowSec: 60,
   },
 
   GET_POST_BY_USER_ID: {
-    limit: 30,
+    limit: 120,
     windowSec: 60,
   },
   GET_PUBLIC_POSTS: {
-    limit: 30,
+    limit: 120,
     windowSec: 60,
   },
 
   GET_POST_BY_ID: {
-    limit: 50,
+    limit: 60,
     windowSec: 60,
   },
   DELETE_POST: {
