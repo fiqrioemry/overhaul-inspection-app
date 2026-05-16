@@ -9,6 +9,7 @@ const notificationSuccessMessage = {
   UPDATE_NOTIFICATION_SETTINGS: "update notification settings successfully",
   MARK_AS_READ: "mark notification as read successfully",
   DELETE_NOTIFICATION: "notification deleted successfully",
+  GET_UNREAD_NOTIFICATION_COUNT: "get unread notification count successfully",
 };
 
 const notificationErrorMessage = {

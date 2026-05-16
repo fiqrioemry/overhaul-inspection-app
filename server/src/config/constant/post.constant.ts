@@ -2,14 +2,19 @@ const postSuccessMessage = {
   GET_POST_DETAIL_SUCCESS: "Post detail retrieved successfully",
   GET_FOLLOWING_POSTS_SUCCESS: "Following posts retrieved successfully",
   GET_PUBLIC_POSTS_SUCCESS: "Public posts retrieved successfully",
+  GET_SAVED_POSTS_SUCCESS: "Saved posts retrieved successfully",
   CREATE_POST_SUCCESS: "Post created successfully",
   UPDATE_POST_SUCCESS: "Post updated successfully",
   DELETE_POST_SUCCESS: "Post deleted successfully",
   LIKE_POST_SUCCESS: "You liked the post",
   UNLIKE_POST_SUCCESS: "You unliked the post",
+  BOOKMARK_POST_SUCCESS: "Post bookmarked successfully",
+  UNBOOKMARK_POST_SUCCESS: "Post unbookmarked successfully",
 };
 
 const postErrorMessage = {
+  ALREADY_SAVED_POST: "Post already saved by the user",
+  ALREADY_UNSAVED_POST: "Post already unsaved by the user",
   POST_NOT_FOUND: "Post not found",
   INVALID_POST_ID: "Invalid post ID",
   UNAUTHORIZED: "Unauthorized to perform this action",
@@ -18,6 +23,8 @@ const postErrorMessage = {
 };
 
 const postErrorCode = {
+  ALREADY_SAVED_POST: "ALREADY_SAVED_POST",
+  ALREADY_UNSAVED_POST: "ALREADY_UNSAVED_POST",
   POST_NOT_FOUND: "POST_NOT_FOUND",
   INVALID_POST_ID: "INVALID_POST_ID",
   UNAUTHORIZED: "UNAUTHORIZED",
@@ -32,6 +39,18 @@ const postAction = {
 };
 
 const postLimit = {
+  GET_SAVED_POSTS: {
+    limit: 120,
+    windowSec: 60,
+  },
+  SAVE_POST: {
+    limit: 30,
+    windowSec: 60,
+  },
+  UNSAVE_POST: {
+    limit: 30,
+    windowSec: 60,
+  },
   CREATE_POST: {
     limit: 20,
     windowSec: 60,
