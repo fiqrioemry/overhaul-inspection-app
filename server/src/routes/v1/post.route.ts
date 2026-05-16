@@ -17,6 +17,10 @@ post.put("/:postId", protect, limitter(postLimit.UPDATE_POST), ctrl.updatePost);
 post.post("/:postId/like", protect, limitter(postLimit.LIKE_POST), ctrl.likePost);
 post.post("/:postId/unlike", protect, limitter(postLimit.UNLIKE_POST), ctrl.unlikePost);
 post.delete("/:postId", protect, limitter(postLimit.DELETE_POST), ctrl.deletePost);
-// total endpoints: 9
+post.get("/saved", protect, limitter(postLimit.GET_SAVED_POSTS), ctrl.getAllSavedPosts);
+post.post("/:postId/save", protect, limitter(postLimit.SAVE_POST), ctrl.savePost);
+post.post("/:postId/unsave", protect, limitter(postLimit.UNSAVE_POST), ctrl.unsavePost);
+
+// total endpoints: 11
 
 export default post;

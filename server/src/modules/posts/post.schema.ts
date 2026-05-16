@@ -23,6 +23,16 @@ export const updatePostRequest = z.object({
 
 export type UpdatePostRequest = z.infer<typeof updatePostRequest>;
 
+export const getSavedPostsRequest = z.object({
+  userId: z.cuid().optional(),
+  page: z.string().default("1").optional(),
+  limit: z.string().default("10").optional(),
+  orderBy: z.enum(["createdAt"]).optional(),
+  sortBy: z.enum(["asc", "desc"]).optional(),
+});
+
+export type GetSavedPostsRequest = z.infer<typeof getSavedPostsRequest>;
+
 export const getPublicPostsRequest = z.object({
   userId: z.cuid().optional(),
   targetUserId: z.cuid().optional(),

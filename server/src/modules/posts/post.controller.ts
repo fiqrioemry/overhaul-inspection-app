@@ -2,7 +2,7 @@ import { Context } from "hono";
 import { PostService } from "@/modules/posts/post.service";
 import { responseCreated, responseOK } from "@/utils/response";
 import { postSuccessMessage } from "@/config/constant/post.constant";
-import { createPostRequest, getFollowingPostsRequest, getPublicPostsRequest, updatePostRequest } from "@/modules/posts/post.schema";
+import { createPostRequest, getFollowingPostsRequest, getPublicPostsRequest, getSavedPostsRequest, updatePostRequest } from "@/modules/posts/post.schema";
 
 export class PostController {
   static async createPost(c: Context) {
@@ -79,5 +79,27 @@ export class PostController {
     const postId = c.req.param("postId");
     await PostService.unlikePost(c, user.userId, postId);
     return responseOK(c, postSuccessMessage.UNLIKE_POST_SUCCESS);
+  }
+
+  static async getAllSavedPosts(c: Context) {
+    const user = await c.get("user");
+    const query = getSavedPostsRequest.parse(c.req.query());
+    query.userId = user?.userId;
+    const response = await PostService.getSavedPosts(c, query);
+    return responseOK(c, postSuccessMessage.GET_SAVED_POSTS_SUCCESS, response.data, response.meta);
+  }
+
+  static async savePost(c: Context) {
+    const user = await c.get("user");
+    const postId = c.req.param("postId");
+    await PostService.savePostAsBookmark(c, user.userId, postId);
+    return responseOK(c, postSuccessMessage.BOOKMARK_POST_SUCCESS);
+  }
+
+  static async unsavePost(c: Context) {
+    const user = await c.get("user");
+    const postId = c.req.param("postId");
+    await PostService.unsavePostFromBookmark(c, user.userId, postId);
+    return responseOK(c, postSuccessMessage.UNBOOKMARK_POST_SUCCESS);
   }
 }

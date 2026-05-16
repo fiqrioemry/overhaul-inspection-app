@@ -1,6 +1,6 @@
 import { Prisma } from "generated/prisma/edge";
 import { pgsql as database } from "@/config/database/pgsql";
-import { CreatePostRequest, GetFollowingPostsRequest, GetPublicPostsRequest, UpdatePostRequest } from "@/modules/posts/post.schema";
+import { CreatePostRequest, GetFollowingPostsRequest, GetPublicPostsRequest, GetSavedPostsRequest, UpdatePostRequest } from "@/modules/posts/post.schema";
 
 export class PostRepository {
   static async createPost(tx: Prisma.TransactionClient, userId: string, request: CreatePostRequest) {
@@ -402,6 +402,96 @@ export class PostRepository {
         url: g.url,
         order: g.sequence,
       })),
+    });
+  }
+
+  static async getSavedPosts(query: GetSavedPostsRequest) {
+    const { userId, page, limit, orderBy, sortBy } = query;
+    const where = {
+      userId,
+      deletedAt: null,
+    };
+    const [posts, totalItems] = await Promise.all([
+      database.post.findMany({
+        where,
+        select: {
+          id: true,
+          title: true,
+          content: true,
+          createdAt: true,
+          userId: true,
+          user: {
+            select: {
+              id: true,
+              name: true,
+              username: true,
+              avatar: true,
+            },
+          },
+          galleries: {
+            select: {
+              id: true,
+              url: true,
+            },
+          },
+
+          likes: {
+            where: {
+              userId,
+            },
+            select: {
+              id: true,
+            },
+          },
+
+          _count: {
+            select: {
+              galleries: true,
+              likes: true,
+              comments: true,
+            },
+          },
+        },
+        take: Number(limit!),
+        skip: (Number(page!) - 1) * Number(limit!),
+        orderBy: orderBy ? { [orderBy]: sortBy } : { createdAt: "desc" },
+      }),
+      await database.post.count({ where }),
+    ]);
+
+    return { posts, totalItems };
+  }
+
+  static async getBookmarkByUserId(postId: string, userId: string) {
+    return await database.bookmark.findUnique({
+      where: {
+        userId_postId: {
+          userId,
+          postId,
+        },
+      },
+    });
+  }
+
+  static async bookmarkPost(userId: string, postId: string, tx?: Prisma.TransactionClient) {
+    const db = tx ?? database;
+    await db.bookmark.create({
+      data: {
+        userId,
+        postId,
+      },
+    });
+  }
+
+  static async unbookmarkPost(userId: string, postId: string, tx?: Prisma.TransactionClient) {
+    const db = tx ?? database;
+    await db.bookmark.delete({
+      where: {
+        userId_postId: {
+          userId,
+          postId,
+        },
+      },
     });
   }
 }

@@ -7,7 +7,7 @@ import { PostRepository } from "@/modules/posts/post.repository";
 import { UserRepository } from "@/modules/users/user.repository";
 import { NotificationRepository } from "@/modules/notifications/notification.repository";
 import { postAction, postErrorCode, postErrorMessage } from "@/config/constant/post.constant";
-import { CreatePostRequest, GetFollowingPostsRequest, GetPublicPostsRequest, UpdatePostRequest } from "@/modules/posts/post.schema";
+import { CreatePostRequest, GetFollowingPostsRequest, GetPublicPostsRequest, GetSavedPostsRequest, UpdatePostRequest } from "@/modules/posts/post.schema";
 
 export class PostService {
   static async createPost(c: Context, userId: string, request: CreatePostRequest) {
@@ -256,5 +256,67 @@ export class PostService {
         metadata: { postId, title: post.title, content: post.content },
       });
     });
+  }
+
+  static async getSavedPosts(c: Context, query: GetSavedPostsRequest) {
+    const { posts, totalItems } = await PostRepository.getSavedPosts(query);
+
+    const data = posts.map((post) => ({
+      id: post.id,
+      title: post.title,
+      content: post.content,
+      user: {
+        id: post.user.id,
+        name: post.user.name,
+        username: post.user.username,
+        avatar: post.user.avatar,
+      },
+      createdAt: post.createdAt,
+      galleries: post.galleries,
+      totalLikes: post._count.likes,
+      totalComments: post._count.comments,
+      isLiked: post.likes.length > 0,
+    }));
+    const meta = {
+      pagination: {
+        page: Number(query.page!),
+        totalItems,
+        limit: Number(query.limit!),
+        totalPages: totalItems > 0 ? Math.ceil(totalItems / Number(query.limit!)) : 0,
+      },
+    };
+    return { data, meta };
+  }
+
+  static async savePostAsBookmark(c: Context, userId: string, postId: string) {
+    const post = await PostRepository.getPostById(postId);
+
+    if (!post) {
+      throw new HTTPException(404, { message: postErrorMessage.POST_NOT_FOUND, cause: postErrorCode.POST_NOT_FOUND });
+    }
+
+    const existingBookmark = await PostRepository.getBookmarkByUserId(postId, userId);
+
+    if (existingBookmark) {
+      throw new HTTPException(409, { message: postErrorMessage.ALREADY_SAVED_POST, cause: postErrorCode.ALREADY_SAVED_POST });
+    }
+
+    await PostRepository.bookmarkPost(userId, postId);
+  }
+
+  static async unsavePostFromBookmark(c: Context, userId: string, postId: string) {
+    const post = await PostRepository.getPostById(postId);
+
+    if (!post) {
+      throw new HTTPException(404, { message: postErrorMessage.POST_NOT_FOUND, cause: postErrorCode.POST_NOT_FOUND });
+    }
+
+    const existingBookmark = await PostRepository.getBookmarkByUserId(postId, userId);
+
+    if (!existingBookmark) {
+      throw new HTTPException(409, { message: postErrorMessage.ALREADY_UNSAVED_POST, cause: postErrorCode.ALREADY_UNSAVED_POST });
+    }
+
+    await PostRepository.unbookmarkPost(userId, postId);
   }
 }

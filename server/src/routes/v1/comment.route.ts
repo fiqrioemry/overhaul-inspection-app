@@ -4,9 +4,9 @@ import { CommentController as ctrl } from "@/modules/comments/comment.controller
 
 const comment = new Hono();
 
+comment.post("", protect, ctrl.createComment);
 comment.get("/:postId/comments", protect, ctrl.getParentComments);
 comment.get("/:postId/comments/:commentId", protect, ctrl.getChildComments);
-comment.post("/:postId/comments", protect, ctrl.createComment);
 comment.put("/:postId/comments", protect, ctrl.editComment);
 comment.post("/:commentId/like", protect, ctrl.likeComment);
 comment.post("/:commentId/unlike", protect, ctrl.unlikeComment);
