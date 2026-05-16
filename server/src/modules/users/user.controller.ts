@@ -57,6 +57,7 @@ export class UserController {
   static async getFollowing(c: Context) {
     const userId = c.get("user").userId;
     const targetUserId = c.req.param("userId");
+    console.log("get following");
     const response = await UserService.getFollowings(userId, targetUserId);
     return responseOK(c, userSuccessMessage.GET_FOLLOWINGS_SUCCESS, response);
   }
@@ -64,6 +65,7 @@ export class UserController {
   static async getFollowers(c: Context) {
     const userId = c.get("user").userId;
     const targetUserId = c.req.param("userId");
+    console.log("get followers");
     const response = await UserService.getFollowers(userId, targetUserId);
     return responseOK(c, userSuccessMessage.GET_FOLLOWERS_SUCCESS, response);
   }
