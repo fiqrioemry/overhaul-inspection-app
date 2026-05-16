@@ -5,6 +5,12 @@ import { notificationSuccessMessage } from "@/config/constant/notification.const
 import { deleteNotificationRequest, getNotificationRequest, updateNotificationRequest, updateNotificationSettingRequest } from "@/modules/notifications/notification.schema";
 
 export class NotificationController {
+  static async getUnreadNotificationCount(c: Context) {
+    const user = c.get("user");
+    const response = await NotificationService.getUnreadNotificationCount(c, user?.userId!);
+    return responseOK(c, notificationSuccessMessage.GET_UNREAD_NOTIFICATION_COUNT, { unreadCount: response });
+  }
+
   static async getUserNotifications(c: Context) {
     const user = c.get("user");
     const query = getNotificationRequest.parse(c.req.query());

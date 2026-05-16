@@ -4,6 +4,7 @@ import { NotificationController as ctrl } from "@/modules/notifications/notifica
 
 const notif = new Hono();
 
+notif.get("/unread-count", protect, ctrl.getUnreadNotificationCount);
 notif.get("/", protect, ctrl.getUserNotifications);
 notif.get("/settings", protect, ctrl.getNotificationSettings);
 notif.put("/settings", protect, ctrl.updateNotificationSettings);

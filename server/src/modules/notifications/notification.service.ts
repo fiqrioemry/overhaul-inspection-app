@@ -6,6 +6,10 @@ import { NotificationRepository } from "@/modules/notifications/notification.rep
 import { DeleteNotificationRequest, GetNotificationRequest, UpdateNotificationRequest, UpdateNotificationSettingRequest } from "@/modules/notifications/notification.schema";
 
 export class NotificationService {
+  static async getUnreadNotificationCount(c: Context, userId: string) {
+    return await NotificationRepository.countUnreadNotifications(userId);
+  }
+
   static async getNotificationByUserId(c: Context, request: GetNotificationRequest) {
     const { notifications, totalItems } = await NotificationRepository.getNotificationsByUserId(request);
 

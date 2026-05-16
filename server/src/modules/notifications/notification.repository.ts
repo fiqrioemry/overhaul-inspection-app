@@ -4,6 +4,15 @@ import { NotificationChannel, NotificationStatus, NotificationType } from "gener
 import { DeleteNotificationRequest, GetNotificationRequest, UpdateNotificationSettingRequest } from "@/modules/notifications/notification.schema";
 
 export class NotificationRepository {
+  static async countUnreadNotifications(userId: string) {
+    return await database.notification.count({
+      where: {
+        userId,
+        readAt: null,
+        deletedAt: null,
+      },
+    });
+  }
   static async getNotificationsByUserId(query: GetNotificationRequest) {
     const { userId, type, sortBy, orderBy, search, page = 1, limit = 10 } = query;
     let where: any = {
