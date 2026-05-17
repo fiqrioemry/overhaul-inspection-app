@@ -1,6 +1,6 @@
 import { Prisma } from "generated/prisma/edge";
 import { pgsql as database } from "@/config/database/pgsql";
-import { CreateUserActivityLogRequest, UpdateProfileRequest } from "@/modules/users/user.schema";
+import { CreateUserActivityLogRequest, GetFollowRequest, UpdateProfileRequest } from "@/modules/users/user.schema";
 import { createUserData, searchResponse, verificationType, createVerificationData, updateUserActiveData, userCredential, userResponse, userVerificationData, profileResponse } from "@/modules/users/user.types";
 
 export class UserRepository {
@@ -253,48 +253,168 @@ export class UserRepository {
     });
   }
 
-  static async getFollowings(viewerId: string, targetUserId: string) {
-    return await database.following.findMany({
-      where: {
-        followerId: targetUserId, // people that targetUser follows
+  static async getFollowings(query: GetFollowRequest) {
+    const {
+      userId, // current logged-in user
+      targetUserId, // profile being viewed
+      search,
+      page = 1,
+      limit = 10,
+    } = query;
+
+    const where = {
+      followerId: targetUserId, // users that targetUser follows
+      following: {
+        deletedAt: null,
+        status: "ACTIVE" as const,
+        ...(search?.trim()
+          ? {
+              OR: [
+                {
+                  username: {
+                    contains: search.trim(),
+                    mode: "insensitive" as const,
+                  },
+                },
+                {
+                  name: {
+                    contains: search.trim(),
+                    mode: "insensitive" as const,
+                  },
+                },
+              ],
+            }
+          : {}),
       },
-      select: {
-        following: {
-          select: {
-            id: true,
-            name: true,
-            username: true,
-            avatar: true,
-            // Check if viewer (userId) follows this person
-            followers: {
-              where: { followerId: viewerId },
-              select: { id: true },
+    };
+
+    const [results, totalItems] = await Promise.all([
+      database.following.findMany({
+        where,
+        select: {
+          following: {
+            select: {
+              id: true,
+              name: true,
+              username: true,
+              avatar: true,
+
+              // cek apakah current user sudah follow user ini
+              followers: {
+                where: {
+                  followerId: userId,
+                },
+                select: {
+                  id: true,
+                },
+              },
+
+              _count: {
+                select: {
+                  followers: true,
+                  following: true,
+                  posts: true,
+                },
+              },
             },
           },
         },
-      },
-    });
+        skip: (Number(page) - 1) * Number(limit),
+        take: Number(limit),
+        orderBy: {
+          createdAt: "desc",
+        },
+      }),
+      database.following.count({
+        where,
+      }),
+    ]);
+
+    return {
+      results: results.map((item) => ({
+        ...item.following,
+        isFollowing: item.following.followers.length > 0,
+      })),
+      totalItems,
+    };
   }
 
-  static async getFollowers(viewerId: string, targetUserId: string) {
-    return await database.following.findMany({
-      where: {
-        followingId: targetUserId,
+  static async getFollowers(query: GetFollowRequest) {
+    const { userId, targetUserId, search, page = 1, limit = 10 } = query;
+
+    const where = {
+      followingId: targetUserId,
+      follower: {
+        deletedAt: null,
+        status: "ACTIVE" as const,
+        ...(search?.trim()
+          ? {
+              OR: [
+                {
+                  username: {
+                    contains: search.trim(),
+                    mode: "insensitive" as const,
+                  },
+                },
+                {
+                  name: {
+                    contains: search.trim(),
+                    mode: "insensitive" as const,
+                  },
+                },
+              ],
+            }
+          : {}),
       },
-      select: {
-        follower: {
-          select: {
-            id: true,
-            name: true,
-            username: true,
-            avatar: true,
-            followers: {
-              where: { followerId: viewerId },
-              select: { id: true },
+    };
+
+    const [results, totalItems] = await Promise.all([
+      database.following.findMany({
+        where,
+        select: {
+          follower: {
+            select: {
+              id: true,
+              name: true,
+              username: true,
+              avatar: true,
+
+              followers: {
+                where: {
+                  followerId: userId,
+                },
+                select: {
+                  id: true,
+                },
+              },
+
+              _count: {
+                select: {
+                  followers: true,
+                  following: true,
+                  posts: true,
+                },
+              },
             },
           },
         },
-      },
-    });
+        skip: (Number(page) - 1) * Number(limit),
+        take: Number(limit),
+        orderBy: {
+          createdAt: "desc",
+        },
+      }),
+      database.following.count({
+        where,
+      }),
+    ]);
+
+    return {
+      results: results.map((item) => ({
+        ...item.follower,
+        isFollowing: item.follower.followers.length > 0,
+      })),
+      totalItems,
+    };
   }
 }

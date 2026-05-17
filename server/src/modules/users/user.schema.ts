@@ -12,6 +12,16 @@ const createUserActivityLogRequest = z.object({
   metadata: z.record(z.string(), z.any()).optional(),
 });
 
+const getFollowRequest = z.object({
+  userId: z.string().optional(),
+  targetUserId: z.string().min(1, "Target user ID is required").optional(),
+  search: z.string().optional(),
+  page: z.string().default("1").optional(),
+  limit: z.string().default("20").optional(),
+});
+
+export type GetFollowRequest = z.infer<typeof getFollowRequest>;
+
 export type CreateUserActivityLogRequest = z.infer<typeof createUserActivityLogRequest>;
 
 const followUserRequest = z.object({
@@ -21,4 +31,4 @@ const followUserRequest = z.object({
 
 export type FollowUserRequest = z.infer<typeof followUserRequest>;
 
-export { updateProfileRequest, createUserActivityLogRequest, followUserRequest };
+export { updateProfileRequest, createUserActivityLogRequest, followUserRequest, getFollowRequest };

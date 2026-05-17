@@ -3,7 +3,7 @@ import { UserService } from "@/modules/users/user.service";
 import { responseError, responseOK } from "@/utils/response";
 import { userSuccessMessage } from "@/config/constant/user.constant";
 import { fileErrorCode, fileErrorMessage } from "@/config/constant/file.constant";
-import { followUserRequest, updateProfileRequest } from "@/modules/users/user.schema";
+import { followUserRequest, getFollowRequest, updateProfileRequest } from "@/modules/users/user.schema";
 
 export class UserController {
   static async searchUsersByUsername(c: Context) {
@@ -56,17 +56,17 @@ export class UserController {
 
   static async getFollowing(c: Context) {
     const userId = c.get("user").userId;
-    const targetUserId = c.req.param("userId");
-    console.log("get following");
-    const response = await UserService.getFollowings(userId, targetUserId);
-    return responseOK(c, userSuccessMessage.GET_FOLLOWINGS_SUCCESS, response);
+    const query = getFollowRequest.parse(c.req.query());
+    query.userId = userId;
+    const response = await UserService.getFollowings(query);
+    return responseOK(c, userSuccessMessage.GET_FOLLOWINGS_SUCCESS, response.data, response.meta);
   }
 
   static async getFollowers(c: Context) {
     const userId = c.get("user").userId;
-    const targetUserId = c.req.param("userId");
-    console.log("get followers");
-    const response = await UserService.getFollowers(userId, targetUserId);
-    return responseOK(c, userSuccessMessage.GET_FOLLOWERS_SUCCESS, response);
+    const query = getFollowRequest.parse(c.req.query());
+    query.userId = userId;
+    const response = await UserService.getFollowers(query);
+    return responseOK(c, userSuccessMessage.GET_FOLLOWERS_SUCCESS, response.data, response.meta);
   }
 }

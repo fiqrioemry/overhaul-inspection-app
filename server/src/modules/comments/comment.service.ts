@@ -70,7 +70,7 @@ export class CommentService {
         notificationRecipientId = post.userId;
         notificationType = NotificationType.COMMENT;
         notificationTitle = "New Comment on Your Post";
-        notificationDescription = `@${c.var.user.username} commented on your post: ${post.title}`;
+        notificationDescription = `@${c.var.user.username} commented on your post: ${request.content}`;
         notificationMetadata = {
           postId: request.postId,
           commenterId: request.userId,

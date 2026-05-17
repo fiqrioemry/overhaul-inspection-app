@@ -3,7 +3,7 @@ import { pgsql } from "@/config/database/pgsql";
 import { HTTPException } from "hono/http-exception";
 import { FileService } from "@/modules/files/file.service";
 import { NotificationType, Prisma } from "generated/prisma";
-import { FollowUserRequest } from "@/modules/users/user.schema";
+import { FollowUserRequest, GetFollowRequest } from "@/modules/users/user.schema";
 import { FileRepository } from "@/modules/files/file.repository";
 import { UserRepository } from "@/modules/users/user.repository";
 import { NotificationRepository } from "@/modules/notifications/notification.repository";
@@ -145,8 +145,8 @@ export class UserService {
     }
   }
 
-  static async getFollowings(userId: string, targetUserId: string) {
-    const targetUser = await UserRepository.findById(targetUserId);
+  static async getFollowings(query: GetFollowRequest) {
+    const targetUser = await UserRepository.findById(query.targetUserId!);
 
     if (!targetUser) {
       throw new HTTPException(404, {
@@ -155,20 +155,27 @@ export class UserService {
       });
     }
 
-    const results = await UserRepository.getFollowings(userId, targetUserId);
-
-    return results.map((f) => ({
-      id: f.following.id,
-      name: f.following.name,
-      username: f.following.username,
-      avatar: f.following.avatar,
-      isFollowing: f.following.followers.length > 0,
-      canFollow: f.following.id !== userId,
+    const { results, totalItems } = await UserRepository.getFollowings(query);
+    const data = results.map((f) => ({
+      id: f.id,
+      name: f.name,
+      username: f.username,
+      avatar: f.avatar,
+      isFollowing: f.followers.length > 0,
+      canFollow: f.id !== query.userId,
     }));
+    return {
+      data,
+      meta: {
+        totalItems,
+        totalPages: Math.ceil(totalItems / Number(query.limit)),
+        currentPage: Number(query.page),
+      },
+    };
   }
 
-  static async getFollowers(userId: string, targetUserId: string) {
-    const targetUser = await UserRepository.findById(targetUserId);
+  static async getFollowers(query: GetFollowRequest) {
+    const targetUser = await UserRepository.findById(query.targetUserId!);
 
     if (!targetUser) {
       throw new HTTPException(404, {
@@ -177,15 +184,24 @@ export class UserService {
       });
     }
 
-    const results = await UserRepository.getFollowers(userId, targetUserId);
+    const { results, totalItems } = await UserRepository.getFollowers(query);
 
-    return results.map((f) => ({
-      id: f.follower.id,
-      name: f.follower.name,
-      username: f.follower.username,
-      avatar: f.follower.avatar,
-      isFollowing: f.follower.followers.length > 0,
-      canFollow: f.follower.id !== userId,
+    const data = results.map((f) => ({
+      id: f.id,
+      name: f.name,
+      username: f.username,
+      avatar: f.avatar,
+      isFollowing: f.followers.length > 0,
+      canFollow: f.id !== query.userId,
     }));
+
+    return {
+      data,
+      meta: {
+        totalItems,
+        totalPages: Math.ceil(totalItems / Number(query.limit)),
+        currentPage: Number(query.page),
+      },
+    };
   }
 }

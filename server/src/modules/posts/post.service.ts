@@ -196,11 +196,9 @@ export class PostService {
         isLiked: comment.likes.some((like) => like.userId === userId),
         isEditable: comment.userId === userId,
       })),
-      counts: {
-        likes: post._count.likes,
-        comments: post._count.comments,
-        galleries: post._count.galleries,
-      },
+      totalLikes: post._count.likes,
+      totalComments: post._count.comments,
+      totalGalleries: post._count.galleries,
       isLiked: post.likes.length > 0,
       isEditable: post.userId === userId,
     };
