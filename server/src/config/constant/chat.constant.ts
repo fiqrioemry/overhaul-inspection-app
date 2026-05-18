@@ -1,0 +1,80 @@
+// src/config/constants/chat.constant.ts
+
+const chatSuccessMessage = {
+  CREATE_PRIVATE_CHAT_SUCCESS: "Private chat created successfully",
+  CREATE_GROUP_CHAT_SUCCESS: "Group chat created successfully",
+  GET_CHATS_SUCCESS: "Chats retrieved successfully",
+  GET_CHAT_SUCCESS: "Chat retrieved successfully",
+  GET_MESSAGES_SUCCESS: "Messages retrieved successfully",
+  SEND_MESSAGE_SUCCESS: "Message sent successfully",
+  READ_MESSAGES_SUCCESS: "Messages marked as read",
+  UPDATE_GROUP_SUCCESS: "Group updated successfully",
+  ADD_MEMBERS_SUCCESS: "Members added successfully",
+  REMOVE_MEMBER_SUCCESS: "Member removed successfully",
+  LEAVE_GROUP_SUCCESS: "Left group successfully",
+  PROMOTE_MEMBER_SUCCESS: "Member promoted to admin",
+  DEMOTE_MEMBER_SUCCESS: "Member demoted to member",
+  DELETE_CHAT_SUCCESS: "Chat deleted successfully",
+};
+
+const chatErrorMessage = {
+  CHAT_NOT_FOUND: "Chat not found",
+  MESSAGE_NOT_FOUND: "Message not found",
+  NOT_A_PARTICIPANT: "You are not a participant of this chat",
+  NOT_A_GROUP: "This chat is not a group",
+  NOT_AN_ADMIN: "You are not an admin of this group",
+  ALREADY_A_PARTICIPANT: "User is already a participant of this chat",
+  CANNOT_ADD_SELF: "You cannot add yourself",
+  CANNOT_REMOVE_SELF: "Use leave group instead",
+  CANNOT_REMOVE_ADMIN: "Cannot remove an admin. Demote them first",
+  CANNOT_DEMOTE_SELF: "You cannot demote yourself",
+  PRIVATE_CHAT_ALREADY_EXISTS: "Private chat with this user already exists",
+  INVALID_CHAT_TYPE: "Invalid chat type",
+  MIN_GROUP_MEMBERS: "Group chat requires at least 2 other members",
+  MAX_GROUP_MEMBERS: "Group chat cannot exceed 100 members",
+  USER_NOT_FOUND: "One or more users not found",
+  LAST_ADMIN: "Cannot leave group as the last admin. Promote another member first",
+};
+
+const chatErrorCode = {
+  CHAT_NOT_FOUND: "CHAT_NOT_FOUND",
+  MESSAGE_NOT_FOUND: "MESSAGE_NOT_FOUND",
+  NOT_A_PARTICIPANT: "NOT_A_PARTICIPANT",
+  NOT_A_GROUP: "NOT_A_GROUP",
+  NOT_AN_ADMIN: "NOT_AN_ADMIN",
+  ALREADY_A_PARTICIPANT: "ALREADY_A_PARTICIPANT",
+  CANNOT_ADD_SELF: "CANNOT_ADD_SELF",
+  CANNOT_REMOVE_SELF: "CANNOT_REMOVE_SELF",
+  CANNOT_REMOVE_ADMIN: "CANNOT_REMOVE_ADMIN",
+  CANNOT_DEMOTE_SELF: "CANNOT_DEMOTE_SELF",
+  PRIVATE_CHAT_ALREADY_EXISTS: "PRIVATE_CHAT_ALREADY_EXISTS",
+  INVALID_CHAT_TYPE: "INVALID_CHAT_TYPE",
+  MIN_GROUP_MEMBERS: "MIN_GROUP_MEMBERS",
+  MAX_GROUP_MEMBERS: "MAX_GROUP_MEMBERS",
+  USER_NOT_FOUND: "USER_NOT_FOUND",
+  LAST_ADMIN: "LAST_ADMIN",
+};
+
+const chatLimit = {
+  GET_CHATS: { limit: 60, windowSec: 60 },
+  GET_CHAT: { limit: 60, windowSec: 60 },
+  GET_MESSAGES: { limit: 120, windowSec: 60 },
+  SEND_MESSAGE: { limit: 60, windowSec: 60 },
+  CREATE_CHAT: { limit: 20, windowSec: 60 },
+  UPDATE_GROUP: { limit: 10, windowSec: 60 },
+  ADD_MEMBERS: { limit: 20, windowSec: 60 },
+  REMOVE_MEMBER: { limit: 20, windowSec: 60 },
+  LEAVE_GROUP: { limit: 10, windowSec: 60 },
+  PROMOTE_DEMOTE: { limit: 20, windowSec: 60 },
+  READ_MESSAGES: { limit: 120, windowSec: 60 },
+};
+
+const chatWsEvent = {
+  NEW_MESSAGE: "chat:new_message",
+  MESSAGE_READ: "chat:message_read",
+  PARTICIPANT_JOINED: "chat:participant_joined",
+  PARTICIPANT_LEFT: "chat:participant_left",
+  GROUP_UPDATED: "chat:group_updated",
+};
+
+export { chatSuccessMessage, chatErrorMessage, chatErrorCode, chatLimit, chatWsEvent };
