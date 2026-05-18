@@ -1,10 +1,11 @@
-// features/auth/auth.endpoints.ts
+// src/constants/users.constant.ts
 export const USERS_ENDPOINTS = {
-  searchUsers: "/users/search",
-  getUserProfile: "/users/:username",
-  followUser: "/users/:userId/follow",
-  unfollowUser: "/users/:userId/unfollow",
+  searchUsers: "/users",
+  getUserProfile: "/users/profile/:username",
+  followUser: "/users/follow",
+  unfollowUser: "/users/unfollow",
+  getFollowers: "/users/followers",
+  getFollowing: "/users/followings",
   updateUserProfile: "/users",
   updateAvatar: "/users/avatar",
-  toggleAccountPrivacy: "/users/privacy",
 } as const;

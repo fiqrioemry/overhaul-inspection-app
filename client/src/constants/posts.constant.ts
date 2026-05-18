@@ -1,11 +1,11 @@
-// features/auth/auth.endpoints.ts
 export const POST_ENDPOINTS = {
-  publicPosts: "/post/public",
-  followingPosts: "/post/following",
-  createPost: "/post",
-  updatePost: "/post/:postId",
-  likePost: "/post/:postId/like",
-  unlikePost: "/post/:postId/like",
-  postById: "/post/:postId",
-  postsByUserId: "/post/:userId/user",
+  followingPosts: "/posts/following",
+  publicPosts: "/posts/public",
+  getUserPosts: "/posts/:userId/user",
+  getUserSavedPosts: "/posts/saved",
+  getPostDetails: "/posts/:postId",
+  createPost: "/posts",
+  updatePost: "/posts/:postId",
+  likePost: "/posts/:postId/like",
+  unlikePost: "/posts/:postId/unlike",
 } as const;

@@ -1,0 +1,66 @@
+import { useEffect } from "react";
+import { useAuthStore } from "@/stores/auth.store";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { fetchMe, getSessions, deleteSession, logoutAll, changePassword } from "./auth.api";
+import { toast } from "sonner";
+
+export const AUTH_KEYS = {
+  me: ["auth", "me"] as const,
+  sessions: ["auth", "sessions"] as const,
+};
+
+export function useMe() {
+  const setUser = useAuthStore((s) => s.setUser);
+  const clearUser = useAuthStore((s) => s.clearUser);
+
+  const query = useQuery({
+    queryKey: AUTH_KEYS.me,
+    queryFn: fetchMe,
+    staleTime: 1000 * 60 * 5,
+    retry: false,
+  });
+
+  useEffect(() => {
+    if (query.isSuccess && query.data) setUser(query.data);
+    if (query.isError) clearUser();
+  }, [query.isSuccess, query.isError, query.data]);
+
+  return query;
+}
+
+export function useSessions() {
+  return useQuery({
+    queryKey: AUTH_KEYS.sessions,
+    queryFn: getSessions,
+    staleTime: 1000 * 60 * 2,
+  });
+}
+
+export function useDeleteSession() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (sessionId: string) => deleteSession(sessionId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: AUTH_KEYS.sessions });
+    },
+  });
+}
+
+export function useLogoutAll() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: logoutAll,
+    onSuccess: () => {
+      queryClient.clear();
+    },
+  });
+}
+
+export function useChangePassword() {
+  return useMutation({
+    mutationFn: ({ currentPassword, newPassword }: { currentPassword: string; newPassword: string }) => changePassword(currentPassword, newPassword),
+    onSuccess: (res) => {
+      toast.success(res.message || "Password changed successfully");
+    },
+  });
+}

@@ -1,9 +1,9 @@
 // features/comments/comments.endpoints.ts
 export const COMMENTS_ENDPOINTS = {
-  getComments: "/comment/:postId/comments",
-  getReplies: "/comment/:postId/comments/:commentId",
-  createComment: "/comment",
-  editCommentRequest: "/comment/:commentId",
-  likeComment: "/comment/:commentId/like",
-  unlikeComment: "/comment/:commentId/unlike",
+  getComments: "/comments/:postId/comments",
+  getReplies: "/comments/:postId/comments/:commentId",
+  createComment: "/comments",
+  editComment: "/comments/:commentId",
+  likeComment: "/comments/:commentId/like",
+  unlikeComment: "/comments/:commentId/unlike",
 } as const;

@@ -1,26 +1,10 @@
 # deps
 node_modules/
-
 /generated/prisma
-
-/generated/prisma
-
-/prisma/@/generated/prisma
-
-/generated/prisma
-
-/generated/prisma
-
-/generated/prisma
-
-/generated/prisma
-
-/prisma/@/generated/prisma
-
-/prisma/@/generated/prisma
-
 
 .env
 .env.development
 .env.production
+bun.lock
 /prisma/@/generated/prisma
+ 

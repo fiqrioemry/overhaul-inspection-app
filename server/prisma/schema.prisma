@@ -38,6 +38,7 @@ model User {
   isPublic     Boolean  @default(true) @map("is_public")
   verifiedAt  DateTime? @map("verified_at")
   lastLogin    DateTime? @map("last_login")
+  lastChangePasswordAt DateTime? @map("last_change_password_at")
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime  @updatedAt @map("updated_at")
   deletedAt    DateTime? @map("deleted_at")
@@ -49,6 +50,7 @@ model User {
   comments     Comment[]
   likes        Like[]
   chatParticipants ChatParticipant[]
+  bookmarks     Bookmark[]
   createdChats Chat[] @relation("ChatCreator")
 
   verifications UserVerification[]
@@ -69,8 +71,8 @@ model Following {
   followingId String   @map("following_id")
   createdAt   DateTime @default(now()) @map("created_at")
 
-  follower    User @relation("UserFollowing", fields: [followerId], references: [id])
-  following   User @relation("UserFollowers", fields: [followingId], references: [id])
+  follower    User @relation("UserFollowing", fields: [followerId], references: [id], onDelete: Cascade)
+  following   User @relation("UserFollowers", fields: [followingId], references: [id], onDelete: Cascade)
 
   @@unique([followerId, followingId])
   @@index([followerId])
@@ -93,7 +95,7 @@ model UserVerification {
   expiresAt DateTime @map("expires_at")
   type     VerificationType   @map("type")
 
-  user      User @relation(fields: [userId], references: [id])
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@map("user_verifications")
@@ -107,7 +109,7 @@ model Session {
   createdAt DateTime @default(now()) @map("created_at")
   expiresAt DateTime @map("expires_at") 
 
-  user      User @relation(fields: [userId], references: [id])
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@map("sessions")
@@ -120,7 +122,7 @@ model UserActivityLog {
   metadata  Json?
   createdAt DateTime @default(now()) @map("created_at")
 
-  user      User @relation(fields: [userId], references: [id])
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@map("user_activity_logs")
@@ -131,12 +133,14 @@ model Post {
   userId    String   @map("user_id")
   title    String 
   content   String
+  isArchived Boolean  @default(false) @map("is_archived")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
   deletedAt DateTime? @map("deleted_at")
 
-  user       User          @relation(fields: [userId], references: [id])
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   comments   Comment[]
+  bookmarks  Bookmark[]
   galleries  PostGallery[]
   likes      Like[]
 
@@ -144,8 +148,24 @@ model Post {
   @@map("posts")
 }
 
+model Bookmark {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  postId    String   @map("post_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post      Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@index([userId])
+  @@index([postId])
+
+  @@map("bookmarks")
+}
 
 
+ 
 model FileStorage {
   id        String   @id @default(cuid())
   targetId  String?  @map("target_id")
@@ -168,7 +188,7 @@ model PostGallery {
   order    Int
   createdAt DateTime @default(now()) @map("created_at")
 
-  post      Post @relation(fields: [postId], references: [id])
+  post      Post @relation(fields: [postId], references: [id], onDelete: Cascade)
 
   @@index([postId])
   @@map("post_galleries")
@@ -181,9 +201,9 @@ model Like {
   commentId String?  @map("comment_id")
   createdAt DateTime @default(now()) @map("created_at")
 
-  user      User @relation(fields: [userId], references: [id])
-  post      Post? @relation(fields: [postId], references: [id])
-  comment   Comment? @relation(fields: [commentId], references: [id])
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post      Post? @relation(fields: [postId], references: [id], onDelete: Cascade)
+  comment   Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
 
   @@unique([userId, postId])
   @@unique([userId, commentId])
@@ -203,8 +223,8 @@ model Comment {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  post      Post     @relation(fields: [postId], references: [id])
-  user      User     @relation(fields: [userId], references: [id])
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   likes      Like[]
 
   parent    Comment? @relation("CommentChildren", fields: [parentId], references: [id])
@@ -233,7 +253,7 @@ model Chat {
 
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
-  deletedAt     DateTime? @map("deleted_at")
+  deletedAt     DateTime? @map("deleted_at") 
 
   createdBy     User? @relation("ChatCreator", fields: [createdById], references: [id])
 
@@ -318,7 +338,7 @@ model Notification {
   createdAt DateTime  @default(now()) @map("created_at")
   deletedAt DateTime? @map("deleted_at")
 
-  User User @relation(fields: [userId], references: [id])
+  User User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([userId, type])

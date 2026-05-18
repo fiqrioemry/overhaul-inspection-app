@@ -1,5 +1,5 @@
-ENV ?= development
+run :
+	bun run dev
 
-run:
-	bun --env-file=.env.$(ENV) run vite
-
+build :
+	bun run build

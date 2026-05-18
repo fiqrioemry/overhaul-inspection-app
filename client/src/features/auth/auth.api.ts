@@ -1,0 +1,71 @@
+import qs from "qs";
+import api from "@/lib/axios";
+import { useAuthStore } from "@/stores/auth.store";
+import { AUTH_ENDPOINTS } from "@/constants/auth.constant";
+import type { LoginData, UserAccount } from "@/types/users.type";
+import type { ResponseOK, ResponseSuccess } from "@/types/response.type";
+import type { ForgotPasswordFormValues, LoginFormValues, RegisterFormValues } from "@/schemas/auth.schema";
+import type { Session } from "react-router-dom";
+
+export async function login(data: LoginFormValues): Promise<ResponseSuccess<LoginData>> {
+  const res = await api.post(AUTH_ENDPOINTS.login, data);
+  return res.data;
+}
+
+export async function register(data: RegisterFormValues): Promise<ResponseOK> {
+  const res = await api.post(AUTH_ENDPOINTS.register, data);
+  return res.data;
+}
+
+export async function resetPassword(email: string): Promise<ResponseOK> {
+  const res = await api.post(AUTH_ENDPOINTS.resetPassword, { email });
+  return res.data;
+}
+
+export async function forgotPassword(data: ForgotPasswordFormValues): Promise<ResponseOK> {
+  const res = await api.post(AUTH_ENDPOINTS.forgotPassword, data);
+  return res.data;
+}
+
+export async function resendVerificationEmail(email: string): Promise<ResponseOK> {
+  const res = await api.post(AUTH_ENDPOINTS.resendVerification, { email });
+  return res.data;
+}
+
+export async function verifyEmail(token: string): Promise<ResponseOK> {
+  const queryString = qs.stringify({ token }, { skipNulls: true });
+  const res = await api.post(`${AUTH_ENDPOINTS.verifyEmail}?${queryString}`);
+  return res.data;
+}
+
+export async function logout(): Promise<ResponseOK> {
+  const res = await api.post(AUTH_ENDPOINTS.logout);
+  useAuthStore.getState().clearUser();
+  return res.data;
+}
+
+export async function logoutAll(): Promise<ResponseOK> {
+  const res = await api.post(AUTH_ENDPOINTS.revokeSessions);
+  useAuthStore.getState().clearUser();
+  return res.data;
+}
+
+export async function deleteSession(sessionId: string): Promise<ResponseOK> {
+  const res = await api.delete(`${AUTH_ENDPOINTS.sessions}/${sessionId}`);
+  return res.data;
+}
+
+export async function getSessions(): Promise<ResponseSuccess<Session>> {
+  const res = await api.get(AUTH_ENDPOINTS.sessions);
+  return res.data;
+}
+
+export async function changePassword(currentPassword: string, newPassword: string): Promise<ResponseOK> {
+  const res = await api.post(AUTH_ENDPOINTS.changePassword, { currentPassword, newPassword });
+  return res.data;
+}
+
+export async function fetchMe(): Promise<UserAccount> {
+  const res = await api.get(AUTH_ENDPOINTS.me);
+  return res.data.data;
+}
