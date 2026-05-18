@@ -1,3 +1,5 @@
+export type GenderOption = "MALE" | "FEMALE";
+
 export interface UserProfile {
   id: string;
   name: string;
@@ -20,13 +22,14 @@ export interface User {
   username: string;
   name: string;
   bio: string | null;
+  gender: GenderOption | null;
   avatar: string | null;
   email: string;
   isFollowing?: boolean;
   isPublic: boolean;
   lastLogin: Date;
   createdAt: Date;
-  lastPasswordChangeAt: Date;
+  lastChangePasswordAt: Date;
 }
 
 export interface LoginData {
@@ -45,7 +48,8 @@ export interface UserAccount {
   lastLogin: Date;
   joinedAt: Date;
   createdAt: Date;
-  lastPasswordChangeAt: Date;
+  gender: GenderOption | null;
+  lastChangePasswordAt: Date;
   isPublic: boolean;
   isOwner: boolean;
   followers: number;

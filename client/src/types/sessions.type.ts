@@ -5,11 +5,6 @@ export interface UpdatePrivacyRequest {
   isPublic: boolean;
 }
 
-export interface ChangePasswordRequest {
-  currentPassword: string;
-  newPassword: string;
-}
-
 export interface Session {
   id: string;
   userId: string;

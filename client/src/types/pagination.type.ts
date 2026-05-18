@@ -12,6 +12,8 @@ export interface PaginationMeta {
   limit: number;
   totalItems: number;
   totalPages: number;
+  nextCursor?: string;
+  hasMore: boolean;
 }
 
 export interface FilterMeta {

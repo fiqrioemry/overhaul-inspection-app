@@ -14,7 +14,7 @@ export type SearchUsersRequest = z.infer<typeof searchUsersRequest>;
 const updateProfileRequest = z.object({
   name: z.string().min(1, "Name is required"),
   bio: z.string().max(160, "Bio must be at most 160 characters").optional(),
-  gender: z.enum(["male", "female", "other"]).optional(),
+  gender: z.enum(["MALE", "FEMALE"]).optional(),
 });
 export type UpdateProfileRequest = z.infer<typeof updateProfileRequest>;
 

@@ -1,5 +1,4 @@
 /* eslint-disable no-useless-escape */
-// auth.schema.ts
 import { z } from "zod";
 
 export const loginSchema = z.object({
@@ -7,7 +6,7 @@ export const loginSchema = z.object({
   password: z.string().min(1, "Password  is required"),
 });
 
-const passwordValidation = z
+export const passwordValidation = z
   .string()
   .min(10, "Password must be at least 10 characters")
   .refine((password) => /[A-Z]/.test(password), {

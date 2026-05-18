@@ -38,4 +38,5 @@ export interface Post {
   isLiked: boolean;
   isEditable: boolean;
   isFollowing: boolean;
+  isSaved: boolean;
 }
