@@ -38,11 +38,11 @@ const userAction = {
 
 const userLimit = {
   GET_FOLLOWING: {
-    limit: 20,
+    limit: 180,
     windowSec: 60,
   },
   GET_FOLLOWERS: {
-    limit: 20,
+    limit: 180,
     windowSec: 60,
   },
   GET_PROFILE: {
