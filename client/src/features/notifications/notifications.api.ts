@@ -19,7 +19,8 @@ export async function getNotificationSettings() {
   return res.data;
 }
 
-export async function updateNotificationSettings(payload: { type: string; enabled: boolean }) {
+export async function updateNotificationSettings(payload: { notificationId: string; status: "ENABLED" | "DISABLED" }) {
+  console.log("Updating notification settings with payload:", payload);
   const res = await api.put(NOTIFICATIONS_ENDPOINTS.updateNotificationSettings, payload);
   return res.data;
 }
