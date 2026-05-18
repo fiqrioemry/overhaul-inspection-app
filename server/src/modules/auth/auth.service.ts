@@ -1,13 +1,13 @@
 import cuid from "cuid";
 import { Context } from "hono";
-import { mailConfig, redisConfig, databaseConfig } from "@/config/env";
+import { pgsql as db } from "@/lib/database";
 import { generateSessionToken } from "@/utils/jwt";
 import { HTTPException } from "hono/http-exception";
 import { sendVerificationLink } from "@/utils/mailer";
 import { deleteCookie, setCookie } from "hono/cookie";
-import { pgsql as db } from "@/lib/database";
 import { userAction } from "@/config/constant/user.constant";
 import { UserRepository } from "@/modules/users/user.repository";
+import { mailConfig, redisConfig, databaseConfig } from "@/config/env";
 import { hashPassword, hashToken, verifyPassword } from "@/utils/hash";
 import { SessionRepository } from "@/modules/sessions/sessions.repository";
 import { loginResponse, userResponse, verificationType } from "@/modules/users/user.types";
@@ -16,6 +16,7 @@ import { authErrorCode, authErrorMessage, authLimit } from "@/config/constant/au
 import { NotificationChannel, NotificationStatus, NotificationType, Prisma } from "generated/prisma/edge";
 import { generateRandomAvatarURL, generateRandomToken, generateRandomUsername } from "@/utils/generator";
 import { ChangePasswordRequest, LoginRequest, RegisterRequest, ResetPasswordRequest } from "@/modules/auth/auth.schema";
+import { sessionResponse } from "../sessions/sessions.types";
 
 export class AuthService {
   static async createUser(c: Context, request: RegisterRequest): Promise<{ data: { email: string } }> {
@@ -203,12 +204,22 @@ export class AuthService {
   }
 
   static async getMe(c: Context, userId: string): Promise<userResponse> {
-    const user = await UserRepository.findById(userId);
+    const result = await UserRepository.findById(userId);
 
-    if (!user) {
+    if (!result) {
       throw new HTTPException(404, { message: authErrorMessage.USER_NOT_FOUND, cause: authErrorCode.USER_NOT_FOUND });
     }
 
+    const user = {
+      id: result.id,
+      name: result.name,
+      username: result.username,
+      avatar: result?.avatar,
+      email: result.email,
+      lastLogin: result.lastLogin,
+      joinedAt: result.createdAt,
+      lastChangePasswordAt: result.lastChangePasswordAt,
+    };
     return user;
   }
 
@@ -222,10 +233,10 @@ export class AuthService {
     deleteCookie(c, redisConfig.TOKEN_PREFIX_DEFAULT);
   }
 
-  static async getSessions(c: Context, userId: string) {
+  static async getSessions(c: Context, userId: string): Promise<sessionResponse[]> {
     const result = await SessionRepository.findSessionsByUserId(userId);
 
-    const response = result.map((session) => {
+    const response = result.map((session: any) => {
       return {
         id: session.id,
         userId: session.userId,

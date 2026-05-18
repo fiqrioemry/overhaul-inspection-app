@@ -3,13 +3,7 @@ type sessionResponse = {
   userId: string;
   userAgent: string | null;
   expiresAt: Date;
-  createdAt: Date;
-  user: {
-    username: string;
-    email: string;
-    role: string;
-    status: string;
-  };
+  loginAt: Date;
 };
 
 type createSessionData = {

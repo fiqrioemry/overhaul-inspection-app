@@ -1,9 +1,9 @@
 import { Prisma } from "generated/prisma/edge";
-import { pgsql as database } from "@/config/database/pgsql";
-import { createSessionData, sessionResponse } from "@/modules/sessions/sessions.types";
+import { pgsql as database } from "@/lib/database";
+import { createSessionData } from "@/modules/sessions/sessions.types";
 
 export class SessionRepository {
-  static async findSessionWithUser(sessionId: string): Promise<sessionResponse | null> {
+  static async findSessionWithUser(sessionId: string) {
     return await database.session.findUnique({
       where: { id: sessionId },
       select: {
@@ -40,7 +40,7 @@ export class SessionRepository {
     return { id: session.id };
   }
 
-  static async findSessionByToken(token: string): Promise<sessionResponse | null> {
+  static async findSessionByToken(token: string) {
     return await database.session.findUnique({
       where: { token },
       select: {
@@ -61,7 +61,7 @@ export class SessionRepository {
     });
   }
 
-  static async findSessionsByUserId(userId: string): Promise<sessionResponse[]> {
+  static async findSessionsByUserId(userId: string) {
     return await database.session.findMany({
       where: { userId },
       select: {
