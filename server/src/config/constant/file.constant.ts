@@ -33,6 +33,11 @@ const fileLimit = {
     windowSec: 60, // Per 60 secs hit 100 times
   },
 
+  CHAT_FILE_OPTIONS: {
+    maxSize: 10 * 1024 * 1024, // 10MB
+    allowedTypes: ["image/jpeg", "image/png", "image/webp", "application/pdf", "video/mp4", "audio/mpeg"],
+  },
+
   FILE_OPTIONS: {
     maxSize: 5 * 1024 * 1024, // 5MB
     allowedTypes: ["image/jpeg", "image/png", "image/webp", "application/pdf"],

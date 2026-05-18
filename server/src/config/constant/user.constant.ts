@@ -7,6 +7,7 @@ const userSuccessMessage = {
   GET_FOLLOWERS_SUCCESS: "User followers retrieved successfully",
   UPDATE_AVATAR_SUCCESS: "User avatar updated successfully",
   UPDATE_PROFILE_SUCCESS: "User profile updated successfully",
+  UPDATE_PRIVACY_SUCCESS: "User privacy updated successfully",
 };
 
 const userErrorMessage = {

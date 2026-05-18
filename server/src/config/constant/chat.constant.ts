@@ -15,6 +15,7 @@ const chatSuccessMessage = {
   PROMOTE_MEMBER_SUCCESS: "Member promoted to admin",
   DEMOTE_MEMBER_SUCCESS: "Member demoted to member",
   DELETE_CHAT_SUCCESS: "Chat deleted successfully",
+  DELETE_MESSAGES_SUCCESS: "Messages deleted successfully",
 };
 
 const chatErrorMessage = {
@@ -58,6 +59,7 @@ const chatErrorCode = {
 const chatLimit = {
   GET_CHATS: { limit: 60, windowSec: 60 },
   GET_CHAT: { limit: 60, windowSec: 60 },
+  DELETE_MESSAGES: { limit: 20, windowSec: 60 },
   GET_MESSAGES: { limit: 120, windowSec: 60 },
   SEND_MESSAGE: { limit: 60, windowSec: 60 },
   CREATE_CHAT: { limit: 20, windowSec: 60 },
