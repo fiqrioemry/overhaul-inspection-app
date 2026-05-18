@@ -11,31 +11,45 @@ import ShortTextField from "@/components/fields/ShortTextField";
 import { useUpdateUserProfile } from "@/features/users/users.query";
 import { profileFormSchema, type ProfileFormValues } from "@/schemas/settings.schema";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { useRef } from "react";
 
 const GENDER_OPTIONS = [
-  { label: "Male", value: "male" },
-  { label: "Female", value: "female" },
+  { label: "Male", value: "MALE" },
+  { label: "Female", value: "FEMALE" },
 ];
 
 export default function ProfileForm() {
   const { user } = useAuthStore();
   const updateProfile = useUpdateUserProfile();
 
+  const defaultValues: ProfileFormValues = {
+    name: user?.name || "",
+    bio: user?.bio || "",
+    gender: user?.gender || undefined,
+  };
+  const latestValuesRef = useRef(defaultValues);
+
   const {
     control,
     handleSubmit,
+    reset,
+    watch,
     formState: { isDirty, isSubmitting },
   } = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
-    defaultValues: {
-      name: user?.name || "",
-      bio: user?.bio || "",
-      gender: undefined,
-    },
+    defaultValues,
   });
+
+  const values = watch();
+
+  const hasNonEmptyValue = Object.values(values).some((value) => value !== undefined && value !== null && String(value).trim() !== "");
+
+  const showActionButtons = isDirty && hasNonEmptyValue;
 
   const onSubmit = async (data: ProfileFormValues) => {
     await updateProfile.mutateAsync(data);
+    latestValuesRef.current = data;
+    reset(data);
   };
 
   return (
@@ -70,15 +84,18 @@ export default function ProfileForm() {
           <SelectField control={control} name="gender" label="Gender" options={GENDER_OPTIONS} placeholder="Select gender" />
         </CardContent>
 
-        <CardFooter className="flex justify-end gap-3">
-          <Button type="button" variant="outline" disabled={!isDirty || isSubmitting} onClick={() => window.location.reload()}>
-            Cancel
-          </Button>
-          <Button type="submit" disabled={!isDirty || isSubmitting}>
-            {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            Save Changes
-          </Button>
-        </CardFooter>
+        {showActionButtons && (
+          <CardFooter className="flex justify-end gap-3 mt-3">
+            <Button type="button" variant="outline" disabled={isSubmitting} onClick={() => reset(latestValuesRef.current)}>
+              Cancel
+            </Button>
+
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Save Changes
+            </Button>
+          </CardFooter>
+        )}
       </form>
     </Card>
   );

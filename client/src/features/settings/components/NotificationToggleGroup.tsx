@@ -36,16 +36,22 @@ export default function NotificationToggleGroup() {
   const { data, isLoading } = useNotificationSettings();
   const updateSetting = useUpdateNotificationSetting();
 
-  const settings = data?.data?.settings || [];
+  console.log("Fetching notification settings...", data);
+  const settings = data?.data || [];
+  console.log("Current notification settings:", settings);
 
+  const getSettingId = (type: string): string | undefined => {
+    const setting = settings.find((s: NotificationSetting) => s.type === type);
+    return setting?.id;
+  };
   const getSettingStatus = (type: string): boolean => {
     const setting = settings.find((s: NotificationSetting) => s.type === type);
     return setting?.status === "ENABLED";
   };
 
-  const handleToggle = async (type: string, currentStatus: boolean) => {
+  const handleToggle = async (notificationId: string, currentStatus: boolean) => {
     const newStatus = currentStatus ? "DISABLED" : "ENABLED";
-    await updateSetting.mutateAsync({ type, status: newStatus });
+    await updateSetting.mutateAsync({ notificationId, status: newStatus });
   };
 
   if (isLoading) {
@@ -82,7 +88,7 @@ export default function NotificationToggleGroup() {
                   <p className="text-sm text-muted-foreground mt-1">{config.description}</p>
                 </div>
               </div>
-              <Switch checked={isEnabled} onCheckedChange={() => handleToggle(config.type, isEnabled)} disabled={isUpdating} />
+              <Switch checked={isEnabled} onCheckedChange={() => handleToggle(getSettingId(config.type)!, isEnabled)} disabled={isUpdating} />
             </div>
           );
         })}

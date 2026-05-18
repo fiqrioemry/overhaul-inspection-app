@@ -1,13 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // src/features/settings/components/SessionList.tsx
 import { useState } from "react";
-import { AlertTriangle, Loader2 } from "lucide-react";
+import SessionItem from "./SessionItem";
 import { Button } from "@/components/ui/button";
+import { AlertTriangle, Loader2 } from "lucide-react";
+import type { SessionWithCurrent } from "@/types/sessions.type";
+import { useSessions, useDeleteSession, useLogoutAll } from "@/features/auth/auth.query";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import SessionItem from "./SessionItem";
-import { useSessions, useDeleteSession, useLogoutAll } from "@/features/auth/auth.query";
-import type { SessionWithCurrent } from "@/types/sessions.type";
 
 // Parse user agent to extract device info
 function parseUserAgent(userAgent: string): { browser: string; os: string; device: string } {

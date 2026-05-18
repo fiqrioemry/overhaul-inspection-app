@@ -9,10 +9,14 @@ import PasswordField from "@/components/fields/PasswordField";
 import { useChangePassword } from "@/features/auth/auth.query";
 import { changePasswordSchema, type ChangePasswordFormValues } from "@/schemas/settings.schema";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState } from "react";
+import type { ResponseError } from "@/types/response.type";
+import AlertCard from "@/components/common/AlertCard";
 
 export default function PasswordForm() {
   const { user } = useAuthStore();
   const changePassword = useChangePassword();
+  const [error, setError] = useState<ResponseError | null>(null);
 
   const {
     control,
@@ -29,19 +33,22 @@ export default function PasswordForm() {
   });
 
   const onSubmit = async (data: ChangePasswordFormValues) => {
+    setError(null);
+
     try {
-      await changePassword.mutateAsync({
-        currentPassword: data.currentPassword,
-        newPassword: data.newPassword,
-      });
+      await changePassword.mutateAsync(data);
+      useAuthStore.getState().clearUser();
       reset();
     } catch (error) {
-      console.log("Failed to change password:", error);
-      // Error handled by global error handler
+      const res = error as ResponseError;
+      setError({
+        message: res?.message ?? "Password change failed, please try again",
+        errors: res?.errors,
+      });
     }
   };
 
-  const lastChanged = user?.lastPasswordChangeAt ? formatDistanceToNow(new Date(user.lastPasswordChangeAt), { addSuffix: true }) : "Never";
+  const lastChanged = user?.lastChangePasswordAt ? formatDistanceToNow(new Date(user.lastChangePasswordAt), { addSuffix: true }) : "Never";
 
   return (
     <Card>
@@ -60,6 +67,7 @@ export default function PasswordForm() {
               <p className="text-muted-foreground">{lastChanged}</p>
             </div>
           </div>
+          <AlertCard message={error?.message} errors={error?.errors} />
 
           {/* Current Password */}
           <PasswordField control={control} name="currentPassword" label="Current Password" placeholder="Enter your current password" />
@@ -71,7 +79,7 @@ export default function PasswordForm() {
           <PasswordField control={control} name="confirmPassword" label="Confirm New Password" placeholder="Confirm your new password" />
         </CardContent>
 
-        <CardFooter className="flex justify-end gap-3">
+        <CardFooter className="flex justify-end gap-3 mt-3">
           <Button type="button" variant="outline" disabled={!isDirty || isSubmitting} onClick={() => reset()}>
             Cancel
           </Button>

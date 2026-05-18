@@ -39,13 +39,19 @@ export default function AvatarUploader() {
     };
     reader.readAsDataURL(file);
 
-    // Upload
+    // Upload avatar immediately
     updateAvatar.mutate(file, {
       onSuccess: () => {
         setPreview(null);
+        if (fileInputRef.current) {
+          fileInputRef.current.value = "";
+        }
       },
       onError: () => {
         setPreview(null);
+        if (fileInputRef.current) {
+          fileInputRef.current.value = "";
+        }
       },
     });
   };
@@ -74,7 +80,7 @@ export default function AvatarUploader() {
 
         {/* Hover Overlay */}
         {!isLoading && (
-          <button onClick={handleClick} className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+          <button type="button" onClick={handleClick} className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
             <Camera className="h-6 w-6 text-white" />
           </button>
         )}
@@ -92,6 +98,7 @@ export default function AvatarUploader() {
             "Change Avatar"
           )}
         </Button>
+
         <p className="text-xs text-muted-foreground">JPG, PNG or WebP. Max 2MB</p>
       </div>
 
