@@ -55,6 +55,6 @@ export async function updateAvatar(file: File): Promise<ResponseOK> {
 }
 
 export async function updatePrivacy(data: UpdatePrivacyRequest): Promise<ResponseOK> {
-  const res = await api.patch("/users/profile/private", data);
+  const res = await api.patch("/users/profile/privacy", data);
   return res.data;
 }

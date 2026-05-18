@@ -69,3 +69,13 @@ export async function fetchSavedPostsByUserId(query: GetSavedPostsRequest): Prom
   const res = await api.get(`${POST_ENDPOINTS.getUserSavedPosts}?${queryString}`);
   return res.data;
 }
+
+export async function savePost(postId: string): Promise<ResponseOK> {
+  const res = await api.post(POST_ENDPOINTS.savePost.replace(":postId", postId));
+  return res.data;
+}
+
+export async function unsavePost(postId: string): Promise<ResponseOK> {
+  const res = await api.post(POST_ENDPOINTS.unsavePost.replace(":postId", postId));
+  return res.data;
+}

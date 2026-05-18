@@ -1,7 +1,7 @@
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
 import type { CreatePostRequest, GetPublicPostsRequest, GetSavedPostsRequest, UpdatePostRequest } from "@/schemas/posts.schema";
-import { fetchPublicPosts, fetchFollowingPosts, fetchPostById, createPost, updatePost, deletePost, likePost, unlikePost, fetchPostsByUserId, fetchSavedPostsByUserId } from "./posts.api";
+import { fetchPublicPosts, fetchFollowingPosts, fetchPostById, createPost, updatePost, deletePost, likePost, unlikePost, fetchPostsByUserId, fetchSavedPostsByUserId, savePost, unsavePost } from "./posts.api";
 
 export const POST_KEYS = {
   all: ["posts"] as const,
@@ -30,6 +30,7 @@ export function useCreatePost() {
       queryClient.invalidateQueries({ queryKey: POST_KEYS.all });
     },
     onError: (err) => {
+      console.log("Error creating post:", err);
       toast.error(err.message);
     },
   });
@@ -138,5 +139,33 @@ export function useInfiniteSavedPosts(params: Omit<GetSavedPostsRequest, "page">
     },
     initialPageParam: 1,
     staleTime: 1000 * 30,
+  });
+}
+
+export function useUnsavePost(postId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => unsavePost(postId),
+    onSuccess: (res) => {
+      toast.success(res.message || "You Unsaved the post");
+      queryClient.invalidateQueries({ queryKey: POST_KEYS.all });
+    },
+    onError: (err) => {
+      toast.error(err.message || "Error saving post");
+    },
+  });
+}
+
+export function useSavePost(postId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => savePost(postId),
+    onSuccess: (res) => {
+      toast.success(res.message || "You Saved the post");
+      queryClient.invalidateQueries({ queryKey: POST_KEYS.all });
+    },
+    onError: (err) => {
+      toast.error(err.message || "Error saving post");
+    },
   });
 }
