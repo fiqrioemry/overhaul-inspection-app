@@ -1,3 +1,6 @@
+// src/features/auth/components/LoginForm.tsx
+// Versi lengkap — replace file yang sudah ada
+
 import { toast } from "sonner";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -10,11 +13,22 @@ import type { ResponseError } from "@/types/response.type";
 import PasswordField from "@/components/fields/PasswordField";
 import ShortTextField from "@/components/fields/ShortTextField";
 import { loginSchema, type LoginFormValues } from "@/schemas/auth.schema";
+import OAuthDivider from "./OAuthDivider";
+import OAuthButtonGroup from "./OAuthButtonGroup";
 
 export default function LoginForm() {
   const navigate = useNavigate();
   const redirectTo = new URLSearchParams(window.location.search).get("redirectTo") || "/";
-  const [serverError, setServerError] = useState<ResponseError | null>(null);
+
+  // Tampilkan error OAuth dari query param kalau ada
+  // Backend redirect ke /login?error=oauth_failed atau /login?error=oauth_cancelled
+  const oauthError = new URLSearchParams(window.location.search).get("error");
+  const oauthErrorMessages: Record<string, string> = {
+    oauth_failed: "Login dengan provider gagal. Silakan coba lagi.",
+    oauth_cancelled: "Login dibatalkan.",
+  };
+
+  const [serverError, setServerError] = useState<ResponseError | null>(oauthError ? { message: oauthErrorMessages[oauthError] ?? "Terjadi kesalahan.", success: false, status: 400, code: oauthError } : null);
 
   const {
     control,
@@ -41,7 +55,8 @@ export default function LoginForm() {
   }
 
   return (
-    <div className="w-full max-w-sm space-y-6">
+    <div className="w-full max-w-sm space-y-6 border p-6 rounded-lg">
+      {/* Header */}
       <div className="space-y-1 text-center">
         <div>❤️</div>
         <h1 className="text-2xl font-semibold">Login to Pixel.</h1>
@@ -50,8 +65,9 @@ export default function LoginForm() {
 
       <AlertCard message={serverError?.message} errors={serverError?.errors} />
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 bg-">
-        <ShortTextField control={control} name="email" label="Email" type="email" placeholder="kamu@email.com" autoComplete="email" />
+      {/* Email / Password form */}
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <ShortTextField control={control} name="email" label="Email" type="email" placeholder="example@email.com" autoComplete="email" />
         <PasswordField control={control} name="password" label="Password" placeholder="••••••••" autoComplete="current-password" />
         <div className="flex justify-end">
           <Link to="/forgot-password" className="text-xs text-muted-foreground underline underline-offset-4">
@@ -63,6 +79,11 @@ export default function LoginForm() {
         </Button>
       </form>
 
+      {/* OAuth section */}
+      <OAuthDivider />
+      <OAuthButtonGroup disabled={isSubmitting} />
+
+      {/* Register link */}
       <div className="text-center">
         <p className="text-sm text-muted-foreground">
           Don't have an account?{" "}

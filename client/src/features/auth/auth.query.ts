@@ -1,8 +1,10 @@
+/* eslint-disable react-hooks/exhaustive-deps */
+import { toast } from "sonner";
 import { useEffect } from "react";
 import { useAuthStore } from "@/stores/auth.store";
+import type { ChangePasswordFormValues } from "@/schemas/settings.schema";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchMe, getSessions, deleteSession, logoutAll, changePassword } from "./auth.api";
-import { toast } from "sonner";
 
 export const AUTH_KEYS = {
   me: ["auth", "me"] as const,
@@ -58,7 +60,7 @@ export function useLogoutAll() {
 
 export function useChangePassword() {
   return useMutation({
-    mutationFn: ({ currentPassword, newPassword }: { currentPassword: string; newPassword: string }) => changePassword(currentPassword, newPassword),
+    mutationFn: (payload: ChangePasswordFormValues) => changePassword(payload),
     onSuccess: (res) => {
       toast.success(res.message || "Password changed successfully");
     },

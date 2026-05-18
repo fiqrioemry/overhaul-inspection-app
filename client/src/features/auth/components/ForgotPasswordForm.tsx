@@ -83,7 +83,7 @@ export default function ForgotPasswordForm() {
       <AlertCard message={serverError?.message} errors={serverError?.errors} />
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        <ShortTextField control={control} name="email" label="Email" type="email" placeholder="kamu@email.com" autoComplete="email" />
+        <ShortTextField control={control} name="email" label="Email" type="email" placeholder="example@email.com" autoComplete="email" />
 
         <Button type="submit" className="w-full" disabled={isSubmitting}>
           {isSubmitting ? "Sending..." : "Send Reset Instructions"}
