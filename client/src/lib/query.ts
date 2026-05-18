@@ -43,7 +43,7 @@ export const queryClient = new QueryClient({
         const responseError = error as ResponseError;
 
         // except retry for error 400 to 500
-        if (responseError.status >= 400 && responseError.status < 500) {
+        if (typeof responseError.status === "number" && responseError.status >= 400 && responseError.status < 500) {
           return false;
         }
 
