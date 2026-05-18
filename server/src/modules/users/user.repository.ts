@@ -43,6 +43,7 @@ export class UserRepository {
         lastLogin: true,
         createdAt: true,
         verifiedAt: true,
+        lastChangePasswordAt: true,
       },
     });
 
@@ -58,6 +59,9 @@ export class UserRepository {
         name: true,
         username: true,
         avatar: true,
+        lastLogin: true,
+        createdAt: true,
+        lastChangePasswordAt: true,
       },
     });
   }

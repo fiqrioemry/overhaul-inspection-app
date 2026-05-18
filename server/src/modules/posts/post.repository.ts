@@ -150,6 +150,14 @@ export class PostRepository {
             name: true,
             username: true,
             avatar: true,
+            followers: {
+              where: {
+                followerId: userId,
+              },
+              select: {
+                followerId: true,
+              },
+            },
           },
         },
 

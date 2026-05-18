@@ -46,6 +46,9 @@ type userResponse = {
   name: string;
   username: string;
   avatar: string | null;
+  lastLogin: Date | null;
+  createdAt: Date;
+  lastChangePasswordAt: Date | null;
 };
 
 type profileResponse = {

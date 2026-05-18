@@ -201,6 +201,7 @@ export class PostService {
       totalGalleries: post._count.galleries,
       isLiked: post.likes.length > 0,
       isEditable: post.userId === userId,
+      isFollowing: post.user.followers.some((follower) => follower.followerId === userId),
     };
   }
 
