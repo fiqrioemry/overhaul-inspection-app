@@ -20,6 +20,7 @@ import SettingAccountPage from "./pages/SettingAccountPage";
 import SettingSecurityPage from "./pages/SettingSecurityPage";
 import SettingNotificationPage from "./pages/SettingNotificationPage";
 import MessagePage from "./pages/MessagePage";
+import OAuthCallbackPage from "./pages/OAuthCallbackPage";
 
 export default function AppRouter() {
   useTheme();
@@ -29,6 +30,7 @@ export default function AppRouter() {
 
   return (
     <Routes>
+      <Route path="/oauth/callback" element={<OAuthCallbackPage />} />
       <Route path="*" element={<NotFoundPage />} />
       <Route element={<PublicRoute />}>
         <Route path="/login" element={<Login />} />
