@@ -1,3 +1,4 @@
+// src/index.ts
 import "@/lib/redis";
 import { Hono } from "hono";
 import router from "@/routes";
@@ -8,40 +9,54 @@ import corsMiddleware from "./middlewares/cors.middleware";
 import { startFileCleanupWorker } from "@/workers/file-cleanup.worker";
 import { errorHandler, notFoundHandler } from "./middlewares/error.middleware";
 
+type WebSocketData = {
+  url: string;
+};
+
 const app = new Hono();
 app.use(prettyJSON());
-
-// init cors configuration
 app.use("*", corsMiddleware);
-
-// init route config
 app.route("/", router);
 app.onError(errorHandler);
 app.notFound(notFoundHandler);
 
-const server = Bun.serve({
+const server = Bun.serve<WebSocketData>({
   port: databaseConfig.PORT || 5000,
 
   fetch(req, server) {
-    // websocket endpoint
     const url = new URL(req.url);
     if (url.pathname === "/ws") {
-      const ok = server.upgrade(req);
+      const ok = server.upgrade(req, { data: { url: req.url } });
       return ok ? undefined : new Response("WS upgrade failed", { status: 400 });
     }
-
     return app.fetch(req);
   },
 
   websocket: {
     open(ws) {
-      console.log("WS connected");
+      const url = new URL(ws.data?.url ?? "http://localhost/ws");
+      const chatId = url.searchParams.get("chatId");
+
       ws.subscribe("notifications");
+
+      if (chatId) {
+        ws.subscribe(`chat:${chatId}`);
+      }
+
+      console.log(`WS connected — chatId: ${chatId ?? "none"}`);
     },
 
     close(ws) {
-      console.log("WS disconnected");
+      const url = new URL(ws.data.url ?? "http://localhost/ws");
+      const chatId = url.searchParams.get("chatId");
+
       ws.unsubscribe("notifications");
+
+      if (chatId) {
+        ws.unsubscribe(`chat:${chatId}`);
+      }
+
+      console.log("WS disconnected");
     },
 
     message(ws, message) {
@@ -50,8 +65,8 @@ const server = Bun.serve({
   },
 });
 
-console.log(`✅ Server running on ${databaseConfig.SERVER_URL || `http://localhost:5000`}`);
+console.log(`✅ Server running on ${databaseConfig.SERVER_URL || "http://localhost:5000"}`);
 
 eventBus.setServer(server);
-// worker
+
 startFileCleanupWorker();
