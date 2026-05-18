@@ -3,6 +3,7 @@ import { AuthService } from "@/modules/auth/auth.service";
 import { responseCreated, responseOK } from "@/utils/response";
 import { authSuccessMessage } from "@/config/constant/auth.constant";
 import { changePasswordRequest, forgotPasswordRequest, loginRequest, registerRequest, resendVerificationEmailRequest, resetPasswordRequest } from "@/modules/auth/auth.schema";
+import { databaseConfig, OAuthProviderKey } from "@/config/env";
 
 export class AuthController {
   static async register(c: Context) {
@@ -78,5 +79,28 @@ export class AuthController {
     const user = c.get("user");
     const response = await AuthService.getMe(c, user.userId);
     return responseOK(c, authSuccessMessage.GET_ME_SUCCESS, response);
+  }
+
+  static async oauthRedirect(c: Context) {
+    const provider = c.req.param("provider") as OAuthProviderKey;
+    const url = await AuthService.getOAuthURL(c, provider);
+    return c.redirect(url);
+  }
+
+  static async oauthCallback(c: Context) {
+    const provider = c.req.param("provider") as OAuthProviderKey;
+    const { code, state, error } = c.req.query() as Record<string, string>;
+
+    if (error) {
+      return c.redirect(`${databaseConfig.CLIENT_URL}/login?error=oauth_cancelled&provider=${provider}`);
+    }
+
+    try {
+      await AuthService.handleOAuthCallback(c, provider, code, state);
+      return c.redirect(`${databaseConfig.CLIENT_URL}/oauth/callback?success=true&provider=${provider}`);
+    } catch (err) {
+      console.error(`[OAuth:${provider}] Callback error:`, err);
+      return c.redirect(`${databaseConfig.CLIENT_URL}/login?error=oauth_failed&provider=${provider}`);
+    }
   }
 }

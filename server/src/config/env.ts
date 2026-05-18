@@ -1,3 +1,7 @@
+import { GoogleOAuthProvider, GitHubOAuthProvider, IOAuthProvider } from "@/utils/oauth";
+
+export type OAuthProviderKey = "google" | "github";
+
 const mailConfig = {
   SMTP_USER: process.env.SMTP_USER || "user@example.com",
   SMTP_PASS: process.env.SMTP_PASS || "password",
@@ -17,6 +21,18 @@ const databaseConfig = {
   DB_CONNECTION_LIMIT: process.env.DB_CONNECTION_LIMIT ? parseInt(process.env.DB_CONNECTION_LIMIT) : 10,
   DB_TIMEZONE: process.env.DB_TIMEZONE || "+00:00",
 };
+
+const oauthProviders: Record<OAuthProviderKey, IOAuthProvider> = {
+  google: new GoogleOAuthProvider(process.env.GOOGLE_CLIENT_ID!, process.env.GOOGLE_CLIENT_SECRET!, process.env.GOOGLE_REDIRECT_URI ?? "http://localhost:5000/v1/auth/google/callback"),
+
+  github: new GitHubOAuthProvider(process.env.GITHUB_CLIENT_ID!, process.env.GITHUB_CLIENT_SECRET!, process.env.GITHUB_REDIRECT_URI ?? "http://localhost:5000/v1/auth/github/callback"),
+};
+
+export function getOAuthProvider(key: OAuthProviderKey): IOAuthProvider {
+  const provider = oauthProviders[key];
+  if (!provider) throw new Error(`OAuth provider "${key}" is not registered`);
+  return provider;
+}
 
 const minioConfig = {
   HOST: process.env.MINIO_HOST || "minio_storage",
@@ -38,4 +54,4 @@ const redisConfig = {
   REDIS_REGISTER: `${REDIS_KEY_PREFIX}verify:`,
 };
 
-export { mailConfig, databaseConfig, minioConfig, redisConfig };
+export { mailConfig, databaseConfig, minioConfig, redisConfig, oauthProviders };

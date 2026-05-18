@@ -31,6 +31,9 @@ const authErrorMessage = {
   EMAIL_ALREADY_VERIFIED: "Email is already verified",
   INTERNAL_SERVER_ERROR: "Internal server error",
   ROUTE_NOT_FOUND: "Route not found",
+  OAUTH_FAILED: "OAuth authentication failed",
+  OAUTH_EMAIL_NOT_PROVIDED: "Email not provided by OAuth provider",
+  OAUTH_STATE_INVALID: "Invalid OAuth state, possible CSRF attack",
 };
 
 const authErrorCode = {
@@ -51,9 +54,13 @@ const authErrorCode = {
   INVALID_TOKEN: "INVALID_TOKEN",
   SESSION_NOT_FOUND: "SESSION_NOT_FOUND",
   EMAIL_ALREADY_VERIFIED: "EMAIL_ALREADY_VERIFIED",
+  OAUTH_FAILED: "OAUTH_FAILED",
+  OAUTH_EMAIL_NOT_PROVIDED: "OAUTH_EMAIL_NOT_PROVIDED",
+  OAUTH_STATE_INVALID: "OAUTH_STATE_INVALID",
 };
 
 const authLimit = {
+  OAUTH_STATE_TTL: 10 * 60, // 10 minutes in seconds
   VERIFY_EMAIL_EXP: 60 * 60 * 1000,
   RESET_PASSWORD_EXP: 60 * 60 * 1000,
   FORGOT_PASSWORD_EXP: 60 * 60 * 1000,

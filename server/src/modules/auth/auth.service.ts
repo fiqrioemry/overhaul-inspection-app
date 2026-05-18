@@ -1,5 +1,7 @@
 import cuid from "cuid";
 import { Context } from "hono";
+import { cache } from "@/utils/cache";
+import { pgsql } from "@/lib/database";
 import { pgsql as db } from "@/lib/database";
 import { generateSessionToken } from "@/utils/jwt";
 import { HTTPException } from "hono/http-exception";
@@ -7,16 +9,18 @@ import { sendVerificationLink } from "@/utils/mailer";
 import { deleteCookie, setCookie } from "hono/cookie";
 import { userAction } from "@/config/constant/user.constant";
 import { UserRepository } from "@/modules/users/user.repository";
-import { mailConfig, redisConfig, databaseConfig } from "@/config/env";
+import { sessionResponse } from "@/modules/sessions/sessions.types";
 import { hashPassword, hashToken, verifyPassword } from "@/utils/hash";
 import { SessionRepository } from "@/modules/sessions/sessions.repository";
-import { loginResponse, userResponse, verificationType } from "@/modules/users/user.types";
+import { mailConfig, redisConfig, databaseConfig, OAuthProviderKey, getOAuthProvider } from "@/config/env";
 import { NotificationRepository } from "@/modules/notifications/notification.repository";
+import { loginResponse, userResponse, verificationType } from "@/modules/users/user.types";
 import { authErrorCode, authErrorMessage, authLimit } from "@/config/constant/auth.constant";
-import { NotificationChannel, NotificationStatus, NotificationType, Prisma } from "generated/prisma/edge";
 import { generateRandomAvatarURL, generateRandomToken, generateRandomUsername } from "@/utils/generator";
+import { NotificationChannel, NotificationStatus, NotificationType, OAuthProvider, Prisma } from "generated/prisma/edge";
 import { ChangePasswordRequest, LoginRequest, RegisterRequest, ResetPasswordRequest } from "@/modules/auth/auth.schema";
-import { sessionResponse } from "../sessions/sessions.types";
+
+const oauthStateKey = (provider: OAuthProviderKey, state: string) => `oauth:state:${provider}:${state}`;
 
 export class AuthService {
   static async createUser(c: Context, request: RegisterRequest): Promise<{ data: { email: string } }> {
@@ -110,11 +114,15 @@ export class AuthService {
     // check email
     const isEmailExist = await UserRepository.findByEmail(request.email);
 
+    if (isEmailExist?.passwordHash === "") {
+      throw new HTTPException(400, { message: authErrorMessage.INVALID_CREDENTIALS, cause: authErrorCode.INVALID_CREDENTIALS });
+    }
+
     if (!isEmailExist) {
       throw new HTTPException(400, { message: authErrorMessage.INVALID_CREDENTIALS, cause: authErrorCode.INVALID_CREDENTIALS });
     }
 
-    const isValid = await verifyPassword({ password: request.password, hash: isEmailExist.passwordHash });
+    const isValid = await verifyPassword({ password: request.password, hash: isEmailExist?.passwordHash! });
 
     if (isEmailExist.status === "INACTIVE" || !isEmailExist.verifiedAt) {
       throw new HTTPException(400, { message: authErrorMessage.EMAIL_NOT_VERIFIED, cause: authErrorCode.EMAIL_NOT_VERIFIED });
@@ -326,5 +334,163 @@ export class AuthService {
       await UserRepository.updatePassword(verification.userId, hashedPassword);
       await SessionRepository.deleteSessionsByUserId(verification.userId);
     });
+  }
+
+  static async getOAuthURL(c: Context, providerKey: OAuthProviderKey): Promise<string> {
+    const provider = getOAuthProvider(providerKey);
+
+    // Random state untuk CSRF protection
+    const state = generateRandomToken();
+
+    // Simpan state di Redis, TTL 10 menit
+    await cache.set(
+      oauthStateKey(providerKey, state),
+      "1",
+      authLimit.OAUTH_STATE_TTL, // tambahkan: OAUTH_STATE_TTL: 10 * 60
+    );
+
+    return provider.getAuthURL(state);
+  }
+
+  static async handleOAuthCallback(c: Context, providerKey: OAuthProviderKey, code: string, state: string): Promise<loginResponse> {
+    // 1. Validasi state (anti-CSRF)
+    const stateKey = oauthStateKey(providerKey, state);
+    const isValidState = await cache.get(stateKey);
+
+    if (!isValidState) {
+      throw new HTTPException(400, {
+        message: authErrorMessage.OAUTH_STATE_INVALID,
+        cause: authErrorCode.OAUTH_STATE_INVALID,
+      });
+    }
+
+    // One-time use — hapus setelah dipakai
+    await cache.del(stateKey);
+
+    const oauthProvider = getOAuthProvider(providerKey);
+    const providerEnumKey = providerKey.toUpperCase() as keyof typeof OAuthProvider;
+
+    let tokens: Awaited<ReturnType<typeof oauthProvider.exchangeCode>>;
+    let oauthUser: Awaited<ReturnType<typeof oauthProvider.getUserInfo>>;
+
+    try {
+      tokens = await oauthProvider.exchangeCode(code);
+      oauthUser = await oauthProvider.getUserInfo(tokens.accessToken);
+    } catch (err) {
+      console.error(`[OAuth:${providerKey}] Error:`, err);
+      throw new HTTPException(400, {
+        message: authErrorMessage.OAUTH_FAILED,
+        cause: authErrorCode.OAUTH_FAILED,
+      });
+    }
+
+    if (!oauthUser.email) {
+      throw new HTTPException(400, {
+        message: authErrorMessage.OAUTH_EMAIL_NOT_PROVIDED,
+        cause: authErrorCode.OAUTH_EMAIL_NOT_PROVIDED,
+      });
+    }
+
+    const provider = OAuthProvider[providerEnumKey];
+
+    // 3. Resolve user: cari by oauthAccount → fallback email → register baru
+    let user = await UserRepository.findByOAuthProvider(provider, oauthUser.providerAccountId);
+
+    if (!user) {
+      const existingUser = await UserRepository.findByEmail(oauthUser.email);
+
+      if (existingUser) {
+        // Email sudah terdaftar (akun biasa) → link OAuth account ke user ini
+        user = existingUser;
+      } else {
+        // Belum terdaftar sama sekali → register otomatis
+        const username = generateRandomUsername(oauthUser.name);
+        user = await pgsql.$transaction(async (tx) => {
+          const newUser = await UserRepository.createOAuthUser(tx, {
+            email: oauthUser.email,
+            name: oauthUser.name,
+            username,
+            avatar: oauthUser.avatar || generateRandomAvatarURL(username),
+          });
+
+          // Default notification settings — sama seperti register biasa
+          const notifPayload = Object.values(NotificationType).map((type) => ({
+            userId: newUser.id,
+            type,
+            channel: NotificationChannel.IN_APP,
+            status: NotificationStatus.ENABLED,
+            createdAt: new Date(),
+          }));
+          await NotificationRepository.createNotificationSettings(tx, notifPayload);
+
+          await UserRepository.createActivityLog(tx, {
+            userId: newUser.id,
+            action: userAction.LOGIN,
+            metadata: { provider: providerKey, firstLogin: true },
+          });
+
+          return {
+            ...newUser,
+            passwordHash: null,
+          };
+        });
+      }
+    }
+
+    // 4. Cek status akun
+    if (user?.status === "BANNED") {
+      throw new HTTPException(403, {
+        message: authErrorMessage.ACCOUNT_BANNED,
+        cause: authErrorCode.ACCOUNT_BANNED,
+      });
+    }
+
+    // 5. Simpan / update OAuthAccount (refresh token setiap login)
+    await UserRepository.upsertOAuthAccount(null, {
+      userId: user?.id!,
+      provider,
+      providerAccountId: oauthUser.providerAccountId,
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+      expiresAt: tokens.expiresAt,
+    });
+
+    // 6. Buat session — identik dengan login biasa
+    const randomToken = generateRandomToken();
+    const hashedToken = await hashToken(randomToken);
+
+    const sessionPayload = {
+      id: cuid(),
+      userId: user?.id!,
+      token: hashedToken,
+      userAgent: c.req.header("user-agent") || "unknown",
+      expiresAt: new Date(Date.now() + authLimit.SESSION_TOKEN_EXP),
+    };
+
+    const newSession = await pgsql.$transaction(async (tx) => {
+      await UserRepository.updateLastLogin(tx, user!.id, new Date());
+      const session = await SessionRepository.createSession(tx, sessionPayload);
+      await UserRepository.createActivityLog(tx, {
+        userId: user?.id!,
+        action: userAction.LOGIN,
+        metadata: { userAgent: sessionPayload.userAgent, provider: providerKey },
+      });
+      return session;
+    });
+
+    const sessionToken = await generateSessionToken({ sub: user?.id!, sid: newSession.id });
+    setCookie(c, redisConfig.TOKEN_PREFIX_DEFAULT, sessionToken);
+
+    return {
+      token: sessionToken,
+      expiredAt: sessionPayload.expiresAt,
+      user: {
+        id: user?.id!,
+        name: user?.name!,
+        username: user?.username!,
+        avatar: user?.avatar!,
+        email: user?.email!,
+      },
+    };
   }
 }

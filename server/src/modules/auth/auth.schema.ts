@@ -62,3 +62,10 @@ export const resendVerificationEmailRequest = z.object({
 export const forgotPasswordRequest = z.object({
   email: z.email("Invalid email address"),
 });
+
+export const googleCallbackSchema = z.object({
+  code: z.string().min(1, "Authorization code is required"),
+  state: z.string().min(1, "State is required"),
+});
+
+export type GoogleCallbackRequest = z.infer<typeof googleCallbackSchema>;
