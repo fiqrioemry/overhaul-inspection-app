@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/stores/auth.store";
 import { useFollowUser, useUnfollowUser } from "@/features/users/users.query";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { useSavePost, useUnsavePost } from "../posts.query";
 
 interface PostOptionMenuProps {
   post: Post;
@@ -13,6 +14,8 @@ interface PostOptionMenuProps {
 
 export default function PostOptionMenu({ post }: PostOptionMenuProps) {
   const { user } = useAuthStore();
+  const savePost = useSavePost(post.id);
+  const unsavePost = useUnsavePost(post.id);
   const unfollow = useUnfollowUser(post.user.id);
   const follow = useFollowUser(post.user.id);
 
@@ -21,9 +24,9 @@ export default function PostOptionMenu({ post }: PostOptionMenuProps) {
     action.mutate();
   }
 
-  async function savePost() {
-    toast.success("You saved this post");
-    // TODO: Implement save post API call
+  async function handleSavePost() {
+    const action = post.isSaved ? unsavePost : savePost;
+    action.mutate();
   }
 
   async function reportPost() {
@@ -47,12 +50,12 @@ export default function PostOptionMenu({ post }: PostOptionMenuProps) {
           <Link to={`/p/${post.id}`} className="block w-full">
             <DropdownMenuItem className="cursor-pointer">Go to post</DropdownMenuItem>
           </Link>
-          <button className="w-full" onClick={savePost}>
-            <DropdownMenuItem className="cursor-pointer">Save Post</DropdownMenuItem>
+          <button className="w-full" onClick={handleSavePost}>
+            <DropdownMenuItem className={`${post.isSaved ? "text-destructive" : "text-blue-500"} cursor-pointer`}>{post.isSaved ? "Unsave" : "Save"}</DropdownMenuItem>
           </button>
           {user?.id !== post.user.id && (
             <button className="w-full" onClick={followUser}>
-              <DropdownMenuItem className={post.isFollowing ? "text-destructive" : "text-blue-500"}>{post.isFollowing ? "Unfollow" : "Follow"}</DropdownMenuItem>
+              <DropdownMenuItem className={`${post.isFollowing ? "text-destructive" : "text-blue-500"} cursor-pointer`}>{post.isFollowing ? "Unfollow" : "Follow"}</DropdownMenuItem>
             </button>
           )}
           <button className="w-full" onClick={reportPost}>

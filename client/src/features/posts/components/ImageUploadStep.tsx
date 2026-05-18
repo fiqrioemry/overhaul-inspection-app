@@ -5,7 +5,7 @@ import { ImageDropzone } from "@/components/fields/ImageDropzone";
 import { ImagePreviewGallery } from "@/components/fields/ImagePreviewGallery";
 
 const MAX_FILES = 5;
-const MAX_SIZE = 2 * 1024 * 1024;
+const MAX_SIZE = 5 * 1024 * 1024;
 const ALLOWED = ["image/jpeg", "image/png", "image/webp"];
 
 export interface PreviewItem {

@@ -1,8 +1,9 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // src/features/posts/components/PostActions.tsx
 import { cn } from "@/lib/utils";
 import type { Post } from "@/types/posts.type";
 import { Heart, MessageCircle, Send, Bookmark } from "lucide-react";
-import { useLikePost, useUnlikePost } from "@/features/posts/posts.query";
+import { useLikePost, useSavePost, useUnlikePost, useUnsavePost } from "@/features/posts/posts.query";
 
 interface PostActionsProps {
   post: Post;
@@ -11,6 +12,8 @@ interface PostActionsProps {
 }
 
 export default function PostActions({ post, onCommentClick }: PostActionsProps) {
+  const savePost = useSavePost(post.id);
+  const unsavePost = useUnsavePost(post.id);
   const likePost = useLikePost(post.id);
   const unlikePost = useUnlikePost(post.id);
 
@@ -18,6 +21,11 @@ export default function PostActions({ post, onCommentClick }: PostActionsProps) 
 
   function handleLikeToggle() {
     const action = isLiked ? unlikePost : likePost;
+    action.mutate();
+  }
+
+  function handleSavePost() {
+    const action = post.isSaved ? unsavePost : savePost;
     action.mutate();
   }
 
@@ -49,14 +57,14 @@ export default function PostActions({ post, onCommentClick }: PostActionsProps) 
         </div>
 
         {/* Share button*/}
-        <button className="group flex items-center gap-1 transition-transform active:scale-90" aria-label="Share post">
+        {/* <button className="group flex items-center gap-1 transition-transform active:scale-90" aria-label="Share post">
           <Send className="h-6 w-6 text-foreground group-hover:text-muted-foreground transition-colors" />
-        </button>
+        </button> */}
       </div>
 
       {/* right bookmark */}
-      <button className="group transition-transform active:scale-90" aria-label="Bookmark post">
-        <Bookmark className="h-6 w-6 text-foreground group-hover:text-muted-foreground transition-colors" />
+      <button onClick={handleSavePost} className="group transition-transform active:scale-90" aria-label="Bookmark post">
+        <Bookmark className={cn(post.isSaved ? "fill-blue-500 text-blue-500" : "text-foreground group-hover:text-muted-foreground", "h-6 w-6 transition-colors")} />
       </button>
     </div>
   );
