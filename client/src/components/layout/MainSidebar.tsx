@@ -51,10 +51,14 @@ export default function MainSidebar() {
   async function handleLogout() {
     setIsLoggingOut(true);
     try {
-      await logout();
-      navigate("/login", { replace: true });
+      const res = await logout();
+      console.log("data", res);
+      if (res.success) {
+        useAuthStore.getState().clearUser();
+        window.location.href = "/login";
+      }
     } catch {
-      toast.error("Logout failed. Please try again.");
+      toast.error("Gagal logout, coba lagi.");
     } finally {
       setIsLoggingOut(false);
     }

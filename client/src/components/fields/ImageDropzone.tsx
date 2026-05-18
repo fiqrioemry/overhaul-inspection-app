@@ -12,9 +12,9 @@ interface ImageDropzoneProps {
 }
 
 const ACCEPTED = { "image/jpeg": [], "image/png": [], "image/webp": [] };
-const MAX_SIZE = 2 * 1024 * 1024;
+const MAX_SIZE = 5 * 1024 * 1024;
 
-export function ImageDropzone({ onDrop, disabled, maxSize = MAX_SIZE, maxFiles = 10, currentCount = 0 }: ImageDropzoneProps) {
+export function ImageDropzone({ onDrop, disabled, maxSize = MAX_SIZE, maxFiles = 5, currentCount = 0 }: ImageDropzoneProps) {
   const remaining = maxFiles - currentCount;
 
   function handleRejected(rejections: FileRejection[]) {
@@ -57,9 +57,9 @@ export function ImageDropzone({ onDrop, disabled, maxSize = MAX_SIZE, maxFiles =
         {isDragActive ? <UploadCloud className="size-7 text-primary" /> : <ImagePlus className="size-7 text-primary" />}
       </div>
       <div className="text-center">
-        <p className="text-sm font-medium text-foreground">{isDragActive ? "Lepaskan file di sini" : "Drag & drop gambar, atau klik untuk pilih"}</p>
+        <p className="text-sm font-medium text-foreground">{isDragActive ? "Release files here" : "Drag & drop images, or click to select"}</p>
         <p className="mt-1 text-xs text-muted-foreground">
-          JPEG, PNG, WebP · Maks. {maxSize / (1024 * 1024)}MB per file · {remaining} slot tersisa
+          JPEG, PNG, WebP · Max. {maxSize / (1024 * 1024)}MB per file · {remaining} remaining slot
         </p>
       </div>
     </div>

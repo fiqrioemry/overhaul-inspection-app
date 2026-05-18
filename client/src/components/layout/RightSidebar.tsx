@@ -31,9 +31,6 @@ export default function RightSidebar() {
       <div>
         <div className="flex items-center justify-between mb-3">
           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Saran untuk kamu</span>
-          <Link to="/explore" className="text-xs text-primary hover:underline">
-            Lihat semua
-          </Link>
         </div>
         <SuggestedUsersList />
       </div>

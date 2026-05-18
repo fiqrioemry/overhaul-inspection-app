@@ -9,14 +9,14 @@ import { useSearchUsers } from "@/features/users/users.query";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import CreatePostDialog from "@/features/posts/components/CreatePostDialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Home, Compass, PlusSquare, BookMarked, User, Search, X, ChevronUp, Settings, Sun, Moon, LogOut } from "lucide-react";
+import { Home, Compass, PlusSquare, User, Search, X, ChevronUp, Settings, Sun, Moon, LogOut, MessageCircle } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import useTheme from "@/hooks/useTheme";
 
 const NAV_ITEMS = [
   { icon: Home, label: "Home", to: "/" },
   { icon: Compass, label: "Explore", to: "/explore" },
-  { icon: BookMarked, label: "Saved", to: "/saved" },
+  { icon: MessageCircle, label: "Messages", to: "/message" },
 ];
 
 export default function MobileBottomNav() {
@@ -48,8 +48,11 @@ export default function MobileBottomNav() {
   async function handleLogout() {
     setIsLoggingOut(true);
     try {
-      await logout();
-      navigate("/login");
+      const res = await logout();
+      if (res.success) {
+        useAuthStore.getState().clearUser();
+        window.location.href = "/login";
+      }
     } catch {
       toast.error("Gagal logout, coba lagi.");
     } finally {
