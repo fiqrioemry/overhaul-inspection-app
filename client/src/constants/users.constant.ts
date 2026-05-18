@@ -6,6 +6,6 @@ export const USERS_ENDPOINTS = {
   unfollowUser: "/users/unfollow",
   getFollowers: "/users/followers",
   getFollowing: "/users/followings",
-  updateUserProfile: "/users",
-  updateAvatar: "/users/avatar",
+  updateUserProfile: "/users/profile",
+  updateAvatar: "/users/profile/avatar",
 } as const;

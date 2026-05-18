@@ -8,4 +8,6 @@ export const POST_ENDPOINTS = {
   updatePost: "/posts/:postId",
   likePost: "/posts/:postId/like",
   unlikePost: "/posts/:postId/unlike",
+  savePost: "/posts/:postId/save",
+  unsavePost: "/posts/:postId/unsave",
 } as const;
