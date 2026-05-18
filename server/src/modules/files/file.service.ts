@@ -3,7 +3,7 @@ import { Prisma } from "generated/prisma/edge";
 import storageConfig from "@/config/constant/storage";
 import { processImage } from "@/utils/file-processing";
 import { generateRandomFilename } from "@/utils/generator";
-import { minioClient, BUCKET } from "@/config/storage/minio";
+import { minioClient, BUCKET } from "@/lib/minio";
 import { FileRepository } from "@/modules/files/file.repository";
 
 export class FileService {

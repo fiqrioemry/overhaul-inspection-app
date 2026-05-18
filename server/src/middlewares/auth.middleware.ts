@@ -1,7 +1,7 @@
 import { Context } from "hono";
 import { getCookie } from "hono/cookie";
+import { redisConfig } from "@/config/env";
 import { verifySessionToken } from "@/utils/jwt";
-import redisConfig from "@/config/constant/redis";
 import { HTTPException } from "hono/http-exception";
 import { SessionRepository } from "@/modules/sessions/sessions.repository";
 import { authErrorCode, authErrorMessage } from "@/config/constant/auth.constant";
@@ -9,7 +9,7 @@ import { authErrorCode, authErrorMessage } from "@/config/constant/auth.constant
 const sessionRepo = SessionRepository;
 
 export async function protect(c: Context, next: () => Promise<void>) {
-  const token = getCookie(c, redisConfig.tokenPrefixDefault);
+  const token = getCookie(c, redisConfig.TOKEN_PREFIX_DEFAULT);
 
   if (!token) {
     throw new HTTPException(401, { message: authErrorMessage.UNAUTHORIZED, cause: authErrorMessage.UNAUTHORIZED });

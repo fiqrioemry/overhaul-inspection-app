@@ -1,8 +1,8 @@
 import { Context } from "hono";
-import { NotificationType } from "generated/prisma";
+import { pgsql as db } from "@/lib/database";
 import { HTTPException } from "hono/http-exception";
 import { FileService } from "@/modules/files/file.service";
-import { pgsql as db } from "@/config/database/pgsql";
+import { NotificationType, Prisma } from "generated/prisma";
 import { PostRepository } from "@/modules/posts/post.repository";
 import { UserRepository } from "@/modules/users/user.repository";
 import { NotificationRepository } from "@/modules/notifications/notification.repository";
@@ -11,7 +11,7 @@ import { CreatePostRequest, GetFollowingPostsRequest, GetPublicPostsRequest, Get
 
 export class PostService {
   static async createPost(c: Context, userId: string, request: CreatePostRequest) {
-    return await db.$transaction(async (tx) => {
+    return await db.$transaction(async (tx: Prisma.TransactionClient) => {
       const post = await PostRepository.createPost(tx, userId, request);
 
       if (request.galleries && request.galleries.length > 0) {
@@ -103,7 +103,7 @@ export class PostService {
       throw new HTTPException(404, { message: postErrorMessage.POST_NOT_FOUND, cause: postErrorCode.POST_NOT_FOUND });
     }
 
-    return await db.$transaction(async (tx) => {
+    return await db.$transaction(async (tx: Prisma.TransactionClient) => {
       // update post from records
       await PostRepository.updatePost(tx, postId, request);
 
@@ -141,7 +141,7 @@ export class PostService {
       throw new HTTPException(409, { message: postErrorMessage.ALREADY_LIKED_POST, cause: postErrorCode.ALREADY_LIKED_POST });
     }
 
-    await db.$transaction(async (tx) => {
+    await db.$transaction(async (tx: Prisma.TransactionClient) => {
       await PostRepository.likePost(userId, postId, tx);
       // create notification record
       if (post.userId !== userId) {
@@ -246,7 +246,7 @@ export class PostService {
       throw new HTTPException(404, { message: postErrorMessage.POST_NOT_FOUND, cause: postErrorCode.POST_NOT_FOUND });
     }
 
-    await db.$transaction(async (tx) => {
+    await db.$transaction(async (tx: Prisma.TransactionClient) => {
       await PostRepository.deletePost(tx, postId);
 
       await UserRepository.createActivityLog(tx, {

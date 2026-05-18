@@ -1,8 +1,8 @@
 import { Hono } from "hono";
 import router from "@/routes";
-import "@/config/database/redis";
+import "@/lib/redis";
 import { prettyJSON } from "hono/pretty-json";
-import { eventBus } from "./config/socket/socket";
+import { eventBus } from "./lib/socket";
 import dbConfig from "./config/constant/database";
 import corsMiddleware from "./middlewares/cors.middleware";
 import { startFileCleanupWorker } from "@/workers/file-cleanup.worker";

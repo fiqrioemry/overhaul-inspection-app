@@ -1,4 +1,4 @@
-import { redisClient } from "@/config/database/redis";
+import { redisClient } from "@/lib/redis";
 
 export const cache = {
   async get(key: string): Promise<string | null> {

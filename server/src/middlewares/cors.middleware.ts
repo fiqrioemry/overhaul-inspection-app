@@ -1,11 +1,11 @@
 import { cors } from "hono/cors";
-import dbConfig from "@/config/constant/database";
+import { databaseConfig } from "@/config/env";
 
 const corsMiddleware = cors({
-  origin: dbConfig.clientUrl,
+  origin: databaseConfig.CLIENT_URL,
   allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
   allowHeaders: ["Content-Type", "Authorization"],
-  maxAge: dbConfig.cachingMaxAge,
+  maxAge: databaseConfig.CACHING_MAX_AGE,
   credentials: true,
 });
 

@@ -1,13 +1,11 @@
 import cuid from "cuid";
 import { Context } from "hono";
-import mailer from "@/config/constant/email";
-import redisConfig from "@/config/constant/redis";
-import dbConfig from "@/config/constant/database";
+import { mailConfig, redisConfig, databaseConfig } from "@/config/env";
 import { generateSessionToken } from "@/utils/jwt";
 import { HTTPException } from "hono/http-exception";
 import { sendVerificationLink } from "@/utils/mailer";
 import { deleteCookie, setCookie } from "hono/cookie";
-import { pgsql as db } from "@/config/database/pgsql";
+import { pgsql as db } from "@/lib/database";
 import { userAction } from "@/config/constant/user.constant";
 import { UserRepository } from "@/modules/users/user.repository";
 import { hashPassword, hashToken, verifyPassword } from "@/utils/hash";
@@ -15,7 +13,7 @@ import { SessionRepository } from "@/modules/sessions/sessions.repository";
 import { loginResponse, userResponse, verificationType } from "@/modules/users/user.types";
 import { NotificationRepository } from "@/modules/notifications/notification.repository";
 import { authErrorCode, authErrorMessage, authLimit } from "@/config/constant/auth.constant";
-import { NotificationChannel, NotificationStatus, NotificationType } from "generated/prisma/edge";
+import { NotificationChannel, NotificationStatus, NotificationType, Prisma } from "generated/prisma/edge";
 import { generateRandomAvatarURL, generateRandomToken, generateRandomUsername } from "@/utils/generator";
 import { ChangePasswordRequest, LoginRequest, RegisterRequest, ResetPasswordRequest } from "@/modules/auth/auth.schema";
 
@@ -41,7 +39,7 @@ export class AuthService {
       username: username,
     };
 
-    const randomToken = await db.$transaction(async (tx) => {
+    const randomToken = await db.$transaction(async (tx: Prisma.TransactionClient) => {
       const newUser = await UserRepository.create(tx, userData);
 
       if (!newUser) {
@@ -76,14 +74,14 @@ export class AuthService {
     });
 
     // config email data
-    const mailConfig = {
+    const mailSetup = {
       to: request.email,
-      subject: mailer.emailVerificationSubject,
-      url: `${dbConfig.clientUrl}/verify-email?token=${randomToken}`,
+      subject: mailConfig.EMAIL_VERIFICATION_SUBJECT,
+      url: `${databaseConfig.CLIENT_URL}/verify-email?token=${randomToken}`,
     };
 
     // send email synchronously
-    sendVerificationLink(mailConfig);
+    sendVerificationLink(mailSetup);
 
     return { data: { email: request.email } };
   }
@@ -101,7 +99,7 @@ export class AuthService {
       throw new HTTPException(400, { message: authErrorMessage.INVALID_TOKEN, cause: authErrorCode.INVALID_TOKEN });
     }
 
-    db.$transaction(async (tx) => {
+    db.$transaction(async (tx: Prisma.TransactionClient) => {
       await UserRepository.updateUserVerification(tx, isValid.id, new Date());
       await UserRepository.updateUserActive(tx, { userId: isValid.userId, status: "ACTIVE" });
     });
@@ -140,7 +138,7 @@ export class AuthService {
       expiresAt: new Date(Date.now() + authLimit.SESSION_TOKEN_EXP),
     };
 
-    const newSession = await db.$transaction(async (tx) => {
+    const newSession = await db.$transaction(async (tx: Prisma.TransactionClient) => {
       await UserRepository.updateLastLogin(tx, isEmailExist.id, new Date());
       const session = await SessionRepository.createSession(tx, sessionPayload);
 
@@ -157,7 +155,7 @@ export class AuthService {
 
     const sessionToken = await generateSessionToken({ sub: isEmailExist.id, sid: newSession.id });
 
-    setCookie(c, redisConfig.tokenPrefixDefault, sessionToken);
+    setCookie(c, redisConfig.TOKEN_PREFIX_DEFAULT, sessionToken);
 
     return {
       token: sessionToken,
@@ -195,13 +193,13 @@ export class AuthService {
 
     await UserRepository.createUserVerification(db, userVerificationData);
 
-    const mailConfig = {
+    const mailSetup = {
       to: email,
-      subject: mailer.emailVerificationSubject,
-      url: `${dbConfig.clientUrl}/verify-email?token=${randomToken}`,
+      subject: mailConfig.EMAIL_VERIFICATION_SUBJECT,
+      url: `${databaseConfig.CLIENT_URL}/verify-email?token=${randomToken}`,
     };
 
-    sendVerificationLink(mailConfig);
+    sendVerificationLink(mailSetup);
   }
 
   static async getMe(c: Context, userId: string): Promise<userResponse> {
@@ -215,13 +213,13 @@ export class AuthService {
   }
 
   static async logout(c: Context, sessionId: string): Promise<void> {
-    deleteCookie(c, redisConfig.tokenPrefixDefault);
+    deleteCookie(c, redisConfig.TOKEN_PREFIX_DEFAULT);
     await SessionRepository.deleteSessionBySessionId(sessionId);
   }
 
   static async logoutAll(c: Context, userId: string): Promise<void> {
     await SessionRepository.deleteSessionsByUserId(userId);
-    deleteCookie(c, redisConfig.tokenPrefixDefault);
+    deleteCookie(c, redisConfig.TOKEN_PREFIX_DEFAULT);
   }
 
   static async getSessions(c: Context, userId: string) {
@@ -270,7 +268,7 @@ export class AuthService {
     // invalidate all sessions
     await SessionRepository.deleteSessionsByUserId(userId);
 
-    deleteCookie(c, redisConfig.tokenPrefixDefault);
+    deleteCookie(c, redisConfig.TOKEN_PREFIX_DEFAULT);
   }
 
   static async forgotPassword(c: Context, email: string): Promise<void> {
@@ -292,13 +290,13 @@ export class AuthService {
 
     await UserRepository.createUserVerification(db, userVerificationData);
 
-    const mailConfig = {
+    const mailSetup = {
       to: email,
-      subject: mailer.passwordResetSubject,
-      url: `${dbConfig.clientUrl}/reset-password?token=${randomToken}`,
+      subject: mailConfig.PASSWORD_RESET_SUBJECT,
+      url: `${databaseConfig.CLIENT_URL}/reset-password?token=${randomToken}`,
     };
 
-    sendVerificationLink(mailConfig);
+    sendVerificationLink(mailSetup);
   }
 
   static async resetPassword(c: Context, token: string, request: ResetPasswordRequest): Promise<void> {

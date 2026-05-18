@@ -1,6 +1,6 @@
 import { Context } from "hono";
 import { cache } from "@/utils/cache";
-import redisConfig from "@/config/constant/redis";
+import { redisConfig } from "@/config/env";
 import { getCookie, setCookie } from "hono/cookie";
 import { HTTPException } from "hono/http-exception";
 import { authErrorMessage, authErrorCode } from "@/config/constant/auth.constant";
@@ -16,7 +16,7 @@ export function limitter({ limit, windowSec }: { limit: number; windowSec: numbe
       return;
     }
 
-    const key = `${redisConfig.redisKeyLimiter}${userId}:${c.req.path}`;
+    const key = `${redisConfig.REDIS_KEY_LIMITER}${userId}:${c.req.path}`;
 
     const current = await cache.incr(key);
 

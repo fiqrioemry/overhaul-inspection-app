@@ -1,5 +1,5 @@
 import { Prisma } from "generated/prisma/edge";
-import { pgsql as database } from "@/config/database/pgsql";
+import { pgsql as database } from "@/lib/database";
 import { CreateUserActivityLogRequest, GetFollowRequest, UpdateProfileRequest } from "@/modules/users/user.schema";
 import { createUserData, searchResponse, verificationType, createVerificationData, updateUserActiveData, userCredential, userResponse, userVerificationData, profileResponse } from "@/modules/users/user.types";
 

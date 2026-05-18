@@ -1,4 +1,4 @@
-import { transporter } from "@/config/nodemailer/nodemailer";
+import { transporter } from "@/lib/nodemailer";
 import { verificationEmailTemplate, resetPasswordTemplate, newAccountPasswordTemplate } from "@/utils/email-template";
 
 // Send Verification Email

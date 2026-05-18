@@ -1,5 +1,6 @@
 import { Context } from "hono";
-import { pgsql } from "@/config/database/pgsql";
+import { pgsql } from "@/lib/database";
+import { Notification, NotificationSetting } from "./notifications.type";
 import { UserRepository } from "@/modules/users/user.repository";
 import { notificationAction } from "@/config/constant/notification.constant";
 import { NotificationRepository } from "@/modules/notifications/notification.repository";
@@ -13,7 +14,7 @@ export class NotificationService {
   static async getNotificationByUserId(c: Context, request: GetNotificationRequest) {
     const { notifications, totalItems } = await NotificationRepository.getNotificationsByUserId(request);
 
-    const data = notifications.map((notification) => ({
+    const data = notifications.map((notification: Notification) => ({
       id: notification.id,
       title: notification.title,
       description: notification.description,
@@ -47,7 +48,7 @@ export class NotificationService {
 
   static async getNotificationSettings(c: Context, userId: string) {
     const notifications = await NotificationRepository.getNotificationSettings(userId);
-    return notifications.map((setting) => ({
+    return notifications.map((setting: NotificationSetting) => ({
       id: setting.id,
       type: setting.type,
       channel: setting.channel,

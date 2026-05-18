@@ -1,5 +1,5 @@
 import { Prisma } from "generated/prisma/edge";
-import { pgsql as database } from "@/config/database/pgsql";
+import { pgsql as database } from "@/lib/database";
 import { CreatePostRequest, GetFollowingPostsRequest, GetPublicPostsRequest, GetSavedPostsRequest, UpdatePostRequest } from "@/modules/posts/post.schema";
 
 export class PostRepository {
