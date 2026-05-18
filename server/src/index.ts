@@ -1,9 +1,9 @@
+import "@/lib/redis";
 import { Hono } from "hono";
 import router from "@/routes";
-import "@/lib/redis";
-import { prettyJSON } from "hono/pretty-json";
 import { eventBus } from "./lib/socket";
-import dbConfig from "./config/constant/database";
+import { prettyJSON } from "hono/pretty-json";
+import { databaseConfig } from "./config/env";
 import corsMiddleware from "./middlewares/cors.middleware";
 import { startFileCleanupWorker } from "@/workers/file-cleanup.worker";
 import { errorHandler, notFoundHandler } from "./middlewares/error.middleware";
@@ -20,7 +20,7 @@ app.onError(errorHandler);
 app.notFound(notFoundHandler);
 
 const server = Bun.serve({
-  port: dbConfig.port || 5000,
+  port: databaseConfig.PORT || 5000,
 
   fetch(req, server) {
     // websocket endpoint
@@ -50,7 +50,7 @@ const server = Bun.serve({
   },
 });
 
-console.log(`✅ Server running on ${dbConfig.serverUrl || `http://localhost:5000`}`);
+console.log(`✅ Server running on ${databaseConfig.SERVER_URL || `http://localhost:5000`}`);
 
 eventBus.setServer(server);
 // worker

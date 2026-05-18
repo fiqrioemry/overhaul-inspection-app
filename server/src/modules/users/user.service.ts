@@ -1,5 +1,5 @@
 import { Context } from "hono";
-import { pgsql } from "@/config/database/pgsql";
+import { pgsql } from "@/lib/database";
 import { HTTPException } from "hono/http-exception";
 import { FileService } from "@/modules/files/file.service";
 import { NotificationType, Prisma } from "generated/prisma";
@@ -24,7 +24,7 @@ export class UserService {
   }
 
   static async updateProfile(c: Context, userId: string, request: { name: string; bio?: string }) {
-    return await pgsql.$transaction(async (tx) => {
+    return await pgsql.$transaction(async (tx: Prisma.TransactionClient) => {
       const updatedProfile = await UserRepository.updateProfile(userId, request, tx);
       const userLogs = {
         userId,
@@ -46,7 +46,7 @@ export class UserService {
 
     const uploadedFile = await FileService.uploadSingleFile(c, userId, avatar, "profile", userId, true);
 
-    return await pgsql.$transaction(async (tx) => {
+    return await pgsql.$transaction(async (tx: Prisma.TransactionClient) => {
       const updatedAvatar = await UserRepository.updateAvatar(userId, uploadedFile.url, tx);
       const userLogs = {
         userId,
@@ -99,7 +99,7 @@ export class UserService {
     }
 
     try {
-      await pgsql.$transaction(async (tx) => {
+      await pgsql.$transaction(async (tx: Prisma.TransactionClient) => {
         await UserRepository.createFollow(tx, payload.userId!, payload.targetUserId);
 
         await NotificationRepository.createNotification(tx, {

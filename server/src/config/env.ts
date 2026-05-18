@@ -6,16 +6,16 @@ const mailConfig = {
 };
 
 const databaseConfig = {
-  port: process.env.PORT,
+  PORT: process.env.PORT,
   MODE: process.env.MODE || "development",
-  host: process.env.HOSTNAME || "localhost",
-  serverUrl: process.env.SERVER_URL || `http://${process.env.HOSTNAME || "localhost"}:${process.env.PORT}`,
+  HOST: process.env.HOSTNAME || "localhost",
+  SERVER_URL: process.env.SERVER_URL || `http://${process.env.HOSTNAME || "localhost"}:${process.env.PORT}`,
   CLIENT_URL: process.env.CLIENT_URL || "http://localhost:5173",
   CACHING_MAX_AGE: process.env.CACHING_MAX_AGE ? parseInt(process.env.CACHING_MAX_AGE) : 84600,
   SESSION_SECRET: process.env.SESSION_SECRET || "your-session-secret",
   DB_URL: process.env.DATABASE_URL || "mysql://root:password@localhost:3306/database_name?connection_limit=10&timezone=UTC",
-  dbConnectionLimit: process.env.DB_CONNECTION_LIMIT ? parseInt(process.env.DB_CONNECTION_LIMIT) : 10,
-  dbTimezone: process.env.DB_TIMEZONE || "+00:00",
+  DB_CONNECTION_LIMIT: process.env.DB_CONNECTION_LIMIT ? parseInt(process.env.DB_CONNECTION_LIMIT) : 10,
+  DB_TIMEZONE: process.env.DB_TIMEZONE || "+00:00",
 };
 
 const minioConfig = {

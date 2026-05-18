@@ -1,4 +1,3 @@
-// @/utils/event.ts
 import type { Server } from "bun";
 
 class EventBus {
