@@ -27,15 +27,15 @@ export class UserController {
     if (!avatar) {
       return responseError(c, fileErrorMessage.FILE_NOT_FOUND, 404, fileErrorCode.FILE_NOT_FOUND);
     }
-    const response = await UserService.updateAvatar(c, user.userId, avatar);
-    return responseOK(c, userSuccessMessage.UPDATE_AVATAR_SUCCESS, response);
+    await UserService.updateAvatar(c, user.userId, avatar);
+    return responseOK(c, userSuccessMessage.UPDATE_AVATAR_SUCCESS);
   }
 
   static async updateProfile(c: Context) {
     const user = await c.get("user");
     const request = updateProfileRequest.parse(await c.req.json());
-    const response = await UserService.updateProfile(c, user.userId, request);
-    return responseOK(c, userSuccessMessage.UPDATE_PROFILE_SUCCESS, response);
+    await UserService.updateProfile(c, user.userId, request);
+    return responseOK(c, userSuccessMessage.UPDATE_PROFILE_SUCCESS);
   }
 
   static async followUser(c: Context) {

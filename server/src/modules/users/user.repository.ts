@@ -1,10 +1,10 @@
 import { Prisma } from "generated/prisma/edge";
 import { pgsql as database } from "@/lib/database";
 import { CreateUserActivityLogRequest, GetFollowRequest, UpdateProfileRequest } from "@/modules/users/user.schema";
-import { createUserData, searchResponse, verificationType, createVerificationData, updateUserActiveData, userCredential, userResponse, userVerificationData, profileResponse } from "@/modules/users/user.types";
+import { createUserData, verificationType, createVerificationData, updateUserActiveData } from "@/modules/users/user.types";
 
 export class UserRepository {
-  static async findByEmail(email: string): Promise<userCredential | null> {
+  static async findByEmail(email: string) {
     return await database.user.findUnique({
       where: { email },
       select: {
@@ -20,7 +20,7 @@ export class UserRepository {
     });
   }
 
-  static async create(tx: Prisma.TransactionClient | null, user: createUserData): Promise<userResponse> {
+  static async create(tx: Prisma.TransactionClient | null, user: createUserData) {
     const db = tx ?? database;
 
     const result = await db.user.create({
@@ -50,7 +50,7 @@ export class UserRepository {
     return result;
   }
 
-  static async findById(id: string): Promise<userResponse | null> {
+  static async findById(id: string) {
     return await database.user.findUnique({
       where: { id },
       select: {
@@ -66,7 +66,7 @@ export class UserRepository {
     });
   }
 
-  static async getProfileByUsername(username: string, currentUserId?: string): Promise<profileResponse | null> {
+  static async getProfileByUsername(username: string, currentUserId?: string) {
     return await database.user.findUnique({
       where: { username },
       select: {
@@ -107,7 +107,7 @@ export class UserRepository {
     });
   }
 
-  static async findUserVerification(token: string, type: verificationType): Promise<userVerificationData | null> {
+  static async findUserVerification(token: string, type: verificationType) {
     return await database.userVerification.findFirst({
       where: { token, type, usedAt: null },
       select: {
@@ -188,7 +188,7 @@ export class UserRepository {
     });
   }
 
-  static async searchUsersByUsername(username: string, currentUserId?: string): Promise<searchResponse[]> {
+  static async searchUsersByUsername(username: string, currentUserId?: string) {
     return await database.user.findMany({
       where: {
         status: "ACTIVE",

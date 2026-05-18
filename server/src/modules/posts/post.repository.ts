@@ -222,6 +222,7 @@ export class PostRepository {
         where,
         select: {
           id: true,
+          title: true,
           content: true,
           createdAt: true,
           userId: true,

@@ -1,9 +1,9 @@
 import { Context } from "hono";
+import { minioConfig } from "@/config/env";
 import { Prisma } from "generated/prisma/edge";
-import storageConfig from "@/config/constant/storage";
+import { minioClient, BUCKET } from "@/lib/minio";
 import { processImage } from "@/utils/file-processing";
 import { generateRandomFilename } from "@/utils/generator";
-import { minioClient, BUCKET } from "@/lib/minio";
 import { FileRepository } from "@/modules/files/file.repository";
 
 export class FileService {
@@ -17,9 +17,7 @@ export class FileService {
       "Content-Type": "image/webp",
     });
 
-    storageConfig;
-
-    const url = `${storageConfig.endpoint}/${BUCKET}/${storageKey}`;
+    const url = `${minioConfig.ENDPOINT}/${BUCKET}/${storageKey}`;
 
     const fileRecord = {
       targetId,
@@ -57,7 +55,7 @@ export class FileService {
           "Content-Type": "image/webp",
         });
 
-        const url = `${process.env.MINIO_ENDPOINT}/${BUCKET}/${storageKey}`;
+        const url = `${minioConfig.ENDPOINT}/${BUCKET}/${storageKey}`;
 
         const fileRecords = await FileRepository.createFileRecordWithTx(tx!, {
           url,

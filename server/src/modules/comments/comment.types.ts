@@ -1,10 +1,17 @@
 import { userResponse } from "../users/user.types";
 
+type userCommentResponse = {
+  id: string;
+  name: string;
+  username: string;
+  avatar: string | null;
+};
+
 type commentsResponse = {
   id: string;
   content: string;
   createdAt: Date;
-  user: userResponse;
+  user: userCommentResponse;
   isLiked: boolean;
   isEditable: boolean;
   replies: repliesResponse[];
@@ -19,7 +26,7 @@ type repliesResponse = {
   parentId?: string;
   content: string;
   createdAt: Date;
-  user: userResponse;
+  user: userCommentResponse;
   totalLikes: number;
   isLiked: boolean;
   isEditable: boolean;

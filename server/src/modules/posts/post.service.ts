@@ -1,10 +1,12 @@
 import { Context } from "hono";
 import { pgsql as db } from "@/lib/database";
 import { HTTPException } from "hono/http-exception";
+import { metaResponse } from "@/modules/users/user.types";
 import { FileService } from "@/modules/files/file.service";
 import { NotificationType, Prisma } from "generated/prisma";
 import { PostRepository } from "@/modules/posts/post.repository";
 import { UserRepository } from "@/modules/users/user.repository";
+import { postDetailResponse, postResponse, savedPostResponse } from "./post.types";
 import { NotificationRepository } from "@/modules/notifications/notification.repository";
 import { postAction, postErrorCode, postErrorMessage } from "@/config/constant/post.constant";
 import { CreatePostRequest, GetFollowingPostsRequest, GetPublicPostsRequest, GetSavedPostsRequest, UpdatePostRequest } from "@/modules/posts/post.schema";
@@ -30,10 +32,11 @@ export class PostService {
     });
   }
 
-  static async getPublicPosts(c: Context, query: GetPublicPostsRequest) {
+  static async getPublicPosts(c: Context, query: GetPublicPostsRequest): Promise<{ data: postResponse[]; meta: metaResponse }> {
     const { posts, totalItems } = await PostRepository.getPublicPosts(query);
     const data = posts.map((post) => ({
       id: post.id,
+      title: post.title,
       user: {
         id: post.user.id,
         name: post.user.name,
@@ -62,12 +65,13 @@ export class PostService {
     return { data, meta };
   }
 
-  static async getFollowingPosts(c: Context, query: GetFollowingPostsRequest) {
+  static async getFollowingPosts(c: Context, query: GetFollowingPostsRequest): Promise<{ data: postResponse[]; meta: metaResponse }> {
     const { posts, totalItems } = await PostRepository.getFollowingPosts(query);
 
     // transform response
     const data = posts.map((post) => ({
       id: post.id,
+      title: post.title,
       user: {
         id: post.user.id,
         name: post.user.name,
@@ -172,7 +176,7 @@ export class PostService {
     await PostRepository.unlikePost(userId, postId);
   }
 
-  static async getPostDetailById(c: Context, postId: string, userId?: string) {
+  static async getPostDetailById(c: Context, postId: string, userId?: string): Promise<postDetailResponse> {
     const post = await PostRepository.getPostDetailById(postId, userId!);
 
     if (!post) {
@@ -205,7 +209,7 @@ export class PostService {
     };
   }
 
-  static async getPostsByUserId(c: Context, query: GetPublicPostsRequest, userId?: string) {
+  static async getPostsByUserId(c: Context, query: GetPublicPostsRequest, userId?: string): Promise<{ data: postResponse[]; meta: metaResponse }> {
     const { posts, totalItems } = await PostRepository.getPostsByUserId(query);
 
     const data = posts.map((post) => ({
@@ -257,7 +261,7 @@ export class PostService {
     });
   }
 
-  static async getSavedPosts(c: Context, query: GetSavedPostsRequest) {
+  static async getSavedPosts(c: Context, query: GetSavedPostsRequest): Promise<{ data: savedPostResponse[]; meta: metaResponse }> {
     const { bookmarks, totalItems, likedPostIds } = await PostRepository.getSavedPosts(query);
 
     const data = bookmarks.map((bm) => ({
@@ -271,14 +275,12 @@ export class PostService {
         username: bm.post.user.username,
         avatar: bm.post.user.avatar,
       },
-      galleries: bm.post.galleries,
-      counts: {
-        galleries: bm.post._count.galleries,
-        likes: bm.post._count.likes,
-        comments: bm.post._count.comments,
-      },
-      isLiked: likedPostIds.has(bm.post.id),
       createdAt: bm.post.createdAt,
+      galleries: bm.post.galleries,
+      totalLikes: bm.post._count.likes,
+      totalComments: bm.post._count.comments,
+      isLiked: likedPostIds.has(bm.post.id),
+      isEditable: bm.post.user.id === query.userId,
     }));
 
     const meta = {

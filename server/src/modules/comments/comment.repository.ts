@@ -1,5 +1,5 @@
 import { Prisma } from "generated/prisma/edge";
-import { pgsql as database } from "@/config/database/pgsql";
+import { pgsql as database } from "@/lib/database";
 import { CreateCommentRequest, EditCommentRequest, GetCommentsRequest } from "@/modules/comments/comment.schema";
 
 export class CommentRepository {

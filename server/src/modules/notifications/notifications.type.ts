@@ -1,29 +1,13 @@
+import { NotificationChannel, NotificationStatus, NotificationType } from "generated/prisma";
+
 export interface Notification {
   id: string;
   title: string;
-  description: string;
-  type: string;
-  metadata: Record<string, any>;
+  description: string | null;
+  type: NotificationType;
+  metadata: Record<string, any> | null;
   readAt: Date | null;
   createdAt: Date;
-  updatedAt: Date;
-}
-
-export enum NotificationType {
-  FOLLOW = "FOLLOW",
-  LIKE = "LIKE",
-  COMMENT = "COMMENT",
-  MENTION = "MENTION",
-  REACTION = "REACTION",
-}
-
-export enum NotificationChannel {
-  IN_APP = "IN_APP",
-}
-
-export enum NotificationStatus {
-  ENABLED = "ENABLED",
-  DISABLED = "DISABLED",
 }
 
 export interface NotificationSetting {

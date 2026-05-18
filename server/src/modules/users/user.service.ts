@@ -3,14 +3,15 @@ import { pgsql } from "@/lib/database";
 import { HTTPException } from "hono/http-exception";
 import { FileService } from "@/modules/files/file.service";
 import { NotificationType, Prisma } from "generated/prisma";
-import { FollowUserRequest, GetFollowRequest } from "@/modules/users/user.schema";
-import { FileRepository } from "@/modules/files/file.repository";
 import { UserRepository } from "@/modules/users/user.repository";
+import { FileRepository } from "@/modules/files/file.repository";
+import { FollowUserRequest, GetFollowRequest } from "@/modules/users/user.schema";
 import { NotificationRepository } from "@/modules/notifications/notification.repository";
 import { userAction, userErrorCode, userErrorMessage } from "@/config/constant/user.constant";
+import { followingResponse, metaResponse, profileResponse, userSearchResponse } from "./user.types";
 
 export class UserService {
-  static async searchUsersByUsername(username: string, userId: string) {
+  static async searchUsersByUsername(username: string, userId: string): Promise<userSearchResponse[]> {
     const users = await UserRepository.searchUsersByUsername(username, userId);
     const formattedUsers = users.map((user) => ({
       id: user.id,
@@ -25,7 +26,7 @@ export class UserService {
 
   static async updateProfile(c: Context, userId: string, request: { name: string; bio?: string }) {
     return await pgsql.$transaction(async (tx: Prisma.TransactionClient) => {
-      const updatedProfile = await UserRepository.updateProfile(userId, request, tx);
+      await UserRepository.updateProfile(userId, request, tx);
       const userLogs = {
         userId,
         action: userAction.UPDATE_PROFILE,
@@ -35,7 +36,6 @@ export class UserService {
         },
       };
       await UserRepository.createActivityLog(tx, userLogs);
-      return updatedProfile;
     });
   }
 
@@ -47,7 +47,7 @@ export class UserService {
     const uploadedFile = await FileService.uploadSingleFile(c, userId, avatar, "profile", userId, true);
 
     return await pgsql.$transaction(async (tx: Prisma.TransactionClient) => {
-      const updatedAvatar = await UserRepository.updateAvatar(userId, uploadedFile.url, tx);
+      await UserRepository.updateAvatar(userId, uploadedFile.url, tx);
       const userLogs = {
         userId,
         action: userAction.UPDATE_AVATAR,
@@ -57,12 +57,10 @@ export class UserService {
         },
       };
       await UserRepository.createActivityLog(tx, userLogs);
-
-      return updatedAvatar;
     });
   }
 
-  static async getProfileByUsername(username: string, currentUserId: string | null = null) {
+  static async getProfileByUsername(username: string, currentUserId: string | null = null): Promise<profileResponse> {
     const user = await UserRepository.getProfileByUsername(username, currentUserId ?? "");
 
     if (!user) {
@@ -145,7 +143,7 @@ export class UserService {
     }
   }
 
-  static async getFollowings(query: GetFollowRequest) {
+  static async getFollowings(query: GetFollowRequest): Promise<{ data: followingResponse[]; meta: metaResponse }> {
     const targetUser = await UserRepository.findById(query.targetUserId!);
 
     if (!targetUser) {
@@ -167,14 +165,12 @@ export class UserService {
     return {
       data,
       meta: {
-        totalItems,
-        totalPages: Math.ceil(totalItems / Number(query.limit)),
-        currentPage: Number(query.page),
+        pagination: { page: Number(query.page!), limit: Number(query.limit!), totalItems, totalPages: Math.ceil(totalItems / Number(query.limit)) },
       },
     };
   }
 
-  static async getFollowers(query: GetFollowRequest) {
+  static async getFollowers(query: GetFollowRequest): Promise<{ data: followingResponse[]; meta: metaResponse }> {
     const targetUser = await UserRepository.findById(query.targetUserId!);
 
     if (!targetUser) {
@@ -198,9 +194,12 @@ export class UserService {
     return {
       data,
       meta: {
-        totalItems,
-        totalPages: Math.ceil(totalItems / Number(query.limit)),
-        currentPage: Number(query.page),
+        pagination: {
+          page: Number(query.page),
+          limit: Number(query.limit!),
+          totalItems,
+          totalPages: Math.ceil(totalItems / Number(query.limit)),
+        },
       },
     };
   }

@@ -1,12 +1,21 @@
 type verificationType = "EMAIL_VERIFICATION" | "PASSWORD_RESET";
 
-type UserStatus = "ACTIVE" | "INACTIVE" | "BANNED";
+type userStatus = "ACTIVE" | "INACTIVE" | "BANNED";
 
 type createVerificationData = {
   userId: string;
   token: string;
   type: verificationType;
   expiresAt: Date;
+};
+
+type userSearchResponse = {
+  id: string;
+  name: string;
+  username: string;
+  avatar: string | null;
+  isFollowing: boolean | undefined;
+  canFollow: boolean;
 };
 
 type userCredential = {
@@ -16,7 +25,7 @@ type userCredential = {
   username: string;
   avatar: string | null;
   passwordHash: string;
-  status: UserStatus;
+  status: userStatus;
   verifiedAt: Date | null;
 };
 
@@ -26,7 +35,7 @@ type userVerificationData = createVerificationData & {
 
 type updateUserActiveData = {
   userId: string;
-  status: UserStatus;
+  status: userStatus;
 };
 
 type loginResponse = {
@@ -47,7 +56,7 @@ type userResponse = {
   username: string;
   avatar: string | null;
   lastLogin: Date | null;
-  createdAt: Date;
+  joinedAt: Date;
   lastChangePasswordAt: Date | null;
 };
 
@@ -59,17 +68,13 @@ type profileResponse = {
   avatar: string | null;
   bio: string | null;
   lastLogin: Date | null;
-  createdAt: Date;
+  joinedAt: Date;
   isPublic: boolean;
   isOwner?: boolean;
-  _count?: {
-    followers?: number;
-    following?: number;
-    posts?: number;
-  };
-  followers?: {
-    id: string;
-  }[];
+  followers: number;
+  followings: number;
+  posts: number;
+  isFollowing: boolean;
 };
 
 type createUserData = {
@@ -90,4 +95,48 @@ type searchResponse = {
   }[];
 };
 
-export { verificationType, searchResponse, loginResponse, createUserData, profileResponse, userCredential, createVerificationData, userVerificationData, userResponse, UserStatus, updateUserActiveData };
+type followingResponse = {
+  id: string;
+  name: string;
+  username: string;
+  avatar?: string | null;
+  isFollowing: boolean;
+  canFollow: boolean;
+};
+
+type paginationMeta = {
+  page: number;
+  limit: number;
+  totalItems: number;
+  totalPages: number;
+};
+
+type filterMeta = {
+  search?: string;
+  orderBy?: string;
+  sortBy?: string;
+};
+
+type metaResponse = {
+  pagination?: paginationMeta;
+  filter?: filterMeta;
+};
+
+export {
+  metaResponse,
+  paginationMeta,
+  filterMeta,
+  followingResponse,
+  userSearchResponse,
+  verificationType,
+  searchResponse,
+  loginResponse,
+  createUserData,
+  profileResponse,
+  userCredential,
+  createVerificationData,
+  userVerificationData,
+  userResponse,
+  userStatus,
+  updateUserActiveData,
+};

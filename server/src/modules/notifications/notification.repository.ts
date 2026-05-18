@@ -1,5 +1,5 @@
 import { Prisma } from "generated/prisma/edge";
-import { pgsql as database } from "@/config/database/pgsql";
+import { pgsql as database } from "@/lib/database";
 import { NotificationChannel, NotificationStatus, NotificationType } from "generated/prisma";
 import { DeleteNotificationRequest, GetNotificationRequest, UpdateNotificationSettingRequest } from "@/modules/notifications/notification.schema";
 

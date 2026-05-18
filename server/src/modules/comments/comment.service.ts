@@ -1,16 +1,17 @@
 import { Context } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { NotificationType } from "generated/prisma";
-import { pgsql as db, pgsql } from "@/config/database/pgsql";
+import { pgsql as db, pgsql } from "@/lib/database";
+import { metaResponse } from "@/modules/users/user.types";
 import { PostRepository } from "@/modules/posts/post.repository";
 import { UserRepository } from "@/modules/users/user.repository";
+import { commentsResponse, repliesResponse } from "./comment.types";
 import { CommentRepository } from "@/modules/comments/comment.repository";
-import { NotificationRepository } from "@/modules/notifications/notification.repository";
 import { postErrorCode, postErrorMessage } from "@/config/constant/post.constant";
+import { NotificationRepository } from "@/modules/notifications/notification.repository";
 import { commentAction, commentErrorCode, commentErrorMessage } from "@/config/constant/comment.constant";
 import { notificationErrorCode, notificationErrorMessage } from "@/config/constant/notification.constant";
 import { CreateCommentRequest, EditCommentRequest, GetCommentsRequest } from "@/modules/comments/comment.schema";
-import { commentsResponse, repliesResponse } from "./comment.types";
 
 export class CommentService {
   static async createComment(c: Context, request: CreateCommentRequest) {
@@ -110,7 +111,7 @@ export class CommentService {
     });
   }
 
-  static async getParentComments(c: Context, query: GetCommentsRequest): Promise<{ data: commentsResponse[]; meta: { pagination: { page: number; limit: number; totalItems: number; totalPages: number } } }> {
+  static async getParentComments(c: Context, query: GetCommentsRequest): Promise<{ data: commentsResponse[]; meta: metaResponse }> {
     const { comments, totalItems } = await CommentRepository.getCommentsByPostId(query);
 
     const data = comments.map((result) => ({
@@ -157,7 +158,7 @@ export class CommentService {
     return { data, meta };
   }
 
-  static async getChildComments(c: Context, query: GetCommentsRequest): Promise<{ data: repliesResponse[]; meta: { pagination: { page: number; limit: number; totalItems: number; totalPages: number } } }> {
+  static async getChildComments(c: Context, query: GetCommentsRequest): Promise<{ data: repliesResponse[]; meta: metaResponse }> {
     const { comments, totalItems } = await CommentRepository.getCommentsByParentCommentId(query);
 
     const data = comments.map((result) => ({

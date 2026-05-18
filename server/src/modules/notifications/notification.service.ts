@@ -1,7 +1,8 @@
 import { Context } from "hono";
 import { pgsql } from "@/lib/database";
-import { Notification, NotificationSetting } from "./notifications.type";
+import { metaResponse } from "@/modules/users/user.types";
 import { UserRepository } from "@/modules/users/user.repository";
+import { Notification, NotificationSetting } from "./notifications.type";
 import { notificationAction } from "@/config/constant/notification.constant";
 import { NotificationRepository } from "@/modules/notifications/notification.repository";
 import { DeleteNotificationRequest, GetNotificationRequest, UpdateNotificationRequest, UpdateNotificationSettingRequest } from "@/modules/notifications/notification.schema";
@@ -11,10 +12,10 @@ export class NotificationService {
     return await NotificationRepository.countUnreadNotifications(userId);
   }
 
-  static async getNotificationByUserId(c: Context, request: GetNotificationRequest) {
+  static async getNotificationByUserId(c: Context, request: GetNotificationRequest): Promise<{ data: Notification[]; meta: metaResponse }> {
     const { notifications, totalItems } = await NotificationRepository.getNotificationsByUserId(request);
 
-    const data = notifications.map((notification: Notification) => ({
+    const data = notifications.map((notification: any) => ({
       id: notification.id,
       title: notification.title,
       description: notification.description,
@@ -33,7 +34,6 @@ export class NotificationService {
       },
       filter: {
         search: request.search,
-        type: request.type,
         orderBy: request.orderBy,
         sortBy: request.sortBy,
       },
@@ -46,9 +46,9 @@ export class NotificationService {
     await NotificationRepository.markAsRead(payload.userId!, payload.notificationIds, new Date());
   }
 
-  static async getNotificationSettings(c: Context, userId: string) {
+  static async getNotificationSettings(c: Context, userId: string): Promise<NotificationSetting[]> {
     const notifications = await NotificationRepository.getNotificationSettings(userId);
-    return notifications.map((setting: NotificationSetting) => ({
+    return notifications.map((setting: any) => ({
       id: setting.id,
       type: setting.type,
       channel: setting.channel,
