@@ -34,7 +34,7 @@ export default function SettingPage() {
         </TabsList>
       </Tabs>
 
-      <div className="mt-6">
+      <div className="mt-6 flex justify-center max-w-7xl mx-auto">
         <Outlet />
       </div>
     </div>

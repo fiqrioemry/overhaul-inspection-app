@@ -4,7 +4,7 @@ import PrivacyToggle from "@/features/settings/components/PrivacyToggle";
 
 export default function SettingAccountPage() {
   return (
-    <div className="space-y-6 max-w-2xl">
+    <div className="space-y-6 max-w-2xl md:max-w-3xl w-full">
       <ProfileForm />
       <PrivacyToggle />
     </div>
