@@ -4,6 +4,7 @@ import { formatDistanceToNow } from "date-fns";
 import type { Comments } from "@/types/comments.type";
 import ReplyList from "@/features/comments/components/ReplyList";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Link } from "react-router-dom";
 
 interface CommentItemProps {
   postId: string;
@@ -31,7 +32,10 @@ export default function CommentItem({ postId, comment, onReply }: CommentItemPro
       <div className="flex-1 min-w-0">
         {/* Content */}
         <div className="text-sm">
-          <span className="font-semibold mr-1">{comment.user?.username}</span>
+          <Link to={`/users/${comment.user?.username}`} className="hover:underline hover:text-blue-500 font-semibold   transition-colors">
+            {comment.user?.username}
+          </Link>
+          <span className="text-muted-foreground"> · </span>
           <span className="wrap-break-words">{comment.content}</span>
         </div>
 

@@ -2,6 +2,7 @@
 import { formatDistanceToNow } from "date-fns";
 import type { Comments } from "@/types/comments.type";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Link } from "react-router-dom";
 
 interface ReplyItemProps {
   reply: Comments;
@@ -26,7 +27,10 @@ export default function ReplyItem({ reply, commentId, onReply }: ReplyItemProps)
       </Avatar>
       <div className="flex-1 min-w-0">
         <div className="text-sm">
-          <span className="font-semibold mr-1">{reply.user?.username}</span>
+          <Link to={`/users/${reply.user?.username}`} className="hover:underline hover:text-blue-500 font-semibold   transition-colors">
+            {reply.user?.username}
+          </Link>
+          <span className="text-muted-foreground"> · </span>
           <span className="wrap-break-words">{reply.content}</span>
         </div>
         <div className="mt-0.5 flex items-center gap-3 text-xs text-muted-foreground">
