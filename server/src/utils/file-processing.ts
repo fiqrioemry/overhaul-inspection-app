@@ -13,3 +13,8 @@ export async function processImage(file: File, width: number, height: number, fo
 
   return processedImage;
 }
+
+export async function processFile(file: File, format: string): Promise<Buffer> {
+  const arrayBuffer = await file.arrayBuffer();
+  return Buffer.from(arrayBuffer);
+}

@@ -24,16 +24,21 @@ enum StatusEnum {
   INACTIVE
   BANNED
 }
+enum GenderEnum {
+  MALE
+  FEMALE
+}
 
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
-  passwordHash String   @map("password_hash")
+  passwordHash String?   @map("password_hash")
   name         String
   username     String   @unique
   avatar       String?
   bio          String?
   status StatusEnum @default(ACTIVE)
+  gender GenderEnum?  @map("gender")
   role         RoleEnum @default(USER)
   isPublic     Boolean  @default(true) @map("is_public")
   verifiedAt  DateTime? @map("verified_at")
@@ -59,7 +64,7 @@ model User {
 
   activities   UserActivityLog[]
   sentMessages Message[]
-
+ oauthAccounts OAuthAccount[] 
   @@map("users")
 }
 
@@ -148,6 +153,31 @@ model Post {
   @@map("posts")
 }
 
+ 
+
+enum OAuthProvider {
+  GOOGLE
+  GITHUB
+
+}
+
+model OAuthAccount {
+  id                String        @id @default(cuid())
+  userId            String        @map("user_id")
+  provider          OAuthProvider
+  providerAccountId String        @map("provider_account_id")
+  accessToken       String?       @map("access_token")
+  refreshToken      String?       @map("refresh_token")
+  expiresAt         DateTime?     @map("expires_at")
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@map("oauth_accounts")
+}
 model Bookmark {
   id        String   @id @default(cuid())
   userId    String   @map("user_id")
@@ -257,7 +287,7 @@ model Chat {
 
   createdBy     User? @relation("ChatCreator", fields: [createdById], references: [id])
 
-  participants  ChatParticipant[]
+  participants  ChatParticipant[]  
   messages      Message[]
 
   lastMessage   Message? @relation("LastMessage", fields: [lastMessageId], references: [id], onDelete: SetNull)
@@ -279,8 +309,8 @@ model ChatParticipant {
   role      ParticipantRole @default(MEMBER)
   joinedAt  DateTime @default(now()) @map("joined_at")
 
-  chat      Chat @relation(fields: [chatId], references: [id])
-  user      User @relation(fields: [userId], references: [id])
+  chat      Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([chatId, userId])
   @@index([chatId])
@@ -294,6 +324,8 @@ enum MessageType {
   text
   image
   file
+  audio
+  video
 }
 enum NotificationType {
   LIKE
@@ -355,8 +387,8 @@ model Message {
   readBy    String[] @map("read_by")
   createdAt DateTime @default(now()) @map("created_at")
 
-  chat      Chat @relation(fields: [chatId], references: [id])
-  sender    User @relation(fields: [senderId], references: [id])
+  chat      Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  sender    User @relation(fields: [senderId], references: [id], onDelete: Cascade)
   lastMessageInChat Chat? @relation("LastMessage")
 
   @@index([chatId])
