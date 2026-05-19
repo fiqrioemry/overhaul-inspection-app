@@ -27,6 +27,8 @@ export interface NotificationSettingsResponse {
 }
 
 export interface UpdateNotificationSettingsRequest {
-  type: string;
-  status: "ENABLED" | "DISABLED";
+  notificationId?: string;
+  type?: string;
+  status?: "ENABLED" | "DISABLED";
+  enabled?: boolean;
 }
