@@ -1,8 +1,8 @@
 import { toast } from "sonner";
+import { POST_KEYS } from "@/features/posts/posts.query";
 import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { createComment, fetchComments, fetchReplies, likeComment, unlikeComment } from "./comments.api";
 import { type CreateCommentRequest, type EditCommentRequest, type GetCommentsRequest } from "@/schemas/comments.schema";
-import { POST_KEYS } from "../posts/posts.query";
 
 export const COMMENT_KEYS = {
   all: ["comments"] as const,

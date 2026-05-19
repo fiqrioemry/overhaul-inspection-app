@@ -1,10 +1,10 @@
 // src/features/settings/settings.queries.ts
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { updatePrivacy } from "@/features/users/users.api";
-import { getNotificationSettings, updateNotificationSettings } from "@/features/notifications/notifications.api";
+import { toast } from "sonner";
 import { AUTH_KEYS } from "@/features/auth/auth.query";
 import { USER_KEYS } from "@/features/users/users.query";
-import { toast } from "sonner";
+import { updatePrivacy } from "@/features/users/users.api";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { getNotificationSettings, updateNotificationSettings } from "@/features/notifications/notifications.api";
 
 export const SETTINGS_KEYS = {
   notifications: ["settings", "notifications"] as const,

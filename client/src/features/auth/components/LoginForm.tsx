@@ -1,10 +1,9 @@
-// src/features/auth/components/LoginForm.tsx
-// Versi lengkap — replace file yang sudah ada
-
 import { toast } from "sonner";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import OAuthDivider from "./OAuthDivider";
 import { Button } from "@/components/ui/button";
+import OAuthButtonGroup from "./OAuthButtonGroup";
 import { login } from "@/features/auth/auth.api";
 import { Link, useNavigate } from "react-router-dom";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -13,8 +12,6 @@ import type { ResponseError } from "@/types/response.type";
 import PasswordField from "@/components/fields/PasswordField";
 import ShortTextField from "@/components/fields/ShortTextField";
 import { loginSchema, type LoginFormValues } from "@/schemas/auth.schema";
-import OAuthDivider from "./OAuthDivider";
-import OAuthButtonGroup from "./OAuthButtonGroup";
 
 export default function LoginForm() {
   const navigate = useNavigate();

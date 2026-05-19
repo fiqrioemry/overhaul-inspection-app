@@ -1,6 +1,5 @@
 import qs from "qs";
 import api from "@/lib/axios";
-import { CHAT_ENDPOINTS } from "@/constants/chats.constant";
 import type {
   ChatDetail,
   ChatListItem,
@@ -18,9 +17,8 @@ import type {
   SendMessageRequest,
   UpdateGroupRequest,
 } from "@/schemas/chats.schema";
+import { CHAT_ENDPOINTS } from "@/constants/chats.constant";
 import type { ResponseSuccess } from "@/types/response.type";
-
-// ─── Chat list & creation ─────────────────────────────────────────────────────
 
 export async function fetchMyChats(query: GetChatsRequest = {}): Promise<ResponseSuccess<ChatListItem[]>> {
   const queryString = qs.stringify(query, { skipNulls: true });
@@ -38,14 +36,10 @@ export async function createGroupChat(payload: CreateGroupChatRequest): Promise<
   return res.data;
 }
 
-// ─── Single chat ──────────────────────────────────────────────────────────────
-
 export async function fetchChatById(chatId: string): Promise<ResponseSuccess<ChatDetail>> {
   const res = await api.get(CHAT_ENDPOINTS.getChatById.replace(":chatId", chatId));
   return res.data;
 }
-
-// ─── Messages ─────────────────────────────────────────────────────────────────
 
 export async function fetchMessages(chatId: string, query: GetMessagesRequest = {}): Promise<ResponseSuccess<ChatMessage[]>> {
   const queryString = qs.stringify(query, { skipNulls: true });
@@ -75,8 +69,6 @@ export async function readMessages(chatId: string, payload: ReadMessagesRequest)
   const res = await api.patch(CHAT_ENDPOINTS.readMessages.replace(":chatId", chatId), payload);
   return res.data;
 }
-
-// ─── Group management ─────────────────────────────────────────────────────────
 
 export async function updateGroup(chatId: string, payload: UpdateGroupRequest): Promise<ResponseSuccess<ChatDetail>> {
   const res = await api.patch(CHAT_ENDPOINTS.updateGroup.replace(":chatId", chatId), payload);

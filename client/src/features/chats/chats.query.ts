@@ -1,21 +1,21 @@
 import { toast } from "sonner";
-import { useQuery, useMutation, useInfiniteQuery, useQueryClient, type InfiniteData } from "@tanstack/react-query";
-import { fetchMyChats, fetchChatById, fetchMessages, sendMessage, deleteMessages, readMessages, createPrivateChat, createGroupChat, updateGroup, addMembers, removeMember, leaveGroup, promoteMember, demoteMember } from "./chats.api";
 import type {
-  AddMembersRequest,
   ChatMessage,
+  GetChatsRequest,
+  AddMembersRequest,
+  GetMessagesRequest,
+  UpdateGroupRequest,
+  SendMessageRequest,
+  RemoveMemberRequest,
+  ReadMessagesRequest,
+  PromoteMemberRequest,
+  DeleteMessagesRequest,
   CreateGroupChatRequest,
   CreatePrivateChatRequest,
-  DeleteMessagesRequest,
-  GetChatsRequest,
-  GetMessagesRequest,
-  PromoteMemberRequest,
-  ReadMessagesRequest,
-  RemoveMemberRequest,
-  SendMessageRequest,
-  UpdateGroupRequest,
 } from "@/schemas/chats.schema";
 import type { ResponseSuccess } from "@/types/response.type";
+import { useQuery, useMutation, useInfiniteQuery, useQueryClient, type InfiniteData } from "@tanstack/react-query";
+import { fetchMyChats, fetchChatById, fetchMessages, sendMessage, deleteMessages, readMessages, createPrivateChat, createGroupChat, updateGroup, addMembers, removeMember, leaveGroup, promoteMember, demoteMember } from "./chats.api";
 
 export const CHAT_KEYS = {
   all: ["chats"] as const,
@@ -119,8 +119,7 @@ export function useReadMessages(chatId: string) {
   });
 }
 
-// ─── Group management ─────────────────────────────────────────────────────────
-
+// for group management
 export function useUpdateGroup(chatId: string) {
   const queryClient = useQueryClient();
   return useMutation({
