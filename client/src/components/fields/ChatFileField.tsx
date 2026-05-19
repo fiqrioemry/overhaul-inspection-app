@@ -83,7 +83,7 @@ export function ChatFileField({ onFileSelect, onClear, selectedFile, disabled = 
           <Button
             type="button"
             variant="ghost"
-            size="icon"se
+            size="icon"
             className="h-7 w-7 shrink-0"
             onClick={() => {
               onClear();
