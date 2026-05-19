@@ -1,17 +1,17 @@
 // src/features/settings/components/PasswordForm.tsx
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Loader2, Info } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { formatDistanceToNow } from "date-fns";
+import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/stores/auth.store";
+import { zodResolver } from "@hookform/resolvers/zod";
+import AlertCard from "@/components/common/AlertCard";
+import type { ResponseError } from "@/types/response.type";
 import PasswordField from "@/components/fields/PasswordField";
 import { useChangePassword } from "@/features/auth/auth.query";
 import { changePasswordSchema, type ChangePasswordFormValues } from "@/schemas/settings.schema";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { useState } from "react";
-import type { ResponseError } from "@/types/response.type";
-import AlertCard from "@/components/common/AlertCard";
 
 export default function PasswordForm() {
   const { user } = useAuthStore();

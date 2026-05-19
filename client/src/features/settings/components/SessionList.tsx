@@ -44,11 +44,14 @@ export default function SessionList() {
   const deleteSession = useDeleteSession();
   const logoutAll = useLogoutAll();
 
-  const sessions: SessionWithCurrent[] = (data?.data || []).map((session: any) => ({
-    ...session,
-    isCurrent: false, // Backend should determine this
-    deviceInfo: parseUserAgent(session.userAgent),
-  }));
+  let sessions: SessionWithCurrent[] = [];
+  if (Array.isArray(data?.data)) {
+    sessions = data.data.map((session: any) => ({
+      ...session,
+      isCurrent: false, // Backend should determine this
+      deviceInfo: parseUserAgent(session.userAgent),
+    }));
+  }
 
   const handleDeleteSession = async (sessionId: string) => {
     setDeletingSessionId(sessionId);

@@ -2,9 +2,9 @@
 import { useState } from "react";
 import { Lock, Globe } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useUpdatePrivacy } from "@/features/settings/settings.query";
 import { useAuthStore } from "@/stores/auth.store";
+import { useUpdatePrivacy } from "@/features/settings/settings.query";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function PrivacyToggle() {
   const { user } = useAuthStore();

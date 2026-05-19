@@ -1,11 +1,11 @@
 // src/features/settings/components/AvatarUploader.tsx
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import { useState, useRef } from "react";
 import { Camera, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useUpdateAvatar } from "@/features/users/users.query";
 import { useAuthStore } from "@/stores/auth.store";
-import { cn } from "@/lib/utils";
-import { toast } from "sonner";
+import { useUpdateAvatar } from "@/features/users/users.query";
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];

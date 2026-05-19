@@ -1,4 +1,5 @@
 // src/features/settings/components/ProfileForm.tsx
+import { useRef } from "react";
 import { Loader2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import AvatarUploader from "./AvatarUploader";
@@ -11,7 +12,6 @@ import ShortTextField from "@/components/fields/ShortTextField";
 import { useUpdateUserProfile } from "@/features/users/users.query";
 import { profileFormSchema, type ProfileFormValues } from "@/schemas/settings.schema";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { useRef } from "react";
 
 const GENDER_OPTIONS = [
   { label: "Male", value: "MALE" },
