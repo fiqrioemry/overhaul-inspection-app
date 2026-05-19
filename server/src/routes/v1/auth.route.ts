@@ -17,6 +17,8 @@ auth.post("/forgot-password", limitter(authLimit.PASSWORD_FORGOT), ctrl.forgotPa
 auth.post("/resend-verification-email", limitter(authLimit.RESEND_VERIFICATION_EMAIL), ctrl.resendVerificationEmail);
 auth.post("/verify-email", limitter(authLimit.VERIFY_EMAIL), ctrl.verifyEmail);
 auth.get("/me", protect, limitter(authLimit.GET_ME), ctrl.getMe);
+auth.get("/:provider", ctrl.oauthRedirect);
+auth.get("/:provider/callback", ctrl.oauthCallback);
 // total endpoints: 12
 
 export default auth;

@@ -3,6 +3,8 @@ import { protect } from "@/middlewares/auth.middleware";
 import { chatLimit } from "@/config/constant/chat.constant";
 import { limitter } from "@/middlewares/limitter.middleware";
 import { ChatController as ctrl } from "@/modules/chats/chat.controller";
+import { multipleFile, singleFile } from "@/middlewares/file.middleware";
+import { fileLimit } from "@/config/constant/file.constant";
 
 const chat = new Hono();
 
@@ -17,6 +19,7 @@ chat.get("/:chatId", protect, limitter(chatLimit.GET_CHAT), ctrl.getChatById);
 // messages
 chat.get("/:chatId/messages", protect, limitter(chatLimit.GET_MESSAGES), ctrl.getMessages);
 chat.post("/:chatId/messages", protect, limitter(chatLimit.SEND_MESSAGE), ctrl.sendMessage);
+chat.delete("/:chatId/messages", protect, limitter(chatLimit.DELETE_MESSAGES), ctrl.deleteMessages);
 chat.patch("/:chatId/messages/read", protect, limitter(chatLimit.READ_MESSAGES), ctrl.readMessages);
 
 // group management

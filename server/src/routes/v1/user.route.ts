@@ -15,6 +15,7 @@ user.get("/followers", protect, limitter(userLimit.GET_FOLLOWERS), ctrl.getFollo
 user.get("/followings", protect, limitter(userLimit.GET_FOLLOWING), ctrl.getFollowing);
 user.get("/profile/:username", protect, limitter(userLimit.GET_PROFILE), ctrl.getUserProfile);
 user.put("/profile", protect, limitter(userLimit.UPDATE_PROFILE), ctrl.updateProfile);
+user.patch("/profile/privacy", protect, limitter(userLimit.UPDATE_PROFILE), ctrl.updatePrivacy);
 user.patch("/profile/avatar", protect, limitter(userLimit.UPDATE_AVATAR), singleFile(fileLimit.AVATAR_OPTIONS, "avatar"), ctrl.updateAvatar);
 
 export default user;
