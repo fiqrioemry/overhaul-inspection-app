@@ -1,8 +1,8 @@
 import React from "react";
 import { Loader2, BellOff } from "lucide-react";
-import NotificationItem from "./NotificationItem";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Notification } from "@/types/notifications.type";
+import NotificationItem from "@/features/notifications/components/NotificationItem";
 
 function NotificationSkeleton() {
   return (

@@ -1,4 +1,3 @@
- 
 import { cn } from "@/lib/utils";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { NotificationType } from "@/types/notifications.type";
@@ -16,6 +15,7 @@ const TABS: Tab[] = [
   { label: "Likes", value: "LIKE" },
   { label: "Follows", value: "FOLLOW" },
   { label: "Mentions", value: "MENTION" },
+  { label: "Messages", value: "MESSAGE" },
 ];
 
 interface NotificationTabListProps {
