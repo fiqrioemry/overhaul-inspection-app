@@ -12,7 +12,7 @@ export function formatChatTime(dateStr: string): string {
       minute: "2-digit",
     });
   } else if (diffDays === 1) {
-    return "Kemarin";
+    return "Yesterday";
   } else if (diffDays < 7) {
     return date.toLocaleDateString("id-ID", { weekday: "short" });
   } else {
@@ -35,8 +35,8 @@ export function formatMessageDate(dateStr: string): string {
   const now = new Date();
   const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
 
-  if (diffDays === 0) return "Hari ini";
-  if (diffDays === 1) return "Kemarin";
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "Yesterday";
   return date.toLocaleDateString("id-ID", {
     weekday: "long",
     day: "numeric",
@@ -50,7 +50,7 @@ export function formatLastMessage(text: string, type: MessageType, senderName?: 
 
   switch (type) {
     case "image":
-      return `${prefix}📷 Foto`;
+      return `${prefix}📷 Photo`;
     case "file":
       return `${prefix}📎 File`;
     case "audio":
