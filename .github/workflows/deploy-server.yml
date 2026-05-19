@@ -1,0 +1,53 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Setup SSH Key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VPS_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -p ${{ secrets.VPS_PORT }} ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Check if first deploy
+        id: check_init
+        run: |
+          INIT_FLAG=$(ssh -p ${{ secrets.VPS_PORT }} -i ~/.ssh/id_ed25519 \
+            ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} \
+            "[ -f /home/project/social_media/server/.deployed ] && echo 'exists' || echo 'missing'")
+          echo "flag=$INIT_FLAG" >> $GITHUB_OUTPUT
+
+      - name: Pull latest code
+        run: |
+          ssh -p ${{ secrets.VPS_PORT }} -i ~/.ssh/id_ed25519 \
+            ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} \
+            "cd /home/project/social_media/server && git pull origin main"
+
+      - name: First time init
+        if: steps.check_init.outputs.flag == 'missing'
+        run: |
+          ssh -p ${{ secrets.VPS_PORT }} -i ~/.ssh/id_ed25519 \
+            ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
+            cd /home/project/social_media/server
+            make prod-init
+            touch .deployed
+          EOF
+
+      - name: Subsequent update
+        if: steps.check_init.outputs.flag == 'exists'
+        run: |
+          ssh -p ${{ secrets.VPS_PORT }} -i ~/.ssh/id_ed25519 \
+            ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
+            cd /home/project/social_media/server
+            make prod-update
+          EOF

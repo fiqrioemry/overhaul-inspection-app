@@ -27,26 +27,23 @@ seed:
 	bun run prisma/seed.ts
 
 up:
-	docker compose -f docker-compose.dev.yml up -d --build
+	docker-compose -f docker-compose.dev.yml up -d --build
 
 down:
-	docker compose -f docker-compose.dev.yml down
+	docker-compose -f docker-compose.dev.yml down
 
-# ─── Production ────────────────────────────────────────────
-
+ 
 # Pertama kali deploy (dari nol)
 prod-init:
-	bun install --production
 	bunx prisma generate --schema=prisma/schema.prisma
 	bunx prisma migrate deploy --schema=prisma/schema.prisma
-	docker compose -f docker-compose.prod.yml up -d --build
+	docker-compose -f docker-compose.yml up -d --build
 
 # Update (push berikutnya) — tidak down -v, container tetap jalan
 prod-update:
-	bun install --production
 	bunx prisma generate --schema=prisma/schema.prisma
 	bunx prisma migrate deploy --schema=prisma/schema.prisma
-	docker compose -f docker-compose.prod.yml up -d --build
+	docker-compose -f docker-compose.yml up -d --build
 
 prod-down:
-	docker compose -f docker-compose.prod.yml down
+	docker-compose -f docker-compose.yml down

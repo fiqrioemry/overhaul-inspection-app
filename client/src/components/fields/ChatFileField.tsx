@@ -70,6 +70,12 @@ export function ChatFileField({ onFileSelect, onClear, selectedFile, disabled = 
     if (inputRef.current) inputRef.current.value = "";
   }
 
+  const acceptValue: string = Array.isArray(CHAT_LIMITS.ALLOWED_EXTENSIONS)
+    ? [...CHAT_LIMITS.ALLOWED_EXTENSIONS] // convert readonly tuple to mutable array
+        .map((ext) => (ext.startsWith(".") ? ext : `.${ext}`))
+        .join(",")
+    : String(CHAT_LIMITS.ALLOWED_EXTENSIONS);
+
   return (
     <div className="flex flex-col gap-1">
       {/* Preview bar */}
@@ -99,14 +105,7 @@ export function ChatFileField({ onFileSelect, onClear, selectedFile, disabled = 
       {error && <p className="px-1 text-xs text-destructive">{error}</p>}
 
       {/* Hidden input + trigger button (rendered outside, icon in ChatInput) */}
-      <input
-        ref={inputRef}
-        type="file"
-        accept={Array.isArray(CHAT_LIMITS.ALLOWED_EXTENSIONS) ? CHAT_LIMITS.ALLOWED_EXTENSIONS.map((ext) => (ext.startsWith(".") ? ext : `.${ext}`)).join(",") : CHAT_LIMITS.ALLOWED_EXTENSIONS}
-        className="hidden"
-        onChange={handleChange}
-        disabled={disabled}
-      />
+      <input ref={inputRef} type="file" accept={acceptValue} className="hidden" onChange={handleChange} disabled={disabled} />
 
       {/* Expose trigger via a forwarded button */}
       <Button
