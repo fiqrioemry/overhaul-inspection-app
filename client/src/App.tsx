@@ -1,26 +1,26 @@
 import Login from "@/pages/LoginPage";
+import useTheme from "./hooks/useTheme";
 import FeedPage from "@/pages/FeedPage";
 import Explore from "@/pages/ExplorePage";
 import Register from "@/pages/RegisterPage";
 import ProfilePage from "./pages/ProfilePage";
+import SettingPage from "@/pages/SettingPage";
+import MessagePage from "@/pages/MessagePage";
 import NotFoundPage from "@/pages/NotFoundPage";
 import PostDetail from "@/pages/PostDetailPage";
 import VerifyEmail from "@/pages/VerifyEmailPage";
+import AppLayout from "@/components/layout/AppLayout";
 import ResetPassword from "@/pages/ResetPasswordPage";
 import NotificationPage from "@/pages/NotificationPage";
 import ForgotPassword from "@/pages/ForgotPasswordPage";
+import OAuthCallbackPage from "@/pages/OAuthCallbackPage";
+import SettingAccountPage from "@/pages/SettingAccountPage";
+import SettingSecurityPage from "@/pages/SettingSecurityPage";
+import SettingNotificationPage from "@/pages/SettingNotificationPage";
 
-import useTheme from "./hooks/useTheme";
 import { Routes, Route, Navigate } from "react-router-dom";
-import AppLayout from "@/components/layout/AppLayout";
 import PublicRoute from "@/features/auth/components/PublicRoute";
 import ProtectedRoute from "@/features/auth/components/ProtectedRoute";
-import SettingPage from "./pages/SettingPage";
-import SettingAccountPage from "./pages/SettingAccountPage";
-import SettingSecurityPage from "./pages/SettingSecurityPage";
-import SettingNotificationPage from "./pages/SettingNotificationPage";
-import MessagePage from "./pages/MessagePage";
-import OAuthCallbackPage from "./pages/OAuthCallbackPage";
 
 export default function AppRouter() {
   useTheme();
