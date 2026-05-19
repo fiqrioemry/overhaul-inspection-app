@@ -81,7 +81,7 @@ export default function MainSidebar() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
             <input
               type="text"
-              placeholder="Cari pengguna..."
+              placeholder="Search Users..."
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
@@ -208,7 +208,7 @@ export default function MainSidebar() {
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleDarkMode} className="flex items-center gap-2 cursor-pointer">
                 {darkMode ? <Sun className="size-4" /> : <Moon className="size-4" />}
-                {darkMode ? "Mode Terang" : "Mode Gelap"}
+                {darkMode ? "Light Mode" : "Dark Mode"}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout} disabled={isLoggingOut} className="flex items-center gap-2 text-destructive focus:text-destructive cursor-pointer">

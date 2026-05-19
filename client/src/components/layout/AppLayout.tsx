@@ -18,7 +18,7 @@ export default function AppLayout({ showRightSidebar = true, fullWidth = false }
       {/* Main area */}
       <div className="md:ml-64 xl:ml-72 flex min-h-screen">
         {/* Center content */}
-        <main className={fullWidth ? "flex-1 min-w-0 pb-20 md:pb-6" : "flex-1 min-w-0 pb-20 md:pb-6 max-w-6xl mx-auto w-full px-4 md:px-6 py-6"}>
+        <main className={fullWidth ? "flex-1 min-w-0 pb-20 md:pb-6" : "flex-1 min-w-0 pb-20 md:pb-6 max-w-8xl mx-auto w-full px-4 md:px-6 py-6"}>
           <Outlet />
         </main>
 

@@ -30,13 +30,14 @@ export default function RightSidebar() {
       {/* Suggested users section */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Saran untuk kamu</span>
+          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Suggestion for you</span>
         </div>
         <SuggestedUsersList />
       </div>
 
       {/* Footer links */}
       <div className="text-[11px] text-muted-foreground/60 leading-relaxed">
+        <p> Ahmad Fiqri Oemry</p>
         <p>© {new Date().getFullYear()} Pixel. Made With ❤️</p>
       </div>
     </div>
@@ -68,11 +69,10 @@ function SuggestedUsersList() {
   // Empty state
   return (
     <p className="text-xs text-muted-foreground">
-      Tidak ada saran saat ini. Jelajahi pengguna di halaman{" "}
+      No suggestions at the moment. Explore users on the{" "}
       <Link to="/explore" className="text-primary hover:underline">
         Explore
       </Link>
-      .
     </p>
   );
 }
