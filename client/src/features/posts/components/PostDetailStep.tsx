@@ -15,10 +15,10 @@ export function PostDetailStep() {
 
   return (
     <div className="flex flex-col gap-5">
-      <FormField label="Judul" required error={errors.title?.message}>
+      <FormField label="Title" required error={errors.title?.message}>
         <input
           {...register("title")}
-          placeholder="Tulis judul postingan..."
+          placeholder="Write Post Title..."
           className={cn(
             "w-full px-3.5 py-2.5 rounded-xl text-sm bg-muted/50 border border-transparent transition-all outline-none",
             "focus:border-primary/40 focus:bg-background placeholder:text-muted-foreground/60",
@@ -27,10 +27,10 @@ export function PostDetailStep() {
         />
       </FormField>
 
-      <FormField label="Deskripsi" required hint={`${content.length} karakter · minimal 10`} error={errors.content?.message}>
+      <FormField label="Description" required hint={`${content.length} characters · minimum 10`} error={errors.content?.message}>
         <textarea
           {...register("content")}
-          placeholder="Ceritakan sesuatu tentang postingan ini..."
+          placeholder="Tell something about this post..."
           rows={5}
           className={cn(
             "w-full px-3.5 py-2.5 rounded-xl text-sm bg-muted/50 border border-transparent transition-all outline-none resize-none",

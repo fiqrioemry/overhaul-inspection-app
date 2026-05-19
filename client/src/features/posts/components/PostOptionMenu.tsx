@@ -4,9 +4,9 @@ import { MoreHorizontal } from "lucide-react";
 import type { Post } from "@/types/posts.type";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/stores/auth.store";
+import { useSavePost, useUnsavePost } from "@/features/posts/posts.query";
 import { useFollowUser, useUnfollowUser } from "@/features/users/users.query";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { useSavePost, useUnsavePost } from "../posts.query";
 
 interface PostOptionMenuProps {
   post: Post;

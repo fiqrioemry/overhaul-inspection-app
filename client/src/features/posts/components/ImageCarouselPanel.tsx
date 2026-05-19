@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { PreviewItem } from "@/features/posts/components/ImageUploadStep";
 
 interface ImageCarouselPanelProps {

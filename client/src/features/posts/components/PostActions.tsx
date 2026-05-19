@@ -2,7 +2,7 @@
 // src/features/posts/components/PostActions.tsx
 import { cn } from "@/lib/utils";
 import type { Post } from "@/types/posts.type";
-import { Heart, MessageCircle, Send, Bookmark } from "lucide-react";
+import { Heart, MessageCircle, Bookmark } from "lucide-react";
 import { useLikePost, useSavePost, useUnlikePost, useUnsavePost } from "@/features/posts/posts.query";
 
 interface PostActionsProps {

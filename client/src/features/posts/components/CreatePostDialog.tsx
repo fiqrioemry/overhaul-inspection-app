@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
 import { useState } from "react";
-import CreatePostForm from "./CreatePostForm";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import CreatePostForm from "@/features/posts/components/CreatePostForm";
 
 interface CreatePostDialogProps {
   open: boolean;
