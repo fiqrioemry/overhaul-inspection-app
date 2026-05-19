@@ -1,3 +1,5 @@
+import { OAuthProvider } from "generated/prisma";
+
 type verificationType = "EMAIL_VERIFICATION" | "PASSWORD_RESET";
 
 type userStatus = "ACTIVE" | "INACTIVE" | "BANNED";
@@ -24,7 +26,7 @@ type userCredential = {
   name: string;
   username: string;
   avatar: string | null;
-  passwordHash: string;
+  passwordHash: string | null;
   status: userStatus;
   verifiedAt: Date | null;
 };
@@ -120,6 +122,22 @@ type filterMeta = {
 type metaResponse = {
   pagination?: paginationMeta;
   filter?: filterMeta;
+};
+
+export type CreateOAuthUserData = {
+  email: string;
+  name: string;
+  username: string;
+  avatar: string;
+};
+
+export type UpsertOAuthAccountData = {
+  userId: string;
+  provider: OAuthProvider;
+  providerAccountId: string;
+  accessToken: string;
+  refreshToken?: string;
+  expiresAt?: Date;
 };
 
 export {

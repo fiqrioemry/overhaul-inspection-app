@@ -9,12 +9,15 @@ import type {
   PromoteMemberRequest,
   CreateGroupChatRequest,
   CreatePrivateChatRequest,
+  DeleteMessagesRequest,
 } from "@/modules/chats/chat.schema";
 import { Context } from "hono";
 import { pgsql } from "@/lib/database";
 import { eventBus } from "@/lib/socket";
 import { HTTPException } from "hono/http-exception";
 import { NotificationType } from "generated/prisma";
+import { FileService } from "@/modules/files/file.service";
+import { createFileData } from "@/modules/files/file.types";
 import { UserRepository } from "@/modules/users/user.repository";
 import { ChatRepository } from "@/modules/chats/chat.repository";
 import { NotificationRepository } from "@/modules/notifications/notification.repository";
@@ -142,8 +145,6 @@ export class ChatService {
     return ChatRepository.findChatById(chat.id);
   }
 
-  // ─── Read Chats ───────────────────────────────────────────────────────────────
-
   static async getMyChats(userId: string, query: GetChatsRequest) {
     const { results, totalItems } = await ChatRepository.getChatsByUserId(userId, query);
 
@@ -176,8 +177,6 @@ export class ChatService {
     return { ...chat, unreadCount };
   }
 
-  // ─── Messages ─────────────────────────────────────────────────────────────────
-
   static async getMessages(chatId: string, userId: string, query: GetMessagesRequest) {
     await this.assertChatExists(chatId);
     await this.assertParticipant(chatId, userId);
@@ -187,19 +186,34 @@ export class ChatService {
     return {
       data: results,
       meta: {
-        hasMore,
-        nextCursor: hasMore ? results[results.length - 1]?.id : null,
+        pagination: { hasMore, nextCursor: hasMore ? results[results.length - 1]?.id : null },
       },
     };
   }
 
-  static async sendMessage(_c: Context, chatId: string, userId: string, request: SendMessageRequest) {
-    await this.assertChatExists(chatId);
-    await this.assertParticipant(chatId, userId);
+  static async sendMessage(c: Context, request: SendMessageRequest) {
+    const { chatId, senderId } = request;
+    await this.assertChatExists(chatId!);
+    await this.assertParticipant(chatId!, senderId!);
 
     const message = await pgsql.$transaction(async (tx) => {
-      const msg = await ChatRepository.createMessage(tx, chatId, userId, request);
-      await ChatRepository.updateLastMessage(tx, chatId, msg.id);
+      let fileRecord: createFileData = {};
+      if (request.media) {
+        fileRecord = await FileService.generateFileRecord(request.media, "chats");
+        request.mediaUrl = fileRecord.url;
+      }
+
+      const msg = await ChatRepository.createMessage(tx, request);
+
+      if (request.media) {
+        fileRecord.targetId = msg.id;
+        fileRecord.isUsed = true;
+        await FileService.saveRecordToDatabase(fileRecord, tx);
+        await FileService.uploadFileToStorage(c, fileRecord);
+      }
+
+      await ChatRepository.updateLastMessage(tx, chatId!, msg.id);
+
       return msg;
     });
 
@@ -211,8 +225,8 @@ export class ChatService {
     });
 
     // Notify offline participants via notification system
-    const participants = await ChatRepository.getParticipants(chatId);
-    const others = participants.filter((p) => p.userId !== userId);
+    const participants = await ChatRepository.getParticipants(chatId!);
+    const others = participants.filter((p) => p.userId !== senderId!);
 
     await Promise.allSettled(
       others.map((p) =>
@@ -221,7 +235,7 @@ export class ChatService {
           type: NotificationType.MESSAGE,
           title: "New message",
           description: `You have a new message`,
-          metadata: { chatId, messageId: message.id, senderId: userId },
+          metadata: { chatId, messageId: message?.id, senderId },
         }),
       ),
     );
@@ -266,7 +280,7 @@ export class ChatService {
     await this.assertGroupChat(chatId);
     await this.assertAdmin(chatId, userId);
 
-    const selfFiltered = request.memberIds.filter((id) => id !== userId);
+    const selfFiltered = request.userIds.filter((id) => id !== userId);
 
     if (selfFiltered.includes(userId)) {
       throw new HTTPException(400, {
@@ -361,10 +375,7 @@ export class ChatService {
     if (participant?.role === "ADMIN") {
       const adminCount = await ChatRepository.countAdmins(chatId);
       if (adminCount <= 1) {
-        throw new HTTPException(400, {
-          message: chatErrorMessage.LAST_ADMIN,
-          cause: chatErrorCode.LAST_ADMIN,
-        });
+        await ChatRepository.deleteChat(chatId);
       }
     }
 
@@ -412,5 +423,27 @@ export class ChatService {
     }
 
     await ChatRepository.updateParticipantRole(null, chatId, request.userId, "MEMBER");
+  }
+
+  static async deleteMessages(c: Context, request: DeleteMessagesRequest) {
+    await this.assertChatExists(request.chatId!);
+    await this.assertParticipant(request.chatId!, request.senderId!);
+    const results = await ChatRepository.getMessagesByIds(request.messageIds, request.senderId!);
+    const foundIds = new Set(results.map((m) => m.id));
+    const notFoundIds = request.messageIds.filter((id) => !foundIds.has(id));
+    if (notFoundIds.length > 0) {
+      throw new HTTPException(404, {
+        message: chatErrorMessage.MESSAGE_NOT_FOUND,
+        cause: chatErrorCode.MESSAGE_NOT_FOUND,
+      });
+    }
+    const fileToDelete = results.filter((m) => m.mediaUrl).map((m) => m.id);
+    for (const targetId of fileToDelete) {
+      const file = await FileService.getFileRecordByTargetId(targetId, "chats");
+      if (file) {
+        await FileService.deleteFile(c, file.id);
+      }
+      await ChatRepository.deleteMessages(request.chatId!, request.senderId!, request.messageIds);
+    }
   }
 }

@@ -36,6 +36,11 @@ export class PostRepository {
           content: true,
           createdAt: true,
           userId: true,
+          bookmarks: {
+            where: {
+              userId: query.userId,
+            },
+          },
           user: {
             select: {
               id: true,
@@ -115,6 +120,12 @@ export class PostRepository {
         content: true,
         createdAt: true,
         userId: true,
+
+        bookmarks: {
+          where: {
+            userId,
+          },
+        },
         comments: {
           select: {
             id: true,
@@ -226,6 +237,11 @@ export class PostRepository {
           content: true,
           createdAt: true,
           userId: true,
+          bookmarks: {
+            where: {
+              userId: query.userId,
+            },
+          },
           user: {
             select: {
               id: true,
@@ -314,6 +330,11 @@ export class PostRepository {
           content: true,
           createdAt: true,
           userId: true,
+          bookmarks: {
+            where: {
+              userId: query.userId,
+            },
+          },
           user: {
             select: {
               id: true,
@@ -406,10 +427,10 @@ export class PostRepository {
   static async bulkCreateGalleryRecords(tx: Prisma.TransactionClient, postId: string, galleries: { url: string; sequence: number }[]) {
     const db = tx ?? database;
     return await db.postGallery.createMany({
-      data: galleries.map((g) => ({
+      data: galleries.map((g, i) => ({
         postId,
         url: g.url,
-        order: g.sequence,
+        order: i,
       })),
     });
   }

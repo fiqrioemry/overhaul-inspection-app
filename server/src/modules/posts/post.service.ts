@@ -17,15 +17,25 @@ export class PostService {
       const post = await PostRepository.createPost(tx, userId, request);
 
       if (request.galleries && request.galleries.length > 0) {
-        const uploadResults = await FileService.uploadMultipleFiles(c, userId, request.galleries, "posts", tx);
+        const fileRecords = await Promise.all(
+          request.galleries.map(async (file) => {
+            return await FileService.generateFileRecord(file, "posts");
+          }),
+        );
 
-        const galleries = await PostRepository.bulkCreateGalleryRecords(tx, post.id, uploadResults);
+        const fileRecordsWithTargetId = fileRecords.map((fileRecord) => ({ ...(fileRecord ?? {}), targetId: post.id }));
+
+        const galleries = await FileService.saveBulkRecordsToDatabase(fileRecordsWithTargetId, tx);
 
         await UserRepository.createActivityLog(tx, {
           userId,
           action: postAction.CREATE_POST,
           metadata: { title: request.title, content: post.content, galleries: galleries },
         });
+
+        for (const fileRecord of fileRecords) {
+          await FileService.uploadFileToStorage(c, fileRecord);
+        }
       }
 
       return post;
@@ -51,6 +61,7 @@ export class PostService {
       isLiked: post.likes.length > 0,
       isEditable: post.userId === query.userId,
       isFollowing: post.user.followers.some((follower) => follower.followerId === query.userId),
+      isSaved: post.bookmarks.some((bookmark) => bookmark.userId === query.userId),
     }));
 
     const meta = {
@@ -86,6 +97,7 @@ export class PostService {
       isLiked: post.likes.length > 0,
       isEditable: post.userId === query.userId,
       isFollowing: post.user.followers.some((follower) => follower.followerId === query.userId),
+      isSaved: post.bookmarks.some((bookmark) => bookmark.userId === query.userId),
     }));
 
     const meta = {
@@ -206,6 +218,7 @@ export class PostService {
       isLiked: post.likes.length > 0,
       isEditable: post.userId === userId,
       isFollowing: post.user.followers.some((follower) => follower.followerId === userId),
+      isSaved: post.bookmarks.some((bookmark) => bookmark.userId === userId),
     };
   }
 
@@ -229,6 +242,7 @@ export class PostService {
       isLiked: post.likes.length > 0,
       isEditable: post.userId === userId,
       isFollowing: post.user.followers.some((follower) => follower.followerId === userId),
+      isSaved: post.bookmarks.some((bookmark) => bookmark.userId === query.userId),
     }));
 
     const meta = {
@@ -281,6 +295,7 @@ export class PostService {
       totalComments: bm.post._count.comments,
       isLiked: likedPostIds.has(bm.post.id),
       isEditable: bm.post.user.id === query.userId,
+      isSaved: true,
     }));
 
     const meta = {

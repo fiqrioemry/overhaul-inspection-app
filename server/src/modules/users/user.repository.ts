@@ -1,7 +1,7 @@
-import { Prisma } from "generated/prisma/edge";
+import { Prisma, OAuthProvider } from "generated/prisma/edge";
 import { pgsql as database } from "@/lib/database";
 import { CreateUserActivityLogRequest, GetFollowRequest, UpdateProfileRequest } from "@/modules/users/user.schema";
-import { createUserData, verificationType, createVerificationData, updateUserActiveData } from "@/modules/users/user.types";
+import { createUserData, verificationType, createVerificationData, updateUserActiveData, UpsertOAuthAccountData, CreateOAuthUserData, userCredential } from "@/modules/users/user.types";
 
 export class UserRepository {
   static async findByEmail(email: string) {
@@ -168,7 +168,7 @@ export class UserRepository {
   static async updatePassword(userId: string, newPasswordHash: string): Promise<void> {
     await database.user.update({
       where: { id: userId },
-      data: { passwordHash: newPasswordHash },
+      data: { passwordHash: newPasswordHash, lastChangePasswordAt: new Date() },
     });
   }
 
@@ -184,7 +184,7 @@ export class UserRepository {
     const db = tx ?? database;
     await db.user.update({
       where: { id: userId },
-      data: { name: request.name, bio: request.bio },
+      data: { name: request.name, bio: request.bio, gender: request.gender },
     });
   }
 
@@ -420,5 +420,89 @@ export class UserRepository {
       })),
       totalItems,
     };
+  }
+
+  static async updatePrivacy(userId: string, isPublic: boolean): Promise<void> {
+    await database.user.update({
+      where: { id: userId },
+      data: { isPublic },
+    });
+  }
+
+  static async findByOAuthProvider(provider: OAuthProvider, providerAccountId: string): Promise<userCredential | null> {
+    const oauth = await database.oAuthAccount.findUnique({
+      where: {
+        provider_providerAccountId: { provider, providerAccountId },
+      },
+      select: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            avatar: true,
+            name: true,
+            username: true,
+            passwordHash: true,
+            status: true,
+            verifiedAt: true,
+          },
+        },
+      },
+    });
+
+    return oauth?.user ?? null;
+  }
+
+  static async createOAuthUser(tx: Prisma.TransactionClient | null, data: CreateOAuthUserData) {
+    const db = tx ?? database;
+    return await db.user.create({
+      data: {
+        email: data.email,
+        passwordHash: "",
+        name: data.name,
+        username: data.username,
+        avatar: data.avatar,
+        status: "ACTIVE",
+        verifiedAt: new Date(), // email sudah terverifikasi oleh provider
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        username: true,
+        avatar: true,
+        bio: true,
+        status: true,
+        lastLogin: true,
+        createdAt: true,
+        verifiedAt: true,
+        lastChangePasswordAt: true,
+      },
+    });
+  }
+
+  static async upsertOAuthAccount(tx: Prisma.TransactionClient | null, data: UpsertOAuthAccountData): Promise<void> {
+    const db = tx ?? database;
+    await db.oAuthAccount.upsert({
+      where: {
+        provider_providerAccountId: {
+          provider: data.provider,
+          providerAccountId: data.providerAccountId,
+        },
+      },
+      create: {
+        userId: data.userId,
+        provider: data.provider,
+        providerAccountId: data.providerAccountId,
+        accessToken: data.accessToken,
+        refreshToken: data.refreshToken,
+        expiresAt: data.expiresAt,
+      },
+      update: {
+        accessToken: data.accessToken,
+        refreshToken: data.refreshToken,
+        expiresAt: data.expiresAt,
+      },
+    });
   }
 }

@@ -1,8 +1,10 @@
 import { z } from "zod";
 
 const updateProfileRequest = z.object({
+  userId: z.cuid().optional(),
   name: z.string().min(1, "Name is required"),
   bio: z.string().max(160, "Bio must be at most 160 characters").optional(),
+  gender: z.enum(["MALE", "FEMALE"]).optional(),
 });
 export type UpdateProfileRequest = z.infer<typeof updateProfileRequest>;
 
@@ -31,4 +33,10 @@ const followUserRequest = z.object({
 
 export type FollowUserRequest = z.infer<typeof followUserRequest>;
 
-export { updateProfileRequest, createUserActivityLogRequest, followUserRequest, getFollowRequest };
+const updatePrivacyRequest = z.object({
+  userId: z.cuid().optional(),
+  isPublic: z.boolean(),
+});
+export type UpdatePrivacyRequest = z.infer<typeof updatePrivacyRequest>;
+
+export { updateProfileRequest, updatePrivacyRequest, createUserActivityLogRequest, followUserRequest, getFollowRequest };

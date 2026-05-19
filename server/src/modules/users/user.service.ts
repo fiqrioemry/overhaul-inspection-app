@@ -5,7 +5,7 @@ import { FileService } from "@/modules/files/file.service";
 import { NotificationType, Prisma } from "generated/prisma";
 import { UserRepository } from "@/modules/users/user.repository";
 import { FileRepository } from "@/modules/files/file.repository";
-import { FollowUserRequest, GetFollowRequest } from "@/modules/users/user.schema";
+import { FollowUserRequest, GetFollowRequest, UpdatePrivacyRequest, UpdateProfileRequest } from "@/modules/users/user.schema";
 import { NotificationRepository } from "@/modules/notifications/notification.repository";
 import { userAction, userErrorCode, userErrorMessage } from "@/config/constant/user.constant";
 import { followingResponse, metaResponse, profileResponse, userSearchResponse } from "./user.types";
@@ -24,15 +24,17 @@ export class UserService {
     return formattedUsers;
   }
 
-  static async updateProfile(c: Context, userId: string, request: { name: string; bio?: string }) {
+  static async updateProfile(c: Context, payload: UpdateProfileRequest) {
+    const { userId, ...request } = payload;
     return await pgsql.$transaction(async (tx: Prisma.TransactionClient) => {
-      await UserRepository.updateProfile(userId, request, tx);
+      await UserRepository.updateProfile(userId!, request, tx);
       const userLogs = {
-        userId,
+        userId: userId!,
         action: userAction.UPDATE_PROFILE,
         metadata: {
           name: request.name,
           bio: request.bio,
+          gender: request.gender,
         },
       };
       await UserRepository.createActivityLog(tx, userLogs);
@@ -42,12 +44,19 @@ export class UserService {
   static async updateAvatar(c: Context, userId: string, avatar: File) {
     const fileRecord = await FileService.getFileRecordByTargetId(userId, "profile");
 
-    await FileRepository.markFilesAsUnused(fileRecord ? [fileRecord.id] : []);
-
-    const uploadedFile = await FileService.uploadSingleFile(c, userId, avatar, "profile", userId, true);
-
     return await pgsql.$transaction(async (tx: Prisma.TransactionClient) => {
-      await UserRepository.updateAvatar(userId, uploadedFile.url, tx);
+      const fileDataRecord = await FileService.generateFileRecord(avatar, "profile");
+
+      if (fileRecord) {
+        await FileRepository.markFilesAsUnused(tx, [fileRecord.id]);
+      }
+
+      await FileService.uploadFileToStorage(c, fileDataRecord);
+
+      const uploadedFile = await FileService.saveRecordToDatabase(fileDataRecord, tx);
+
+      await UserRepository.updateAvatar(userId, fileDataRecord.url!, tx);
+
       const userLogs = {
         userId,
         action: userAction.UPDATE_AVATAR,
@@ -202,5 +211,19 @@ export class UserService {
         },
       },
     };
+  }
+
+  static async updatePrivacy(c: Context, request: UpdatePrivacyRequest): Promise<void> {
+    // check user exist
+    const user = await UserRepository.findById(request.userId!);
+
+    if (!user) {
+      throw new HTTPException(404, {
+        message: userErrorMessage.USER_NOT_FOUND,
+        cause: userErrorCode.USER_NOT_FOUND,
+      });
+    }
+
+    await UserRepository.updatePrivacy(request.userId!, request.isPublic!);
   }
 }

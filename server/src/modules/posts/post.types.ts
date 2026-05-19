@@ -22,6 +22,7 @@ export type postResponse = {
   isLiked: boolean;
   isEditable: boolean;
   isFollowing?: boolean;
+  isSaved?: boolean;
 };
 
 type commentResponse = {

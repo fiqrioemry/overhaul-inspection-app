@@ -3,7 +3,7 @@ import { UserService } from "@/modules/users/user.service";
 import { responseError, responseOK } from "@/utils/response";
 import { userSuccessMessage } from "@/config/constant/user.constant";
 import { fileErrorCode, fileErrorMessage } from "@/config/constant/file.constant";
-import { followUserRequest, getFollowRequest, updateProfileRequest } from "@/modules/users/user.schema";
+import { followUserRequest, getFollowRequest, updatePrivacyRequest, updateProfileRequest } from "@/modules/users/user.schema";
 
 export class UserController {
   static async searchUsersByUsername(c: Context) {
@@ -34,7 +34,8 @@ export class UserController {
   static async updateProfile(c: Context) {
     const user = await c.get("user");
     const request = updateProfileRequest.parse(await c.req.json());
-    await UserService.updateProfile(c, user.userId, request);
+    request.userId = user.userId;
+    await UserService.updateProfile(c, request);
     return responseOK(c, userSuccessMessage.UPDATE_PROFILE_SUCCESS);
   }
 
@@ -68,5 +69,13 @@ export class UserController {
     query.userId = userId;
     const response = await UserService.getFollowers(query);
     return responseOK(c, userSuccessMessage.GET_FOLLOWERS_SUCCESS, response.data, response.meta);
+  }
+
+  static async updatePrivacy(c: Context) {
+    const user = await c.get("user");
+    const request = updatePrivacyRequest.parse(await c.req.json());
+    request.userId = user.userId;
+    await UserService.updatePrivacy(c, request);
+    return responseOK(c, userSuccessMessage.UPDATE_PRIVACY_SUCCESS);
   }
 }

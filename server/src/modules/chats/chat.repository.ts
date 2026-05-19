@@ -232,18 +232,17 @@ export class ChatRepository {
     });
   }
 
-  // ─── Messages ────────────────────────────────────────────────────────────────
-
-  static async createMessage(tx: Prisma.TransactionClient | null, chatId: string, senderId: string, data: SendMessageRequest): Promise<messageData> {
+  static async createMessage(tx: Prisma.TransactionClient | null, data: SendMessageRequest): Promise<messageData> {
     const db = tx ?? database;
+    // Ensure type is MessageType
     return db.message.create({
       data: {
-        chatId,
-        senderId,
-        type: data.type ?? "text",
+        chatId: data.chatId!,
+        senderId: data.senderId!,
+        type: data.type,
         text: data.text,
         mediaUrl: data.mediaUrl,
-        readBy: [senderId], // sender auto-reads their own message
+        readBy: [data.senderId!], // sender auto-reads their own message
       },
       select: {
         id: true,
@@ -263,7 +262,17 @@ export class ChatRepository {
           },
         },
       },
-    }) as Promise<messageData>;
+    }) as unknown as Promise<messageData>;
+  }
+
+  static async getMessagesByIds(messageIds: string[], senderId: string): Promise<messageData[]> {
+    return database.message.findMany({
+      where: { id: { in: messageIds }, senderId },
+      select: {
+        id: true,
+        chatId: true,
+      },
+    }) as unknown as Promise<messageData[]>;
   }
 
   static async getMessages(chatId: string, query: GetMessagesRequest): Promise<{ results: messageData[]; hasMore: boolean }> {
@@ -334,5 +343,21 @@ export class ChatRepository {
   `;
 
     return Number(result[0]?.count ?? 0);
+  }
+
+  static async deleteMessages(chatId: string, senderId: string, messageIds: string[]): Promise<void> {
+    await database.message.deleteMany({
+      where: {
+        id: { in: messageIds },
+        chatId,
+        senderId,
+      },
+    });
+  }
+
+  static async deleteChat(chatId: string): Promise<void> {
+    await database.chat.delete({
+      where: { id: chatId },
+    });
   }
 }

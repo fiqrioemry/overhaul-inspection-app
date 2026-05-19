@@ -8,10 +8,11 @@ import {
   readMessagesRequest,
   promoteMemberRequest,
   createGroupChatRequest,
+  deleteMessagesRequest,
   createPrivateChatRequest,
 } from "@/modules/chats/chat.schema";
 import { Context } from "hono";
-import { responseOK } from "@/utils/response";
+import { responseError, responseOK } from "@/utils/response";
 import { ChatService } from "@/modules/chats/chat.service";
 import { chatSuccessMessage } from "@/config/constant/chat.constant";
 
@@ -55,8 +56,16 @@ export class ChatController {
   static async sendMessage(c: Context) {
     const user = c.get("user");
     const chatId = c.req.param("chatId");
-    const request = sendMessageRequest.parse(await c.req.json());
-    const response = await ChatService.sendMessage(c, chatId, user.userId, request);
+    const body = await c.req.parseBody({ all: true });
+    const request = sendMessageRequest.parse({
+      text: body.text,
+      type: body.type,
+      media: body?.media,
+    });
+
+    request.chatId = chatId;
+    request.senderId = user.userId;
+    const response = await ChatService.sendMessage(c, request);
     return responseOK(c, chatSuccessMessage.SEND_MESSAGE_SUCCESS, response);
   }
 
@@ -113,5 +122,15 @@ export class ChatController {
     const request = promoteMemberRequest.parse(await c.req.json());
     await ChatService.demoteMember(c, chatId, user.userId, request);
     return responseOK(c, chatSuccessMessage.DEMOTE_MEMBER_SUCCESS);
+  }
+
+  static async deleteMessages(c: Context) {
+    const user = c.get("user");
+    const chatId = c.req.param("chatId");
+    const request = deleteMessagesRequest.parse(await c.req.json());
+    request.senderId = user.userId;
+    request.chatId = chatId;
+    await ChatService.deleteMessages(c, request);
+    return responseOK(c, chatSuccessMessage.DELETE_MESSAGES_SUCCESS);
   }
 }
