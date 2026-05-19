@@ -1,75 +1,58 @@
 import { Context } from "hono";
+import { pgsql } from "@/lib/database";
+import { Prisma } from "generated/prisma";
 import { minioConfig } from "@/config/env";
-import { Prisma } from "generated/prisma/edge";
 import { minioClient, BUCKET } from "@/lib/minio";
-import { processImage } from "@/utils/file-processing";
 import { generateRandomFilename } from "@/utils/generator";
+import { createFileData } from "@/modules/files/file.types";
 import { FileRepository } from "@/modules/files/file.repository";
+import { processFile, processImage } from "@/utils/file-processing";
 
 export class FileService {
-  static async uploadSingleFile(c: Context, userId: string, file: File, module: string, targetId?: string, isUsed?: boolean) {
-    const imageProcessed = await processImage(file, 500, 500, "webp");
-    const randomFileName = generateRandomFilename(file.name, "webp");
+  static async generateFileRecord(file: File, module: string): Promise<createFileData> {
+    let fileType;
+    let fileProcessed: Buffer;
+    let randomFileName: string;
+    if (file.type.startsWith("image/")) {
+      fileProcessed = await processImage(file, 500, 500, "webp");
+      randomFileName = generateRandomFilename(file.name, "webp");
+      fileType = "webp";
+    } else {
+      fileType = file.type.split("/")[1];
+      fileProcessed = await processFile(file, fileType);
+      randomFileName = generateRandomFilename(file.name, fileType);
+    }
+
     const storageKey = `${module}/${randomFileName}`;
-
-    // Upload ke MinIO
-    await minioClient.putObject(BUCKET, storageKey, imageProcessed, imageProcessed.length, {
-      "Content-Type": "image/webp",
-    });
-
     const url = `${minioConfig.ENDPOINT}/${BUCKET}/${storageKey}`;
 
-    const fileRecord = {
-      targetId,
-      isUsed,
+    const fileRecord: createFileData = {
       url,
-      size: imageProcessed.length,
+      isUsed: false,
+      size: fileProcessed.length,
       path: storageKey,
-      metadata: { originalName: file.name, mimeType: "image/webp" },
+      metadata: { originalName: file.name, mimeType: fileType },
       module,
-
-      createdBy: userId,
+      imageBuffer: fileProcessed,
     };
 
-    return await FileRepository.createFileRecord(fileRecord);
+    return fileRecord;
+  }
+
+  static async uploadFileToStorage(c: Context, fileRecord: createFileData) {
+    await minioClient.putObject(BUCKET, fileRecord.path!, fileRecord.imageBuffer!, fileRecord.size!, {
+      "Content-Type": fileRecord.metadata?.mimeType,
+    });
   }
 
   static async deleteFile(c: Context, fileId: string) {
     const fileRecord = await FileRepository.getFileRecordById(fileId);
+
     if (!fileRecord) throw new Error("File not found");
 
-    // Hapus dari MinIO
     await minioClient.removeObject(BUCKET, fileRecord.path);
 
     await FileRepository.deleteFileRecord(fileId);
-  }
-
-  static async uploadMultipleFiles(c: Context, userId: string, files: File[], module: string, tx?: Prisma.TransactionClient) {
-    return await Promise.all(
-      files.map(async (f, index) => {
-        const imageProcessed = await processImage(f, 500, 500, "webp");
-        const randomFileName = generateRandomFilename(f.name, "webp");
-        const storageKey = `${module}/${randomFileName}`;
-
-        await minioClient.putObject(BUCKET, storageKey, imageProcessed, imageProcessed.length, {
-          "Content-Type": "image/webp",
-        });
-
-        const url = `${minioConfig.ENDPOINT}/${BUCKET}/${storageKey}`;
-
-        const fileRecords = await FileRepository.createFileRecordWithTx(tx!, {
-          url,
-          size: f.size,
-          path: storageKey,
-          metadata: { originalName: f.name, mimeType: f.type },
-          module,
-          isUsed: true,
-          createdBy: userId,
-        });
-
-        return { ...fileRecords, sequence: index };
-      }),
-    );
   }
 
   static async getFileRecordByTargetId(targetId: string, module: string) {
@@ -78,5 +61,15 @@ export class FileService {
 
   static getFileRecordByTargetIdDirectly(targetId: string, module: string) {
     return FileRepository.getFileRecordByTargetId(targetId, module);
+  }
+
+  static async saveRecordToDatabase(fileRecord: createFileData, tx: Prisma.TransactionClient | null) {
+    const db = tx ?? pgsql;
+    return await FileRepository.createFileRecordWithTx(db, fileRecord);
+  }
+
+  static async saveBulkRecordsToDatabase(fileRecords: createFileData[], tx: Prisma.TransactionClient | null) {
+    const db = tx ?? pgsql;
+    return await FileRepository.createMultipleFileRecordWithTx(db, fileRecords);
   }
 }

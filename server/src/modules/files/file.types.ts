@@ -1,12 +1,17 @@
+type fileMetadata = {
+  originalName: string;
+  mimeType: string;
+};
 type createFileData = {
   targetId?: string;
-  module: string;
+  module?: string;
   isUsed?: boolean;
-  size: number;
-  url: string;
-  path: string;
+  size?: number;
+  url?: string;
+  path?: string;
   createdBy?: string;
-  metadata: Record<string, any>;
+  metadata?: fileMetadata;
+  imageBuffer?: Buffer;
 };
 
 type fileResponse = {

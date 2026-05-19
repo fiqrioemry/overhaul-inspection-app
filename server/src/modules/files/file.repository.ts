@@ -4,44 +4,19 @@ import { fileLimit } from "@/config/constant/file.constant";
 import { createFileData, fileResponse } from "@/modules/files/file.types";
 
 export class FileRepository {
-  static async createFileRecord(data: createFileData): Promise<fileResponse> {
-    const result = await database.fileStorage.create({
-      data: {
-        url: data.url,
-        targetId: data.targetId,
-        isUsed: data.isUsed ?? false,
-        path: data.path,
-        meta: data.metadata,
-        module: data.module,
-        size: data.size,
-        createdBy: data.createdBy,
-      },
-      select: {
-        id: true,
-        url: true,
-        path: true,
-        createdAt: true,
-        module: true,
-        isUsed: true,
-      },
-    });
-
-    return result;
-  }
-
   static async createFileRecordWithTx(tx: Prisma.TransactionClient, data: createFileData): Promise<fileResponse> {
     const db = tx ?? database;
 
     const result = await db.fileStorage.create({
       data: {
-        url: data.url,
-        targetId: data.targetId,
+        url: data.url!,
+        targetId: data.targetId!,
         isUsed: data.isUsed ?? false,
-        path: data.path,
-        meta: data.metadata,
-        module: data.module,
-        size: data.size,
-        createdBy: data.createdBy,
+        path: data.path!,
+        meta: data.metadata!,
+        module: data.module!,
+        size: data.size!,
+        createdBy: data.createdBy!,
       },
       select: {
         id: true,
@@ -118,8 +93,9 @@ export class FileRepository {
     });
   }
 
-  static async markFilesAsUnused(ids: string[]): Promise<void> {
-    await database.fileStorage.updateMany({
+  static async markFilesAsUnused(tx: Prisma.TransactionClient, ids: string[]): Promise<void> {
+    const db = tx ?? database;
+    await db.fileStorage.updateMany({
       where: { id: { in: ids } },
       data: { isUsed: false },
     });
@@ -164,5 +140,39 @@ export class FileRepository {
     });
 
     return result;
+  }
+
+  static async createMultipleFileRecordWithTx(tx: Prisma.TransactionClient, data: createFileData[]): Promise<fileResponse[]> {
+    const db = tx ?? database;
+
+    await db.fileStorage.createMany({
+      data: data.map((item) => ({
+        url: item.url!,
+        targetId: item.targetId!,
+        isUsed: item.isUsed ?? false,
+        path: item.path!,
+        meta: item.metadata!,
+        module: item.module!,
+        size: item.size!,
+        createdBy: item.createdBy,
+      })),
+    });
+
+    const urls = data.map((item) => item.url!);
+    const results = await db.fileStorage.findMany({
+      where: {
+        url: { in: urls },
+      },
+      select: {
+        id: true,
+        url: true,
+        path: true,
+        createdAt: true,
+        module: true,
+        isUsed: true,
+      },
+    });
+
+    return results;
   }
 }
