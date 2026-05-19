@@ -1,12 +1,3 @@
-// src/pages/OAuthCallbackPage.tsx
-//
-// Backend redirect ke: /oauth/callback?success=true&provider=google
-// atau                  /login?error=oauth_failed&provider=google
-//
-// Page ini hanya bertanggung jawab:
-//   1. Fetch /auth/me untuk populate zustand store (cookie sudah di-set backend)
-//   2. Redirect ke "/"
-
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
@@ -25,22 +16,18 @@ export default function OAuthCallbackPage() {
     const success = params.get("success") === "true";
 
     if (!success) {
-      // Seharusnya tidak sampai sini karena backend redirect ke /login?error=...
-      // Tapi sebagai safety net:
       navigate("/login?error=oauth_failed", { replace: true });
       return;
     }
 
-    // Cookie session sudah di-set backend — tinggal fetch /me
     fetchMe()
       .then((user) => {
         setUser(user);
-        // Populate query cache supaya useMe() tidak refetch
+
         queryClient.setQueryData(AUTH_KEYS.me, user);
         navigate("/", { replace: true });
       })
       .catch(() => {
-        // Cookie tidak valid / expired
         navigate("/login?error=oauth_failed", { replace: true });
       });
   }, []);
@@ -48,7 +35,7 @@ export default function OAuthCallbackPage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center gap-3 text-muted-foreground">
       <Loader2 className="size-8 animate-spin text-primary" />
-      <p className="text-sm">Menyelesaikan login...</p>
+      <p className="text-sm">Completing login...</p>
     </div>
   );
 }

@@ -36,7 +36,7 @@ export default function ExplorePage() {
   const allPosts = data?.pages.flatMap((page) => page.data) ?? [];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-5xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">Explore</h1>

@@ -12,11 +12,7 @@ import NotificationTabList from "@/features/notifications/components/Notificatio
 import { useInfiniteNotifications, useMarkAsRead, useDeleteNotification } from "@/features/notifications/notifications.query";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
-// ─── Types ───────────────────────────────────────────────────────────────────
-
 type TabType = NotificationType | "";
-
-// ─── Page ────────────────────────────────────────────────────────────────────
 
 export default function NotificationPage() {
   const [search, setSearch] = React.useState("");
@@ -108,7 +104,7 @@ export default function NotificationPage() {
   const confirmDescription = pendingDeleteIds.length === 1 ? "This notification will be permanently removed." : `These ${pendingDeleteIds.length} notifications will be permanently removed.`;
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-4 py-6 space-y-4">
+    <div className="mx-auto w-full max-w-2xl px-0 md:px-4 py-6 space-y-4">
       {/* ── Header ── */}
       <div className="flex items-start justify-between gap-2">
         <div className="space-y-0.5">
