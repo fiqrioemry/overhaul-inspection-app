@@ -1,7 +1,7 @@
+import { toast } from "sonner";
 import type { GetNotificationRequest } from "@/schemas/notification.schema";
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
 import { deleteNotification, fetchNotifications, getNotificationSettings, getUnreadNotificationCount, markAsRead, updateNotificationSettings } from "./notifications.api";
-import { toast } from "sonner";
 
 export const NOTIFICATION_KEYS = {
   unread: ["notifications", "unread"] as const,

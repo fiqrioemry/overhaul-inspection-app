@@ -2,6 +2,7 @@ import qs from "qs";
 import api from "@/lib/axios";
 import { NOTIFICATIONS_ENDPOINTS } from "@/constants/notifications.constant";
 import type { GetNotificationRequest } from "@/schemas/notification.schema";
+import type { UpdateNotificationSettingsRequest } from "@/types/sessions.type";
 
 export async function getUnreadNotificationCount() {
   const res = await api.get(NOTIFICATIONS_ENDPOINTS.getUnreadCount);
@@ -19,7 +20,7 @@ export async function getNotificationSettings() {
   return res.data;
 }
 
-export async function updateNotificationSettings(payload: { notificationId: string; status: "ENABLED" | "DISABLED" }) {
+export async function updateNotificationSettings(payload: UpdateNotificationSettingsRequest) {
   console.log("Updating notification settings with payload:", payload);
   const res = await api.put(NOTIFICATIONS_ENDPOINTS.updateNotificationSettings, payload);
   return res.data;
