@@ -98,8 +98,6 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   setSidebarCollapsed: (v) => set({ isSidebarCollapsed: v }),
 }));
 
-// ─── WebSocket event handler ───────────────────────────────────────────────────
-
 export function handleChatWsEvent(event: string, payload: WsNewMessagePayload | WsMessageReadPayload | WsGroupUpdatedPayload, currentUserId: string) {
   const store = useChatStore.getState();
 
