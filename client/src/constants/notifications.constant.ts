@@ -1,8 +1,8 @@
 export const NOTIFICATIONS_ENDPOINTS = {
-  getUnreadCount: "/notifications/unread-count",
+  markAsRead: "/notifications/read",
   getUserNotifications: "/notifications",
+  deleteNotification: "/notifications/delete",
+  getUnreadCount: "/notifications/unread-count",
   getNotificationSettings: "/notifications/settings",
   updateNotificationSettings: "/notifications/settings",
-  markAsRead: "/notifications/read",
-  deleteNotification: "/notifications/delete",
 } as const;
