@@ -23,7 +23,7 @@ export class PostService {
           }),
         );
 
-        const fileRecordsWithTargetId = fileRecords.map((fileRecord) => ({ ...(fileRecord ?? {}), targetId: post.id }));
+        const fileRecordsWithTargetId = fileRecords.map((fileRecord) => ({ ...(fileRecord ?? {}), targetId: post.id, isUsed: true }));
 
         const galleries = await FileService.saveBulkRecordsToDatabase(fileRecordsWithTargetId, tx);
 
