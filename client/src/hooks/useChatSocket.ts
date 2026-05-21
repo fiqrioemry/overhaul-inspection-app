@@ -4,7 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { CHAT_KEYS } from "@/features/chats/chats.query";
 import { handleChatWsEvent } from "@/stores/chat.store";
 
-const WS_BASE_URL = import.meta.env.VITE_WS_URL ?? "ws://localhost:5000/ws";
+const WS_BASE_URL = import.meta.env.VITE_WEB_SOCKET_URL ?? "ws://localhost:5000/ws";
 
 interface UseChatSocketOptions {
   chatId?: string;
