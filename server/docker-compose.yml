@@ -22,7 +22,11 @@ services:
       - "traefik.http.routers.${APP_NAME}.entrypoints=websecure"
       - "traefik.http.routers.${APP_NAME}.tls.certresolver=cloudflare"
       - "traefik.http.services.${APP_NAME}.loadbalancer.server.port=${APP_PORT}"
+
+      # Fix WebSocket
       - "traefik.http.middlewares.ws-headers.headers.customrequestheaders.X-Forwarded-Proto=https"
+      - "traefik.http.middlewares.ws-headers.headers.customrequestheaders.Connection=keep-alive, Upgrade"
+      - "traefik.http.middlewares.ws-headers.headers.customrequestheaders.Upgrade=websocket"
       - "traefik.http.routers.${APP_NAME}.middlewares=ws-headers"
 
     networks:
