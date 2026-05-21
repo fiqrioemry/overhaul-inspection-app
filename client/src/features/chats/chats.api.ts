@@ -99,3 +99,8 @@ export async function demoteMember(chatId: string, payload: PromoteMemberRequest
   const res = await api.patch(CHAT_ENDPOINTS.demoteMember.replace(":chatId", chatId), payload);
   return res.data;
 }
+
+export async function getUnreadMessagesCount() {
+  const res = await api.get(CHAT_ENDPOINTS.getUnreadMessagesCount);
+  return res.data;
+}

@@ -13,6 +13,7 @@ export const CHAT_ENDPOINTS = {
   leaveGroup: "/chats/:chatId/leave",
   promoteMember: "/chats/:chatId/members/promote",
   demoteMember: "/chats/:chatId/members/demote",
+  getUnreadMessagesCount: "/chats/unread-count",
 } as const;
 
 export const CHAT_WS_EVENTS = {

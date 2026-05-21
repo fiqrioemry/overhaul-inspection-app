@@ -15,7 +15,23 @@ import type {
 } from "@/schemas/chats.schema";
 import type { ResponseSuccess } from "@/types/response.type";
 import { useQuery, useMutation, useInfiniteQuery, useQueryClient, type InfiniteData } from "@tanstack/react-query";
-import { fetchMyChats, fetchChatById, fetchMessages, sendMessage, deleteMessages, readMessages, createPrivateChat, createGroupChat, updateGroup, addMembers, removeMember, leaveGroup, promoteMember, demoteMember } from "./chats.api";
+import {
+  fetchMyChats,
+  fetchChatById,
+  fetchMessages,
+  sendMessage,
+  deleteMessages,
+  readMessages,
+  createPrivateChat,
+  createGroupChat,
+  updateGroup,
+  addMembers,
+  removeMember,
+  leaveGroup,
+  promoteMember,
+  demoteMember,
+  getUnreadMessagesCount,
+} from "./chats.api";
 
 export const CHAT_KEYS = {
   all: ["chats"] as const,
@@ -202,5 +218,14 @@ export function useDemoteMember(chatId: string) {
     onError: (err) => {
       toast.error(err.message);
     },
+  });
+}
+
+export function useUnreadMessagesCount() {
+  return useQuery({
+    queryKey: ["chats", "unreadCount"] as const,
+    queryFn: () => getUnreadMessagesCount(),
+    select: (data) => data.data.unreadCount,
+    staleTime: 1000 * 60, // 1 minute
   });
 }

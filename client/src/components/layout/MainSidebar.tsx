@@ -14,6 +14,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useUnreadNotificationCount } from "@/features/notifications/notifications.query";
 import { Home, Compass, PlusSquare, LogOut, Settings, Sun, Moon, ChevronDown, Search, X, User, Bell, MessageCircle } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { useUnreadMessagesCount } from "@/features/chats/chats.query";
 
 const NAV_ITEMS = [
   { icon: Home, label: "Home", to: "/" },
@@ -36,6 +37,10 @@ export default function MainSidebar() {
   const debouncedSearch = useDebounce(searchQuery, 400);
   const { data: searchResults, isFetching: isSearching } = useSearchUsers({ search: debouncedSearch });
   const { data: notificationCount } = useUnreadNotificationCount();
+  const { data: unreadMessagesCount } = useUnreadMessagesCount();
+
+  console.log("Unread Messages Count:", unreadMessagesCount);
+
   const searchRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -141,6 +146,7 @@ export default function MainSidebar() {
           {NAV_ITEMS.map(({ icon: Icon, label, to }) => {
             const isActive = location.pathname === to;
             const unreadCount = notificationCount ?? 0;
+            const unreadMessages = unreadMessagesCount ?? 0;
 
             return (
               <Link
@@ -159,6 +165,11 @@ export default function MainSidebar() {
                   {label === "Notifications" && unreadCount > 0 && (
                     <span className={cn("absolute -top-2 -right-2 min-w-4.5 h-4.5", "px-1 flex items-center justify-center", "rounded-full bg-red-500 text-white", "text-[10px] font-bold leading-none", "ring-2 ring-sidebar shadow-sm")}>
                       {unreadCount > 99 ? "99+" : unreadCount}
+                    </span>
+                  )}
+                  {label === "Message" && unreadMessages > 0 && (
+                    <span className={cn("absolute -top-2 -right-2 min-w-4.5 h-4.5", "px-1 flex items-center justify-center", "rounded-full bg-red-500 text-white", "text-[10px] font-bold leading-none", "ring-2 ring-sidebar shadow-sm")}>
+                      {unreadMessages > 99 ? "99+" : unreadMessages}
                     </span>
                   )}
                 </div>
