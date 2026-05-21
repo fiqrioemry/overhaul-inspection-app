@@ -424,7 +424,7 @@ export class PostRepository {
     });
   }
 
-  static async bulkCreateGalleryRecords(tx: Prisma.TransactionClient, postId: string, galleries: { url: string; sequence: number }[]) {
+  static async bulkCreateGalleryRecords(tx: Prisma.TransactionClient, postId: string, galleries: { url: string; sequence?: number }[]) {
     const db = tx ?? database;
     return await db.postGallery.createMany({
       data: galleries.map((g, i) => ({

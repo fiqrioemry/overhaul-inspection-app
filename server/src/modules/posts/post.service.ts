@@ -27,6 +27,8 @@ export class PostService {
 
         const galleries = await FileService.saveBulkRecordsToDatabase(fileRecordsWithTargetId, tx);
 
+        await PostRepository.bulkCreateGalleryRecords(tx, post.id, galleries);
+
         await UserRepository.createActivityLog(tx, {
           userId,
           action: postAction.CREATE_POST,

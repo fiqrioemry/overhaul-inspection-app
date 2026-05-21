@@ -35,16 +35,14 @@ down:
  
 # Pertama kali deploy (dari nol)
 prod-init:
-	bunx prisma generate --schema=prisma/schema.prisma
-	bunx prisma migrate deploy --schema=prisma/schema.prisma
+	docker compose -f --env-file=.env.production docker-compose.yml down
 	docker compose -f --env-file=.env.production docker-compose.yml up -d --build
 
 # Update (push berikutnya) — tidak down -v, container tetap jalan
 prod-update:
-	bunx prisma generate --schema=prisma/schema.prisma
-	bunx prisma migrate deploy --schema=prisma/schema.prisma
-	docker compose --env-file=.env.production docker-compose.yml down
-	docker compose --env-file=.env.production docker-compose.yml up -d
+	docker compose -f --env-file=.env.production docker-compose.yml down
+	docker compose -f --env-file=.env.production docker-compose.yml up -d --build
 
 prod-down:
 	docker compose -f --env-file=.env.production docker-compose.yml down
+
