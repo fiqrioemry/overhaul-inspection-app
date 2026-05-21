@@ -446,4 +446,8 @@ export class ChatService {
       await ChatRepository.deleteMessages(request.chatId!, request.senderId!, request.messageIds);
     }
   }
+  static async countUnreadMessages(userId: string) {
+    const count = await ChatRepository.countTotalUnreadMessages(userId);
+    return { unreadCount: count };
+  }
 }

@@ -360,4 +360,15 @@ export class ChatRepository {
       where: { id: chatId },
     });
   }
+
+  static async countTotalUnreadMessages(userId: string): Promise<number> {
+    const result = await database.$queryRaw<[{ count: bigint }]>`
+    SELECT COUNT(*)::int AS count
+    FROM messages m
+    INNER JOIN chat_participants cp ON cp.chat_id = m.chat_id
+    WHERE cp.user_id = ${userId}
+      AND NOT (${userId} = ANY(m.read_by))
+  `;
+    return Number(result[0]?.count ?? 0);
+  }
 }

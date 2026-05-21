@@ -12,7 +12,7 @@ import {
   createPrivateChatRequest,
 } from "@/modules/chats/chat.schema";
 import { Context } from "hono";
-import { responseError, responseOK } from "@/utils/response";
+import { responseOK } from "@/utils/response";
 import { ChatService } from "@/modules/chats/chat.service";
 import { chatSuccessMessage } from "@/config/constant/chat.constant";
 
@@ -132,5 +132,11 @@ export class ChatController {
     request.chatId = chatId;
     await ChatService.deleteMessages(c, request);
     return responseOK(c, chatSuccessMessage.DELETE_MESSAGES_SUCCESS);
+  }
+
+  static async countUnreadMessages(c: Context) {
+    const user = c.get("user");
+    const response = await ChatService.countUnreadMessages(user.userId);
+    return responseOK(c, chatSuccessMessage.COUNT_UNREAD_SUCCESS, response);
   }
 }

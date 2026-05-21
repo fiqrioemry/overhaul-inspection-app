@@ -16,6 +16,7 @@ const chatSuccessMessage = {
   DEMOTE_MEMBER_SUCCESS: "Member demoted to member",
   DELETE_CHAT_SUCCESS: "Chat deleted successfully",
   DELETE_MESSAGES_SUCCESS: "Messages deleted successfully",
+  COUNT_UNREAD_SUCCESS: "Unread messages count retrieved successfully",
 };
 
 const chatErrorMessage = {
@@ -68,6 +69,7 @@ const chatLimit = {
   REMOVE_MEMBER: { limit: 20, windowSec: 60 },
   LEAVE_GROUP: { limit: 10, windowSec: 60 },
   PROMOTE_DEMOTE: { limit: 20, windowSec: 60 },
+  COUNT_UNREAD: { limit: 30, windowSec: 60 },
   READ_MESSAGES: { limit: 120, windowSec: 60 },
 };
 

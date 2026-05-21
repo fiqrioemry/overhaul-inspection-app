@@ -3,13 +3,12 @@ import { protect } from "@/middlewares/auth.middleware";
 import { chatLimit } from "@/config/constant/chat.constant";
 import { limitter } from "@/middlewares/limitter.middleware";
 import { ChatController as ctrl } from "@/modules/chats/chat.controller";
-import { multipleFile, singleFile } from "@/middlewares/file.middleware";
-import { fileLimit } from "@/config/constant/file.constant";
 
 const chat = new Hono();
 
 // chat list and creation
 chat.get("", protect, limitter(chatLimit.GET_CHATS), ctrl.getMyChats);
+chat.get("/unread-count", protect, limitter(chatLimit.COUNT_UNREAD), ctrl.countUnreadMessages);
 chat.post("/private", protect, limitter(chatLimit.CREATE_CHAT), ctrl.createPrivateChat);
 chat.post("/group", protect, limitter(chatLimit.CREATE_CHAT), ctrl.createGroupChat);
 
