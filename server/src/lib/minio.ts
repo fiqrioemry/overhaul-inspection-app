@@ -2,6 +2,12 @@
 import { Client } from "minio";
 import { minioConfig } from "@/config/env";
 
+console.log({
+  host: minioConfig.HOST,
+  port: minioConfig.PORT,
+  ssl: minioConfig.USE_SSL,
+});
+
 export const minioClient = new Client({
   endPoint: minioConfig.HOST,
   port: minioConfig.PORT,

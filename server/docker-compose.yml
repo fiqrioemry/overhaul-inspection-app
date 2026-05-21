@@ -1,30 +1,28 @@
-version: "3.8"
-
 services:
-  server:
-    build:
-      context: .
-      dockerfile: ./Dockerfile
+  app:
+    build: .
     container_name: social_media
-    ports:
-      - "5000:5000"
-    expose:
-      - "5000"
+    restart: unless-stopped
+
     env_file:
       - .env.production
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.pixel.rule=Host(`pixel-api.ahmadfiqrioemry.com`)"
-      - "traefik.http.services.pixel.loadbalancer.server.port=5000"
-      - "traefik.http.routers.pixel.entrypoints=websecure"
-      - "traefik.http.routers.pixel.tls.certresolver=cloudflare"
+
+    expose:
+      - "${APP_PORT}"
 
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost:5000/health || exit 1"]
-      interval: 15s
+      test: ["CMD-SHELL", "curl -f http://localhost:5000/health || exit 1"]
+      interval: 120s
       timeout: 5s
       retries: 3
-      start_period: 10s
+      start_period: 15s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.${APP_NAME}.rule=Host(`${APP_DOMAIN}`)"
+      - "traefik.http.routers.${APP_NAME}.entrypoints=websecure"
+      - "traefik.http.routers.${APP_NAME}.tls.certresolver=cloudflare"
+      - "traefik.http.services.${APP_NAME}.loadbalancer.server.port=${APP_PORT}"
+
     networks:
       - shared-net
 
