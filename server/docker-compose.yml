@@ -16,18 +16,19 @@ services:
       timeout: 5s
       retries: 3
       start_period: 15s
+
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.${APP_NAME}.rule=Host(`${APP_DOMAIN}`)"
       - "traefik.http.routers.${APP_NAME}.entrypoints=websecure"
       - "traefik.http.routers.${APP_NAME}.tls.certresolver=cloudflare"
       - "traefik.http.services.${APP_NAME}.loadbalancer.server.port=${APP_PORT}"
-
-      # Fix WebSocket
+      # Force HTTP/1.1 untuk WebSocket compatibility
+      - "traefik.http.services.${APP_NAME}.loadbalancer.server.scheme=http"
+      - "traefik.http.routers.${APP_NAME}.middlewares=ws-headers"
       - "traefik.http.middlewares.ws-headers.headers.customrequestheaders.X-Forwarded-Proto=https"
       - "traefik.http.middlewares.ws-headers.headers.customrequestheaders.Connection=keep-alive, Upgrade"
       - "traefik.http.middlewares.ws-headers.headers.customrequestheaders.Upgrade=websocket"
-      - "traefik.http.routers.${APP_NAME}.middlewares=ws-headers"
 
     networks:
       - shared-net
