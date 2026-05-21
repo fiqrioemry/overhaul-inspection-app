@@ -35,14 +35,14 @@ down:
  
 # Pertama kali deploy (dari nol)
 prod-init:
-	docker compose -f --env-file=.env.production docker-compose.yml down
-	docker compose -f --env-file=.env.production docker-compose.yml up -d --build
+	docker compose -f --env-file=.env.production down
+	docker compose -f --env-file=.env.production up -d --build
 
 # Update (push berikutnya) — tidak down -v, container tetap jalan
 prod-update:
-	docker compose -f --env-file=.env.production docker-compose.yml down
-	docker compose -f --env-file=.env.production docker-compose.yml up -d --build
+	docker compose -f --env-file=.env.production down
+	docker compose -f --env-file=.env.production up -d --build
 
 prod-down:
-	docker compose -f --env-file=.env.production docker-compose.yml down
+	docker compose -f --env-file=.env.production down
 
