@@ -32,6 +32,23 @@ export const forgotPasswordSchema = z.object({
   email: z.string().email("Email tidak valid"),
 });
 
+export const resetPasswordSchema = z
+  .object({
+    password: z.string().min(8, "Password minimal 8 karakter").regex(/[A-Z]/, "Password harus mengandung minimal 1 huruf kapital").regex(/[0-9]/, "Password harus mengandung minimal 1 angka"),
+    confirmPassword: z.string().min(1, "Konfirmasi password wajib diisi"),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Password tidak cocok",
+    path: ["confirmPassword"],
+  });
+
+export type ResetPasswordFormValues = z.infer<typeof resetPasswordSchema>;
+
+export interface ResetPasswordRequest {
+  password: string;
+  confirmPassword: string;
+}
+
 export type LoginFormValues = z.infer<typeof loginSchema>;
 export type RegisterFormValues = z.infer<typeof registerSchema>;
 export type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>;

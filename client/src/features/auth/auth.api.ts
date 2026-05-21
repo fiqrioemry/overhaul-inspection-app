@@ -7,7 +7,7 @@ import type { LoginData, UserAccount } from "@/types/users.type";
 import type { ResponseOK, ResponseSuccess } from "@/types/response.type";
 import type { ChangePasswordFormValues } from "@/schemas/settings.schema";
 import { OAUTH_ENDPOINTS, type OAuthProviderKey } from "@/constants/auth.constant";
-import type { ForgotPasswordFormValues, LoginFormValues, RegisterFormValues } from "@/schemas/auth.schema";
+import type { ForgotPasswordFormValues, LoginFormValues, RegisterFormValues, ResetPasswordRequest } from "@/schemas/auth.schema";
 
 export async function login(data: LoginFormValues): Promise<ResponseSuccess<LoginData>> {
   const res = await api.post(AUTH_ENDPOINTS.login, data);
@@ -19,8 +19,8 @@ export async function register(data: RegisterFormValues): Promise<ResponseOK> {
   return res.data;
 }
 
-export async function resetPassword(email: string): Promise<ResponseOK> {
-  const res = await api.post(AUTH_ENDPOINTS.resetPassword, { email });
+export async function resetPassword(token: string, payload: ResetPasswordRequest): Promise<ResponseOK> {
+  const res = await api.post(`${AUTH_ENDPOINTS.resetPassword}?token=${token}`, payload);
   return res.data;
 }
 

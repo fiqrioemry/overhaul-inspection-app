@@ -4,7 +4,8 @@ import { useEffect } from "react";
 import { useAuthStore } from "@/stores/auth.store";
 import type { ChangePasswordFormValues } from "@/schemas/settings.schema";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchMe, getSessions, deleteSession, logoutAll, changePassword } from "./auth.api";
+import { fetchMe, getSessions, deleteSession, logoutAll, changePassword, resetPassword } from "./auth.api";
+import type { ResetPasswordRequest } from "@/schemas/auth.schema";
 
 export const AUTH_KEYS = {
   me: ["auth", "me"] as const,
@@ -63,6 +64,15 @@ export function useChangePassword() {
     mutationFn: (payload: ChangePasswordFormValues) => changePassword(payload),
     onSuccess: (res) => {
       toast.success(res.message || "Password changed successfully");
+    },
+  });
+}
+
+export function useResetPassword(token: string) {
+  return useMutation({
+    mutationFn: (payload: ResetPasswordRequest) => resetPassword(token, payload),
+    onError: (err) => {
+      toast.error(err.message || "Gagal mereset password, coba lagi.");
     },
   });
 }
