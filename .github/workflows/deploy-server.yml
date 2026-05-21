@@ -31,7 +31,7 @@ jobs:
         run: |
           ssh -p ${{ secrets.VPS_PORT }} -i ~/.ssh/id_ed25519 \
             ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} \
-            "cd /home/project/social_media/server && git pull origin main"
+            "cd /home/project/social_media/server && git pull origin main --force"
 
       - name: First time init
         if: steps.check_init.outputs.flag == 'missing'
