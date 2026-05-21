@@ -18,6 +18,8 @@ import SettingAccountPage from "@/pages/SettingAccountPage";
 import SettingSecurityPage from "@/pages/SettingSecurityPage";
 import SettingNotificationPage from "@/pages/SettingNotificationPage";
 
+import { Toaster } from "sonner";
+import { ScrollToTop } from "./hooks/useScrollToTop";
 import { Routes, Route, Navigate } from "react-router-dom";
 import PublicRoute from "@/features/auth/components/PublicRoute";
 import ProtectedRoute from "@/features/auth/components/ProtectedRoute";
@@ -29,33 +31,38 @@ export default function AppRouter() {
   window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
 
   return (
-    <Routes>
-      <Route path="/oauth/callback" element={<OAuthCallbackPage />} />
-      <Route path="*" element={<NotFoundPage />} />
-      <Route element={<PublicRoute />}>
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/verify-email" element={<VerifyEmail />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
-      </Route>
-
-      <Route element={<ProtectedRoute />}>
-        <Route element={<AppLayout />}>
-          <Route path="/" element={<FeedPage />} />
-          <Route path="/explore" element={<Explore />} />
-          <Route path="/message" element={<MessagePage />} />
-          <Route path="/notifications" element={<NotificationPage />} />
-          <Route path="/profile/:username" element={<ProfilePage />} />
-          <Route path="/p/:postId" element={<PostDetail />} />
-          <Route path="/settings" element={<SettingPage />}>
-            <Route index element={<Navigate to="account" replace />} />
-            <Route path="account" element={<SettingAccountPage />} />
-            <Route path="security" element={<SettingSecurityPage />} />
-            <Route path="notifications" element={<SettingNotificationPage />} />
-          </Route>
+    <>
+      <ScrollToTop />
+      <Toaster position="top-right" richColors />
+      <Routes>
+        <Route element={<PublicRoute />}>
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/verify-email" element={<VerifyEmail />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/oauth/callback" element={<OAuthCallbackPage />} />
+          <Route path="*" element={<NotFoundPage />} />
         </Route>
-      </Route>
-    </Routes>
+
+        <Route element={<ProtectedRoute />}>
+          <Route element={<AppLayout />}>
+            <Route path="/" element={<FeedPage />} />
+            <Route path="/explore" element={<Explore />} />
+            <Route path="/message" element={<MessagePage />} />
+            <Route path="/notifications" element={<NotificationPage />} />
+            <Route path="/profile/:username" element={<ProfilePage />} />
+            <Route path="/p/:postId" element={<PostDetail />} />
+            <Route path="/settings" element={<SettingPage />}>
+              <Route index element={<Navigate to="account" replace />} />
+              <Route path="account" element={<SettingAccountPage />} />
+              <Route path="security" element={<SettingSecurityPage />} />
+              <Route path="notifications" element={<SettingNotificationPage />} />
+            </Route>
+          </Route>
+          <Route path="*" element={<NotFoundPage />} />
+        </Route>
+      </Routes>
+    </>
   );
 }
