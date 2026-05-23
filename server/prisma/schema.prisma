@@ -69,13 +69,19 @@ model User {
   @@map("users")
 }
 
- 
+enum FollowStatus {
+  NONE      
+  PENDING    
+  ACCEPTED   
+}
 
 model Following {
-  id          String   @id @default(cuid())
-  followerId  String   @map("follower_id")
-  followingId String   @map("following_id")
-  createdAt   DateTime @default(now()) @map("created_at")
+  id          String       @id @default(cuid())
+  followerId  String       @map("follower_id")
+  followingId String       @map("following_id")
+  status      FollowStatus @default(ACCEPTED) @map("status")  // public = langsung ACCEPTED
+  acceptedAt  DateTime?    @map("accepted_at")  // null jika masih PENDING
+  createdAt   DateTime     @default(now()) @map("created_at")
 
   follower    User @relation("UserFollowing", fields: [followerId], references: [id], onDelete: Cascade)
   following   User @relation("UserFollowers", fields: [followingId], references: [id], onDelete: Cascade)
@@ -83,7 +89,7 @@ model Following {
   @@unique([followerId, followingId])
   @@index([followerId])
   @@index([followingId])
-
+  @@index([followingId, status]) // ← penting untuk query "pending requests"
   @@map("followings")
 }
 
@@ -336,6 +342,7 @@ enum NotificationType {
   LIKE
   COMMENT
   FOLLOW
+  REQUEST 
   MENTION
   MESSAGE
 }
