@@ -75,7 +75,7 @@ export default function CreatePostForm({ onSuccess, onClose, onHasImagesChange, 
             </button>
           )}
           {step === "detail" && (
-            <button type="button" onClick={methods.handleSubmit(onSubmit)} disabled={isPending} className="text-sm font-semibold text-primary hover:text-primary/80 transition-colors disabled:opacity-50">
+            <button type="button" onClick={methods.handleSubmit(onSubmit)} disabled={isPending || !methods.formState.isValid} className="text-sm font-semibold text-primary hover:text-primary/80 transition-colors disabled:opacity-50">
               {isPending ? "Posting..." : "Share"}
             </button>
           )}

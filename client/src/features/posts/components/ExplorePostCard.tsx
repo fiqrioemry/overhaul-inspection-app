@@ -1,6 +1,7 @@
 // features/feed/components/PostCard.tsx
-import { useState } from "react";
+
 import type { Post } from "@/types/posts.type";
+import { usePostStore } from "@/stores/post.store";
 import { GalleryHorizontalEnd, Heart, MessageCircle } from "lucide-react";
 import PostDetailDialog from "@/features/posts/components/PostDetailDialog";
 
@@ -9,15 +10,15 @@ type PostCardProps = {
 };
 
 export default function ExplorePostCard({ post }: PostCardProps) {
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const { openDialog, isOpen } = usePostStore();
 
-  function handleComment() {
-    setDialogOpen(true);
-  }
+  const handleComment = () => {
+    openDialog({ isOpen: !isOpen, target: post.id });
+  };
 
   return (
     <>
-      <div className="group relative aspect-square cursor-pointer overflow-hidden rounded-sm bg-muted" onClick={() => setDialogOpen(true)}>
+      <div className="group relative aspect-square cursor-pointer overflow-hidden rounded-sm bg-muted" onClick={() => openDialog({ isOpen: !isOpen, target: post.id })}>
         {/* Gambar utama */}
         <img src={post.galleries[0]?.url} alt={post.content} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
 
@@ -50,7 +51,7 @@ export default function ExplorePostCard({ post }: PostCardProps) {
           </div>
         </div>
       </div>
-      <PostDetailDialog post={post} open={dialogOpen} onOpenChange={setDialogOpen} />
+      <PostDetailDialog post={post} />
     </>
   );
 }

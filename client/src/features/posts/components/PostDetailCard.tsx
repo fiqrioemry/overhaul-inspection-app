@@ -2,11 +2,11 @@
 import { useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import type { Post } from "@/types/posts.type";
+import PostActions from "@/features/posts/components/PostActions";
 import PostGallery from "@/features/posts/components/PostGallery";
 import PostHeading from "@/features/posts/components/PostHeading";
 import CommentList from "@/features/comments/components/CommentList";
 import CreateCommentForm from "@/features/comments/components/CreateCommentForm";
-import PostActions, { PostActionCounts } from "@/features/posts/components/PostActions";
 
 interface PostDetailCardProps {
   post: Post | null;
@@ -47,7 +47,6 @@ export default function PostDetailCard({ post }: PostDetailCardProps) {
           {/* Actions */}
           <div className="border-t shrink-0">
             <PostActions post={post} />
-            <PostActionCounts post={post} />
             {createdAt && <span className="block px-4 pb-1 text-[10px] uppercase tracking-wide text-muted-foreground">{createdAt}</span>}
           </div>
 

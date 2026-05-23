@@ -74,11 +74,13 @@ export function useUpdatePost(postId: string) {
   });
 }
 
-export function useDeletePost() {
+export function useDeletePost(postId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (postId: string) => deletePost(postId),
-    onSuccess: () => {
+    mutationFn: () => deletePost(postId),
+    onSuccess: (res) => {
+      toast.success(res.message);
+      queryClient.invalidateQueries({ queryKey: POST_KEYS.detail(postId) });
       queryClient.invalidateQueries({ queryKey: POST_KEYS.all });
     },
   });

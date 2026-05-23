@@ -4,18 +4,19 @@ import { cn } from "@/lib/utils";
 import type { Post } from "@/types/posts.type";
 import { Heart, MessageCircle, Bookmark } from "lucide-react";
 import { useLikePost, useSavePost, useUnlikePost, useUnsavePost } from "@/features/posts/posts.query";
+import { usePostStore } from "@/stores/post.store";
 
 interface PostActionsProps {
   post: Post;
-  onCommentClick?: () => void;
   showCommentCount?: boolean;
 }
 
-export default function PostActions({ post, onCommentClick }: PostActionsProps) {
+export default function PostActions({ post }: PostActionsProps) {
   const savePost = useSavePost(post.id);
   const unsavePost = useUnsavePost(post.id);
   const likePost = useLikePost(post.id);
   const unlikePost = useUnlikePost(post.id);
+  const { isOpen, target, openDialog } = usePostStore();
 
   const isLiked = post.isLiked ?? false;
 
@@ -30,6 +31,10 @@ export default function PostActions({ post, onCommentClick }: PostActionsProps) 
   }
 
   const isPending = likePost.isPending || unlikePost.isPending;
+
+  const handleComment = () => {
+    openDialog({ isOpen: !isOpen, target: post.id });
+  };
 
   return (
     <div className="flex items-center justify-between px-4 py-2">
@@ -50,7 +55,7 @@ export default function PostActions({ post, onCommentClick }: PostActionsProps) 
 
         {/* Comment */}
         <div className="flex items-center gap-2">
-          <button onClick={onCommentClick} className="group flex items-center gap-1 transition-transform active:scale-90" aria-label="View comments">
+          <button onClick={handleComment} className="group flex items-center gap-1 transition-transform active:scale-90" aria-label="View comments">
             <MessageCircle className="h-6 w-6 text-foreground group-hover:text-muted-foreground transition-colors" />
           </button>
           <span>{post.totalComments ?? 0}</span>
@@ -72,16 +77,19 @@ export default function PostActions({ post, onCommentClick }: PostActionsProps) 
 
 interface PostActionCountsProps {
   post: Post;
-  onCommentClick?: () => void;
 }
 
-export function PostActionCounts({ post, onCommentClick }: PostActionCountsProps) {
+export function PostActionCounts({ post }: PostActionCountsProps) {
+  const { isOpen, openDialog } = usePostStore();
+  const handleComment = () => {
+    openDialog({ isOpen: !isOpen, target: post.id });
+  };
   const commentsCount = post.totalComments ?? 0;
 
   return (
     <div className="flex flex-col gap-0.5 px-4 pb-1">
       {commentsCount > 0 && (
-        <button onClick={onCommentClick} className="text-sm text-muted-foreground hover:text-foreground transition-colors text-left">
+        <button onClick={handleComment} className="text-sm text-muted-foreground hover:text-foreground transition-colors text-left">
           View all {commentsCount.toLocaleString()} {commentsCount === 1 ? "comment" : "comments"}
         </button>
       )}

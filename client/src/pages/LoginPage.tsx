@@ -11,7 +11,7 @@ export default function LoginPage() {
         <meta property="og:title" content="Login - Pixel social media" />
         <meta property="og:description" content="Login to access your dashboard and manage your account." />
         <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://yourdomain.com/login" />
+        <meta property="og:url" content="https://pixel.ahmadfiqrioemry/login" />
       </Helmet>
 
       <div className="flex items-center justify-center min-h-screen container mx-auto">

@@ -4,9 +4,10 @@ import { MoreHorizontal } from "lucide-react";
 import type { Post } from "@/types/posts.type";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/stores/auth.store";
-import { useSavePost, useUnsavePost } from "@/features/posts/posts.query";
+import { useDeletePost, useSavePost, useUnsavePost } from "@/features/posts/posts.query";
 import { useFollowUser, useUnfollowUser } from "@/features/users/users.query";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { usePostStore } from "@/stores/post.store";
 
 interface PostOptionMenuProps {
   post: Post;
@@ -18,6 +19,8 @@ export default function PostOptionMenu({ post }: PostOptionMenuProps) {
   const unsavePost = useUnsavePost(post.id);
   const unfollow = useUnfollowUser(post.user.id);
   const follow = useFollowUser(post.user.id);
+  const deletePost = useDeletePost(post.id);
+  const { isOpen, target, openDialog } = usePostStore();
 
   function followUser() {
     const action = post.isFollowing ? unfollow : follow;
@@ -29,10 +32,21 @@ export default function PostOptionMenu({ post }: PostOptionMenuProps) {
     action.mutate();
   }
 
-  async function reportPost() {
+  async function handleReportPost() {
     toast.success("You reported this post");
     // TODO: Implement report post API call
   }
+
+  async function handleDeletePost() {
+    deletePost.mutateAsync();
+    if (isOpen && target === post.id) openDialog({ isOpen: false, target: "" });
+  }
+
+  async function handleEditPost() {
+    toast.success("You edited this post");
+    // TODO: Implement edit post API call
+  }
+
   return (
     <div className="flex items-center gap-2">
       {user?.id !== post.user.id && (
@@ -58,8 +72,11 @@ export default function PostOptionMenu({ post }: PostOptionMenuProps) {
               <DropdownMenuItem className={`${post.isFollowing ? "text-destructive" : "text-blue-500"} cursor-pointer`}>{post.isFollowing ? "Unfollow" : "Follow"}</DropdownMenuItem>
             </button>
           )}
-          <button className="w-full" onClick={reportPost}>
-            <DropdownMenuItem className="cursor-pointer text-red-500">Report</DropdownMenuItem>
+          <button className="w-full" onClick={handleEditPost}>
+            <DropdownMenuItem className={`${post.isEditable ? "text-destructive" : "text-blue-500"} cursor-pointer`}>{post.isEditable ? "Edit" : "View"}</DropdownMenuItem>
+          </button>
+          <button className="w-full" onClick={post.isEditable ? handleDeletePost : handleReportPost}>
+            <DropdownMenuItem className={`${post.isEditable ? "text-destructive" : "text-destructive"} cursor-pointer`}>{post.isEditable ? "Delete" : "Report"}</DropdownMenuItem>
           </button>
           <DropdownMenuItem className="cursor-pointer">Cancel</DropdownMenuItem>
         </DropdownMenuContent>

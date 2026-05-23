@@ -16,7 +16,6 @@ interface FeedPostCardProps {
 export default function FeedPostCard({ post }: FeedPostCardProps) {
   const likePost = useLikePost(post.id);
   const unlikePost = useUnlikePost(post.id);
-  const [dialogOpen, setDialogOpen] = useState(false);
   const [captionExpanded, setCaptionExpanded] = useState(false);
 
   function handleLike() {
@@ -41,9 +40,9 @@ export default function FeedPostCard({ post }: FeedPostCardProps) {
           </div>
         )}
 
-        <PostActions post={post} onCommentClick={() => setDialogOpen(true)} />
+        <PostActions post={post} />
 
-        <PostActionCounts post={post} onCommentClick={() => setDialogOpen(true)} />
+        <PostActionCounts post={post} />
 
         {caption && (
           <p className="px-4 pb-1 text-sm leading-relaxed">
@@ -69,7 +68,7 @@ export default function FeedPostCard({ post }: FeedPostCardProps) {
         </div> */}
       </article>
 
-      <PostDetailDialog open={dialogOpen} onOpenChange={setDialogOpen} post={post} />
+      <PostDetailDialog post={post} />
     </>
   );
 }

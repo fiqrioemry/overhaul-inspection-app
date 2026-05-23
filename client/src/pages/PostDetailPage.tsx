@@ -1,15 +1,17 @@
-import { usePostById } from "@/features/posts/posts.query";
-import PostDetailCard from "@/features/posts/components/PostDetailCard";
-import { useParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
+import { useParams } from "react-router-dom";
+import { usePostById } from "@/features/posts/posts.query";
+import PostNotFound from "@/features/posts/components/PostNotFound";
+import PostDetailCard from "@/features/posts/components/PostDetailCard";
+import PostDetailSkeleton from "@/features/posts/components/PostDetailSkeleton";
 
 export default function PostDetailPage() {
   const postId = useParams().postId;
   const { data: post, isLoading } = usePostById(postId ?? "");
 
-  if (isLoading) return <div>Loading...</div>;
+  if (isLoading) return <PostDetailSkeleton />;
 
-  if (!postId || !post?.data) return <div>Post not found</div>;
+  if (!postId || !post?.data) return <PostNotFound />;
 
   return (
     <>
