@@ -4,6 +4,7 @@ import { Separator } from "@/components/ui/separator";
 import { useUserProfile } from "@/features/users/users.query";
 import ProfileHeader from "@/features/users/components/ProfileHeader";
 import ProfilePostsTab from "@/features/users/components/ProfilePostsTab";
+import { Helmet } from "react-helmet-async";
 
 export default function ProfilePage() {
   const { username } = useParams<{ username: string }>();
@@ -27,10 +28,21 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
-      <ProfileHeader profile={profile} refetchProfile={refetch} />
-      <Separator />
-      <ProfilePostsTab userId={profile.id} isOwner={profile.isOwner} />
-    </div>
+    <>
+      <Helmet>
+        <title>Profile - Pixel social media</title>
+        <meta name="description" content="View the profile of a specific user on Pixel social media." />
+        <meta name="keywords" content="profile, social media, user" />
+        <meta property="og:title" content="Profile - Pixel social media" />
+        <meta property="og:description" content="View the profile of a specific user on Pixel social media." />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content={`https://pixel.ahmadfiqrioemry.com/users/${username}`} />
+      </Helmet>
+      <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
+        <ProfileHeader profile={profile} refetchProfile={refetch} />
+        <Separator />
+        <ProfilePostsTab userId={profile.id} isOwner={profile.isOwner} />
+      </div>
+    </>
   );
 }

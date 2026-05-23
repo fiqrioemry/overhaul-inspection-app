@@ -1,10 +1,10 @@
 import { useEffect } from "react";
+import { Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/stores/auth.store";
 import { fetchMe } from "@/features/auth/auth.api";
+import { useQueryClient } from "@tanstack/react-query";
 import { AUTH_KEYS } from "@/features/auth/auth.query";
-import { Loader2 } from "lucide-react";
 
 export default function OAuthCallbackPage() {
   const navigate = useNavigate();

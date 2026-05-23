@@ -11,6 +11,7 @@ import NotificationSearch from "@/features/notifications/components/Notification
 import NotificationTabList from "@/features/notifications/components/NotificationTabList";
 import { useInfiniteNotifications, useMarkAsRead, useDeleteNotification } from "@/features/notifications/notifications.query";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Helmet } from "react-helmet-async";
 
 type TabType = NotificationType | "";
 
@@ -104,73 +105,84 @@ export default function NotificationPage() {
   const confirmDescription = pendingDeleteIds.length === 1 ? "This notification will be permanently removed." : `These ${pendingDeleteIds.length} notifications will be permanently removed.`;
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-0 md:px-4 py-6 space-y-4">
-      {/* ── Header ── */}
-      <div className="flex items-start justify-between gap-2">
-        <div className="space-y-0.5">
-          <h1 className="text-xl font-semibold tracking-tight">Notifications</h1>
-          <p className="text-sm text-muted-foreground">Stay up to date with your activity.</p>
-        </div>
-        <Button variant="ghost" size="sm" onClick={toggleSelectMode} className="text-xs text-muted-foreground hover:text-foreground mt-0.5">
-          {isSelectMode ? "Cancel" : "Select"}
-        </Button>
-      </div>
-
-      <NotificationSearch value={search} onChange={setSearch} />
-
-      <NotificationTabList value={activeTab} onChange={setActiveTab} />
-
-      {isSelectMode && notifications.length > 0 && (
-        <div className="flex items-center justify-between gap-3 px-1">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <Checkbox checked={allSelected} onCheckedChange={toggleSelectAll} aria-label="Select all notifications" className="h-4 w-4" />
-            <span className="text-xs text-muted-foreground select-none">{allSelected ? "Deselect all" : "Select all"}</span>
-          </label>
-
-          <Button variant="destructive" size="sm" disabled={!someSelected || isDeleting} onClick={() => requestDelete([...selectedIds])} className="h-7 text-xs gap-1.5">
-            <Trash2 size={12} />
-            {bulkDeleteLabel}
+    <>
+      <Helmet>
+        <title>Notifications - Pixel social media</title>
+        <meta name="description" content="Stay up to date with your activity on Pixel social media." />
+        <meta name="keywords" content="notifications, social media, activity" />
+        <meta property="og:title" content="Notifications - Pixel social media" />
+        <meta property="og:description" content="Stay up to date with your activity on Pixel social media." />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://pixel.ahmadfiqrioemry.com/notifications" />
+      </Helmet>
+      <div className="mx-auto w-full max-w-2xl px-0 md:px-4 py-6 space-y-4">
+        {/* ── Header ── */}
+        <div className="flex items-start justify-between gap-2">
+          <div className="space-y-0.5">
+            <h1 className="text-xl font-semibold tracking-tight">Notifications</h1>
+            <p className="text-sm text-muted-foreground">Stay up to date with your activity.</p>
+          </div>
+          <Button variant="ghost" size="sm" onClick={toggleSelectMode} className="text-xs text-muted-foreground hover:text-foreground mt-0.5">
+            {isSelectMode ? "Cancel" : "Select"}
           </Button>
         </div>
-      )}
 
-      {isError && <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">Failed to load notifications. Please try again.</div>}
+        <NotificationSearch value={search} onChange={setSearch} />
 
-      {!isError && (
-        <NotificationList
-          notifications={notifications}
-          isLoading={isLoading}
-          isFetchingNextPage={isFetchingNextPage}
-          hasNextPage={!!hasNextPage}
-          hasSearch={!!debouncedSearch || !!activeTab}
-          isSelectMode={isSelectMode}
-          selectedIds={selectedIds}
-          deletingIds={deletingIds}
-          onLoadMore={fetchNextPage}
-          onToggleSelect={toggleSelectItem}
-          onRequestDelete={(id) => requestDelete([id])}
-        />
-      )}
+        <NotificationTabList value={activeTab} onChange={setActiveTab} />
 
-      <AlertDialog
-        open={isConfirmOpen}
-        onOpenChange={(open) => {
-          if (!open) setPendingDeleteIds([]);
-        }}
-      >
-        <AlertDialogContent className="max-w-sm">
-          <AlertDialogHeader>
-            <AlertDialogTitle>{confirmTitle}</AlertDialogTitle>
-            <AlertDialogDescription>{confirmDescription}</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
+        {isSelectMode && notifications.length > 0 && (
+          <div className="flex items-center justify-between gap-3 px-1">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <Checkbox checked={allSelected} onCheckedChange={toggleSelectAll} aria-label="Select all notifications" className="h-4 w-4" />
+              <span className="text-xs text-muted-foreground select-none">{allSelected ? "Deselect all" : "Select all"}</span>
+            </label>
+
+            <Button variant="destructive" size="sm" disabled={!someSelected || isDeleting} onClick={() => requestDelete([...selectedIds])} className="h-7 text-xs gap-1.5">
+              <Trash2 size={12} />
+              {bulkDeleteLabel}
+            </Button>
+          </div>
+        )}
+
+        {isError && <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">Failed to load notifications. Please try again.</div>}
+
+        {!isError && (
+          <NotificationList
+            notifications={notifications}
+            isLoading={isLoading}
+            isFetchingNextPage={isFetchingNextPage}
+            hasNextPage={!!hasNextPage}
+            hasSearch={!!debouncedSearch || !!activeTab}
+            isSelectMode={isSelectMode}
+            selectedIds={selectedIds}
+            deletingIds={deletingIds}
+            onLoadMore={fetchNextPage}
+            onToggleSelect={toggleSelectItem}
+            onRequestDelete={(id) => requestDelete([id])}
+          />
+        )}
+
+        <AlertDialog
+          open={isConfirmOpen}
+          onOpenChange={(open) => {
+            if (!open) setPendingDeleteIds([]);
+          }}
+        >
+          <AlertDialogContent className="max-w-sm">
+            <AlertDialogHeader>
+              <AlertDialogTitle>{confirmTitle}</AlertDialogTitle>
+              <AlertDialogDescription>{confirmDescription}</AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+    </>
   );
 }

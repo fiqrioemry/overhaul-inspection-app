@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { verifyEmail } from "@/features/auth/auth.api";
 import { useSearchParams, Link } from "react-router-dom";
 import { CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { Helmet } from "react-helmet-async";
 
 export default function VerifyEmail() {
   const [searchParams] = useSearchParams();
@@ -52,13 +53,24 @@ export default function VerifyEmail() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center">
-      <div className="w-full max-w-sm rounded-2xl border bg-background p-8 shadow-sm text-center space-y-6">
-        {status === "loading" && <VerifyLoading />}
-        {status === "success" && <VerifySuccess />}
-        {status === "error" && <VerifyError />}
+    <>
+      <Helmet>
+        <title>Email Verification - Pixel social media</title>
+        <meta name="description" content="Verify your email on Pixel social media." />
+        <meta name="keywords" content="email verification, social media, user" />
+        <meta property="og:title" content="Email Verification - Pixel social media" />
+        <meta property="og:description" content="Verify your email on Pixel social media." />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content={`https://pixel.ahmadfiqrioemry.com/verify-email?token=${token}`} />
+      </Helmet>
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="w-full max-w-sm rounded-2xl border bg-background p-8 shadow-sm text-center space-y-6">
+          {status === "loading" && <VerifyLoading />}
+          {status === "success" && <VerifySuccess />}
+          {status === "error" && <VerifyError />}
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 
