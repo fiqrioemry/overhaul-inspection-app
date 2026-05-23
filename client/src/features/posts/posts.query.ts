@@ -1,7 +1,7 @@
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
-import type { CreatePostRequest, GetPublicPostsRequest, GetSavedPostsRequest, UpdatePostRequest } from "@/schemas/posts.schema";
-import { fetchPublicPosts, fetchFollowingPosts, fetchPostById, createPost, updatePost, deletePost, likePost, unlikePost, fetchPostsByUserId, fetchSavedPostsByUserId, savePost, unsavePost } from "./posts.api";
+import type { CreatePostRequest, GetPublicPostsRequest, GetSavedPostsRequest, ReportPostRequest, UpdatePostRequest } from "@/schemas/posts.schema";
+import { fetchPublicPosts, fetchFollowingPosts, fetchPostById, createPost, updatePost, deletePost, likePost, unlikePost, fetchPostsByUserId, fetchSavedPostsByUserId, savePost, unsavePost, reportPost } from "./posts.api";
 
 export const POST_KEYS = {
   all: ["posts"] as const,
@@ -29,10 +29,6 @@ export function useCreatePost() {
       toast.success(res.message || "Post created successfully!");
       queryClient.invalidateQueries({ queryKey: POST_KEYS.all });
     },
-    onError: (err) => {
-      console.log("Error creating post:", err);
-      toast.error(err.message);
-    },
   });
 }
 
@@ -44,9 +40,6 @@ export function useLikePost(postId: string) {
       toast.success(res.message || "You Liked the post");
       queryClient.invalidateQueries({ queryKey: POST_KEYS.all });
     },
-    onError: (err) => {
-      toast.error(err.message || "Error liking post");
-    },
   });
 }
 export function useUnlikePost(postId: string) {
@@ -56,9 +49,6 @@ export function useUnlikePost(postId: string) {
     onSuccess: (res) => {
       toast.success(res.message || "You Unliked the post");
       queryClient.invalidateQueries({ queryKey: POST_KEYS.all });
-    },
-    onError: (err) => {
-      toast.error(err.message || "Error unliking post");
     },
   });
 }
@@ -153,9 +143,6 @@ export function useUnsavePost(postId: string) {
       toast.success(res.message || "You Unsaved the post");
       queryClient.invalidateQueries({ queryKey: POST_KEYS.all });
     },
-    onError: (err) => {
-      toast.error(err.message || "Error saving post");
-    },
   });
 }
 
@@ -167,8 +154,16 @@ export function useSavePost(postId: string) {
       toast.success(res.message || "You Saved the post");
       queryClient.invalidateQueries({ queryKey: POST_KEYS.all });
     },
-    onError: (err) => {
-      toast.error(err.message || "Error saving post");
+  });
+}
+
+export function useReportPost(postId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: ReportPostRequest) => reportPost(postId, payload),
+    onSuccess: (res) => {
+      toast.success(res.message || "You reported the post");
+      queryClient.invalidateQueries({ queryKey: POST_KEYS.all });
     },
   });
 }

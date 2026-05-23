@@ -42,7 +42,7 @@ export default function PostDetailCard({ post }: PostDetailCardProps) {
           <PostHeading post={post} />
 
           {/* comment list section */}
-          <CommentList post={post} setReplyTo={setReplyTo} />
+          <CommentList post={post} />
 
           {/* Actions */}
           <div className="border-t shrink-0">

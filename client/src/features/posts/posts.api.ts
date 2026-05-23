@@ -3,7 +3,7 @@ import api from "@/lib/axios";
 import type { Post } from "@/types/posts.type";
 import { POST_ENDPOINTS } from "@/constants/posts.constant";
 import type { ResponseOK, ResponseSuccess } from "@/types/response.type";
-import type { CreatePostRequest, GetPublicPostsRequest, GetSavedPostsRequest, UpdatePostRequest } from "@/schemas/posts.schema";
+import type { CreatePostRequest, GetPublicPostsRequest, GetSavedPostsRequest, ReportPostRequest, UpdatePostRequest } from "@/schemas/posts.schema";
 
 export async function fetchPublicPosts(query: GetPublicPostsRequest) {
   const queryString = qs.stringify(query, { skipNulls: true });
@@ -77,5 +77,10 @@ export async function savePost(postId: string): Promise<ResponseOK> {
 
 export async function unsavePost(postId: string): Promise<ResponseOK> {
   const res = await api.post(POST_ENDPOINTS.unsavePost.replace(":postId", postId));
+  return res.data;
+}
+
+export async function reportPost(postId: string, payload: ReportPostRequest): Promise<ResponseOK> {
+  const res = await api.post(POST_ENDPOINTS.reportPost.replace(":postId", postId), payload);
   return res.data;
 }

@@ -1,3 +1,4 @@
+// src/features/posts/components/CreatePostForm.tsx
 import { toast } from "sonner";
 import { X } from "lucide-react";
 import { useState } from "react";
@@ -59,7 +60,7 @@ export default function CreatePostForm({ onSuccess, onClose, onHasImagesChange, 
   return (
     <FormProvider {...methods}>
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
         <div className="flex items-center gap-3">
           {step === "detail" && (
             <button type="button" onClick={() => setStep("upload")} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
@@ -85,14 +86,33 @@ export default function CreatePostForm({ onSuccess, onClose, onHasImagesChange, 
         </div>
       </div>
 
-      {/* Body: split or single */}
-      <div className="flex h-full overflow-hidden">
+      {/* Body */}
+      <div className={`flex overflow-hidden ${showSplitLayout ? "flex-col xl:flex-row flex-1" : "flex-1"}`}>
+        {/* Image panel */}
         {showSplitLayout && (
-          <div className="flex-1 min-w-0 bg-black flex items-center justify-center">
+          <div
+            className={[
+              // Mobile: image di atas, tinggi compact
+              "w-full bg-black flex items-center justify-center shrink-0",
+              "h-56 sm:h-72",
+              // xl: kembali ke split kiri-kanan
+              "xl:h-auto xl:w-auto xl:flex-1 xl:min-w-0",
+            ].join(" ")}
+          >
             <ImageCarouselPanel previews={previews} />
           </div>
         )}
-        <div className={showSplitLayout ? "w-80 xl:w-96 shrink-0 flex flex-col overflow-y-auto border-l border-border" : "flex-1 flex flex-col overflow-y-auto"}>
+
+        {/* Form panel */}
+        <div
+          className={[
+            showSplitLayout
+              ? // Ada gambar: form di bawah (mobile) atau kanan (xl)
+                "w-full flex flex-col overflow-y-auto border-t border-border xl:border-t-0 xl:border-l xl:w-80 xl:shrink-0 xl:max-w-none"
+              : // Tidak ada gambar: form full width
+                "flex-1 flex flex-col overflow-y-auto",
+          ].join(" ")}
+        >
           <div className="p-5 flex-1">{step === "upload" ? <ImageUploadStep previews={previews} onChange={handlePreviewChange} /> : <PostDetailStep />}</div>
         </div>
       </div>

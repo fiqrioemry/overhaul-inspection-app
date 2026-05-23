@@ -52,3 +52,22 @@ export const getSavedPostsRequest = z.object({
 });
 
 export type GetSavedPostsRequest = z.infer<typeof getSavedPostsRequest>;
+
+const PostReportReason = z.enum(["SPAM", "NUDITY", "MISSINFORMATION", "INAPPROPRIATE", "HARASSMENT", "OTHER"]);
+
+export const reportPostRequest = z
+  .object({
+    reason: PostReportReason,
+    description: z.string().max(1000).optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.reason === PostReportReason.enum.OTHER && !data.description?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["description"],
+        message: "Description is required when reason is OTHER.",
+      });
+    }
+  });
+
+export type ReportPostRequest = z.infer<typeof reportPostRequest>;

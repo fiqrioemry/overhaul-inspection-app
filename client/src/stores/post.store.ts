@@ -9,8 +9,11 @@ interface PostStore {
 
   // Edit post
   editTarget: string;
+  reportTarget: string;
   isEditOpen: boolean;
+  isReportOpen: boolean;
   openEditDialog: (payload: { isEditOpen: boolean; editTarget: string }) => void;
+  openReportDialog: (payload: { isReportOpen: boolean; reportTarget: string }) => void;
 
   onReply: (payload: ReplyTo | null) => void;
   replyTo: ReplyTo | null;
@@ -24,7 +27,10 @@ export const usePostStore = create<PostStore>((set) => ({
   // Edit post
   editTarget: "",
   isEditOpen: false,
+  isReportOpen: false,
+  reportTarget: "",
   openEditDialog: ({ isEditOpen, editTarget }) => set({ isEditOpen, editTarget }),
+  openReportDialog: ({ isReportOpen, reportTarget }) => set({ isReportOpen, reportTarget }),
   replyTo: null,
   onReply: (payload: ReplyTo | null) => set({ replyTo: payload }),
 }));

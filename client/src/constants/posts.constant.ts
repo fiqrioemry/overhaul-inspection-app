@@ -4,6 +4,7 @@ export const POST_ENDPOINTS = {
   getUserPosts: "/posts/:userId/user",
   getUserSavedPosts: "/posts/saved",
   getPostDetails: "/posts/:postId",
+  reportPost: "/posts/:postId/report",
   createPost: "/posts",
   updatePost: "/posts/:postId",
   likePost: "/posts/:postId/like",

@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { cn } from "@/lib/utils";
+import { useState } from "react";
 import type { Post } from "@/types/posts.type";
 import { usePostStore } from "@/stores/post.store";
 import { Heart, MessageCircle, Bookmark, Send, Check } from "lucide-react";
-import { useState } from "react";
 import { useLikePost, useSavePost, useUnlikePost, useUnsavePost } from "@/features/posts/posts.query";
 
 interface PostActionsProps {

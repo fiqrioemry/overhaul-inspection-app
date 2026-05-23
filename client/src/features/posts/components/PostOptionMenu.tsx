@@ -1,14 +1,15 @@
-import { toast } from "sonner";
+// src/features/posts/components/PostOptionMenu.tsx
 import { Link } from "react-router-dom";
 import { MoreHorizontal } from "lucide-react";
 import type { Post } from "@/types/posts.type";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/stores/auth.store";
-import { useDeletePost, useSavePost, useUnsavePost } from "@/features/posts/posts.query";
-import { useFollowUser, useUnfollowUser } from "@/features/users/users.query";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { usePostStore } from "@/stores/post.store";
-import EditPostDialog from "./EditPostDialog";
+import EditPostDialog from "@/features/posts/components/EditPostDialog";
+import ReportPostDialog from "@/features/posts/components/ReportPostDialog";
+import { useFollowUser, useUnfollowUser } from "@/features/users/users.query";
+import { useDeletePost, useSavePost, useUnsavePost } from "@/features/posts/posts.query";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 interface PostOptionMenuProps {
   post: Post;
@@ -22,7 +23,9 @@ export default function PostOptionMenu({ post }: PostOptionMenuProps) {
   const follow = useFollowUser(post.user.id);
   const deletePost = useDeletePost(post.id);
 
-  const { isOpen, target, openDialog, openEditDialog } = usePostStore();
+  const { isOpen, target, openDialog, openEditDialog, openReportDialog } = usePostStore();
+
+  const isOwnPost = user?.id === post.user.id;
 
   function followUser() {
     const action = post.isFollowing ? unfollow : follow;
@@ -32,11 +35,6 @@ export default function PostOptionMenu({ post }: PostOptionMenuProps) {
   async function handleSavePost() {
     const action = post.isSaved ? unsavePost : savePost;
     action.mutate();
-  }
-
-  async function handleReportPost() {
-    toast.success("You reported this post");
-    // TODO: Implement report post API call
   }
 
   async function handleDeletePost() {
@@ -50,39 +48,61 @@ export default function PostOptionMenu({ post }: PostOptionMenuProps) {
     }
   }
 
+  async function handleReportPost() {
+    openReportDialog({ isReportOpen: true, reportTarget: post.id });
+  }
+
   return (
     <div className="flex items-center gap-2">
       <EditPostDialog post={post} />
-      {user?.id !== post.user.id && (
+
+      {!isOwnPost && !post.isReported && <ReportPostDialog post={post} />}
+
+      {!isOwnPost && (
         <Button variant="outline" size="sm" onClick={followUser}>
           {post.isFollowing ? "Unfollow" : "Follow"}
         </Button>
       )}
+
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button className="rounded-full p-1 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors" aria-label="Post options">
             <MoreHorizontal className="h-5 w-5" />
           </button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-40">
+        <DropdownMenuContent align="end" className="w-44">
           <Link to={`/p/${post.id}`} className="block w-full">
             <DropdownMenuItem className="cursor-pointer">Go to post</DropdownMenuItem>
           </Link>
-          <button className="w-full" onClick={handleSavePost}>
-            <DropdownMenuItem className={`${post.isSaved ? "text-destructive" : "text-blue-500"} cursor-pointer`}>{post.isSaved ? "Unsave" : "Save"}</DropdownMenuItem>
-          </button>
-          {user?.id !== post.user.id && (
-            <button className="w-full" onClick={followUser}>
-              <DropdownMenuItem className={`${post.isFollowing ? "text-destructive" : "text-blue-500"} cursor-pointer`}>{post.isFollowing ? "Unfollow" : "Follow"}</DropdownMenuItem>
-            </button>
+
+          <DropdownMenuSeparator />
+
+          <DropdownMenuItem className={`cursor-pointer ${post.isSaved ? "text-destructive" : "text-blue-500"}`} onClick={handleSavePost}>
+            {post.isSaved ? "Unsave" : "Save"}
+          </DropdownMenuItem>
+
+          {!isOwnPost && (
+            <DropdownMenuItem className={`cursor-pointer ${post.isFollowing ? "text-destructive" : "text-blue-500"}`} onClick={followUser}>
+              {post.isFollowing ? "Unfollow" : "Follow"}
+            </DropdownMenuItem>
           )}
-          <button className="w-full" onClick={handleEditPost}>
-            <DropdownMenuItem className={`${post.isEditable ? "text-destructive" : "text-blue-500"} cursor-pointer`}>{post.isEditable ? "Edit" : "View"}</DropdownMenuItem>
-          </button>
-          <button className="w-full" onClick={post.isEditable ? handleDeletePost : handleReportPost}>
-            <DropdownMenuItem className={`${post.isEditable ? "text-destructive" : "text-destructive"} cursor-pointer`}>{post.isEditable ? "Delete" : "Report"}</DropdownMenuItem>
-          </button>
-          <DropdownMenuItem className="cursor-pointer">Cancel</DropdownMenuItem>
+
+          <DropdownMenuSeparator />
+
+          {isOwnPost ? (
+            <>
+              <DropdownMenuItem className="cursor-pointer text-blue-500" onClick={handleEditPost}>
+                Edit post
+              </DropdownMenuItem>
+              <DropdownMenuItem className="cursor-pointer text-destructive focus:text-destructive" onClick={handleDeletePost}>
+                Delete post
+              </DropdownMenuItem>
+            </>
+          ) : (
+            <DropdownMenuItem className={post.isReported ? "text-green-500 " : "cursor-pointer text-destructive focus:text-destructive"} onClick={handleReportPost}>
+              {post.isReported ? "Report submitted" : "Report post"}
+            </DropdownMenuItem>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
     </div>

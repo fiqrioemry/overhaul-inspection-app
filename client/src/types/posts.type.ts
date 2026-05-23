@@ -45,4 +45,5 @@ export interface Post {
   isEditable: boolean;
   isFollowing: boolean;
   isSaved: boolean;
+  isReported: boolean;
 }
