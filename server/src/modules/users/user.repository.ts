@@ -87,7 +87,9 @@ export class UserRepository {
           select: {
             followers: true,
             following: true,
-            posts: true,
+            posts: {
+              where: { deletedAt: null },
+            },
           },
         },
       },

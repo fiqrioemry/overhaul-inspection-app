@@ -73,9 +73,9 @@ type profileResponse = {
   joinedAt: Date;
   isPublic: boolean;
   isOwner?: boolean;
-  followers: number;
-  followings: number;
-  posts: number;
+  totalFollowers: number;
+  totalFollowings: number;
+  totalPosts: number;
   isFollowing: boolean;
 };
 

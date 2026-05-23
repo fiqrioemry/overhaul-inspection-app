@@ -87,9 +87,9 @@ export class UserService {
       joinedAt: user.createdAt,
       isPublic: user.isPublic,
       isOwner: currentUserId === user.id,
-      followers: user._count?.followers,
-      followings: user._count?.following,
-      posts: user._count?.posts,
+      totalPosts: user._count?.posts,
+      totalFollowers: user._count?.followers,
+      totalFollowings: user._count?.following,
       isFollowing: currentUserId !== user.id && user.followers && user.followers.length > 0,
     };
   }
