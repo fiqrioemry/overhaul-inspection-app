@@ -3,25 +3,22 @@ import { useRef } from "react";
 import { Loader2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import type { Post } from "@/types/posts.type";
+import { usePostStore } from "@/stores/post.store";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useComments } from "@/features/comments/comments.query";
 import CommentItem from "@/features/comments/components/CommentItem";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-interface ReplyTo {
-  commentId: string;
-  username: string;
-}
-
-export default function CommentList({ post, setReplyTo }: { post: Post; setReplyTo: React.Dispatch<React.SetStateAction<ReplyTo | null>> }) {
+export default function CommentList({ post }: { post: Post }) {
   const commentsEndRef = useRef<HTMLDivElement>(null);
+  const { onReply } = usePostStore();
 
   const { data, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage } = useComments({ postId: post.id, limit: 3 });
 
   const allComments = data?.pages.flatMap((page) => page.data) ?? [];
 
   const handleReply = (commentId: string, username: string) => {
-    setReplyTo({ commentId, username });
+    onReply?.({ commentId, username });
   };
 
   const createdAt = post.createdAt ? formatDistanceToNow(new Date(post.createdAt), { addSuffix: true }) : "";

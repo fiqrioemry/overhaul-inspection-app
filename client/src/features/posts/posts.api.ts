@@ -39,7 +39,7 @@ export async function createPost(payload: CreatePostRequest): Promise<ResponseSu
   return res.data;
 }
 
-export async function updatePost(postId: string, payload: UpdatePostRequest): Promise<Post> {
+export async function updatePost(postId: string, payload: UpdatePostRequest): Promise<ResponseOK> {
   const res = await api.put(POST_ENDPOINTS.updatePost.replace(":postId", postId), payload);
   return res.data;
 }

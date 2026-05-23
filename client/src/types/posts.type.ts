@@ -1,3 +1,8 @@
+export interface ReplyTo {
+  commentId: string;
+  username: string;
+}
+
 export interface PostUser {
   id: string;
   name: string;
@@ -30,6 +35,7 @@ export interface PostDetail extends Post {
 export interface Post {
   id: string;
   user: PostUser;
+  title: string;
   content: string;
   createdAt: string;
   galleries: PostGallery[];

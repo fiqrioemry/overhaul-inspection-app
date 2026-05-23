@@ -1,5 +1,4 @@
 // src/features/posts/components/PostDetailDialog.tsx
-import { useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import type { Post } from "@/types/posts.type";
 import { usePostStore } from "@/stores/post.store";
@@ -14,23 +13,17 @@ interface PostDetailDialogProps {
   post: Post;
 }
 
-interface ReplyTo {
-  commentId: string;
-  username: string;
-}
-
 export default function PostDetailDialog({ post }: PostDetailDialogProps) {
-  const [replyTo, setReplyTo] = useState<ReplyTo | null>(null);
-  const { isOpen, target, openDialog } = usePostStore();
+  const { isOpen, target, openDialog, replyTo, onReply } = usePostStore();
 
   // Reset reply state when dialog closes
   const handleOpenChange = (open: boolean) => {
-    if (!open) setReplyTo(null);
+    if (!open) onReply?.(null);
     openDialog({ isOpen: open, target: post.id });
   };
 
   const handleCancelReply = () => {
-    setReplyTo(null);
+    onReply?.(null);
   };
 
   const images = post.galleries ?? [];
@@ -51,7 +44,7 @@ export default function PostDetailDialog({ post }: PostDetailDialogProps) {
           <PostHeading post={post} />
 
           {/* comment list section */}
-          <CommentList post={post} setReplyTo={setReplyTo} />
+          <CommentList post={post} />
 
           {/* Actions */}
           <div className="border-t shrink-0">

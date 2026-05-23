@@ -67,7 +67,8 @@ export function useUpdatePost(postId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (payload: UpdatePostRequest) => updatePost(postId, payload),
-    onSuccess: () => {
+    onSuccess: (res) => {
+      toast.success(res.message || "You edited this post");
       queryClient.invalidateQueries({ queryKey: POST_KEYS.detail(postId) });
       queryClient.invalidateQueries({ queryKey: POST_KEYS.all });
     },
@@ -79,7 +80,7 @@ export function useDeletePost(postId: string) {
   return useMutation({
     mutationFn: () => deletePost(postId),
     onSuccess: (res) => {
-      toast.success(res.message);
+      toast.success(res.message || "You deleted this post");
       queryClient.invalidateQueries({ queryKey: POST_KEYS.detail(postId) });
       queryClient.invalidateQueries({ queryKey: POST_KEYS.all });
     },

@@ -8,6 +8,7 @@ import { useDeletePost, useSavePost, useUnsavePost } from "@/features/posts/post
 import { useFollowUser, useUnfollowUser } from "@/features/users/users.query";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { usePostStore } from "@/stores/post.store";
+import EditPostDialog from "./EditPostDialog";
 
 interface PostOptionMenuProps {
   post: Post;
@@ -20,7 +21,8 @@ export default function PostOptionMenu({ post }: PostOptionMenuProps) {
   const unfollow = useUnfollowUser(post.user.id);
   const follow = useFollowUser(post.user.id);
   const deletePost = useDeletePost(post.id);
-  const { isOpen, target, openDialog } = usePostStore();
+
+  const { isOpen, target, openDialog, openEditDialog } = usePostStore();
 
   function followUser() {
     const action = post.isFollowing ? unfollow : follow;
@@ -43,12 +45,14 @@ export default function PostOptionMenu({ post }: PostOptionMenuProps) {
   }
 
   async function handleEditPost() {
-    toast.success("You edited this post");
-    // TODO: Implement edit post API call
+    if (post.isEditable) {
+      openEditDialog({ isEditOpen: true, editTarget: post.id });
+    }
   }
 
   return (
     <div className="flex items-center gap-2">
+      <EditPostDialog post={post} />
       {user?.id !== post.user.id && (
         <Button variant="outline" size="sm" onClick={followUser}>
           {post.isFollowing ? "Unfollow" : "Follow"}

@@ -10,9 +10,11 @@ type LongTextFieldProps<T extends FieldValues> = {
   placeholder?: string;
   description?: string;
   rows?: number;
+  maxLength?: number;
+  className?: string;
 };
 
-export default function LongTextField<T extends FieldValues>({ control, name, label, placeholder, description, rows = 4 }: LongTextFieldProps<T>) {
+export default function LongTextField<T extends FieldValues>({ control, name, label, className, placeholder, description, rows = 4, maxLength }: LongTextFieldProps<T>) {
   return (
     <Controller
       control={control}
@@ -21,8 +23,15 @@ export default function LongTextField<T extends FieldValues>({ control, name, la
         <Field data-invalid={!!fieldState.error}>
           <FieldLabel htmlFor={name}>{label}</FieldLabel>
           {description && <FieldDescription>{description}</FieldDescription>}
-          <Textarea id={name} placeholder={placeholder} rows={rows} {...field} />
-          <FieldError errors={[fieldState.error]} />
+          <Textarea id={name} placeholder={placeholder} rows={rows} maxLength={maxLength} className={className} {...field} />
+          <div className="flex items-start justify-between gap-2">
+            <FieldError errors={[fieldState.error]} />
+            {maxLength && (
+              <span className={`text-xs shrink-0 ml-auto tabular-nums ${(field.value?.length ?? 0) >= maxLength ? "text-destructive" : "text-muted-foreground"}`}>
+                {field.value?.length ?? 0} / {maxLength}
+              </span>
+            )}
+          </div>
         </Field>
       )}
     />

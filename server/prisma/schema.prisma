@@ -144,7 +144,7 @@ model Post {
   deletedAt DateTime? @map("deleted_at")
 
   user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  comments   Comment[]
+  comments   Comment[]    
   bookmarks  Bookmark[]
   galleries  PostGallery[]
   likes      Like[]

@@ -10,7 +10,7 @@ export const imageFileSchema = z
 
 export const createPostRequest = z.object({
   title: z.string().min(1, "Title is required"),
-  content: z.string().min(10, "Content is required min 10 characters"),
+  content: z.string().min(10, "Content is required min 10 characters").max(2000, "Content must be less than 5000 characters"),
   galleries: z.array(imageFileSchema).min(1, "At least one image is required").max(10, "Maximum 10 images"),
 });
 
@@ -18,7 +18,7 @@ export type CreatePostRequest = z.infer<typeof createPostRequest>;
 
 export const updatePostRequest = z.object({
   title: z.string().min(1, "Title is required"),
-  content: z.string().min(10, "Content is required min 10 characters"),
+  content: z.string().min(10, "Content is required min 10 characters").max(2000, "Content must be less than 5000 characters"),
 });
 
 export type UpdatePostRequest = z.infer<typeof updatePostRequest>;

@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-// src/features/posts/components/PostActions.tsx
 import { cn } from "@/lib/utils";
 import type { Post } from "@/types/posts.type";
-import { Heart, MessageCircle, Bookmark } from "lucide-react";
-import { useLikePost, useSavePost, useUnlikePost, useUnsavePost } from "@/features/posts/posts.query";
 import { usePostStore } from "@/stores/post.store";
+import { Heart, MessageCircle, Bookmark, Send, Check } from "lucide-react";
+import { useState } from "react";
+import { useLikePost, useSavePost, useUnlikePost, useUnsavePost } from "@/features/posts/posts.query";
 
 interface PostActionsProps {
   post: Post;
@@ -12,6 +12,7 @@ interface PostActionsProps {
 }
 
 export default function PostActions({ post }: PostActionsProps) {
+  const [copied, setCopied] = useState(false);
   const savePost = useSavePost(post.id);
   const unsavePost = useUnsavePost(post.id);
   const likePost = useLikePost(post.id);
@@ -33,8 +34,36 @@ export default function PostActions({ post }: PostActionsProps) {
   const isPending = likePost.isPending || unlikePost.isPending;
 
   const handleComment = () => {
-    openDialog({ isOpen: !isOpen, target: post.id });
+    if (!isOpen) openDialog({ isOpen: true, target: post.id });
   };
+
+  async function handleShare() {
+    const shareUrl = `${window.location.origin}/posts/${post.id}`;
+
+    try {
+      // native mobile/web share
+      if (navigator.share) {
+        await navigator.share({
+          title: "Check this post",
+          text: post.content ?? "View this post",
+          url: shareUrl,
+        });
+
+        return;
+      }
+
+      // fallback copy link
+      await navigator.clipboard.writeText(shareUrl);
+
+      setCopied(true);
+
+      setTimeout(() => {
+        setCopied(false);
+      }, 2000);
+    } catch (error) {
+      console.error(error);
+    }
+  }
 
   return (
     <div className="flex items-center justify-between px-4 py-2">
@@ -55,16 +84,19 @@ export default function PostActions({ post }: PostActionsProps) {
 
         {/* Comment */}
         <div className="flex items-center gap-2">
-          <button onClick={handleComment} className="group flex items-center gap-1 transition-transform active:scale-90" aria-label="View comments">
+          <button disabled={isOpen} onClick={handleComment} className="group flex items-center gap-1 transition-transform active:scale-90" aria-label="View comments">
             <MessageCircle className="h-6 w-6 text-foreground group-hover:text-muted-foreground transition-colors" />
           </button>
           <span>{post.totalComments ?? 0}</span>
         </div>
 
-        {/* Share button*/}
-        {/* <button className="group flex items-center gap-1 transition-transform active:scale-90" aria-label="Share post">
-          <Send className="h-6 w-6 text-foreground group-hover:text-muted-foreground transition-colors" />
-        </button> */}
+        <div className="flex items-center gap-2">
+          <button onClick={handleShare} className="group flex items-center gap-1 transition-transform active:scale-90" aria-label="Share post">
+            {copied ? <Check className="h-6 w-6 text-green-500 transition-all animate-in zoom-in-50" /> : <Send className="h-6 w-6 text-foreground group-hover:text-muted-foreground transition-colors" />}
+          </button>
+
+          {copied && <span className="text-xs text-green-500 animate-in fade-in">Copied</span>}
+        </div>
       </div>
 
       {/* right bookmark */}
@@ -77,6 +109,7 @@ export default function PostActions({ post }: PostActionsProps) {
 
 interface PostActionCountsProps {
   post: Post;
+  commentRef?: React.RefObject<HTMLTextAreaElement | null>;
 }
 
 export function PostActionCounts({ post }: PostActionCountsProps) {
@@ -88,7 +121,7 @@ export function PostActionCounts({ post }: PostActionCountsProps) {
 
   return (
     <div className="flex flex-col gap-0.5 px-4 pb-1">
-      {commentsCount > 0 && (
+      {commentsCount > 0 && !isOpen && (
         <button onClick={handleComment} className="text-sm text-muted-foreground hover:text-foreground transition-colors text-left">
           View all {commentsCount.toLocaleString()} {commentsCount === 1 ? "comment" : "comments"}
         </button>
