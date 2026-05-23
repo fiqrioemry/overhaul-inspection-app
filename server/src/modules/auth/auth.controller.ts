@@ -1,9 +1,9 @@
 import { Context } from "hono";
 import { AuthService } from "@/modules/auth/auth.service";
 import { responseCreated, responseOK } from "@/utils/response";
+import { databaseConfig, OAuthProviderKey } from "@/config/env";
 import { authSuccessMessage } from "@/config/constant/auth.constant";
 import { changePasswordRequest, forgotPasswordRequest, loginRequest, registerRequest, resendVerificationEmailRequest, resetPasswordRequest } from "@/modules/auth/auth.schema";
-import { databaseConfig, OAuthProviderKey } from "@/config/env";
 
 export class AuthController {
   static async register(c: Context) {
@@ -14,7 +14,6 @@ export class AuthController {
 
   static async verifyEmail(c: Context) {
     const token = c.req.query("token") || "";
-    console.log("Verification token:", token);
     await AuthService.verifyEmail(c, token);
     return responseOK(c, authSuccessMessage.EMAIL_VERIFICATION_SUCCESS);
   }
