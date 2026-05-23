@@ -36,7 +36,7 @@ export default function MobileBottomNav() {
         window.location.href = "/login";
       }
     } catch {
-      toast.error("Gagal logout, coba lagi.");
+      toast.error("Failed to logout. Please try again.");
     } finally {
       setIsLoggingOut(false);
     }

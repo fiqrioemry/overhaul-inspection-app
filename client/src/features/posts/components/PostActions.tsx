@@ -16,7 +16,7 @@ export default function PostActions({ post }: PostActionsProps) {
   const unsavePost = useUnsavePost(post.id);
   const likePost = useLikePost(post.id);
   const unlikePost = useUnlikePost(post.id);
-  const { isOpen, target, openDialog } = usePostStore();
+  const { isOpen, openDialog } = usePostStore();
 
   const isLiked = post.isLiked ?? false;
 
