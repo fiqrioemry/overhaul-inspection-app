@@ -35,7 +35,7 @@ export default function ProfileHeader({ profile, refetchProfile }: ProfileHeader
 
             {/* Stats — hidden on mobile, shown on sm+ */}
             <div className="hidden sm:block">
-              <ProfileStats posts={profile.posts} followers={profile.followers} following={profile.followings} onFollowersClick={() => setOpenDialog("followers")} onFollowingClick={() => setOpenDialog("following")} />
+              <ProfileStats posts={profile.totalPosts} followers={profile.totalFollowers} following={profile.totalFollowings} onFollowersClick={() => setOpenDialog("followers")} onFollowingClick={() => setOpenDialog("following")} />
             </div>
 
             {/* Bio */}
@@ -46,7 +46,7 @@ export default function ProfileHeader({ profile, refetchProfile }: ProfileHeader
         {/* Stats row — mobile only */}
         <div className="sm:hidden">
           <Separator className="mb-3" />
-          <ProfileStats posts={profile.posts} followers={profile.followers} following={profile.followings} onFollowersClick={() => setOpenDialog("followers")} onFollowingClick={() => setOpenDialog("following")} />
+          <ProfileStats posts={profile.totalPosts} followers={profile.totalFollowers} following={profile.totalFollowings} onFollowersClick={() => setOpenDialog("followers")} onFollowingClick={() => setOpenDialog("following")} />
         </div>
       </div>
 

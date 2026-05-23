@@ -11,9 +11,9 @@ export interface UserProfile {
   joinedAt: Date;
   isPublic: boolean;
   isOwner: boolean;
-  followers: number;
-  followings: number;
-  posts: number;
+  totalFollowers: number;
+  totalFollowings: number;
+  totalPosts: number;
   isFollowing: boolean;
 }
 
@@ -52,9 +52,9 @@ export interface UserAccount {
   lastChangePasswordAt: Date;
   isPublic: boolean;
   isOwner: boolean;
-  followers: number;
-  following: number;
-  posts: number;
+  totalFollowers: number;
+  totalFollowings: number;
+  totalPosts: number;
 }
 
 export interface Sessions {

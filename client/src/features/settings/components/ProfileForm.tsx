@@ -67,15 +67,20 @@ export default function ProfileForm() {
             <AvatarUploader />
           </div>
 
-          {/* Name */}
-          <ShortTextField control={control} name="name" label="Full Name" placeholder="Enter your full name" />
+          <div>
+            <label className="text-sm font-medium mb-2 block">Email</label>
+            <input type="text" value={user?.email || ""} disabled className="w-full px-3 py-2 text-sm border rounded-md bg-muted text-muted-foreground cursor-not-allowed" />
+            <p className="text-xs text-muted-foreground mt-1">Email cannot be changed</p>
+          </div>
 
-          {/* Username (Read-only) */}
           <div>
             <label className="text-sm font-medium mb-2 block">Username</label>
             <input type="text" value={user?.username || ""} disabled className="w-full px-3 py-2 text-sm border rounded-md bg-muted text-muted-foreground cursor-not-allowed" />
             <p className="text-xs text-muted-foreground mt-1">Username cannot be changed</p>
           </div>
+
+          {/* Name */}
+          <ShortTextField control={control} name="name" label="Full Name" placeholder="Enter your full name" />
 
           {/* Bio */}
           <LongTextField control={control} name="bio" label="Bio" placeholder="Tell us about yourself" description="Brief description for your profile. Max 160 characters" rows={3} />
