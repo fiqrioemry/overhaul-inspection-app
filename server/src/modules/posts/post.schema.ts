@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { PostReportReason } from "generated/prisma";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -53,3 +54,20 @@ export const getFollowingPostsRequest = z.object({
 });
 
 export type GetFollowingPostsRequest = z.infer<typeof getFollowingPostsRequest>;
+
+export const reportPostRequest = z
+  .object({
+    reason: z.nativeEnum(PostReportReason),
+    description: z.string().max(1000).optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.reason === PostReportReason.OTHER && !data.description?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["description"],
+        message: "Description is required when reason is OTHER.",
+      });
+    }
+  });
+
+export type ReportPostRequest = z.infer<typeof reportPostRequest>;

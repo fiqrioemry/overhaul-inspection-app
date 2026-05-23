@@ -10,6 +10,7 @@ const postSuccessMessage = {
   UNLIKE_POST_SUCCESS: "You unliked the post",
   BOOKMARK_POST_SUCCESS: "Post bookmarked successfully",
   UNBOOKMARK_POST_SUCCESS: "Post unbookmarked successfully",
+  REPORT_POST_SUCCESS: "Post reported successfully",
 };
 
 const postErrorMessage = {
@@ -20,6 +21,8 @@ const postErrorMessage = {
   UNAUTHORIZED: "Unauthorized to perform this action",
   ALREADY_LIKED_POST: "Post already liked by the user",
   ALREADY_UNLIKED_POST: "Post already unliked by the user",
+  ALREADY_REPORTED_POST: "You have already reported this post.",
+  DESCRIPTION_REQUIRED: "A description is required when reason is OTHER.",
 };
 
 const postErrorCode = {
@@ -30,6 +33,8 @@ const postErrorCode = {
   UNAUTHORIZED: "UNAUTHORIZED",
   ALREADY_LIKED_POST: "ALREADY_LIKED_POST",
   ALREADY_UNLIKED_POST: "ALREADY_UNLIKED_POST",
+  ALREADY_REPORTED_POST: "ALREADY_REPORTED_POST",
+  DESCRIPTION_REQUIRED: "DESCRIPTION_REQUIRED",
 };
 
 const postAction = {
@@ -38,7 +43,13 @@ const postAction = {
   DELETE_POST: "postDelete",
 };
 
+export const postReportThreshold = 20;
+
 const postLimit = {
+  REPORT_POST: {
+    limit: 30,
+    windowSec: 60,
+  },
   GET_SAVED_POSTS: {
     limit: 120,
     windowSec: 60,

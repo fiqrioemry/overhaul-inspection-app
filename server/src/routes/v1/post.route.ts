@@ -20,5 +20,6 @@ post.post("/:postId/unlike", protect, limitter(postLimit.UNLIKE_POST), ctrl.unli
 post.delete("/:postId", protect, limitter(postLimit.DELETE_POST), ctrl.deletePost);
 post.post("/:postId/save", protect, limitter(postLimit.SAVE_POST), ctrl.savePost);
 post.post("/:postId/unsave", protect, limitter(postLimit.UNSAVE_POST), ctrl.unsavePost);
+post.post("/:postId/report", protect, limitter(postLimit.REPORT_POST), ctrl.reportPost);
 
 export default post;

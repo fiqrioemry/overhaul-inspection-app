@@ -2,7 +2,7 @@ import { Context } from "hono";
 import { PostService } from "@/modules/posts/post.service";
 import { responseCreated, responseOK } from "@/utils/response";
 import { postSuccessMessage } from "@/config/constant/post.constant";
-import { createPostRequest, getFollowingPostsRequest, getPublicPostsRequest, getSavedPostsRequest, updatePostRequest } from "@/modules/posts/post.schema";
+import { createPostRequest, getFollowingPostsRequest, getPublicPostsRequest, getSavedPostsRequest, reportPostRequest, updatePostRequest } from "@/modules/posts/post.schema";
 
 export class PostController {
   static async createPost(c: Context) {
@@ -102,5 +102,13 @@ export class PostController {
     const postId = c.req.param("postId");
     await PostService.unsavePostFromBookmark(c, user.userId, postId);
     return responseOK(c, postSuccessMessage.UNBOOKMARK_POST_SUCCESS);
+  }
+
+  static async reportPost(c: Context) {
+    const user = c.get("user");
+    const postId = c.req.param("postId");
+    const request = reportPostRequest.parse(await c.req.json());
+    await PostService.reportPost(c, user.userId, postId, request);
+    return responseOK(c, postSuccessMessage.REPORT_POST_SUCCESS);
   }
 }

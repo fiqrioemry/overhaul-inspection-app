@@ -5,24 +5,20 @@ type userPostResponse = {
   avatar: string | null;
 };
 
-type postGalleryResponse = {
-  id: string;
-  url: string;
-};
-
 export type postResponse = {
   id: string;
-  user: userPostResponse;
   title: string;
   content: string;
+  user: { id: string; name: string; username: string; avatar: string | null };
   createdAt: Date;
-  galleries: postGalleryResponse[];
+  galleries: { id: string; url: string; order?: number }[];
   totalLikes: number;
   totalComments: number;
   isLiked: boolean;
   isEditable: boolean;
-  isFollowing?: boolean;
-  isSaved?: boolean;
+  isFollowing: boolean;
+  isSaved: boolean;
+  isReported: boolean;
 };
 
 type commentResponse = {

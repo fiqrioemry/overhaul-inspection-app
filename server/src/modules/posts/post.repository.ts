@@ -1,6 +1,7 @@
 import { Prisma } from "generated/prisma/edge";
 import { pgsql as database } from "@/lib/database";
-import { CreatePostRequest, GetFollowingPostsRequest, GetPublicPostsRequest, GetSavedPostsRequest, UpdatePostRequest } from "@/modules/posts/post.schema";
+import { postReportThreshold } from "@/config/constant/post.constant";
+import { CreatePostRequest, GetFollowingPostsRequest, GetPublicPostsRequest, GetSavedPostsRequest, ReportPostRequest, UpdatePostRequest } from "@/modules/posts/post.schema";
 
 export class PostRepository {
   static async createPost(tx: Prisma.TransactionClient, userId: string, request: CreatePostRequest) {
@@ -36,9 +37,16 @@ export class PostRepository {
           content: true,
           createdAt: true,
           userId: true,
+          postReports: {
+            where: { userId: query.userId }, // or userId param for detail
+            select: { id: true, userId: true },
+          },
           bookmarks: {
             where: {
               userId: query.userId,
+            },
+            select: {
+              id: true,
             },
           },
           user: {
@@ -121,9 +129,16 @@ export class PostRepository {
         createdAt: true,
         userId: true,
 
+        postReports: {
+          where: { userId },
+          select: { id: true },
+        },
         bookmarks: {
           where: {
             userId,
+          },
+          select: {
+            id: true,
           },
         },
         comments: {
@@ -237,9 +252,16 @@ export class PostRepository {
           content: true,
           createdAt: true,
           userId: true,
+          postReports: {
+            where: { userId: query.userId }, // or userId param for detail
+            select: { id: true, userId: true },
+          },
           bookmarks: {
             where: {
               userId: query.userId,
+            },
+            select: {
+              id: true,
             },
           },
           user: {
@@ -330,9 +352,16 @@ export class PostRepository {
           content: true,
           createdAt: true,
           userId: true,
+          postReports: {
+            where: { userId: query.userId },
+            select: { id: true, userId: true },
+          },
           bookmarks: {
             where: {
               userId: query.userId,
+            },
+            select: {
+              id: true,
             },
           },
           user: {
@@ -479,12 +508,24 @@ export class PostRepository {
               title: true,
               content: true,
               createdAt: true,
+              postReports: {
+                where: { userId: query.userId },
+                select: { id: true, userId: true },
+              },
               user: {
                 select: {
                   id: true,
                   name: true,
                   username: true,
                   avatar: true,
+                  followers: {
+                    where: {
+                      followerId: query.userId,
+                    },
+                    select: {
+                      followerId: true,
+                    },
+                  },
                 },
               },
               galleries: {
@@ -566,5 +607,42 @@ export class PostRepository {
         },
       },
     });
+  }
+
+  static async getReportByUserId(postId: string, userId: string) {
+    return await database.postReport.findUnique({
+      where: { userId_postId: { userId, postId } },
+    });
+  }
+  static async createReport(tx: Prisma.TransactionClient, userId: string, postId: string, request: ReportPostRequest) {
+    const db = tx ?? database;
+    return await db.postReport.create({
+      data: {
+        userId,
+        postId,
+        reason: request.reason,
+        description: request.description ?? null,
+      },
+    });
+  }
+
+  static async findPostsEligibleForTakedown(): Promise<string[]> {
+    const groups = await database.postReport.groupBy({
+      by: ["postId", "reason"],
+      _count: { id: true },
+      having: { id: { _count: { gte: postReportThreshold } } },
+    });
+
+    if (groups.length === 0) return [];
+
+    const postIds = [...new Set(groups.map((g) => g.postId))];
+
+    // Only return posts that are still live
+    const livePosts = await database.post.findMany({
+      where: { id: { in: postIds }, deletedAt: null },
+      select: { id: true },
+    });
+
+    return livePosts.map((p) => p.id);
   }
 }

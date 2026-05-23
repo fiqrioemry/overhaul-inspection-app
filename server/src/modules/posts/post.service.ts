@@ -9,7 +9,7 @@ import { UserRepository } from "@/modules/users/user.repository";
 import { postDetailResponse, postResponse, savedPostResponse } from "./post.types";
 import { NotificationRepository } from "@/modules/notifications/notification.repository";
 import { postAction, postErrorCode, postErrorMessage } from "@/config/constant/post.constant";
-import { CreatePostRequest, GetFollowingPostsRequest, GetPublicPostsRequest, GetSavedPostsRequest, UpdatePostRequest } from "@/modules/posts/post.schema";
+import { CreatePostRequest, GetFollowingPostsRequest, GetPublicPostsRequest, GetSavedPostsRequest, ReportPostRequest, UpdatePostRequest } from "@/modules/posts/post.schema";
 import { FileRepository } from "../files/file.repository";
 
 export class PostService {
@@ -64,7 +64,8 @@ export class PostService {
       isLiked: post.likes.length > 0,
       isEditable: post.userId === query.userId,
       isFollowing: post.user.followers.some((follower) => follower.followerId === query.userId),
-      isSaved: post.bookmarks.some((bookmark) => bookmark.userId === query.userId),
+      isSaved: post.bookmarks.length > 0,
+      isReported: post.postReports.length > 0,
     }));
 
     const meta = {
@@ -100,7 +101,8 @@ export class PostService {
       isLiked: post.likes.length > 0,
       isEditable: post.userId === query.userId,
       isFollowing: post.user.followers.some((follower) => follower.followerId === query.userId),
-      isSaved: post.bookmarks.some((bookmark) => bookmark.userId === query.userId),
+      isSaved: post.bookmarks.length > 0,
+      isReported: post.postReports.length > 0,
     }));
 
     const meta = {
@@ -221,7 +223,8 @@ export class PostService {
       isLiked: post.likes.length > 0,
       isEditable: post.userId === userId,
       isFollowing: post.user.followers.some((follower) => follower.followerId === userId),
-      isSaved: post.bookmarks.some((bookmark) => bookmark.userId === userId),
+      isSaved: post.bookmarks.length > 0,
+      isReported: post.postReports.length > 0,
     };
   }
 
@@ -245,7 +248,8 @@ export class PostService {
       isLiked: post.likes.length > 0,
       isEditable: post.userId === userId,
       isFollowing: post.user.followers.some((follower) => follower.followerId === userId),
-      isSaved: post.bookmarks.some((bookmark) => bookmark.userId === query.userId),
+      isSaved: post.bookmarks.length > 0,
+      isReported: post.postReports.length > 0,
     }));
 
     const meta = {
@@ -300,7 +304,9 @@ export class PostService {
       totalComments: bm.post._count.comments,
       isLiked: likedPostIds.has(bm.post.id),
       isEditable: bm.post.user.id === query.userId,
+      isFollowing: bm.post.user.followers.some((follower) => follower.followerId === query.userId),
       isSaved: true,
+      isReported: bm.post.postReports.length > 0,
     }));
 
     const meta = {
@@ -345,5 +351,26 @@ export class PostService {
     }
 
     await PostRepository.unbookmarkPost(userId, postId);
+  }
+  static async reportPost(c: Context, userId: string, postId: string, request: ReportPostRequest) {
+    const post = await PostRepository.getPostById(postId);
+    if (!post) {
+      throw new HTTPException(404, {
+        message: postErrorMessage.POST_NOT_FOUND,
+        cause: postErrorCode.POST_NOT_FOUND,
+      });
+    }
+
+    const existing = await PostRepository.getReportByUserId(postId, userId);
+    if (existing) {
+      throw new HTTPException(409, {
+        message: postErrorMessage.ALREADY_REPORTED_POST,
+        cause: postErrorCode.ALREADY_REPORTED_POST,
+      });
+    }
+
+    await db.$transaction(async (tx: Prisma.TransactionClient) => {
+      await PostRepository.createReport(tx, userId, postId, request);
+    });
   }
 }

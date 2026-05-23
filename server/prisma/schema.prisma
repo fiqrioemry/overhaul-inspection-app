@@ -50,6 +50,7 @@ model User {
 
   sessions     Session[]
   posts        Post[]
+  postReports  PostReport[]
   notifications Notification[]
   notificationSettings NotificationSetting[]
   comments     Comment[]
@@ -144,6 +145,7 @@ model Post {
   deletedAt DateTime? @map("deleted_at")
 
   user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  postReports PostReport[]
   comments   Comment[]    
   bookmarks  Bookmark[]
   galleries  PostGallery[]
@@ -243,6 +245,9 @@ model Like {
 
   @@map("likes")
 }
+
+
+
 
 model Comment {
   id        String   @id @default(cuid())
@@ -394,4 +399,29 @@ model Message {
   @@index([chatId])
   @@index([senderId])
   @@map("messages")
+}
+
+enum PostReportReason {
+  SPAM
+  HARASSMENT
+  NUDITY
+  VIOLENCE
+  MISSINFORMATION
+  OTHER
+}
+
+model PostReport {
+  id          String           @id @default(cuid())
+  postId      String
+  userId      String
+  reason      PostReportReason
+  description String?          // required only when reason = OTHER
+  createdAt   DateTime         @default(now())
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])  
+  @@index([postId, reason])  
+  @@map("post_reports")
 }

@@ -8,6 +8,7 @@ import { databaseConfig } from "./config/env";
 import corsMiddleware from "./middlewares/cors.middleware";
 import { startFileCleanupWorker } from "@/workers/file-cleanup.worker";
 import { errorHandler, notFoundHandler } from "./middlewares/error.middleware";
+import { startPostReportTakedownWorker } from "./workers/post-report-takedown.worker";
 
 type WebSocketData = {
   url: string;
@@ -70,3 +71,4 @@ console.log(`✅ Server running on ${databaseConfig.SERVER_URL || "http://localh
 eventBus.setServer(server);
 
 startFileCleanupWorker();
+startPostReportTakedownWorker();
