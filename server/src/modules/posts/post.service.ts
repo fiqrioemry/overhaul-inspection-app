@@ -10,6 +10,7 @@ import { postDetailResponse, postResponse, savedPostResponse } from "./post.type
 import { NotificationRepository } from "@/modules/notifications/notification.repository";
 import { postAction, postErrorCode, postErrorMessage } from "@/config/constant/post.constant";
 import { CreatePostRequest, GetFollowingPostsRequest, GetPublicPostsRequest, GetSavedPostsRequest, UpdatePostRequest } from "@/modules/posts/post.schema";
+import { FileRepository } from "../files/file.repository";
 
 export class PostService {
   static async createPost(c: Context, userId: string, request: CreatePostRequest) {
@@ -268,6 +269,8 @@ export class PostService {
 
     await db.$transaction(async (tx: Prisma.TransactionClient) => {
       await PostRepository.deletePost(tx, postId);
+
+      await FileRepository.markFileRecordsAsUnused(tx, postId);
 
       await UserRepository.createActivityLog(tx, {
         userId,

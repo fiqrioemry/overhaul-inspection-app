@@ -70,6 +70,14 @@ export class FileRepository {
     return result.count;
   }
 
+  static async markFileRecordsAsUnused(tx: Prisma.TransactionClient, id: string): Promise<void> {
+    const db = tx ?? database;
+    await db.fileStorage.updateMany({
+      where: { id: { in: [id] } },
+      data: { isUsed: false },
+    });
+  }
+
   static async getFileRecordsByIds(ids: string[]): Promise<fileResponse[]> {
     const results = await database.fileStorage.findMany({
       where: { id: { in: ids }, isUsed: false },
