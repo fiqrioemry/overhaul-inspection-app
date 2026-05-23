@@ -21,17 +21,29 @@ const getFollowRequest = z.object({
   page: z.string().default("1").optional(),
   limit: z.string().default("20").optional(),
 });
-
 export type GetFollowRequest = z.infer<typeof getFollowRequest>;
 
 export type CreateUserActivityLogRequest = z.infer<typeof createUserActivityLogRequest>;
 
 const followUserRequest = z.object({
   userId: z.cuid().optional(),
-  targetUserId: z.cuid().min(1, "Target user ID is required"),
+  targetUserId: z.cuid({ message: "Target user ID is required" }),
 });
-
 export type FollowUserRequest = z.infer<typeof followUserRequest>;
+
+// Accept or reject uses the follower's userId (the requestor)
+const respondFollowRequest = z.object({
+  userId: z.cuid().optional(), // injected: the account owner (current user)
+  followerId: z.cuid({ message: "Follower ID is required" }),
+});
+export type RespondFollowRequest = z.infer<typeof respondFollowRequest>;
+
+const getFollowRequestsQuery = z.object({
+  userId: z.string().optional(),
+  page: z.string().default("1").optional(),
+  limit: z.string().default("20").optional(),
+});
+export type GetFollowRequestsQuery = z.infer<typeof getFollowRequestsQuery>;
 
 const updatePrivacyRequest = z.object({
   userId: z.cuid().optional(),
@@ -39,4 +51,4 @@ const updatePrivacyRequest = z.object({
 });
 export type UpdatePrivacyRequest = z.infer<typeof updatePrivacyRequest>;
 
-export { updateProfileRequest, updatePrivacyRequest, createUserActivityLogRequest, followUserRequest, getFollowRequest };
+export { updateProfileRequest, updatePrivacyRequest, createUserActivityLogRequest, followUserRequest, respondFollowRequest, getFollowRequestsQuery, getFollowRequest };

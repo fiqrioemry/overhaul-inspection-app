@@ -3,7 +3,7 @@ import { UserService } from "@/modules/users/user.service";
 import { responseError, responseOK } from "@/utils/response";
 import { userSuccessMessage } from "@/config/constant/user.constant";
 import { fileErrorCode, fileErrorMessage } from "@/config/constant/file.constant";
-import { followUserRequest, getFollowRequest, updatePrivacyRequest, updateProfileRequest } from "@/modules/users/user.schema";
+import { followUserRequest, getFollowRequest, getFollowRequestsQuery, respondFollowRequest, updatePrivacyRequest, updateProfileRequest } from "@/modules/users/user.schema";
 
 export class UserController {
   static async searchUsersByUsername(c: Context) {
@@ -43,16 +43,18 @@ export class UserController {
     const user = await c.get("user");
     const payload = followUserRequest.parse(await c.req.json());
     payload.userId = user.userId;
-    await UserService.followUser(c, payload);
-    return responseOK(c, userSuccessMessage.FOLLOW_USER_SUCCESS);
+    const response = await UserService.followUser(c, payload);
+    const message = response.requested ? userSuccessMessage.FOLLOW_REQUEST_SENT : userSuccessMessage.FOLLOW_USER_SUCCESS;
+    return responseOK(c, message);
   }
 
   static async unfollowUser(c: Context) {
     const user = await c.get("user");
     const payload = followUserRequest.parse(await c.req.json());
     payload.userId = user.userId;
-    await UserService.unfollowUser(c, payload);
-    return responseOK(c, userSuccessMessage.UNFOLLOW_USER_SUCCESS);
+    const result = await UserService.unfollowUser(c, payload);
+    const message = result.wasPending ? userSuccessMessage.FOLLOW_REQUEST_CANCELLED : userSuccessMessage.UNFOLLOW_USER_SUCCESS;
+    return responseOK(c, message);
   }
 
   static async getFollowing(c: Context) {
@@ -77,5 +79,29 @@ export class UserController {
     request.userId = user.userId;
     await UserService.updatePrivacy(c, request);
     return responseOK(c, userSuccessMessage.UPDATE_PRIVACY_SUCCESS);
+  }
+
+  static async acceptFollowRequest(c: Context) {
+    const user = await c.get("user");
+    const payload = respondFollowRequest.parse(await c.req.json());
+    payload.userId = user.userId;
+    await UserService.acceptFollowRequest(c, payload);
+    return responseOK(c, userSuccessMessage.FOLLOW_REQUEST_ACCEPTED);
+  }
+
+  static async rejectFollowRequest(c: Context) {
+    const user = await c.get("user");
+    const payload = respondFollowRequest.parse(await c.req.json());
+    payload.userId = user.userId;
+    await UserService.rejectFollowRequest(c, payload);
+    return responseOK(c, userSuccessMessage.FOLLOW_REQUEST_REJECTED);
+  }
+
+  static async getFollowRequests(c: Context) {
+    const user = await c.get("user");
+    const query = getFollowRequestsQuery.parse(c.req.query());
+    query.userId = user.userId;
+    const response = await UserService.getFollowRequests(query);
+    return responseOK(c, userSuccessMessage.GET_FOLLOW_REQUESTS_SUCCESS, response.data, response.meta);
   }
 }

@@ -80,13 +80,20 @@ export class UserRepository {
         lastLogin: true,
         createdAt: true,
         followers: {
-          where: { followerId: currentUserId ?? "" },
+          where: {
+            followerId: currentUserId ?? "",
+            status: "ACCEPTED",
+          },
           select: { id: true },
         },
         _count: {
           select: {
-            followers: true,
-            following: true,
+            followers: {
+              where: { status: "ACCEPTED" },
+            },
+            following: {
+              where: { status: "ACCEPTED" },
+            },
             posts: {
               where: { deletedAt: null },
             },
@@ -194,10 +201,7 @@ export class UserRepository {
     return await database.user.findMany({
       where: {
         status: "ACTIVE",
-        username: {
-          contains: username,
-          mode: "insensitive",
-        },
+        username: { contains: username, mode: "insensitive" },
       },
       select: {
         id: true,
@@ -206,15 +210,16 @@ export class UserRepository {
         username: true,
         avatar: true,
         followers: {
-          where: { followerId: currentUserId ?? "" },
+          where: {
+            followerId: currentUserId ?? "",
+            status: "ACCEPTED",
+          },
           select: { id: true },
         },
       },
       take: 10,
       skip: 0,
-      orderBy: {
-        username: "asc",
-      },
+      orderBy: { username: "asc" },
     });
   }
 
@@ -238,16 +243,6 @@ export class UserRepository {
     });
   }
 
-  static async createFollow(tx: Prisma.TransactionClient | null, userId: string, targetUserId: string): Promise<void> {
-    const db = tx ?? database;
-    await db.following.create({
-      data: {
-        followerId: userId,
-        followingId: targetUserId,
-      },
-    });
-  }
-
   static async deleteFollow(userId: string, targetUserId: string): Promise<void> {
     await database.following.delete({
       where: {
@@ -260,35 +255,17 @@ export class UserRepository {
   }
 
   static async getFollowings(query: GetFollowRequest) {
-    const {
-      userId, // current logged-in user
-      targetUserId, // profile being viewed
-      search,
-      page = 1,
-      limit = 10,
-    } = query;
+    const { userId, targetUserId, search, page = 1, limit = 10 } = query;
 
     const where = {
-      followerId: targetUserId, // users that targetUser follows
+      followerId: targetUserId,
+      status: "ACCEPTED" as const, // ← tambah ini
       following: {
         deletedAt: null,
         status: "ACTIVE" as const,
         ...(search?.trim()
           ? {
-              OR: [
-                {
-                  username: {
-                    contains: search.trim(),
-                    mode: "insensitive" as const,
-                  },
-                },
-                {
-                  name: {
-                    contains: search.trim(),
-                    mode: "insensitive" as const,
-                  },
-                },
-              ],
+              OR: [{ username: { contains: search.trim(), mode: "insensitive" as const } }, { name: { contains: search.trim(), mode: "insensitive" as const } }],
             }
           : {}),
       },
@@ -305,14 +282,12 @@ export class UserRepository {
               username: true,
               avatar: true,
 
-              // cek apakah current user sudah follow user ini
               followers: {
                 where: {
                   followerId: userId,
+                  status: "ACCEPTED",
                 },
-                select: {
-                  id: true,
-                },
+                select: { id: true },
               },
 
               _count: {
@@ -350,25 +325,13 @@ export class UserRepository {
 
     const where = {
       followingId: targetUserId,
+      status: "ACCEPTED" as const, // ← tambah ini
       follower: {
         deletedAt: null,
         status: "ACTIVE" as const,
         ...(search?.trim()
           ? {
-              OR: [
-                {
-                  username: {
-                    contains: search.trim(),
-                    mode: "insensitive" as const,
-                  },
-                },
-                {
-                  name: {
-                    contains: search.trim(),
-                    mode: "insensitive" as const,
-                  },
-                },
-              ],
+              OR: [{ username: { contains: search.trim(), mode: "insensitive" as const } }, { name: { contains: search.trim(), mode: "insensitive" as const } }],
             }
           : {}),
       },
@@ -384,14 +347,12 @@ export class UserRepository {
               name: true,
               username: true,
               avatar: true,
-
               followers: {
                 where: {
                   followerId: userId,
+                  status: "ACCEPTED",
                 },
-                select: {
-                  id: true,
-                },
+                select: { id: true },
               },
 
               _count: {
@@ -506,5 +467,72 @@ export class UserRepository {
         expiresAt: data.expiresAt,
       },
     });
+  }
+
+  static async createFollow(tx: Prisma.TransactionClient | null, userId: string, targetUserId: string, status: "PENDING" | "ACCEPTED"): Promise<void> {
+    const db = tx ?? database;
+    await db.following.create({
+      data: {
+        followerId: userId,
+        followingId: targetUserId,
+        status,
+        acceptedAt: status === "ACCEPTED" ? new Date() : null,
+      },
+    });
+  }
+
+  // Find the follow record between two users (any status)
+  static async findFollow(followerId: string, followingId: string) {
+    return await database.following.findUnique({
+      where: {
+        followerId_followingId: { followerId, followingId },
+      },
+      select: { id: true, status: true },
+    });
+  }
+
+  static async acceptFollow(tx: Prisma.TransactionClient | null, followerId: string, followingId: string): Promise<void> {
+    const db = tx ?? database;
+    await db.following.update({
+      where: {
+        followerId_followingId: { followerId, followingId },
+      },
+      data: {
+        status: "ACCEPTED",
+        acceptedAt: new Date(),
+      },
+    });
+  }
+
+  // Get incoming PENDING requests for a user (they are the followingId)
+  static async getPendingFollowRequests(followingId: string, page: number, limit: number) {
+    const where = { followingId, status: "PENDING" as const };
+
+    const [results, totalItems] = await Promise.all([
+      database.following.findMany({
+        where,
+        select: {
+          id: true,
+          createdAt: true,
+          follower: {
+            select: { id: true, name: true, username: true, avatar: true },
+          },
+        },
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { createdAt: "desc" },
+      }),
+      database.following.count({ where }),
+    ]);
+
+    return { results, totalItems };
+  }
+
+  static async isPublicAccount(userId: string): Promise<boolean> {
+    const result = await database.user.findUnique({
+      where: { id: userId },
+      select: { isPublic: true },
+    });
+    return result?.isPublic ?? true;
   }
 }

@@ -1,8 +1,8 @@
 import v1 from "./v1";
 import { Hono } from "hono";
 import file from "./file.route";
+import docs from "./docs.route";
 import { serveStatic } from "hono/bun";
-import { version } from "os";
 
 const router = new Hono();
 
@@ -31,5 +31,6 @@ router.get("/uploads/*", serveStatic({ root: "./" }));
 
 router.route("", file);
 router.route("/v1", v1);
+router.route("/docs", docs);
 
 export default router;
