@@ -52,7 +52,7 @@ export default function FollowListDialog({ open, onOpenChange, type, userId }: F
             ) : !users?.length ? (
               <p className="text-center text-sm text-muted-foreground py-8">{search ? "No users match your search." : "No users found."}</p>
             ) : (
-              users.map((user) => <FollowListItem key={user.id} user={user} isFollowing={user.isFollowing!} closeDialog={() => onOpenChange(false)} />)
+              users.map((user) => <FollowListItem key={user.id} user={user} followStatus={user.followStatus} closeDialog={() => onOpenChange(false)} />)
             )}
           </div>
         </ScrollArea>

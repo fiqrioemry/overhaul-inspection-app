@@ -30,7 +30,7 @@ export default function ProfileHeader({ profile, refetchProfile }: ProfileHeader
             {/* Name + actions */}
             <div className="flex flex-wrap items-center gap-3">
               <span className="text-base font-semibold">{profile.username}</span>
-              <ProfileActions userId={profile.id} isOwner={profile.isOwner} isFollowing={profile.isFollowing} refetchProfile={refetchProfile} />
+              <ProfileActions userId={profile.id} isOwner={profile.isOwner} followStatus={profile.followStatus} refetchProfile={refetchProfile} />
             </div>
 
             {/* Stats — hidden on mobile, shown on sm+ */}

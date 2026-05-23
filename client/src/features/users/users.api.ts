@@ -55,6 +55,26 @@ export async function updateAvatar(file: File): Promise<ResponseOK> {
 }
 
 export async function updatePrivacy(data: UpdatePrivacyRequest): Promise<ResponseOK> {
-  const res = await api.patch("/users/profile/privacy", data);
+  const res = await api.patch(USERS_ENDPOINTS.updatePrivacy, data);
+  return res.data;
+}
+
+export async function getFollowRequests(): Promise<ResponseSuccess<User[]>> {
+  const res = await api.get(USERS_ENDPOINTS.getFollowRequests);
+  return res.data;
+}
+
+export async function acceptFollowRequest(followerId: string): Promise<ResponseOK> {
+  const res = await api.post(USERS_ENDPOINTS.acceptFollowRequest, { followerId });
+  return res.data;
+}
+
+export async function rejectFollowRequest(followerId: string): Promise<ResponseOK> {
+  const res = await api.post(USERS_ENDPOINTS.rejectFollowRequest, { followerId });
+  return res.data;
+}
+
+export async function getFollowStatus(userId: string): Promise<ResponseSuccess<{ followStatus: "ACCEPTED" | "PENDING" | "NONE" }>> {
+  const res = await api.get(USERS_ENDPOINTS.getFollowStatus.replace(":userId", userId));
   return res.data;
 }

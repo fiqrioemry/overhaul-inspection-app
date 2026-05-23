@@ -7,6 +7,7 @@ export const NOTIFICATION_KEYS = {
   unread: ["notifications", "unread"] as const,
   all: (params?: Omit<GetNotificationRequest, "page">) => ["notifications", params] as const,
   settings: ["notifications", "settings"] as const,
+  infinite: (params?: Omit<GetNotificationRequest, "page">) => ["notifications", "infinite", params] as const,
 };
 
 export function useUnreadNotificationCount() {
@@ -18,16 +19,16 @@ export function useUnreadNotificationCount() {
   });
 }
 
-export function useInfiniteNotifications(params: Omit<GetNotificationRequest, "page"> = { limit: 10 }) {
+export function useInfiniteNotifications(query: Omit<GetNotificationRequest, "page">, options?: { enabled?: boolean }) {
   return useInfiniteQuery({
-    queryKey: NOTIFICATION_KEYS.all(params),
-    queryFn: ({ pageParam = 1 }) => fetchNotifications({ ...params, page: pageParam }),
-    getNextPageParam: (lastPage, allPages) => {
-      const currentPage = allPages.length;
-      const totalPages = Math.ceil((lastPage.meta?.pagination?.totalItems ?? 0) / (params.limit ?? 10));
-      return currentPage < totalPages ? currentPage + 1 : undefined;
+    queryKey: NOTIFICATION_KEYS.infinite(query),
+    queryFn: ({ pageParam = 1 }) => fetchNotifications({ ...query, page: pageParam }),
+    getNextPageParam: (last) => {
+      const { page, totalPages } = last.meta.pagination;
+      return page < totalPages ? page + 1 : undefined;
     },
     initialPageParam: 1,
+    enabled: options?.enabled !== false, // selalu boolean: true atau false
     staleTime: 1000 * 30,
   });
 }

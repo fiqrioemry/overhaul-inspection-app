@@ -5,7 +5,7 @@ export const getNotificationRequest = z.object({
   search: z.string().optional(),
   limit: z.number().default(10).optional(),
   page: z.number().default(1).optional(),
-  type: z.enum(["COMMENT", "LIKE", "FOLLOW", "MENTION", "MESSAGE"]).optional(),
+  type: z.enum(["COMMENT", "LIKE", "FOLLOW", "MENTION", "MESSAGE", "REQUEST"]).optional(),
   orderBy: z.enum(["createdAt"]).default("createdAt").optional(),
   sortBy: z.enum(["asc", "desc"]).default("asc").optional(),
 });

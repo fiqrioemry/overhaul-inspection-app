@@ -7,11 +7,11 @@ import { useFollowUser, useUnfollowUser } from "@/features/users/users.query";
 
 interface FollowListItemProps {
   user: User;
-  isFollowing: boolean;
+  followStatus: "ACCEPTED" | "PENDING" | "NONE";
   closeDialog: () => void;
 }
 
-export default function FollowListItem({ user, isFollowing, closeDialog }: FollowListItemProps) {
+export default function FollowListItem({ user, followStatus, closeDialog }: FollowListItemProps) {
   const { user: data } = useAuthStore();
   const navigate = useNavigate();
   const { mutate: follow, isPending: isFollowPending } = useFollowUser(user.id);
@@ -19,7 +19,7 @@ export default function FollowListItem({ user, isFollowing, closeDialog }: Follo
   const isPending = isFollowPending || isUnfollowPending;
 
   function handleFollowToggle() {
-    const action = isFollowing ? unfollow : follow;
+    const action = followStatus === "ACCEPTED" ? unfollow : followStatus === "PENDING" ? unfollow : follow;
     action();
   }
 
@@ -40,8 +40,8 @@ export default function FollowListItem({ user, isFollowing, closeDialog }: Follo
         </div>
       </div>
       {data?.id !== user.id && (
-        <Button size="sm" variant={isFollowing ? "outline" : "default"} disabled={isPending} onClick={handleFollowToggle} className="shrink-0">
-          {isFollowing ? "Unfollow" : "Follow"}
+        <Button size="sm" variant={followStatus === "ACCEPTED" ? "outline" : followStatus === "PENDING" ? "secondary" : "default"} disabled={isPending} onClick={handleFollowToggle} className="shrink-0">
+          {followStatus === "ACCEPTED" ? "Unfollow" : followStatus === "PENDING" ? "Requested" : "Follow"}
         </Button>
       )}
     </div>

@@ -10,6 +10,7 @@ export default function ProfilePage() {
   const { username } = useParams<{ username: string }>();
   const { data, isLoading, isError, refetch } = useUserProfile(username ?? "");
   const profile = data?.data;
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-24">
@@ -41,7 +42,15 @@ export default function ProfilePage() {
       <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
         <ProfileHeader profile={profile} refetchProfile={refetch} />
         <Separator />
-        <ProfilePostsTab userId={profile.id} isOwner={profile.isOwner} />
+        {/* when profile is not public only followers can see the posts */}
+        {profile.isOwner || profile.isPublic || profile.followStatus === "ACCEPTED" ? (
+          <ProfilePostsTab userId={profile.id} isOwner={profile.isOwner} />
+        ) : (
+          <div className="flex flex-col items-center justify-center py-16 gap-2 text-center">
+            <p className="text-sm font-semibold">This account is private</p>
+            <p className="text-xs text-muted-foreground">Follow this account to see their posts.</p>
+          </div>
+        )}
       </div>
     </>
   );

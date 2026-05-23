@@ -3,11 +3,12 @@ import { toast } from "sonner";
 import { POST_KEYS } from "@/features/posts/posts.query";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { SearchUsersRequest, UpdateProfileRequest } from "@/schemas/users.schema";
-import { searchUsers, getUserProfile, followUser, unfollowUser, updateUserProfile, updateAvatar, getFollowers, getFollowing } from "@/features/users/users.api";
+import { searchUsers, getUserProfile, followUser, unfollowUser, updateUserProfile, updateAvatar, getFollowers, getFollowing, acceptFollowRequest, rejectFollowRequest, getFollowStatus, getFollowRequests } from "@/features/users/users.api";
 import { AUTH_KEYS } from "../auth/auth.query";
 
 export const USER_KEYS = {
   all: ["users"] as const,
+  followRequest: ["users", "followRequests"] as const,
   search: (query: string) => ["users", "search", query] as const,
   followers: (userId: string, search = "") => ["users", "followers", userId, search] as const,
   following: (userId: string, search = "") => ["users", "following", userId, search] as const,
@@ -33,6 +34,15 @@ export function useGetFollowings(query: SearchUsersRequest, type?: "followers" |
   });
 }
 
+export function useGetFollowRequests() {
+  return useQuery({
+    queryKey: USER_KEYS.followRequest,
+    queryFn: () => getFollowRequests(),
+    staleTime: 1000 * 30,
+    refetchOnMount: "always",
+  });
+}
+
 export function useGetFollowers(query: SearchUsersRequest, type?: "followers" | "following") {
   return useQuery({
     queryKey: USER_KEYS.followers(query.targetUserId ?? "", query.search),
@@ -42,6 +52,16 @@ export function useGetFollowers(query: SearchUsersRequest, type?: "followers" | 
     refetchOnMount: "always",
   });
 }
+
+export function useGetFollowStatus(userId: string) {
+  return useQuery({
+    queryKey: ["users", "followStatus", userId] as const,
+    queryFn: () => getFollowStatus(userId),
+    enabled: Boolean(userId),
+    staleTime: 1000 * 30,
+  });
+}
+
 export function useFollowUser(userId: string) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -96,6 +116,32 @@ export function useUpdateAvatar() {
       toast.success(res.message || "Avatar updated successfully");
       queryClient.invalidateQueries({ queryKey: AUTH_KEYS.me });
       queryClient.invalidateQueries({ queryKey: USER_KEYS.all });
+    },
+  });
+}
+
+export function useAcceptFollowRequest() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (followerId: string) => acceptFollowRequest(followerId),
+    onSuccess: (res, followerId) => {
+      toast.success(res.message || "Follow request accepted");
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      queryClient.invalidateQueries({ queryKey: ["users", "followRequests"] });
+      queryClient.invalidateQueries({ queryKey: ["users", "followStatus", followerId] });
+    },
+  });
+}
+
+export function useRejectFollowRequest() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (followerId: string) => rejectFollowRequest(followerId),
+    onSuccess: (res, followerId) => {
+      toast.success(res.message || "Follow request rejected");
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      queryClient.invalidateQueries({ queryKey: ["users", "followRequests"] });
+      queryClient.invalidateQueries({ queryKey: ["users", "followStatus", followerId] });
     },
   });
 }

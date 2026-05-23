@@ -14,7 +14,7 @@ export interface UserProfile {
   totalFollowers: number;
   totalFollowings: number;
   totalPosts: number;
-  isFollowing: boolean;
+  followStatus: "ACCEPTED" | "PENDING" | "NONE";
 }
 
 export interface User {
@@ -25,11 +25,16 @@ export interface User {
   gender: GenderOption | null;
   avatar: string | null;
   email: string;
-  isFollowing?: boolean;
+  followStatus: "ACCEPTED" | "PENDING" | "NONE";
   isPublic: boolean;
   lastLogin: Date;
   createdAt: Date;
   lastChangePasswordAt: Date;
+  follower: followerInfo;
+}
+
+export interface followerInfo {
+  id: string;
 }
 
 export interface LoginData {

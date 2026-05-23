@@ -8,4 +8,9 @@ export const USERS_ENDPOINTS = {
   getFollowing: "/users/followings",
   updateUserProfile: "/users/profile",
   updateAvatar: "/users/profile/avatar",
+  updatePrivacy: "/users/profile/privacy",
+  getFollowRequests: "/users/follow/requests",
+  acceptFollowRequest: "/users/follow/accept",
+  rejectFollowRequest: "/users/follow/reject",
+  getFollowStatus: "/users/:userId/follow-status",
 } as const;

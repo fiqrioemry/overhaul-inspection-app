@@ -1,48 +1,49 @@
 import { cn } from "@/lib/utils";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { NotificationType } from "@/types/notifications.type";
+import { useGetFollowRequests } from "@/features/users/users.query";
 
-type TabValue = NotificationType | "";
+type TabType = "FOLLOW" | "LIKE" | "COMMENT" | "MENTION" | "REQUEST" | "";
 
-interface Tab {
-  label: string;
-  value: TabValue;
-}
-
-const TABS: Tab[] = [
+const TABS: { label: string; value: TabType }[] = [
   { label: "All", value: "" },
-  { label: "Comments", value: "COMMENT" },
-  { label: "Likes", value: "LIKE" },
   { label: "Follows", value: "FOLLOW" },
+  { label: "Requests", value: "REQUEST" },
+  { label: "Likes", value: "LIKE" },
+  { label: "Comments", value: "COMMENT" },
   { label: "Mentions", value: "MENTION" },
-  { label: "Messages", value: "MESSAGE" },
 ];
 
 interface NotificationTabListProps {
-  value: TabValue;
-  onChange: (value: TabValue) => void;
-  className?: string;
+  value: TabType;
+  onChange: (value: TabType) => void;
 }
 
-export default function NotificationTabList({ value, onChange, className }: NotificationTabListProps) {
+export default function NotificationTabList({ value, onChange }: NotificationTabListProps) {
+  const { data: requestsData } = useGetFollowRequests();
+  const requestCount = requestsData?.data?.length ?? 0;
+
   return (
-    <Tabs value={value} onValueChange={(v) => onChange(v as TabValue)} className={cn("w-full", className)}>
-      <TabsList className="w-full h-auto p-1 bg-muted/50 gap-0.5 flex overflow-x-auto scrollbar-none">
-        {TABS.map((tab) => (
-          <TabsTrigger
-            key={tab.value}
-            value={tab.value}
-            className={cn(
-              "flex-1 min-w-fit text-xs sm:text-sm px-3 py-1.5 rounded-md whitespace-nowrap",
-              "data-[state=active]:bg-background data-[state=active]:shadow-sm",
-              "data-[state=active]:text-foreground text-muted-foreground",
-              "transition-all duration-150",
-            )}
-          >
-            {tab.label}
-          </TabsTrigger>
-        ))}
-      </TabsList>
-    </Tabs>
+    <div className="flex gap-1.5 overflow-x-auto scrollbar-none pb-0.5">
+      {TABS.map((tab) => (
+        <button
+          key={tab.value}
+          onClick={() => onChange(tab.value)}
+          className={cn(
+            "shrink-0 relative rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors",
+            value === tab.value ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80",
+          )}
+        >
+          {tab.label}
+          {tab.value === "REQUEST" && requestCount > 0 && (
+            <span
+              className={cn("ml-1.5 inline-flex items-center justify-center rounded-full text-[10px] font-semibold min-w-[16px] h-4 px-1", value === "REQUEST" ? "bg-primary-foreground text-primary" : "bg-primary text-primary-foreground")}
+            >
+              {requestCount > 99 ? "99+" : requestCount}
+            </span>
+          )}
+        </button>
+      ))}
+    </div>
   );
 }
+
+export type { TabType };

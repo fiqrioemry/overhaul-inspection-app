@@ -8,17 +8,17 @@ interface ProfileActionsProps {
   userId: string;
   refetchProfile: () => void;
   isOwner: boolean;
-  isFollowing: boolean;
+  followStatus: "ACCEPTED" | "PENDING" | "NONE";
 }
 
-export default function ProfileActions({ userId, isOwner, isFollowing, refetchProfile }: ProfileActionsProps) {
+export default function ProfileActions({ userId, isOwner, followStatus, refetchProfile }: ProfileActionsProps) {
   const navigate = useNavigate();
   const { mutateAsync: follow, isPending: isFollowPending } = useFollowUser(userId);
   const { mutateAsync: unfollow, isPending: isUnfollowPending } = useUnfollowUser(userId);
   const isPending = isFollowPending || isUnfollowPending;
 
   const handleFollowToggle = async () => {
-    const action = isFollowing ? unfollow : follow;
+    const action = followStatus === "ACCEPTED" ? unfollow : followStatus === "PENDING" ? unfollow : follow;
 
     await action();
     refetchProfile();
@@ -52,8 +52,8 @@ export default function ProfileActions({ userId, isOwner, isFollowing, refetchPr
   }
 
   return (
-    <Button size="sm" variant={isFollowing ? "outline" : "default"} disabled={isPending} onClick={handleFollowToggle}>
-      {isFollowing ? "Unfollow" : "Follow"}
+    <Button size="sm" variant={followStatus === "ACCEPTED" ? "outline" : followStatus === "PENDING" ? "secondary" : "default"} disabled={isPending} onClick={handleFollowToggle}>
+      {followStatus === "ACCEPTED" ? "Unfollow" : followStatus === "PENDING" ? "Requested" : "Follow"}
     </Button>
   );
 }
