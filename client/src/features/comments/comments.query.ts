@@ -1,7 +1,7 @@
 import { toast } from "sonner";
 import { POST_KEYS } from "@/features/posts/posts.query";
 import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { createComment, fetchComments, fetchReplies, likeComment, unlikeComment } from "./comments.api";
+import { createComment, deleteComment, editComment, fetchComments, fetchReplies, likeComment, unlikeComment } from "./comments.api";
 import { type CreateCommentRequest, type EditCommentRequest, type GetCommentsRequest } from "@/schemas/comments.schema";
 
 export const COMMENT_KEYS = {
@@ -86,10 +86,22 @@ export function useCreateComment() {
 export function useEditComment(commentId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (payload: EditCommentRequest) => fetchComments(payload),
+    mutationFn: (payload: EditCommentRequest) => editComment(commentId, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: COMMENT_KEYS.detail(commentId) });
       queryClient.invalidateQueries({ queryKey: COMMENT_KEYS.all });
+    },
+  });
+}
+
+export function useDeleteComment(commentId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => deleteComment(commentId),
+    onSuccess: (res) => {
+      toast.success(res.message || "Comment deleted successfully");
+      queryClient.invalidateQueries({ queryKey: COMMENT_KEYS.all });
+      queryClient.invalidateQueries({ queryKey: POST_KEYS.all });
     },
   });
 }

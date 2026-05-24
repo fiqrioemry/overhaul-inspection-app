@@ -6,4 +6,5 @@ export const COMMENTS_ENDPOINTS = {
   editComment: "/comments/:commentId",
   likeComment: "/comments/:commentId/like",
   unlikeComment: "/comments/:commentId/unlike",
+  deleteComment: "/comments/:commentId",
 } as const;

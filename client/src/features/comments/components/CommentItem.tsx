@@ -1,10 +1,11 @@
 // src/features/comments/components/CommentItem.tsx
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import type { Comments } from "@/types/comments.type";
 import ReplyList from "@/features/comments/components/ReplyList";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Link } from "react-router-dom";
+import CommentOptionMenu from "@/features/comments/components/CommentOptionMenu";
 
 interface CommentItemProps {
   postId: string;
@@ -23,7 +24,7 @@ export default function CommentItem({ postId, comment, onReply }: CommentItemPro
   const totalReplies = comment.totalReplies ?? 0;
 
   return (
-    <div className="flex gap-3 py-2">
+    <div className="group flex gap-3 py-2">
       <Avatar className="h-8 w-8 shrink-0">
         <AvatarImage src={comment.user?.avatar ?? "/default-avatar.png"} alt={comment.user?.username} />
         <AvatarFallback className="text-xs">{comment.user?.username?.slice(0, 2).toUpperCase() ?? "U"}</AvatarFallback>
@@ -31,12 +32,17 @@ export default function CommentItem({ postId, comment, onReply }: CommentItemPro
 
       <div className="flex-1 min-w-0">
         {/* Content */}
-        <div className="text-sm">
-          <Link to={`/users/${comment.user?.username}`} className="hover:underline hover:text-blue-500 font-semibold   transition-colors">
-            {comment.user?.username}
-          </Link>
-          <span className="text-muted-foreground"> · </span>
-          <span className="wrap-break-words">{comment.content}</span>
+        <div className="text-sm flex items-start justify-between gap-2">
+          <div className="flex-1">
+            <Link to={`/profile/${comment.user?.username}`} className="hover:underline hover:text-blue-500 font-semibold transition-colors">
+              {comment.user?.username}
+            </Link>
+            <span className="text-muted-foreground"> · </span>
+            <span className="wrap-break-words">{comment.content}</span>
+          </div>
+
+          {/* Options Menu - Shows on hover if editable */}
+          <CommentOptionMenu commentId={comment.id} isEditable={comment.isEditable ?? false} />
         </div>
 
         {/* Meta row */}

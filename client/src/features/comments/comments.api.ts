@@ -36,3 +36,8 @@ export async function unlikeComment(commentId: string): Promise<ResponseOK> {
   const res = await api.delete(COMMENTS_ENDPOINTS.unlikeComment.replace(":commentId", commentId));
   return res.data;
 }
+
+export async function deleteComment(commentId: string): Promise<ResponseOK> {
+  const res = await api.delete(COMMENTS_ENDPOINTS.deleteComment.replace(":commentId", commentId));
+  return res.data;
+}
