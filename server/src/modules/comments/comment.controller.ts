@@ -64,4 +64,11 @@ export class CommentController {
     await CommentService.unlikeComment(c, commentId, user.userId);
     return responseOK(c, commentSuccessMessage.UNLIKE_COMMENT_SUCCESS);
   }
+
+  static async deleteComment(c: Context) {
+    const user = await c.get("user");
+    const commentId = c.req.param("commentId");
+    await CommentService.deleteComment(c, commentId, user.userId);
+    return responseOK(c, commentSuccessMessage.DELETE_COMMENT_SUCCESS);
+  }
 }

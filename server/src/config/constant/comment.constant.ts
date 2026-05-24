@@ -21,6 +21,7 @@ const commentErrorCode = {
   ALREADY_LIKED_COMMENT: "ALREADY_LIKED_COMMENT",
   LIKE_NOT_FOUND: "LIKE_NOT_FOUND",
   CANNOT_REPLY_TO_REPLY: "CANNOT_REPLY_TO_REPLY",
+  FORBIDDEN_DELETE_COMMENT: "FORBIDDEN_DELETE_COMMENT",
 };
 
 const commentErrorMessage = {
@@ -30,6 +31,7 @@ const commentErrorMessage = {
   ALREADY_LIKED_COMMENT: "Comment already liked by the user.",
   LIKE_NOT_FOUND: "Like not found for the user on this comment.",
   CANNOT_REPLY_TO_REPLY: "Cannot reply to a reply.",
+  FORBIDDEN_DELETE_COMMENT: "You are not allowed to delete this comment.",
 };
 
 export { commentAction, commentSuccessMessage, commentErrorCode, commentErrorMessage };

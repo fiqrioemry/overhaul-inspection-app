@@ -203,4 +203,11 @@ export class CommentRepository {
       where: { userId_commentId: { userId, commentId } },
     });
   }
+
+  static async deleteComment(tx: Prisma.TransactionClient, commentId: string) {
+    const db = tx ?? database;
+    return await db.comment.delete({
+      where: { id: commentId },
+    });
+  }
 }

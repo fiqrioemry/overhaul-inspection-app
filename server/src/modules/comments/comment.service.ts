@@ -276,4 +276,29 @@ export class CommentService {
 
     return await CommentRepository.unlikeComment(commentId, userId);
   }
+
+  static async deleteComment(c: Context, commentId: string, userId: string) {
+    const comment = await CommentRepository.getCommentById(commentId);
+
+    if (!comment) {
+      throw new HTTPException(404, { message: commentErrorMessage.COMMENT_NOT_FOUND, cause: commentErrorCode.COMMENT_NOT_FOUND });
+    }
+
+    if (comment.userId !== userId) {
+      throw new HTTPException(403, { message: commentErrorMessage.FORBIDDEN_DELETE_COMMENT, cause: commentErrorCode.FORBIDDEN_DELETE_COMMENT });
+    }
+
+    await db.$transaction(async (tx) => {
+      await CommentRepository.deleteComment(tx, commentId);
+
+      await UserRepository.createActivityLog(tx, {
+        userId,
+        action: commentAction.DELETE_COMMENT,
+        metadata: {
+          commentId,
+          postId: comment.postId,
+        },
+      });
+    });
+  }
 }
