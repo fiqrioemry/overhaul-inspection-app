@@ -1,13 +1,15 @@
 // src/features/chats/components/ChatInput.tsx
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { CHAT_LIMITS } from "@/constants/chats.constant";
 import type { MessageType } from "@/schemas/chats.schema";
 import { useSendMessage } from "@/features/chats/chats.query";
-import { Send, Paperclip, X, FileText, Music, ImageIcon, Loader2 } from "lucide-react";
+import { Send, Paperclip, X, FileText, Music, ImageIcon, Loader2, Smile } from "lucide-react";
+import { useTheme } from "next-themes";
+import EmojiPicker, { type EmojiClickData, Theme } from "emoji-picker-react";
 
 interface ChatInputProps {
   chatId: string;
@@ -29,10 +31,51 @@ export default function ChatInput({ chatId }: ChatInputProps) {
   const [text, setText] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fileType, setFileType] = useState<MessageType>("file");
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const emojiPickerRef = useRef<HTMLDivElement>(null);
+  const emojiButtonRef = useRef<HTMLButtonElement>(null);
 
+  const { resolvedTheme } = useTheme();
   const { mutate: sendMessage, isPending } = useSendMessage(chatId);
+
+  // Close emoji picker on outside click — same pattern as CreateCommentForm
+  useEffect(() => {
+    if (!showEmojiPicker) return;
+
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (emojiPickerRef.current && !emojiPickerRef.current.contains(target) && emojiButtonRef.current && !emojiButtonRef.current.contains(target)) {
+        setShowEmojiPicker(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showEmojiPicker]);
+
+  function handleEmojiClick(emojiData: EmojiClickData) {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart ?? text.length;
+    const end = textarea.selectionEnd ?? text.length;
+    const newText = text.slice(0, start) + emojiData.emoji + text.slice(end);
+
+    setText(newText);
+
+    // Restore cursor position after emoji insertion
+    requestAnimationFrame(() => {
+      const newPos = start + emojiData.emoji.length;
+      textarea.focus();
+      textarea.setSelectionRange(newPos, newPos);
+      // Re-trigger auto-resize
+      textarea.style.height = "auto";
+      textarea.style.height = Math.min(textarea.scrollHeight, 120) + "px";
+    });
+  }
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -69,6 +112,7 @@ export default function ChatInput({ chatId }: ChatInputProps) {
         onSuccess: () => {
           setText("");
           setSelectedFile(null);
+          setShowEmojiPicker(false);
           textareaRef.current?.focus();
         },
       },
@@ -79,12 +123,15 @@ export default function ChatInput({ chatId }: ChatInputProps) {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
+      return;
+    }
+    if (e.key === "Escape" && showEmojiPicker) {
+      setShowEmojiPicker(false);
     }
   }
 
   function handleTextChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
     setText(e.target.value);
-    // Auto-resize
     const el = e.target;
     el.style.height = "auto";
     el.style.height = Math.min(el.scrollHeight, 120) + "px";
@@ -94,7 +141,14 @@ export default function ChatInput({ chatId }: ChatInputProps) {
   const canSend = (text.trim().length > 0 || selectedFile !== null) && !isPending;
 
   return (
-    <div className="px-4 py-3 border-t border-border bg-background/95 backdrop-blur-sm shrink-0">
+    <div className="relative px-4 py-3 border-t border-border bg-background/95 backdrop-blur-sm shrink-0">
+      {/* Emoji Picker — anchored above the input, same pattern as CreateCommentForm */}
+      {showEmojiPicker && (
+        <div ref={emojiPickerRef} className="absolute bottom-full left-4 mb-2 z-50">
+          <EmojiPicker onEmojiClick={handleEmojiClick} theme={resolvedTheme === "dark" ? Theme.DARK : Theme.LIGHT} lazyLoadEmojis searchPlaceholder="Cari emoji..." width={300} height={380} />
+        </div>
+      )}
+
       {/* File preview */}
       {selectedFile && (
         <div className="flex items-center gap-2 mb-2 p-2 rounded-xl bg-muted/60 border border-border">
@@ -133,10 +187,23 @@ export default function ChatInput({ chatId }: ChatInputProps) {
             placeholder="Ketik pesan..."
             rows={1}
             disabled={isPending}
-            className="resize-none min-h-9 max-h-[120px] py-2 px-3 text-sm rounded-2xl bg-muted/60 border-transparent focus-visible:border-primary/30 focus-visible:ring-0 scrollbar-none"
+            className="resize-none min-h-9 max-h-30 py-2 px-3 text-sm rounded-2xl bg-muted/60 border-transparent focus-visible:border-primary/30 focus-visible:ring-0 scrollbar-none"
             style={{ height: "36px" }}
           />
         </div>
+
+        {/* Emoji toggle button */}
+        <button
+          ref={emojiButtonRef}
+          type="button"
+          onClick={() => setShowEmojiPicker((prev) => !prev)}
+          disabled={isPending}
+          tabIndex={-1}
+          aria-label="Tambah emoji"
+          className={cn("h-9 w-9 shrink-0 flex items-center justify-center rounded-xl transition-colors", showEmojiPicker ? "text-foreground bg-muted" : "text-muted-foreground hover:text-foreground")}
+        >
+          <Smile size={18} />
+        </button>
 
         {/* Send button */}
         <Button
