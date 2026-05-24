@@ -40,7 +40,9 @@ export default function CommentList({ post }: { post: Post }) {
                   <span className="font-semibold mr-1">{post.user?.username}</span>
                   <span className="wrap-break-words">{post.content}</span>
                 </div>
-                <div className="mt-0.5 text-xs text-muted-foreground">{createdAt}</div>
+                <div className="mt-0.5 text-xs text-muted-foreground">
+                  {createdAt} {post.updatedAt ? "· edited" : ""}
+                </div>
               </div>
             </div>
           )}

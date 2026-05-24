@@ -38,6 +38,7 @@ export interface Post {
   title: string;
   content: string;
   createdAt: string;
+  updatedAt: string | null;
   galleries: PostGallery[];
   totalLikes: number;
   totalComments: number;
