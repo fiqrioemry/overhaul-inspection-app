@@ -60,6 +60,8 @@ export interface UserAccount {
   totalFollowers: number;
   totalFollowings: number;
   totalPosts: number;
+  followStatus: "ACCEPTED" | "PENDING" | "NONE";
+  follower: followerInfo;
 }
 
 export interface Sessions {

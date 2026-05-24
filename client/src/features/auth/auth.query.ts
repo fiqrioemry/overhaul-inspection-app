@@ -2,10 +2,10 @@
 import { toast } from "sonner";
 import { useEffect } from "react";
 import { useAuthStore } from "@/stores/auth.store";
+import type { ResetPasswordRequest } from "@/schemas/auth.schema";
 import type { ChangePasswordFormValues } from "@/schemas/settings.schema";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchMe, getSessions, deleteSession, logoutAll, changePassword, resetPassword } from "./auth.api";
-import type { ResetPasswordRequest } from "@/schemas/auth.schema";
 
 export const AUTH_KEYS = {
   me: ["auth", "me"] as const,
