@@ -26,14 +26,17 @@ export async function createPost(payload: CreatePostRequest): Promise<ResponseSu
 
   formData.append("title", payload.title);
   formData.append("content", payload.content);
+  formData.append("aspectRatio", payload.aspectRatio);
+
+  // Kirim crops sebagai JSON string — server parse kembali ke array
+  formData.append("crops", JSON.stringify(payload.crops ?? []));
+
   payload.galleries.forEach((file) => {
     formData.append("galleries", file);
   });
 
   const res = await api.post(POST_ENDPOINTS.createPost, formData, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
+    headers: { "Content-Type": "multipart/form-data" },
   });
 
   return res.data;

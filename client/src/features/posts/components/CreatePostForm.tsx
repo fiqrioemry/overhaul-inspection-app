@@ -1,14 +1,15 @@
 // src/features/posts/components/CreatePostForm.tsx
 import { toast } from "sonner";
 import { X } from "lucide-react";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, FormProvider } from "react-hook-form";
 import { useCreatePost } from "@/features/posts/posts.query";
+import { type AspectRatio } from "@/constants/posts.constant";
 import { PostDetailStep } from "@/features/posts/components/PostDetailStep";
 import { createPostRequest, type CreatePostRequest } from "@/schemas/posts.schema";
-import { ImageCarouselPanel } from "@/features/posts/components/ImageCarouselPanel";
 import { ImageUploadStep, type PreviewItem } from "@/features/posts/components/ImageUploadStep";
+import { ImageCarouselPanel, type PerImageCrop } from "@/features/posts/components/ImageCarouselPanel";
 
 interface CreatePostFormProps {
   onSuccess: () => void;
@@ -22,13 +23,21 @@ type Step = "upload" | "detail";
 export default function CreatePostForm({ onSuccess, onClose, onHasImagesChange, isPendingChange }: CreatePostFormProps) {
   const [step, setStep] = useState<Step>("upload");
   const [previews, setPreviews] = useState<PreviewItem[]>([]);
-  const { mutateAsync: createPost, isPending } = useCreatePost();
+  const [aspectRatio, setAspectRatio] = useState<AspectRatio>("1:1");
+  const [cropMap, setCropMap] = useState<Map<number, PerImageCrop>>(new Map());
 
+  const { mutateAsync: createPost, isPending } = useCreatePost();
   isPendingChange?.(isPending);
 
   const methods = useForm<CreatePostRequest>({
     resolver: zodResolver(createPostRequest),
-    defaultValues: { title: "", content: "", galleries: [] },
+    defaultValues: {
+      title: "",
+      content: "",
+      galleries: [],
+      aspectRatio: "1:1",
+      crops: [],
+    },
   });
 
   function handlePreviewChange(items: PreviewItem[]) {
@@ -39,6 +48,23 @@ export default function CreatePostForm({ onSuccess, onClose, onHasImagesChange, 
       items.map((p) => p.file),
       { shouldValidate: true },
     );
+    setCropMap((prev) => {
+      const next = new Map(prev);
+      for (const key of next.keys()) {
+        if (key >= items.length) next.delete(key);
+      }
+      return next;
+    });
+  }
+
+  const handleCropChange = useCallback((index: number, crop: PerImageCrop) => {
+    setCropMap((prev) => new Map(prev).set(index, crop));
+  }, []);
+
+  function handleAspectRatioChange(ratio: AspectRatio) {
+    setAspectRatio(ratio);
+    methods.setValue("aspectRatio", ratio);
+    setCropMap(new Map());
   }
 
   function handleNext() {
@@ -50,7 +76,11 @@ export default function CreatePostForm({ onSuccess, onClose, onHasImagesChange, 
   }
 
   async function onSubmit(data: CreatePostRequest) {
-    await createPost(data);
+    const crops = previews.map((_, i) => {
+      const c = cropMap.get(i);
+      return c?.cropData ?? { cropX: 0, cropY: 0, cropW: 1, cropH: 1 };
+    });
+    await createPost({ ...data, crops });
     previews.forEach((p) => URL.revokeObjectURL(p.previewUrl));
     onSuccess();
   }
@@ -76,7 +106,13 @@ export default function CreatePostForm({ onSuccess, onClose, onHasImagesChange, 
             </button>
           )}
           {step === "detail" && (
-            <button type="button" onClick={methods.handleSubmit(onSubmit)} disabled={isPending || !methods.formState.isValid} className="text-sm font-semibold text-primary hover:text-primary/80 transition-colors disabled:opacity-50">
+            <button
+              type="button"
+              // FIX: onSubmit now matches SubmitHandler<CreatePostRequest>
+              onClick={methods.handleSubmit(onSubmit)}
+              disabled={isPending || !methods.formState.isValid}
+              className="text-sm font-semibold text-primary hover:text-primary/80 transition-colors disabled:opacity-50"
+            >
               {isPending ? "Posting..." : "Share"}
             </button>
           )}
@@ -88,31 +124,13 @@ export default function CreatePostForm({ onSuccess, onClose, onHasImagesChange, 
 
       {/* Body */}
       <div className={`flex overflow-hidden ${showSplitLayout ? "flex-col xl:flex-row flex-1" : "flex-1"}`}>
-        {/* Image panel */}
         {showSplitLayout && (
-          <div
-            className={[
-              // Mobile: image di atas, tinggi compact
-              "w-full bg-black flex items-center justify-center shrink-0",
-              "h-56 sm:h-72",
-              // xl: kembali ke split kiri-kanan
-              "xl:h-auto xl:w-auto xl:flex-1 xl:min-w-0",
-            ].join(" ")}
-          >
-            <ImageCarouselPanel previews={previews} />
+          <div className={["w-full bg-black flex items-center justify-center shrink-0", "h-72 sm:h-88", "xl:h-auto xl:w-auto xl:flex-1 xl:min-w-0"].join(" ")}>
+            <ImageCarouselPanel previews={previews} aspectRatio={aspectRatio} onAspectRatioChange={handleAspectRatioChange} cropMap={cropMap} onCropChange={handleCropChange} />
           </div>
         )}
 
-        {/* Form panel */}
-        <div
-          className={[
-            showSplitLayout
-              ? // Ada gambar: form di bawah (mobile) atau kanan (xl)
-                "w-full flex flex-col overflow-y-auto border-t border-border xl:border-t-0 xl:border-l xl:w-80 xl:shrink-0 xl:max-w-none"
-              : // Tidak ada gambar: form full width
-                "flex-1 flex flex-col overflow-y-auto",
-          ].join(" ")}
-        >
+        <div className={[showSplitLayout ? "w-full flex flex-col overflow-y-auto border-t border-border xl:border-t-0 xl:border-l xl:w-80 xl:shrink-0" : "flex-1 flex flex-col overflow-y-auto"].join(" ")}>
           <div className="p-5 flex-1">{step === "upload" ? <ImageUploadStep previews={previews} onChange={handlePreviewChange} /> : <PostDetailStep />}</div>
         </div>
       </div>
