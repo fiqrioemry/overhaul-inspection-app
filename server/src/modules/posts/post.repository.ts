@@ -36,6 +36,7 @@ export class PostRepository {
           title: true,
           content: true,
           createdAt: true,
+          updatedAt: true,
           userId: true,
           postReports: {
             where: { userId: query.userId }, // or userId param for detail
@@ -127,6 +128,7 @@ export class PostRepository {
         title: true,
         content: true,
         createdAt: true,
+        updatedAt: true,
         userId: true,
 
         postReports: {
@@ -251,6 +253,7 @@ export class PostRepository {
           title: true,
           content: true,
           createdAt: true,
+          updatedAt: true,
           userId: true,
           postReports: {
             where: { userId: query.userId }, // or userId param for detail
@@ -351,6 +354,7 @@ export class PostRepository {
           title: true,
           content: true,
           createdAt: true,
+          updatedAt: true,
           userId: true,
           postReports: {
             where: { userId: query.userId },
@@ -508,6 +512,7 @@ export class PostRepository {
               title: true,
               content: true,
               createdAt: true,
+              updatedAt: true,
               postReports: {
                 where: { userId: query.userId },
                 select: { id: true, userId: true },

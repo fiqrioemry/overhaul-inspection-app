@@ -11,6 +11,7 @@ export type postResponse = {
   content: string;
   user: { id: string; name: string; username: string; avatar: string | null };
   createdAt: Date;
+  updatedAt: Date | null;
   galleries: { id: string; url: string; order?: number }[];
   totalLikes: number;
   totalComments: number;
