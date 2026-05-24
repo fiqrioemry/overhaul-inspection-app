@@ -38,7 +38,7 @@ export default function CommentList({ post }: { post: Post }) {
               <div className="flex-1 min-w-0">
                 <div className="text-sm">
                   <span className="font-semibold mr-1">{post.user?.username}</span>
-                  <span className="wrap-break-words">{post.content}</span>
+                  <p className="text-sm whitespace-pre-wrap break-words">{post.content}</p>
                 </div>
                 <div className="mt-0.5 text-xs text-muted-foreground">
                   {createdAt} {post.updatedAt ? "· edited" : ""}

@@ -1,15 +1,15 @@
 // src/features/chats/components/ChatInput.tsx
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { useState, useRef, useEffect } from "react";
+import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
+import { useState, useRef, useEffect } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { CHAT_LIMITS } from "@/constants/chats.constant";
 import type { MessageType } from "@/schemas/chats.schema";
 import { useSendMessage } from "@/features/chats/chats.query";
-import { Send, Paperclip, X, FileText, Music, ImageIcon, Loader2, Smile } from "lucide-react";
-import { useTheme } from "next-themes";
 import EmojiPicker, { type EmojiClickData, Theme } from "emoji-picker-react";
+import { Send, Paperclip, X, FileText, Music, ImageIcon, Loader2, Smile } from "lucide-react";
 
 interface ChatInputProps {
   chatId: string;
@@ -82,13 +82,13 @@ export default function ChatInput({ chatId }: ChatInputProps) {
     if (!file) return;
 
     if (file.size > CHAT_LIMITS.MAX_FILE_SIZE) {
-      toast.error("Ukuran file maksimal 5MB");
+      toast.error("Maximum file size is 5MB");
       return;
     }
 
     const allowed = CHAT_LIMITS.ALLOWED_FILE_TYPES as readonly string[];
     if (!allowed.includes(file.type)) {
-      toast.error("Format file tidak didukung");
+      toast.error("File format not supported");
       return;
     }
 

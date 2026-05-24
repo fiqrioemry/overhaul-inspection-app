@@ -1,44 +1,71 @@
 // src/features/posts/components/PostDetailStep.tsx
-import { cn } from "@/lib/utils";
 import { useFormContext } from "react-hook-form";
-import { FormField } from "@/components/fields/FormField";
+import { Field, FieldError } from "@/components/ui/field";
 import type { CreatePostRequest } from "@/schemas/posts.schema";
+
+const MAX_TITLE = 100;
+const MAX_CONTENT = 2000;
 
 export function PostDetailStep() {
   const {
     register,
-    formState: { errors },
     watch,
+    formState: { errors },
   } = useFormContext<CreatePostRequest>();
 
-  const content = watch("content") ?? "";
+  const titleLen = watch("title")?.length ?? 0;
+  const contentLen = watch("content")?.length ?? 0;
 
   return (
     <div className="flex flex-col gap-5">
-      <FormField label="Title" required error={errors.title?.message}>
-        <input
-          {...register("title")}
-          placeholder="Write Post Title..."
-          className={cn(
-            "w-full px-3.5 py-2.5 rounded-xl text-sm bg-muted/50 border border-transparent transition-all outline-none",
-            "focus:border-primary/40 focus:bg-background placeholder:text-muted-foreground/60",
-            errors.title && "border-destructive/50 focus:border-destructive",
-          )}
-        />
-      </FormField>
+      {/* Title */}
+      <Field data-invalid={!!errors.title}>
+        <div className="relative">
+          <input
+            {...register("title")}
+            id="title"
+            placeholder="Add a title…"
+            maxLength={MAX_TITLE}
+            autoComplete="off"
+            className={[
+              "peer w-full bg-transparent text-sm font-semibold placeholder:text-muted-foreground/50",
+              "border-b border-border pb-2 pt-0 outline-none transition-colors",
+              "focus:border-primary",
+              errors.title ? "border-destructive" : "",
+            ].join(" ")}
+          />
+          <span className={["absolute right-0 bottom-2.5 text-[10px] tabular-nums transition-colors", titleLen >= MAX_TITLE ? "text-destructive" : "text-muted-foreground/50"].join(" ")}>
+            {titleLen}/{MAX_TITLE}
+          </span>
+        </div>
+        <FieldError errors={[errors.title]} />
+      </Field>
 
-      <FormField label="Description" required hint={`${content.length} characters · minimum 10`} error={errors.content?.message}>
-        <textarea
-          {...register("content")}
-          placeholder="Tell something about this post..."
-          rows={5}
-          className={cn(
-            "w-full px-3.5 py-2.5 rounded-xl text-sm bg-muted/50 border border-transparent transition-all outline-none resize-none",
-            "focus:border-primary/40 focus:bg-background placeholder:text-muted-foreground/60",
-            errors.content && "border-destructive/50 focus:border-destructive",
-          )}
-        />
-      </FormField>
+      {/* Caption / Content */}
+      <Field data-invalid={!!errors.content}>
+        <div className="relative">
+          <textarea
+            {...register("content")}
+            id="content"
+            placeholder="Write a caption…"
+            maxLength={MAX_CONTENT}
+            rows={12}
+            className={[
+              "w-full resize-none bg-transparent text-sm leading-relaxed",
+              "placeholder:text-muted-foreground/50 outline-none",
+              "scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent",
+              errors.content ? "text-destructive" : "",
+            ].join(" ")}
+          />
+
+          <div className="flex items-center justify-between pt-1 border-t border-border/50">
+            <FieldError errors={[errors.content]} />
+            <span className={["ml-auto text-[10px] tabular-nums shrink-0", contentLen >= MAX_CONTENT ? "text-destructive" : "text-muted-foreground/50"].join(" ")}>
+              {contentLen}/{MAX_CONTENT}
+            </span>
+          </div>
+        </div>
+      </Field>
     </div>
   );
 }
