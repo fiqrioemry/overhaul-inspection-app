@@ -19,21 +19,30 @@ export class PostService {
 
       if (request.galleries && request.galleries.length > 0) {
         const fileRecords = await Promise.all(
-          request.galleries.map(async (file) => {
-            return await FileService.generateFileRecord(file, "posts");
+          request.galleries.map(async (file, i) => {
+            const cropRect = request.crops?.[i];
+            return await FileService.generateFileRecord(file, "posts", request.aspectRatio, cropRect);
           }),
         );
 
-        const fileRecordsWithTargetId = fileRecords.map((fileRecord) => ({ ...(fileRecord ?? {}), targetId: post.id, isUsed: true }));
+        const fileRecordsWithTargetId = fileRecords.map((fr) => ({
+          ...(fr ?? {}),
+          targetId: post.id,
+          isUsed: true,
+        }));
 
         const galleries = await FileService.saveBulkRecordsToDatabase(fileRecordsWithTargetId, tx);
-
         await PostRepository.bulkCreateGalleryRecords(tx, post.id, galleries);
 
         await UserRepository.createActivityLog(tx, {
           userId,
           action: postAction.CREATE_POST,
-          metadata: { title: request.title, content: post.content, galleries: galleries },
+          metadata: {
+            title: request.title,
+            content: post.content,
+            aspectRatio: request.aspectRatio,
+            galleries,
+          },
         });
 
         for (const fileRecord of fileRecords) {

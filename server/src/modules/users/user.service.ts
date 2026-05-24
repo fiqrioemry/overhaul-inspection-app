@@ -54,6 +54,7 @@ export class UserService {
 
       await FileService.uploadFileToStorage(c, fileDataRecord);
 
+      fileDataRecord.isUsed = true;
       const uploadedFile = await FileService.saveRecordToDatabase(fileDataRecord, tx);
 
       await UserRepository.updateAvatar(userId, fileDataRecord.url!, tx);

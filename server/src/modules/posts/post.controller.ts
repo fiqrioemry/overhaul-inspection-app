@@ -9,9 +9,21 @@ export class PostController {
     const user = c.get("user");
     const body = await c.req.parseBody({ all: true });
     const galleries = c.get("posts") as File[] | undefined;
+
+    let crops: unknown[] = [];
+    try {
+      if (typeof body.crops === "string") {
+        crops = JSON.parse(body.crops);
+      }
+    } catch {
+      crops = [];
+    }
+
     const request = createPostRequest.parse({
       title: body.title,
       content: body.content,
+      aspectRatio: body.aspectRatio ?? "1:1",
+      crops,
       galleries,
     });
 
