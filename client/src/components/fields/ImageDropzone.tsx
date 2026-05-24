@@ -12,7 +12,7 @@ interface ImageDropzoneProps {
 }
 
 const ACCEPTED = { "image/jpeg": [], "image/png": [], "image/webp": [] };
-const MAX_SIZE = 5 * 1024 * 1024;
+const MAX_SIZE = 8 * 1024 * 1024;
 
 export function ImageDropzone({ onDrop, disabled, maxSize = MAX_SIZE, maxFiles = 5, currentCount = 0 }: ImageDropzoneProps) {
   const remaining = maxFiles - currentCount;
