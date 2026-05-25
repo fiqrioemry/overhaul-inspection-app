@@ -31,10 +31,6 @@ export default function CommentList({ post }: { post: Post }) {
           {/* Caption as first "comment" */}
           {post.content && (
             <div className="flex gap-3 py-2">
-              <Avatar className="h-8 w-8 shrink-0">
-                <AvatarImage src={post.user?.avatar ?? "/default-avatar.png"} alt={post.user?.username} />
-                <AvatarFallback className="text-xs">{post.user?.username?.slice(0, 2).toUpperCase() ?? "U"}</AvatarFallback>
-              </Avatar>
               <div className="flex-1 min-w-0">
                 <div className="text-sm">
                   <span className="font-semibold mr-1">{post.user?.username}</span>
