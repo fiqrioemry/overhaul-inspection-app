@@ -8,6 +8,7 @@ import CommentList from "@/features/comments/components/CommentList";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import CreateCommentForm from "@/features/comments/components/CreateCommentForm";
 import PostActions, { PostActionCounts } from "@/features/posts/components/PostActions";
+import { useEffect } from "react";
 
 interface PostDetailDialogProps {
   post: Post;
@@ -28,6 +29,10 @@ export default function PostDetailDialog({ post }: PostDetailDialogProps) {
 
   const images = post.galleries ?? [];
   const createdAt = post.createdAt ? formatDistanceToNow(new Date(post.createdAt), { addSuffix: true }) : "";
+
+  useEffect(() => {
+    onReply?.(null);
+  }, [post.id, onReply]);
 
   return (
     <Dialog open={isOpen && target === post.id} onOpenChange={handleOpenChange}>

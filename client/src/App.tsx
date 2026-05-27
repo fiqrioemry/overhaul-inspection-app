@@ -27,9 +27,6 @@ import ProtectedRoute from "@/features/auth/components/ProtectedRoute";
 export default function AppRouter() {
   useTheme();
 
-  // Scroll to top on route change
-  window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
-
   return (
     <>
       <ScrollToTop />
