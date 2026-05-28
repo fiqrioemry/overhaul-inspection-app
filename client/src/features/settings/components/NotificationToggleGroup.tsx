@@ -36,12 +36,11 @@ export default function NotificationToggleGroup() {
   const { data, isLoading } = useNotificationSettings();
   const updateSetting = useUpdateNotificationSetting();
 
-  console.log("Fetching notification settings...", data);
   const settings = data?.data || [];
-  console.log("Current notification settings:", settings);
 
   const getSettingId = (type: string): string | undefined => {
     const setting = settings.find((s: NotificationSetting) => s.type === type);
+    console.log(`Getting setting ID for type: ${type}, found setting:`, setting);
     return setting?.id;
   };
   const getSettingStatus = (type: string): boolean => {

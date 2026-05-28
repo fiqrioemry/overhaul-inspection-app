@@ -21,7 +21,6 @@ export async function getNotificationSettings() {
 }
 
 export async function updateNotificationSettings(payload: UpdateNotificationSettingsRequest) {
-  console.log("Updating notification settings with payload:", payload);
   const res = await api.put(NOTIFICATIONS_ENDPOINTS.updateNotificationSettings, payload);
   return res.data;
 }

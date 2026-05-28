@@ -121,7 +121,7 @@ export default function NotificationPage() {
             <p className="text-sm text-muted-foreground">{t("notif:noNotifications")}</p>
           </div>
           {!isRequestTab && notifications.length > 0 && (
-            <Button variant="ghost" size="sm" onClick={toggleSelectMode} className="text-xs text-muted-foreground hover:text-foreground mt-0.5">
+            <Button variant="ghost" size="sm" onClick={toggleSelectMode}   className="text-xs text-muted-foreground hover:text-foreground mt-0.5">
               {isSelectMode ? t("notif:cancel") : t("notif:select")}
             </Button>
           )}
