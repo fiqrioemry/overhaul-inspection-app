@@ -1,13 +1,15 @@
 // src/features/posts/pages/FeedPage.tsx
 import { useEffect, useRef } from "react";
 import { Loader2, Rss } from "lucide-react";
+import { Helmet } from "react-helmet-async";
+import { useTranslation } from "react-i18next";
 import type { Post } from "@/types/posts.type";
 import FeedPostCard from "@/features/posts/components/FeedPostCard";
 import { useInfiniteFollowingPosts } from "@/features/posts/posts.query";
 import FeedPostCardSkeleton from "@/features/posts/components/FeedPostCardSkeleton";
-import { Helmet } from "react-helmet-async";
 
 export default function FeedPage() {
+  const { t } = useTranslation(["post"]);
   const { data, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage } = useInfiniteFollowingPosts({ limit: 3 });
 
   const observerTarget = useRef<HTMLDivElement>(null);
@@ -63,10 +65,10 @@ export default function FeedPage() {
           {isFetchingNextPage && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
-              Loading more posts...
+              {t("post:loadingMorePosts")}
             </div>
           )}
-          {!hasNextPage && allPosts.length > 0 && <p className="text-sm text-muted-foreground">You've reached the end</p>}
+          {!hasNextPage && allPosts.length > 0 && <p className="text-sm text-muted-foreground">{t("post:noMorePosts")}</p>}
         </div>
 
         {!isLoading && allPosts.length === 0 && (
@@ -74,8 +76,8 @@ export default function FeedPage() {
             <div className="rounded-full bg-muted p-6 mb-4">
               <Rss className="h-10 w-10 text-muted-foreground" />
             </div>
-            <h3 className="text-lg font-semibold mb-1">Your feed is empty</h3>
-            <p className="text-sm text-muted-foreground max-w-xs">Follow people to see their latest posts right here in your feed.</p>
+            <h3 className="text-lg font-semibold mb-1">{t("post:emptyFeedTitle")}</h3>
+            <p className="text-sm text-muted-foreground max-w-xs">{t("post:emptyFeedMessage")}</p>
           </div>
         )}
       </div>

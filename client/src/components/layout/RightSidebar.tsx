@@ -3,8 +3,11 @@ import { useAuthStore } from "@/stores/auth.store";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatInitials } from "@/utils/formatString";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useTranslation } from "react-i18next";
 
 export default function RightSidebar() {
+  const { t } = useTranslation(["nav"]);
+
   const user = useAuthStore((s) => s.user);
 
   return (
@@ -30,7 +33,7 @@ export default function RightSidebar() {
       {/* Suggested users section */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Suggestion for you</span>
+          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t("nav:suggestions")}</span>
         </div>
         <SuggestedUsersList />
       </div>
@@ -38,15 +41,17 @@ export default function RightSidebar() {
       {/* Footer links */}
       <div className="text-[11px] text-muted-foreground/60 leading-relaxed">
         <p> Ahmad Fiqri Oemry</p>
-        <p>© {new Date().getFullYear()} Pixel. Made With ❤️</p>
+        <p>
+          © {new Date().getFullYear()} Pixel. {t("nav:madeWithLove")}
+        </p>
       </div>
     </div>
   );
 }
 
-// Placeholder — swap with a real useSuggestedUsers() query
 function SuggestedUsersList() {
-  // Simulated loading state for demo
+  const { t } = useTranslation(["nav"]);
+
   const isLoading = false;
 
   if (isLoading) {
@@ -69,9 +74,9 @@ function SuggestedUsersList() {
   // Empty state
   return (
     <p className="text-xs text-muted-foreground">
-      No suggestions at the moment. Explore users on the{" "}
+      {t("nav:noSuggestions")}{" "}
       <Link to="/explore" className="text-primary hover:underline">
-        Explore
+        {t("nav:explorePage")}
       </Link>
     </p>
   );
