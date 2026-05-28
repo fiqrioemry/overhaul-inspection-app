@@ -2,6 +2,7 @@ import { toast } from "sonner";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import OAuthDivider from "./OAuthDivider";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import OAuthButtonGroup from "./OAuthButtonGroup";
 import { login } from "@/features/auth/auth.api";
@@ -15,17 +16,16 @@ import { loginSchema, type LoginFormValues } from "@/schemas/auth.schema";
 
 export default function LoginForm() {
   const navigate = useNavigate();
+  const { t } = useTranslation(["auth", "common"]);
   const redirectTo = new URLSearchParams(window.location.search).get("redirectTo") || "/";
 
-  // Tampilkan error OAuth dari query param kalau ada
-  // Backend redirect ke /login?error=oauth_failed atau /login?error=oauth_cancelled
   const oauthError = new URLSearchParams(window.location.search).get("error");
   const oauthErrorMessages: Record<string, string> = {
-    oauth_failed: "Login dengan provider gagal. Silakan coba lagi.",
-    oauth_cancelled: "Login dibatalkan.",
+    oauth_failed: t("auth:oauthFailed"),
+    oauth_cancelled: t("auth:oauthCancelled"),
   };
 
-  const [serverError, setServerError] = useState<ResponseError | null>(oauthError ? { message: oauthErrorMessages[oauthError] ?? "Terjadi kesalahan.", success: false, status: 400, code: oauthError } : null);
+  const [serverError, setServerError] = useState<ResponseError | null>(oauthError ? { message: oauthErrorMessages[oauthError] ?? t("common:error"), success: false, status: 400, code: oauthError } : null);
 
   const {
     control,
@@ -45,7 +45,7 @@ export default function LoginForm() {
     } catch (err) {
       const res = err as ResponseError;
       setServerError({
-        message: res?.message ?? "Login failed, please try again",
+        message: res?.message ?? t("auth:loginFailed"),
         errors: res?.errors,
       });
     }
@@ -56,36 +56,33 @@ export default function LoginForm() {
       {/* Header */}
       <div className="space-y-1 text-center">
         <div>❤️</div>
-        <h1 className="text-2xl font-semibold">Login to Pixel.</h1>
-        <p className="text-sm text-muted-foreground">Welcome back! Please enter your details.</p>
+        <h1 className="text-2xl font-semibold">{t("auth:loginTitle")}</h1>
+        <p className="text-sm text-muted-foreground">{t("auth:loginSubtitle")}</p>
       </div>
 
       <AlertCard message={serverError?.message} errors={serverError?.errors} />
 
-      {/* Email / Password form */}
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        <ShortTextField control={control} name="email" label="Email" type="email" placeholder="example@email.com" autoComplete="email" />
-        <PasswordField control={control} name="password" label="Password" placeholder="••••••••" autoComplete="current-password" />
+        <ShortTextField control={control} name="email" label={t("auth:email")} type="email" placeholder={t("auth:emailPlaceholder")} autoComplete="email" />
+        <PasswordField control={control} name="password" label={t("auth:password")} placeholder={t("auth:passwordPlaceholder")} autoComplete="current-password" />
         <div className="flex justify-end">
           <Link to="/forgot-password" className="text-xs text-muted-foreground underline underline-offset-4">
-            Forgot Password?
+            {t("auth:forgotPassword")}
           </Link>
         </div>
         <Button type="submit" className="w-full" disabled={isSubmitting}>
-          {isSubmitting ? "Logging in..." : "Login"}
+          {isSubmitting ? t("auth:loggingIn") : t("auth:loginButton")}
         </Button>
       </form>
 
-      {/* OAuth section */}
       <OAuthDivider />
       <OAuthButtonGroup disabled={isSubmitting} />
 
-      {/* Register link */}
       <div className="text-center">
         <p className="text-sm text-muted-foreground">
-          Don't have an account?{" "}
+          {t("auth:noAccount")}{" "}
           <Link to="/register" className="underline underline-offset-4">
-            Sign up
+            {t("auth:register")}
           </Link>
         </p>
       </div>

@@ -1,7 +1,9 @@
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import useTheme from "@/hooks/useTheme";
+import { useTranslation } from "react-i18next";
 import { logout } from "@/features/auth/auth.api";
+import { useLanguage } from "@/hooks/useLanguage";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useAuthStore } from "@/stores/auth.store";
 import { useState, useRef, useEffect } from "react";
@@ -9,25 +11,27 @@ import { formatInitials } from "@/utils/formatString";
 import { useSearchUsers } from "@/features/users/users.query";
 import UserAvatar from "@/features/users/components/UserAvatar";
 import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useUnreadMessagesCount } from "@/features/chats/chats.query";
 import CreatePostDialog from "@/features/posts/components/CreatePostDialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useUnreadNotificationCount } from "@/features/notifications/notifications.query";
-import { Home, Compass, PlusSquare, LogOut, Settings, Sun, Moon, ChevronDown, Search, X, User, Bell, MessageCircle } from "lucide-react";
+import { Home, Compass, PlusSquare, LogOut, Settings, Sun, Moon, ChevronDown, Search, X, User, Bell, MessageCircle, Languages } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { useUnreadMessagesCount } from "@/features/chats/chats.query";
-
-const NAV_ITEMS = [
-  { icon: Home, label: "Home", to: "/" },
-  { icon: Compass, label: "Explore", to: "/explore" },
-  { icon: MessageCircle, label: "Message", to: "/message" },
-  { icon: Bell, label: "Notifications", to: "/notifications" },
-];
 
 export default function MainSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { handleDarkMode, darkMode } = useTheme();
+  const { currentLanguage, changeLanguage, LANGUAGE_LABELS } = useLanguage();
   const user = useAuthStore((s) => s.user);
+  const { t } = useTranslation(["common", "nav"]);
+
+  const NAV_ITEMS = [
+    { icon: Home, label: t("nav:home"), to: "/" },
+    { icon: Compass, label: t("nav:explore"), to: "/explore" },
+    { icon: MessageCircle, label: t("nav:messages"), to: "/message" },
+    { icon: Bell, label: t("nav:notifications"), to: "/notifications" },
+  ];
 
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
@@ -38,8 +42,6 @@ export default function MainSidebar() {
   const { data: searchResults, isFetching: isSearching } = useSearchUsers({ search: debouncedSearch });
   const { data: notificationCount } = useUnreadNotificationCount();
   const { data: unreadMessagesCount } = useUnreadMessagesCount();
-
-  console.log("Unread Messages Count:", unreadMessagesCount);
 
   const searchRef = useRef<HTMLDivElement>(null);
 
@@ -57,13 +59,12 @@ export default function MainSidebar() {
     setIsLoggingOut(true);
     try {
       const res = await logout();
-      console.log("data", res);
       if (res.success) {
         useAuthStore.getState().clearUser();
         window.location.href = "/login";
       }
     } catch {
-      toast.error("Failed to logout. Please try again.");
+      toast.error(t("common:logoutFailed"));
     } finally {
       setIsLoggingOut(false);
     }
@@ -71,7 +72,6 @@ export default function MainSidebar() {
 
   return (
     <>
-      {/* Desktop Sidebar */}
       <aside className="hidden md:flex flex-col fixed left-0 top-0 h-full w-64 xl:w-72 bg-sidebar border-r border-sidebar-border z-40 px-4 py-6 gap-2">
         {/* Logo */}
         <div className="px-3 mb-6">
@@ -86,7 +86,7 @@ export default function MainSidebar() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
             <input
               type="text"
-              placeholder="Search Users..."
+              placeholder={t("common:searchPlaceholder")}
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
@@ -108,11 +108,10 @@ export default function MainSidebar() {
             )}
           </div>
 
-          {/* Search Dropdown */}
           {showSearch && debouncedSearch.trim().length > 0 && (
             <div className="absolute top-full left-0 right-0 mt-1.5 bg-popover border border-border rounded-xl shadow-lg overflow-hidden z-50">
               {isSearching ? (
-                <div className="px-4 py-3 text-sm text-muted-foreground">Mencari...</div>
+                <div className="px-4 py-3 text-sm text-muted-foreground">{t("common:loading")}</div>
               ) : searchResults?.data && Array.isArray(searchResults.data) && searchResults.data.length > 0 ? (
                 <ul>
                   {searchResults.data.map((u) => (
@@ -135,7 +134,7 @@ export default function MainSidebar() {
                   ))}
                 </ul>
               ) : (
-                <div className="px-4 py-3 text-sm text-muted-foreground">Tidak ada pengguna ditemukan.</div>
+                <div className="px-4 py-3 text-sm text-muted-foreground">{t("common:noResults")}</div>
               )}
             </div>
           )}
@@ -147,6 +146,8 @@ export default function MainSidebar() {
             const isActive = location.pathname === to;
             const unreadCount = notificationCount ?? 0;
             const unreadMessages = unreadMessagesCount ?? 0;
+            const isNotif = to === "/notifications";
+            const isMessage = to === "/message";
 
             return (
               <Link
@@ -157,33 +158,27 @@ export default function MainSidebar() {
                   isActive ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:bg-muted hover:text-foreground",
                 )}
               >
-                {/* Icon Wrapper */}
                 <div className="relative shrink-0">
-                  {label === "Profile" ? <UserAvatar user={user!} size="md" /> : <Icon className={cn("size-5", !isActive && "group-hover:scale-110 transition-transform")} />}
-
-                  {/* Notification Badge */}
-                  {label === "Notifications" && unreadCount > 0 && (
+                  <Icon className={cn("size-5", !isActive && "group-hover:scale-110 transition-transform")} />
+                  {isNotif && unreadCount > 0 && (
                     <span className={cn("absolute -top-2 -right-2 min-w-4.5 h-4.5", "px-1 flex items-center justify-center", "rounded-full bg-red-500 text-white", "text-[10px] font-bold leading-none", "ring-2 ring-sidebar shadow-sm")}>
                       {unreadCount > 99 ? "99+" : unreadCount}
                     </span>
                   )}
-                  {label === "Message" && unreadMessages > 0 && (
+                  {isMessage && unreadMessages > 0 && (
                     <span className={cn("absolute -top-2 -right-2 min-w-4.5 h-4.5", "px-1 flex items-center justify-center", "rounded-full bg-red-500 text-white", "text-[10px] font-bold leading-none", "ring-2 ring-sidebar shadow-sm")}>
                       {unreadMessages > 99 ? "99+" : unreadMessages}
                     </span>
                   )}
                 </div>
-
-                {/* Label */}
                 <span className="truncate">{label}</span>
               </Link>
             );
           })}
 
-          {/* Create Post Button */}
           <button onClick={() => setShowCreatePost(true)} className="flex items-center gap-3.5 px-3 py-2.5 rounded-xl text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-all group mt-1">
             <PlusSquare className="size-5 shrink-0 group-hover:scale-110 transition-transform" />
-            Create Posting
+            {t("common:createPost")}
           </button>
         </nav>
 
@@ -207,31 +202,48 @@ export default function MainSidebar() {
               <DropdownMenuItem asChild>
                 <Link to={`/profile/${user?.username}`} className="flex items-center gap-2 cursor-pointer">
                   <User className="size-4" />
-                  Profile
+                  {t("common:profile")}
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link to="/settings" className="flex items-center gap-2 cursor-pointer">
                   <Settings className="size-4" />
-                  Settings
+                  {t("common:settings")}
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleDarkMode} className="flex items-center gap-2 cursor-pointer">
                 {darkMode ? <Sun className="size-4" /> : <Moon className="size-4" />}
-                {darkMode ? "Light Mode" : "Dark Mode"}
+                {darkMode ? t("common:lightMode") : t("common:darkMode")}
               </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              {/* Language switcher */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="flex items-center gap-2 cursor-pointer">
+                    <Languages className="size-4" />
+                    {LANGUAGE_LABELS[currentLanguage]}
+                  </DropdownMenuItem>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent side="right" align="start" className="w-48">
+                  <DropdownMenuItem onClick={() => changeLanguage("en")} className={cn("cursor-pointer", currentLanguage === "en" && "font-semibold text-primary")}>
+                    🇺🇸 English
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => changeLanguage("id")} className={cn("cursor-pointer", currentLanguage === "id" && "font-semibold text-primary")}>
+                    🇮🇩 Bahasa Indonesia
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout} disabled={isLoggingOut} className="flex items-center gap-2 text-destructive focus:text-destructive cursor-pointer">
                 <LogOut className="size-4" />
-                {isLoggingOut ? "Logged out..." : "Logout"}
+                {isLoggingOut ? t("common:loggingOut") : t("common:logout")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
       </aside>
 
-      {/* Create Post Modal */}
       {showCreatePost && <CreatePostDialog open={showCreatePost} onOpenChange={setShowCreatePost} />}
     </>
   );

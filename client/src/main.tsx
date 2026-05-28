@@ -1,5 +1,6 @@
 // src/main.tsx
 import "./index.css";
+import "./i18n";
 import App from "./App";
 import { StrictMode } from "react";
 import { queryClient } from "@/lib/query";
