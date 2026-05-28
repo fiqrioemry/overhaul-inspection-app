@@ -1,16 +1,8 @@
 import { cn } from "@/lib/utils";
 import { useGetFollowRequests } from "@/features/users/users.query";
+import { useTranslation } from "react-i18next";
 
 type TabType = "FOLLOW" | "LIKE" | "COMMENT" | "MENTION" | "REQUEST" | "";
-
-const TABS: { label: string; value: TabType }[] = [
-  { label: "All", value: "" },
-  { label: "Follows", value: "FOLLOW" },
-  { label: "Requests", value: "REQUEST" },
-  { label: "Likes", value: "LIKE" },
-  { label: "Comments", value: "COMMENT" },
-  { label: "Mentions", value: "MENTION" },
-];
 
 interface NotificationTabListProps {
   value: TabType;
@@ -18,6 +10,15 @@ interface NotificationTabListProps {
 }
 
 export default function NotificationTabList({ value, onChange }: NotificationTabListProps) {
+  const { t } = useTranslation(["notif"]);
+  const TABS: { label: string; value: TabType }[] = [
+    { label: t("notif:all"), value: "" },
+    { label: t("notif:follows"), value: "FOLLOW" },
+    { label: t("notif:requests"), value: "REQUEST" },
+    { label: t("notif:likes"), value: "LIKE" },
+    { label: t("notif:comments"), value: "COMMENT" },
+    { label: t("notif:mentions"), value: "MENTION" },
+  ];
   const { data: requestsData } = useGetFollowRequests();
   const requestCount = requestsData?.data?.length ?? 0;
 

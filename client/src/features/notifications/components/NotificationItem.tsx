@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import type { Notification, NotificationType } from "@/types/notifications.type";
 import { MessageSquare, Heart, UserPlus, AtSign, Trash2, Loader2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 const TYPE_CONFIG: Record<NotificationType, { icon: React.ElementType; color: string; bg: string }> = {
   COMMENT: { icon: MessageSquare, color: "text-blue-500", bg: "bg-blue-500/10" },
@@ -40,6 +41,7 @@ interface NotificationItemProps {
 }
 
 export default function NotificationItem({ notification, isSelectMode, isSelected, isDeleting, onToggleSelect, onRequestDelete }: NotificationItemProps) {
+  const { t } = useTranslation(["notif"]);
   const { icon: Icon, color, bg } = TYPE_CONFIG[notification.type];
   const isUnread = notification.readAt === null;
 
@@ -75,13 +77,12 @@ export default function NotificationItem({ notification, isSelectMode, isSelecte
         <p className="text-[11px] text-muted-foreground/70 tabular-nums">{formatRelativeTime(notification.createdAt)}</p>
       </div>
 
-      {/* Single delete — hidden for FOLLOW_REQUEST (Accept/Reject are the actions) */}
       {!isSelectMode && (
         <Button
           variant="ghost"
           size="icon"
           disabled={isDeleting}
-          aria-label="Delete notification"
+          aria-label={t("notif:delete")}
           onClick={(e) => {
             e.stopPropagation();
             onRequestDelete(notification.id);

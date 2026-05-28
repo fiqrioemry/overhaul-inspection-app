@@ -11,8 +11,10 @@ import NotificationTabList, { type TabType } from "@/features/notifications/comp
 import { useInfiniteNotifications, useMarkAsRead, useDeleteNotification } from "@/features/notifications/notifications.query";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import FollowRequestList from "@/features/notifications/components/FollowRequestList";
+import { useTranslation } from "react-i18next";
 
 export default function NotificationPage() {
+  const { t } = useTranslation(["notif"]);
   const [search, setSearch] = React.useState("");
   const [activeTab, setActiveTab] = React.useState<TabType>("");
   const [isSelectMode, setSelectMode] = React.useState(false);
@@ -96,17 +98,17 @@ export default function NotificationPage() {
     });
   };
 
-  const bulkDeleteLabel = selectedIds.size === 0 ? "Delete selected" : `Delete ${selectedIds.size} notification${selectedIds.size > 1 ? "s" : ""}`;
-  const confirmTitle = pendingDeleteIds.length === 1 ? "Delete notification?" : `Delete ${pendingDeleteIds.length} notifications?`;
-  const confirmDescription = pendingDeleteIds.length === 1 ? "This notification will be permanently removed." : `These ${pendingDeleteIds.length} notifications will be permanently removed.`;
+  const bulkDeleteLabel = selectedIds.size === 0 ? t("notif:deleteSelected") : t("notif:deleteMultiple", { count: selectedIds.size });
+  const confirmTitle = pendingDeleteIds.length === 1 ? t("notif:confirmDeleteTitle") : t("notif:confirmDeleteAllTitle");
+  const confirmDescription = pendingDeleteIds.length === 1 ? t("notif:confirmDeleteDescription") : t("notif:confirmDeleteAllDescription", { count: pendingDeleteIds.length });
 
   return (
     <>
       <Helmet>
-        <title>Notifications - Pixel social media</title>
+        <title>{t("notif:notifications")} - Pixel social media</title>
         <meta name="description" content="Stay up to date with your activity on Pixel social media." />
         <meta name="keywords" content="notifications, social media, activity" />
-        <meta property="og:title" content="Notifications - Pixel social media" />
+        <meta property="og:title" content={`${t("notif:notifications")} - Pixel social media`} />
         <meta property="og:description" content="Stay up to date with your activity on Pixel social media." />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://pixel.ahmadfiqrioemry.com/notifications" />
@@ -115,12 +117,12 @@ export default function NotificationPage() {
       <div className="mx-auto w-full max-w-2xl px-0 md:px-4 py-6 space-y-4">
         <div className="flex items-start justify-between gap-2">
           <div className="space-y-0.5">
-            <h1 className="text-xl font-semibold tracking-tight">Notifications</h1>
-            <p className="text-sm text-muted-foreground">Stay up to date with your activity.</p>
+            <h1 className="text-xl font-semibold tracking-tight">{t("notif:notifications")}</h1>
+            <p className="text-sm text-muted-foreground">{t("notif:noNotifications")}</p>
           </div>
-          {!isRequestTab && (
+          {!isRequestTab && notifications.length > 0 && (
             <Button variant="ghost" size="sm" onClick={toggleSelectMode} className="text-xs text-muted-foreground hover:text-foreground mt-0.5">
-              {isSelectMode ? "Cancel" : "Select"}
+              {isSelectMode ? t("notif:cancel") : t("notif:select")}
             </Button>
           )}
         </div>
@@ -136,8 +138,8 @@ export default function NotificationPage() {
             {isSelectMode && notifications.length > 0 && (
               <div className="flex items-center justify-between gap-3 px-1">
                 <label className="flex items-center gap-2 cursor-pointer">
-                  <Checkbox checked={allSelected} onCheckedChange={toggleSelectAll} aria-label="Select all notifications" className="h-4 w-4" />
-                  <span className="text-xs text-muted-foreground select-none">{allSelected ? "Deselect all" : "Select all"}</span>
+                  <Checkbox checked={allSelected} onCheckedChange={toggleSelectAll} aria-label={t("notif:selectAll")} className="h-4 w-4" />
+                  <span className="text-xs text-muted-foreground select-none">{allSelected ? t("notif:deselectAll") : t("notif:selectAll")}</span>
                 </label>
                 <Button variant="destructive" size="sm" disabled={!someSelected || isDeleting} onClick={() => requestDelete([...selectedIds])} className="h-7 text-xs gap-1.5">
                   <Trash2 size={12} />
@@ -146,7 +148,7 @@ export default function NotificationPage() {
               </div>
             )}
 
-            {isError && <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">Failed to load notifications. Please try again.</div>}
+            {isError && <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">{t("notif:failedToLoad")}</div>}
 
             {!isError && (
               <NotificationList
@@ -178,9 +180,9 @@ export default function NotificationPage() {
               <AlertDialogDescription>{confirmDescription}</AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogCancel>{t("notif:cancel")}</AlertDialogCancel>
               <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                Delete
+                {t("notif:delete")}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

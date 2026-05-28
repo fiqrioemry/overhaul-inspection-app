@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 import type { User } from "@/types/users.type";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -22,13 +23,14 @@ function FollowRequestSkeleton() {
 }
 
 function EmptyRequests() {
+  const { t } = useTranslation(["notif"]);
   return (
     <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
       <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted mb-4">
         <UserCheck size={22} className="text-muted-foreground" />
       </div>
-      <p className="text-sm font-medium text-foreground">No pending requests</p>
-      <p className="mt-1 text-xs text-muted-foreground max-w-48">When someone requests to follow you, it'll appear here.</p>
+      <p className="text-sm font-medium text-foreground">{t("notif:noPendingRequests")}</p>
+      <p className="mt-1 text-xs text-muted-foreground max-w-48">{t("notif:followRequestInfo")}</p>
     </div>
   );
 }
@@ -42,6 +44,7 @@ interface FollowRequestItemProps {
 
 function FollowRequestItem({ user, isResponding, onAccept, onReject }: FollowRequestItemProps) {
   const navigate = useNavigate();
+  const { t } = useTranslation(["notif"]);
 
   return (
     <div className="flex items-center gap-3 px-4 py-3.5 rounded-xl border border-border bg-card hover:bg-muted/40 transition-colors">
@@ -62,11 +65,11 @@ function FollowRequestItem({ user, isResponding, onAccept, onReject }: FollowReq
       <div className="flex items-center gap-2 shrink-0">
         <Button size="sm" variant="default" disabled={isResponding} onClick={onAccept} className="h-8 px-3 text-xs gap-1.5">
           {isResponding ? <Loader2 size={11} className="animate-spin" /> : <Check size={11} />}
-          Accept
+          {t("notif:accept")}
         </Button>
         <Button size="sm" variant="outline" disabled={isResponding} onClick={onReject} className={cn("h-8 px-3 text-xs gap-1.5 text-muted-foreground")}>
           <X size={11} />
-          Decline
+          {t("notif:reject")}
         </Button>
       </div>
     </div>
@@ -79,6 +82,7 @@ interface FollowRequestListProps {
 
 export default function FollowRequestList({ search }: FollowRequestListProps) {
   const { data, isLoading } = useGetFollowRequests();
+  const { t } = useTranslation(["notif"]);
   const { mutate: accept, isPending: isAccepting, variables: acceptingId } = useAcceptFollowRequest();
   const { mutate: reject, isPending: isRejecting, variables: rejectingId } = useRejectFollowRequest();
 
@@ -101,7 +105,7 @@ export default function FollowRequestList({ search }: FollowRequestListProps) {
   return (
     <div className="space-y-2">
       <p className="text-xs text-muted-foreground px-1">
-        {filtered.length} pending request{filtered.length !== 1 ? "s" : ""}
+        {filtered.length} {t("notif:pendingRequests", { count: filtered.length })}
       </p>
       {filtered.map((user) => {
         const isResponding = (isAccepting && acceptingId === user.id) || (isRejecting && rejectingId === user.id);

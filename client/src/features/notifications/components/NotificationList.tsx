@@ -3,6 +3,7 @@ import { Loader2, BellOff } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Notification } from "@/types/notifications.type";
 import NotificationItem from "@/features/notifications/components/NotificationItem";
+import { useTranslation } from "react-i18next";
 
 function NotificationSkeleton() {
   return (
@@ -18,13 +19,14 @@ function NotificationSkeleton() {
 }
 
 function EmptyState({ hasSearch }: { hasSearch: boolean }) {
+  const { t } = useTranslation(["notif"]);
   return (
     <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
       <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted mb-4">
         <BellOff size={22} className="text-muted-foreground" />
       </div>
-      <p className="text-sm font-medium text-foreground">{hasSearch ? "No results found" : "You're all caught up"}</p>
-      <p className="mt-1 text-xs text-muted-foreground max-w-50">{hasSearch ? "Try a different search term or filter." : "No notifications yet. Check back later."}</p>
+      <p className="text-sm font-medium text-foreground">{hasSearch ? t("notif:noResults") : t("notif:noNotifications")}</p>
+      <p className="mt-1 text-xs text-muted-foreground max-w-50">{hasSearch ? t("notif:tryDifferentSearch") : t("notif:checkBackLater")}</p>
     </div>
   );
 }
@@ -44,6 +46,7 @@ interface NotificationListProps {
 }
 
 export default function NotificationList({ notifications, isLoading, isFetchingNextPage, hasNextPage, hasSearch, isSelectMode, selectedIds, deletingIds, onLoadMore, onToggleSelect, onRequestDelete }: NotificationListProps) {
+  const { t } = useTranslation(["notif"]);
   const sentinelRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
@@ -98,7 +101,7 @@ export default function NotificationList({ notifications, isLoading, isFetchingN
         </div>
       )}
 
-      {!hasNextPage && notifications.length > 0 && <p className="py-4 text-center text-[11px] text-muted-foreground/50 tracking-wide uppercase">All caught up</p>}
+      {!hasNextPage && notifications.length > 0 && <p className="py-4 text-center text-[11px] text-muted-foreground/50 tracking-wide uppercase">{t("notif:noMoreNotifications")}</p>}
     </div>
   );
 }
