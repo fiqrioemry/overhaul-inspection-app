@@ -3,5 +3,9 @@
   "explore": "Jelajahi",
   "messages": "Pesan",
   "notifications": "Notifikasi",
-  "create": "Buat"
+  "create": "Buat",
+  "suggestions": "Saran buat kamu",
+  "noSuggestions": "Tidak ada saran saat ini. Jelajahi pengguna di halaman",
+  "explorePage": "Jelajahi",
+  "madeWithLove": "Dibuat dengan ❤️"
 }

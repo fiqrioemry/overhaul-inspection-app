@@ -3,5 +3,9 @@
   "explore": "Explore",
   "messages": "Messages",
   "notifications": "Notifications",
-  "create": "Create"
+  "create": "Create",
+  "suggestions": "Suggestions for you",
+  "noSuggestions": "No suggestions at the moment. Explore users on the",
+  "explorePage": "Explore",
+  "madeWithLove": "Made With ❤️"
 }
