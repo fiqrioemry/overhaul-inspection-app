@@ -1,7 +1,9 @@
 // src/features/chats/components/ChatEmptyState.tsx
 import { MessageCircle } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export default function ChatEmptyState() {
+  const { t } = useTranslation(["chat"]);
   return (
     <div className="flex flex-col items-center justify-center h-full gap-4 text-center px-8">
       <div className="relative">
@@ -13,8 +15,8 @@ export default function ChatEmptyState() {
         </div>
       </div>
       <div>
-        <p className="font-semibold text-foreground">Pilih percakapan</p>
-        <p className="text-sm text-muted-foreground mt-1 max-w-[240px]">Pilih chat dari daftar atau mulai percakapan baru</p>
+        <p className="font-semibold text-foreground">{t("chat:noConversationsYet")}</p>
+        <p className="text-sm text-muted-foreground mt-1 max-w-[240px]">{t("chat:startNewChat")}</p>
       </div>
     </div>
   );

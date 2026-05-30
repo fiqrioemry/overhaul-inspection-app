@@ -15,6 +15,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Search, X, Users, MessageCircle, Loader2, ChevronRight } from "lucide-react";
 import { useCreatePrivateChat, useCreateGroupChat } from "@/features/chats/chats.query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useTranslation } from "react-i18next";
 
 interface NewChatDialogProps {
   open: boolean;
@@ -24,6 +25,7 @@ interface NewChatDialogProps {
 type Mode = "select" | "private" | "group";
 
 export default function NewChatDialog({ open, onOpenChange }: NewChatDialogProps) {
+  const { t } = useTranslation(["chat"]);
   const [mode, setMode] = useState<Mode>("select");
   const [search, setSearch] = useState("");
   const [groupName, setGroupName] = useState("");
@@ -104,8 +106,8 @@ export default function NewChatDialog({ open, onOpenChange }: NewChatDialogProps
                   <MessageCircle size={18} className="text-primary" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium">Private Chat</p>
-                  <p className="text-xs text-muted-foreground">Send a message to someone</p>
+                  <p className="text-sm font-medium">{t("chat:privateChat")}</p>
+                  <p className="text-xs text-muted-foreground">{t("chat:sendMessageToSomeone")}</p>
                 </div>
                 <ChevronRight size={16} className="ml-auto text-muted-foreground" />
               </button>
@@ -114,8 +116,8 @@ export default function NewChatDialog({ open, onOpenChange }: NewChatDialogProps
                   <Users size={18} className="text-primary" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium">Create Group</p>
-                  <p className="text-xs text-muted-foreground">Chat with multiple people</p>
+                  <p className="text-sm font-medium">{t("chat:createGroup")}</p>
+                  <p className="text-xs text-muted-foreground">{t("chat:chatWithMultiplePeople")}</p>
                 </div>
                 <ChevronRight size={16} className="ml-auto text-muted-foreground" />
               </button>
@@ -127,8 +129,8 @@ export default function NewChatDialog({ open, onOpenChange }: NewChatDialogProps
               {/* Group fields */}
               {mode === "group" && (
                 <div className="flex flex-col gap-2">
-                  <Input placeholder="Group Name *" value={groupName} onChange={(e) => setGroupName(e.target.value)} className="h-9 text-sm rounded-xl" />
-                  <Textarea placeholder="Description (optional)" value={groupDesc} onChange={(e) => setGroupDesc(e.target.value)} rows={2} className="text-sm rounded-xl resize-none" />
+                  <Input placeholder={t("chat:groupName")} value={groupName} onChange={(e) => setGroupName(e.target.value)} className="h-9 text-sm rounded-xl" />
+                  <Textarea placeholder={t("chat:groupDescription")} value={groupDesc} onChange={(e) => setGroupDesc(e.target.value)} rows={2} className="text-sm rounded-xl resize-none" />
                 </div>
               )}
 
@@ -149,7 +151,7 @@ export default function NewChatDialog({ open, onOpenChange }: NewChatDialogProps
               {/* Search */}
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
-                <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search users..." className="pl-8 h-9 text-sm rounded-xl" />
+                <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t("chat:searchUsers")} className="pl-8 h-9 text-sm rounded-xl" />
               </div>
 
               {/* Results */}
@@ -159,7 +161,7 @@ export default function NewChatDialog({ open, onOpenChange }: NewChatDialogProps
                     <Loader2 size={16} className="animate-spin text-muted-foreground" />
                   </div>
                 ) : debouncedSearch && searchResults.length === 0 ? (
-                  <p className="text-xs text-muted-foreground text-center py-4">No users found</p>
+                  <p className="text-xs text-muted-foreground text-center py-4">{t("chat:noUsersFound")}</p>
                 ) : (
                   <ul>
                     {searchResults.map((u: any) => {

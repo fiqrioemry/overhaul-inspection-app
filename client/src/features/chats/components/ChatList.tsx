@@ -12,12 +12,14 @@ import { Search, Plus, Users, MessageCircle } from "lucide-react";
 import NewChatDialog from "@/features/chats/components/NewChatDialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatChatTime, formatLastMessage, formatInitials } from "@/utils/formatChat";
+import { useTranslation } from "react-i18next";
 
 interface ChatListProps {
   onSelectChat?: (chatId: string) => void;
 }
 
 export default function ChatList({ onSelectChat }: ChatListProps) {
+  const { t } = useTranslation(["chat"]);
   const [search, setSearch] = useState("");
   const [showNewChat, setShowNewChat] = useState(false);
   const { activeChatId, setActiveChatId, unreadCounts, chatListOverrides } = useChatStore();
@@ -53,7 +55,7 @@ export default function ChatList({ onSelectChat }: ChatListProps) {
       {/* Header */}
       <div className="px-4 pt-5 pb-3 border-b border-border">
         <div className="flex items-center justify-between mb-3">
-          <h1 className="text-xl font-bold text-foreground tracking-tight">Messages</h1>
+          <h1 className="text-xl font-bold text-foreground tracking-tight">{t("chat:chatTitle")}</h1>
           <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl" onClick={() => setShowNewChat(true)}>
             <Plus size={18} />
           </Button>
@@ -61,7 +63,12 @@ export default function ChatList({ onSelectChat }: ChatListProps) {
         {/* Search */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
-          <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search conversations..." className="pl-8 h-9 text-sm bg-muted/60 border-transparent focus-visible:border-primary/30 focus-visible:ring-0 rounded-xl" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={t("chat:searchPlaceholder")}
+            className="pl-8 h-9 text-sm bg-muted/60 border-transparent focus-visible:border-primary/30 focus-visible:ring-0 rounded-xl"
+          />
         </div>
       </div>
 
@@ -108,7 +115,7 @@ export default function ChatList({ onSelectChat }: ChatListProps) {
                       </div>
                       <div className="flex items-center gap-1">
                         <p className={cn("text-xs truncate flex-1", unread > 0 ? "text-foreground/80" : "text-muted-foreground")}>
-                          {lastMsg ? formatLastMessage(lastMsg.text, lastMsg.type, isGroup && lastMsg.senderId !== user?.id ? lastMsg.sender.name : undefined) : "No messages yet"}
+                          {lastMsg ? formatLastMessage(lastMsg.text, lastMsg.type, isGroup && lastMsg.senderId !== user?.id ? lastMsg.sender.name : undefined) : t("chat:noMessagesYet")}
                         </p>
                       </div>
                     </div>
@@ -142,18 +149,19 @@ function ChatListSkeleton() {
 }
 
 function ChatListEmpty({ onNew }: { onNew: () => void }) {
+  const { t } = useTranslation(["chat"]);
   return (
     <div className="flex flex-col items-center justify-center h-full gap-4 py-16 px-6 text-center">
       <div className="size-16 rounded-2xl bg-muted flex items-center justify-center">
         <MessageCircle size={28} className="text-muted-foreground" />
       </div>
       <div>
-        <p className="text-sm font-medium text-foreground">No conversations yet</p>
-        <p className="text-xs text-muted-foreground mt-1">Start a new chat with friends</p>
+        <p className="text-sm font-medium text-foreground">{t("chat:noConversationsYet")}</p>
+        <p className="text-xs text-muted-foreground mt-1">{t("chat:startNewChat")}</p>
       </div>
       <Button size="sm" onClick={onNew} className="rounded-xl">
         <Plus size={14} className="mr-1.5" />
-        New Message
+        {t("chat:newMessage")}
       </Button>
     </div>
   );

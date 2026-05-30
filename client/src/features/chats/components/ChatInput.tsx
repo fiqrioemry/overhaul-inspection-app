@@ -10,6 +10,7 @@ import type { MessageType } from "@/schemas/chats.schema";
 import { useSendMessage } from "@/features/chats/chats.query";
 import EmojiPicker, { type EmojiClickData, Theme } from "emoji-picker-react";
 import { Send, Paperclip, X, FileText, Music, ImageIcon, Loader2, Smile } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface ChatInputProps {
   chatId: string;
@@ -29,6 +30,7 @@ function formatFileSize(bytes: number): string {
 
 export default function ChatInput({ chatId }: ChatInputProps) {
   const [text, setText] = useState("");
+  const { t } = useTranslation(["chat"]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fileType, setFileType] = useState<MessageType>("file");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -184,7 +186,7 @@ export default function ChatInput({ chatId }: ChatInputProps) {
             value={text}
             onChange={handleTextChange}
             onKeyDown={handleKeyDown}
-            placeholder="Ketik pesan..."
+            placeholder={t("chat:typePlaceholder")}
             rows={1}
             disabled={isPending}
             className="resize-none min-h-9 max-h-30 py-2 px-3 text-sm rounded-2xl bg-muted/60 border-transparent focus-visible:border-primary/30 focus-visible:ring-0 scrollbar-none"

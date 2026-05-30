@@ -12,6 +12,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ArrowDown, Check, CheckCheck, FileText, Music, Loader2 } from "lucide-react";
 import { formatMessageTime, formatMessageDate, formatInitials } from "@/utils/formatChat";
 import { useChatById, useInfiniteMessages, useReadMessages } from "@/features/chats/chats.query";
+import { useTranslation } from "react-i18next";
 
 interface ChatWindowProps {
   chatId: string;
@@ -136,10 +137,12 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
 }
 
 function MessageList({ messages, currentUserId, isGroup }: { messages: ChatMessage[]; currentUserId: string; isGroup: boolean }) {
+  const { t } = useTranslation(["chat"]);
+
   if (messages.length === 0) {
     return (
       <div className="flex-1 flex items-center justify-center">
-        <p className="text-xs text-muted-foreground">No messages yet. Start a conversation!</p>
+        <p className="text-xs text-muted-foreground">{t("chat:noMessagesYet")}</p>
       </div>
     );
   }

@@ -7,8 +7,10 @@ import ChatList from "@/features/chats/components/ChatList";
 import ChatWindow from "@/features/chats/components/ChatWindow";
 import ChatEmptyState from "@/features/chats/components/ChatEmptyState";
 import { Helmet } from "react-helmet-async";
+import { useTranslation } from "react-i18next";
 
 export default function MessagePage() {
+  const { t } = useTranslation(["chat"]);
   const { activeChatId, setActiveChatId, isSidebarCollapsed, setSidebarCollapsed } = useChatStore();
 
   // Connect to global WS for notifications
@@ -25,11 +27,11 @@ export default function MessagePage() {
   return (
     <>
       <Helmet>
-        <title>Messages - Pixel social media</title>
-        <meta name="description" content="Check your messages and stay connected with your friends on Pixel social media." />
-        <meta name="keywords" content="messages, chat, social media, friends" />
-        <meta property="og:title" content="Messages - Pixel social media" />
-        <meta property="og:description" content="Check your messages and stay connected with your friends on Pixel social media." />
+        <title>{t("chat:messagesTitle")}</title>
+        <meta name="description" content={t("chat:messagesDescription")} />
+        <meta name="keywords" content={t("chat:messagesKeywords")} />
+        <meta property="og:title" content={t("chat:messagesTitle")} />
+        <meta property="og:description" content={t("chat:messagesDescription")} />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://pixel.ahmadfiqrioemry.com/messages" />
       </Helmet>
@@ -37,7 +39,7 @@ export default function MessagePage() {
         {/* Sidebar / Chat List */}
         <aside
           className={cn(
-            "flex-shrink-0 border-r border-border transition-all duration-200",
+            "shrink-0 border-r border-border transition-all duration-200",
             // Mobile: full width when no chat selected, hidden when chat is open
             "w-full md:w-80 xl:w-96",
             isSidebarCollapsed ? "hidden md:flex" : "flex",
