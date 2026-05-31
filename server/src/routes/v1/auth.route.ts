@@ -5,6 +5,8 @@ import { limitter } from "@/middlewares/limitter.middleware";
 import { AuthController as ctrl } from "@/modules/auth/auth.controller";
 
 const auth = new Hono();
+auth.get("/:provider", ctrl.oauthRedirect);
+auth.get("/:provider/callback", ctrl.oauthCallback);
 auth.post("/login", limitter(authLimit.LOGIN), ctrl.login);
 auth.post("/register", limitter(authLimit.REGISTER), ctrl.register);
 auth.post("/logout", protect, ctrl.logout);
@@ -17,8 +19,7 @@ auth.post("/forgot-password", limitter(authLimit.PASSWORD_FORGOT), ctrl.forgotPa
 auth.post("/resend-verification-email", limitter(authLimit.RESEND_VERIFICATION_EMAIL), ctrl.resendVerificationEmail);
 auth.post("/verify-email", limitter(authLimit.VERIFY_EMAIL), ctrl.verifyEmail);
 auth.get("/me", protect, limitter(authLimit.GET_ME), ctrl.getMe);
-auth.get("/:provider", ctrl.oauthRedirect);
-auth.get("/:provider/callback", ctrl.oauthCallback);
+
 // total endpoints: 12
 
 export default auth;
