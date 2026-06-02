@@ -1,15 +1,16 @@
 // src/features/posts/components/ImageCarouselPanel.tsx
+import ReactCrop, { centerCrop, makeAspectCrop, type Crop, type PixelCrop } from "react-image-crop";
+import "react-image-crop/dist/ReactCrop.css";
 import { cn } from "@/lib/utils";
 import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut } from "lucide-react";
 import { RATIO_OPTIONS } from "@/constants/posts.constant";
-import { useState, useRef, useEffect } from "react";
-import type { AspectRatio, CropState } from "@/constants/posts.constant";
+import { useState, useRef, useCallback } from "react";
+import type { AspectRatio } from "@/constants/posts.constant";
 import type { PreviewItem } from "@/features/posts/components/ImageUploadStep";
-import { getImageCoverSize, clampOffset, getCenteredOffset, toCropData } from "@/utils/formatImage";
 
 export interface PerImageCrop {
-  offset: CropState;
   scale: number;
+  percentCrop: Crop;
   cropData: { cropX: number; cropY: number; cropW: number; cropH: number };
 }
 
@@ -39,20 +40,53 @@ const RATIO_ICONS: Record<AspectRatio, React.ReactNode> = {
   ),
 };
 
-// ─── Pure math helper ─────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+/** Largest crop that fits the aspect ratio, centred within the image */
+function makeCenteredCrop(imgW: number, imgH: number, aspect: number): Crop {
+  return centerCrop(makeAspectCrop({ unit: "%", width: 100 }, aspect, imgW, imgH), imgW, imgH);
+}
 
 /**
- * Computes the largest integer-pixel window that fits the given aspect ratio
- * inside the container. Integer pixels give predictable CSS overflow clipping.
+ * Build a crop at the given zoom scale, anchored to the current crop centre.
+ * Zoom in → smaller crop region → zoomed-in output; zoom out → larger region.
  */
-function getWinSize(containerW: number, containerH: number, ratio: number) {
-  let w = containerW;
-  let h = w / ratio;
-  if (h > containerH) {
-    h = containerH;
-    w = h * ratio;
-  }
-  return { w: Math.floor(w), h: Math.floor(h) };
+function buildZoomedCrop(
+  current: Crop | undefined,
+  scale: number,
+  imgW: number,
+  imgH: number,
+  aspect: number,
+): Crop {
+  // Maximum-fit width % at scale=1 (may be < 100 for portrait images + landscape ratio)
+  const maxFit = makeAspectCrop({ unit: "%", width: 100 }, aspect, imgW, imgH);
+  const newW = maxFit.width / scale;
+  const sized = makeAspectCrop({ unit: "%", width: newW }, aspect, imgW, imgH);
+  const newH = sized.height;
+
+  // Anchor to current crop centre so the same image point stays centred
+  const base = current ?? makeCenteredCrop(imgW, imgH, aspect);
+  const cx = base.x + base.width / 2;
+  const cy = base.y + base.height / 2;
+
+  return {
+    unit: "%",
+    x: Math.max(0, Math.min(100 - newW, cx - newW / 2)),
+    y: Math.max(0, Math.min(100 - newH, cy - newH / 2)),
+    width: newW,
+    height: newH,
+  };
+}
+
+/** Convert ReactCrop percentage crop → normalized [0, 1] server coordinates */
+function toNormalizedCropData(pct: Crop) {
+  if (!pct.width || !pct.height) return { cropX: 0, cropY: 0, cropW: 1, cropH: 1 };
+  return {
+    cropX: pct.x / 100,
+    cropY: pct.y / 100,
+    cropW: pct.width / 100,
+    cropH: pct.height / 100,
+  };
 }
 
 // ─── CropEditor ───────────────────────────────────────────────────────────────
@@ -60,188 +94,97 @@ function getWinSize(containerW: number, containerH: number, ratio: number) {
 interface CropEditorProps {
   previewUrl: string;
   aspectRatio: AspectRatio;
-  /** null = "not yet initialised for this image" */
-  crop: PerImageCrop | null;
+  savedCrop: PerImageCrop | null;
   onChange: (crop: PerImageCrop) => void;
 }
 
-function CropEditor({ previewUrl, aspectRatio, crop, onChange }: CropEditorProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [natSize, setNatSize] = useState({ w: 0, h: 0 });
-  const [conSize, setConSize] = useState({ w: 0, h: 0 });
-  // Both zoom and offset are fully local — no parent round-trip needed for display
-  // or for the geometry effect to read. onChange is fire-and-forget sync to parent.
-  const [zoom, setZoom] = useState(() => crop?.scale ?? 1);
-  const [offset, setOffset] = useState<CropState>(() => crop?.offset ?? { x: 0, y: 0 });
-  const dragRef = useRef<{ mx: number; my: number; ox: number; oy: number } | null>(null);
-  const prevImgRef = useRef({ w: 0, h: 0 });
-  // offsetRef mirrors local offset state but is readable inside effects without
-  // adding offset to their dependency array (which would cause infinite loops).
-  const offsetRef = useRef<CropState>(offset);
+function CropEditor({ previewUrl, aspectRatio, savedCrop, onChange }: CropEditorProps) {
+  const imgRef = useRef<HTMLImageElement>(null);
+  const [percentCrop, setPercentCrop] = useState<Crop | undefined>(savedCrop?.percentCrop);
+  const [scale, setScale] = useState(() => savedCrop?.scale ?? 1);
 
   const ratio = RATIO_OPTIONS.find((r) => r.value === aspectRatio)!.ratio;
-  const { w: winW, h: winH } = conSize.w ? getWinSize(conSize.w, conSize.h, ratio) : { w: 0, h: 0 };
-  const img = natSize.w ? getImageCoverSize(natSize.w, natSize.h, winW, winH, zoom) : { w: 0, h: 0 };
-  const canDrag = img.w > winW + 0.5 || img.h > winH + 0.5;
 
-  function applyOffset(newOffset: CropState, imgW: number, imgH: number) {
-    offsetRef.current = newOffset;
-    setOffset(newOffset);
-    onChange({ offset: newOffset, scale: zoom, cropData: toCropData(newOffset, imgW, imgH, winW, winH) });
-  }
+  const onImageLoad = useCallback(
+    (e: React.SyntheticEvent<HTMLImageElement>) => {
+      const { width, height } = e.currentTarget;
+      // Restore saved crop or build a fresh centred crop at the initial zoom level
+      const initial = savedCrop?.percentCrop ?? buildZoomedCrop(undefined, scale, width, height, ratio);
+      setPercentCrop(initial);
+      onChange({ scale, percentCrop: initial, cropData: toNormalizedCropData(initial) });
+    },
+    // ratio/savedCrop/scale changes cause CropEditor to remount via key — runs once per mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
 
-  // Observe container
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const ro = new ResizeObserver(([e]) => {
-      setConSize({ w: e.contentRect.width, h: e.contentRect.height });
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
+  const onCropChange = useCallback((_px: PixelCrop, pct: Crop) => {
+    setPercentCrop(pct);
   }, []);
 
-  // Fires when the image footprint changes (zoom, window resize, image load).
-  // Reads offsetRef — always current — and re-anchors from the window centre.
-  useEffect(() => {
-    if (!img.w || !winW) return;
+  const onCropComplete = useCallback(
+    (_px: PixelCrop, pct: Crop) => {
+      if (!pct.width || !pct.height) return;
+      onChange({ scale, percentCrop: pct, cropData: toNormalizedCropData(pct) });
+    },
+    [scale, onChange],
+  );
 
-    const prev = prevImgRef.current;
-    prevImgRef.current = { w: img.w, h: img.h };
-
-    if (prev.w === 0) {
-      // First valid geometry: restore saved position or centre fresh
-      const base = offsetRef.current;
-      const newOffset = crop ? clampOffset(base, img.w, img.h, winW, winH) : getCenteredOffset(img.w, img.h, winW, winH);
-      applyOffset(newOffset, img.w, img.h);
-      return;
-    }
-
-    if (prev.w === img.w && prev.h === img.h) return;
-
-    // Anchor-from-centre: keep the same image point at the window centre
-    const cx = winW / 2;
-    const cy = winH / 2;
-    const cur = offsetRef.current;
-    const raw = {
-      x: cx - (cx - cur.x) * (img.w / prev.w),
-      y: cy - (cy - cur.y) * (img.h / prev.h),
-    };
-    applyOffset(clampOffset(raw, img.w, img.h, winW, winH), img.w, img.h);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [img.w, img.h, winW, winH]);
-
-  // ── Drag (pointer) ──
-  function onPointerDown(e: React.PointerEvent) {
-    if (!canDrag) return;
-    e.currentTarget.setPointerCapture(e.pointerId);
-    dragRef.current = { mx: e.clientX, my: e.clientY, ox: offset.x, oy: offset.y };
+  function applyZoom(raw: number) {
+    if (!imgRef.current) return;
+    const newScale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, Math.round(raw * 100) / 100));
+    if (newScale === scale) return;
+    const { width, height } = imgRef.current;
+    const newCrop = buildZoomedCrop(percentCrop, newScale, width, height, ratio);
+    setScale(newScale);
+    setPercentCrop(newCrop);
+    onChange({ scale: newScale, percentCrop: newCrop, cropData: toNormalizedCropData(newCrop) });
   }
-  function onPointerMove(e: React.PointerEvent) {
-    if (!dragRef.current || !img.w) return;
-    const raw = { x: dragRef.current.ox + e.clientX - dragRef.current.mx, y: dragRef.current.oy + e.clientY - dragRef.current.my };
-    applyOffset(clampOffset(raw, img.w, img.h, winW, winH), img.w, img.h);
-  }
-  function onPointerUp() {
-    dragRef.current = null;
-  }
-
-  // ── Drag (touch) ──
-  function onTouchStart(e: React.TouchEvent) {
-    if (!canDrag) return;
-    const t = e.touches[0];
-    dragRef.current = { mx: t.clientX, my: t.clientY, ox: offset.x, oy: offset.y };
-  }
-  function onTouchMove(e: React.TouchEvent) {
-    if (!dragRef.current || !img.w) return;
-    e.preventDefault();
-    const t = e.touches[0];
-    const raw = { x: dragRef.current.ox + t.clientX - dragRef.current.mx, y: dragRef.current.oy + t.clientY - dragRef.current.my };
-    applyOffset(clampOffset(raw, img.w, img.h, winW, winH), img.w, img.h);
-  }
-  function onTouchEnd() {
-    dragRef.current = null;
-  }
-
-  // ── Zoom: only update local scale; geometry effect re-anchors from offsetRef ──
-  function applyZoom(rawZoom: number) {
-    const newZoom = Math.min(MAX_SCALE, Math.max(MIN_SCALE, Math.round(rawZoom * 100) / 100));
-    if (newZoom !== zoom) setZoom(newZoom);
-  }
-
-  const displayOffset = offset;
 
   return (
-    <div ref={containerRef} className="relative w-full h-full flex items-center justify-center bg-black">
-      {/* Crop window */}
-      <div
-        className={cn("relative overflow-hidden shrink-0", canDrag ? "cursor-grab active:cursor-grabbing" : "cursor-default")}
-        style={{ width: winW || "100%", height: winH || "100%" }}
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerCancel={onPointerUp}
-        onTouchStart={onTouchStart}
-        onTouchMove={onTouchMove}
-        onTouchEnd={onTouchEnd}
-        onTouchCancel={onTouchEnd}
-      >
-        <img
-          src={previewUrl}
-          alt=""
-          draggable={false}
-          onLoad={(e) => setNatSize({ w: e.currentTarget.naturalWidth, h: e.currentTarget.naturalHeight })}
-          style={{
-            position: "absolute",
-            left: displayOffset.x,
-            top: displayOffset.y,
-            width: img.w || "100%",
-            height: img.h || "100%",
-            userSelect: "none",
-            touchAction: "none",
-            pointerEvents: "none",
-          }}
-        />
-
-        {/* Rule-of-thirds grid */}
-        <div className="pointer-events-none absolute inset-0">
-          {[1, 2].map((i) => (
-            <div key={`v${i}`} className="absolute top-0 bottom-0 w-px bg-white/20" style={{ left: `${(i / 3) * 100}%` }} />
-          ))}
-          {[1, 2].map((i) => (
-            <div key={`h${i}`} className="absolute left-0 right-0 h-px bg-white/20" style={{ top: `${(i / 3) * 100}%` }} />
-          ))}
-          {(["tl", "tr", "bl", "br"] as const).map((pos) => (
-            <div key={pos} className={cn("absolute size-5 pointer-events-none", pos.startsWith("t") ? "top-0" : "bottom-0", pos.endsWith("l") ? "left-0" : "right-0")}>
-              <div className={cn("absolute bg-white h-0.5 w-4", pos.startsWith("t") ? "top-0" : "bottom-0", pos.endsWith("l") ? "left-0" : "right-0")} />
-              <div className={cn("absolute bg-white w-0.5 h-4", pos.startsWith("t") ? "top-0" : "bottom-0", pos.endsWith("l") ? "left-0" : "right-0")} />
-            </div>
-          ))}
-        </div>
-
-        {canDrag && <div className="pointer-events-none absolute bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-black/50 px-2.5 py-0.5 text-white/70 text-[10px] font-medium whitespace-nowrap">Drag to reposition</div>}
+    <div className="w-full h-full flex flex-col bg-black">
+      {/* Image + crop area */}
+      <div className="flex-1 min-h-0 flex items-center justify-center overflow-hidden p-3">
+        <ReactCrop crop={percentCrop} onChange={onCropChange} onComplete={onCropComplete} aspect={ratio} className="max-w-full">
+          <img
+            ref={imgRef}
+            src={previewUrl}
+            alt=""
+            onLoad={onImageLoad}
+            draggable={false}
+            style={{ display: "block", maxHeight: "55vh", maxWidth: "100%" }}
+          />
+        </ReactCrop>
       </div>
 
       {/* Zoom controls */}
-      <div className="absolute bottom-3 right-3 z-10 flex items-center gap-1.5 rounded-full bg-black/60 px-2 py-1.5">
+      <div className="flex items-center justify-center gap-1.5 px-4 py-2 border-t border-white/10 shrink-0">
         <button
           type="button"
-          onClick={() => applyZoom(zoom - 0.1)}
-          disabled={zoom <= MIN_SCALE}
+          onClick={() => applyZoom(scale - 0.1)}
+          disabled={scale <= MIN_SCALE}
           className="flex size-6 items-center justify-center rounded-full text-white hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
         >
           <ZoomOut className="size-3.5" />
         </button>
-        <input type="range" min={MIN_SCALE} max={MAX_SCALE} step={0.01} value={zoom} onChange={(e) => applyZoom(Number(e.target.value))} className="w-20 accent-white cursor-pointer" />
+        <input
+          type="range"
+          min={MIN_SCALE}
+          max={MAX_SCALE}
+          step={0.01}
+          value={scale}
+          onChange={(e) => applyZoom(Number(e.target.value))}
+          className="w-24 accent-white cursor-pointer"
+        />
         <button
           type="button"
-          onClick={() => applyZoom(zoom + 0.1)}
-          disabled={zoom >= MAX_SCALE}
+          onClick={() => applyZoom(scale + 0.1)}
+          disabled={scale >= MAX_SCALE}
           className="flex size-6 items-center justify-center rounded-full text-white hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
         >
           <ZoomIn className="size-3.5" />
         </button>
-        <span className="w-8 text-center text-[10px] font-medium text-white/70 tabular-nums">{Math.round(zoom * 100)}%</span>
+        <span className="w-8 text-center text-[10px] font-medium text-white/70 tabular-nums">{Math.round(scale * 100)}%</span>
       </div>
     </div>
   );
@@ -260,14 +203,18 @@ interface ImageCarouselPanelProps {
 export function ImageCarouselPanel({ previews, aspectRatio, onAspectRatioChange, cropMap, onCropChange }: ImageCarouselPanelProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const safeIndex = Math.min(activeIndex, previews.length - 1);
-
-  // Pass null when this image has never been initialised — CropEditor will centre it.
-  const currentCrop = cropMap.get(safeIndex) ?? null;
+  const savedCrop = cropMap.get(safeIndex) ?? null;
 
   return (
     <div className="w-full h-full flex flex-col bg-black">
       <div className="relative flex-1 min-h-0">
-        <CropEditor key={`${safeIndex}-${previews[safeIndex]?.previewUrl}-${aspectRatio}`} previewUrl={previews[safeIndex].previewUrl} aspectRatio={aspectRatio} crop={currentCrop} onChange={(crop) => onCropChange(safeIndex, crop)} />
+        <CropEditor
+          key={`${safeIndex}-${previews[safeIndex]?.previewUrl}-${aspectRatio}`}
+          previewUrl={previews[safeIndex].previewUrl}
+          aspectRatio={aspectRatio}
+          savedCrop={savedCrop}
+          onChange={(crop) => onCropChange(safeIndex, crop)}
+        />
 
         {safeIndex > 0 && (
           <button
@@ -289,7 +236,7 @@ export function ImageCarouselPanel({ previews, aspectRatio, onAspectRatioChange,
         )}
 
         {previews.length > 1 && (
-          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex gap-1.5">
+          <div className="absolute bottom-16 left-1/2 -translate-x-1/2 z-10 flex gap-1.5">
             {previews.map((_, i) => (
               <button key={i} type="button" onClick={() => setActiveIndex(i)} className={cn("size-1.5 rounded-full transition-all", i === safeIndex ? "bg-white scale-125" : "bg-white/50 hover:bg-white/75")} />
             ))}
