@@ -48,7 +48,7 @@ export default function OAuthButton({ provider, label, icon, disabled }: OAuthBu
   return (
     <Button type="button" variant="outline" className="w-full gap-2" onClick={handleClick} disabled={disabled || isRedirecting}>
       {Icon && <Icon className="size-4 shrink-0" />}
-      <span>{isRedirecting ? `Redirecting...` : `Continue with ${label}`}</span>
+      <span>{isRedirecting ? `Redirecting...` : `${label}`}</span>
     </Button>
   );
 }
