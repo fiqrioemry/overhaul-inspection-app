@@ -7,18 +7,19 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import OAuthButtonGroup from "./OAuthButtonGroup";
 import { register } from "@/features/auth/auth.api";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { zodResolver } from "@hookform/resolvers/zod";
 import AlertCard from "@/components/common/AlertCard";
 import type { ResponseError } from "@/types/response.type";
 import PasswordField from "@/components/fields/PasswordField";
 import ShortTextField from "@/components/fields/ShortTextField";
 import { registerSchema, type RegisterFormValues } from "@/schemas/auth.schema";
+import { Mail, CheckCircle2, ArrowRight } from "lucide-react";
 
 export default function RegisterForm() {
-  const navigate = useNavigate();
   const { t } = useTranslation(["auth"]);
   const [serverError, setServerError] = useState<ResponseError | null>(null);
+  const [registeredEmail, setRegisteredEmail] = useState<string | null>(null);
 
   const {
     control,
@@ -26,7 +27,7 @@ export default function RegisterForm() {
     formState: { isSubmitting },
   } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
-    defaultValues: { name: "", email: "", password: "" },
+    defaultValues: { name: "", email: "", password: "", confirmPassword: "" },
   });
 
   async function onSubmit(values: RegisterFormValues) {
@@ -34,7 +35,7 @@ export default function RegisterForm() {
     try {
       const result = await register(values);
       toast.success(result?.message || t("auth:registerSuccess"));
-      navigate("/login", { replace: true });
+      setRegisteredEmail(values.email);
     } catch (err) {
       const res = err as ResponseError;
       setServerError({
@@ -42,6 +43,50 @@ export default function RegisterForm() {
         errors: res?.errors,
       });
     }
+  }
+
+  if (registeredEmail) {
+    return (
+      <div className="w-full max-w-sm space-y-6">
+        {/* Success icon */}
+        <div className="flex flex-col items-center gap-3 text-center">
+          <div className="flex size-14 items-center justify-center rounded-full bg-primary/10">
+            <CheckCircle2 className="size-7 text-primary" />
+          </div>
+          <div className="space-y-1">
+            <h1 className="text-2xl font-bold tracking-tight">{t("auth:verifyEmailTitle")}</h1>
+            <p className="text-sm text-muted-foreground">{t("auth:verifyEmailSubtitle")}</p>
+          </div>
+        </div>
+
+        {/* Email badge */}
+        <div className="flex items-center gap-3 rounded-xl border border-zinc-100 bg-zinc-50 px-4 py-3">
+          <Mail className="size-4 shrink-0 text-zinc-400" />
+          <span className="truncate text-sm font-medium text-zinc-700">{registeredEmail}</span>
+        </div>
+
+        {/* Hint */}
+        <p className="text-center text-xs text-muted-foreground">{t("auth:verifyEmailHint")}</p>
+
+        {/* CTA */}
+        <Button asChild className="w-full gap-2">
+          <Link to="/login">
+            {t("auth:goToLogin")}
+            <ArrowRight className="size-4" />
+          </Link>
+        </Button>
+
+        {/* Back to register */}
+        <div className="text-center">
+          <p className="text-sm text-muted-foreground">
+            {t("auth:wrongEmail")}{" "}
+            <button type="button" onClick={() => setRegisteredEmail(null)} className="underline underline-offset-4 hover:text-foreground">
+              {t("auth:tryAgain")}
+            </button>
+          </p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -58,6 +103,7 @@ export default function RegisterForm() {
         <ShortTextField control={control} name="name" label={t("auth:name")} placeholder={t("auth:namePlaceholder")} autoComplete="name" />
         <ShortTextField control={control} name="email" label={t("auth:email")} type="email" placeholder={t("auth:emailPlaceholder")} autoComplete="email" />
         <PasswordField control={control} name="password" label={t("auth:password")} placeholder={t("auth:passwordPlaceholder")} autoComplete="new-password" />
+        <PasswordField control={control} name="confirmPassword" label={t("auth:confirmPassword")} placeholder={t("auth:passwordPlaceholder")} autoComplete="new-password" />
         <Button type="submit" className="w-full" disabled={isSubmitting}>
           {isSubmitting ? t("auth:registering") : t("auth:registerButton")}
         </Button>

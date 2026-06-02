@@ -19,7 +19,7 @@ export const passwordValidation = z
 
 export const registerSchema = z
   .object({
-    name: z.string().min(10, "Name is required"),
+    name: z.string().min(3, "Name required min 3 Characters"),
     email: z.email("Invalid email address"),
     password: passwordValidation,
     confirmPassword: z.string().min(1, "Password confirmation is required"),
