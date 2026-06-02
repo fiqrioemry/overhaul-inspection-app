@@ -1,11 +1,14 @@
 import ForgotPasswordForm from "@/features/auth/components/ForgotPasswordForm";
+import { useTranslation } from "react-i18next";
 import { Helmet } from "react-helmet-async";
 
 export default function ForgotPasswordPage() {
+  const { t } = useTranslation(["auth"]);
+
   return (
     <>
       <Helmet>
-        <title>Forgot Password - Pixel social media</title>
+        <title>{t("auth:forgotPasswordTitle")} - Pixel social media</title>
         <meta name="description" content="Reset your password on Pixel social media." />
         <meta name="keywords" content="forgot password, reset password, social media" />
         <meta property="og:title" content="Forgot Password - Pixel social media" />

@@ -2,6 +2,7 @@ import React from "react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { MailCheck, ArrowLeft } from "lucide-react";
 import { ShortTextField } from "@/components/fields";
@@ -12,6 +13,7 @@ import { zodResolver } from "@hookform/resolvers/zod/dist/zod.js";
 import { forgotPasswordSchema, type ForgotPasswordFormValues } from "@/schemas/auth.schema";
 
 export default function ForgotPasswordForm() {
+  const { t } = useTranslation(["auth"]);
   const [success, setSuccess] = React.useState<string | null>(null);
   const [serverError, setServerError] = React.useState<ResponseError | null>(null);
 
@@ -51,20 +53,20 @@ export default function ForgotPasswordForm() {
           </div>
 
           <div className="space-y-2">
-            <h1 className="text-2xl font-semibold tracking-tight">Check Your Email</h1>
-            <p className="text-sm text-muted-foreground leading-6">We’ve sent password reset instructions to:</p>
+            <h1 className="text-2xl font-semibold tracking-tight">{t("auth:checkYourEmail")}</h1>
+            <p className="text-sm text-muted-foreground leading-6">{t("auth:passwordResetInstructionsSent")}</p>
             <p className="font-medium text-foreground break-all">{getValues("email")}</p>
           </div>
 
-          <div className="rounded-lg bg-muted px-4 py-3 text-sm text-muted-foreground text-left leading-6">If you don’t see the email within a few minutes, check your spam or junk folder.</div>
+          <div className="rounded-lg bg-muted px-4 py-3 text-sm text-muted-foreground text-left leading-6">{t("auth:checkSpamFolder")}</div>
 
           <div className="space-y-3">
             <Button asChild className="w-full">
-              <Link to="/login">Back to Sign In</Link>
+              <Link to="/login">{t("auth:backToSignIn")}</Link>
             </Button>
 
             <Button type="button" variant="ghost" className="w-full" onClick={() => setSuccess(null)}>
-              Resend Email
+              {t("auth:resendEmail")}
             </Button>
           </div>
         </div>
@@ -76,26 +78,26 @@ export default function ForgotPasswordForm() {
   return (
     <div className="w-full max-w-sm space-y-6">
       <div className="space-y-1 text-center">
-        <h1 className="text-2xl font-semibold">Forgot Password</h1>
-        <p className="text-sm text-muted-foreground">Enter your email to receive password reset instructions.</p>
+        <h1 className="text-2xl font-semibold">{t("auth:forgotPasswordTitle")}</h1>
+        <p className="text-sm text-muted-foreground">{t("auth:enterEmailForResetInstructions")}</p>
       </div>
 
       <AlertCard message={serverError?.message} errors={serverError?.errors} />
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        <ShortTextField control={control} name="email" label="Email" type="email" placeholder="example@email.com" autoComplete="email" />
+        <ShortTextField control={control} name="email" label={t("auth:email")} type="email" placeholder={t("auth:emailPlaceholder")} autoComplete="email" />
 
         <Button type="submit" className="w-full" disabled={isSubmitting}>
-          {isSubmitting ? "Sending..." : "Send Reset Instructions"}
+          {isSubmitting ? t("auth:sending") : t("auth:sendResetInstructions")}
         </Button>
       </form>
 
       <div className="text-center">
         <p className="text-sm text-muted-foreground">
-          Remember your account?{" "}
+          {t("auth:rememberYourAccount")}{" "}
           <Link to="/login" className="inline-flex items-center gap-1 underline underline-offset-4">
             <ArrowLeft className="h-3 w-3" />
-            Sign in
+            {t("auth:signIn")}
           </Link>
         </p>
       </div>

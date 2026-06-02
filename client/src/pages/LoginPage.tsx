@@ -1,15 +1,17 @@
 import LoginForm from "@/features/auth/components/LoginForm";
 import { useLanguage } from "@/hooks/useLanguage";
+import { useTranslation } from "react-i18next";
 import { Helmet } from "react-helmet-async";
 
-const BRAND_FEATURES = [
-  "Share photos and short videos with people you care about",
-  "Real-time messaging with friends and groups",
-  "Discover content tailored to your interests",
-];
-
 export default function LoginPage() {
+  const { t } = useTranslation(["auth"]);
   const { isEnglish, toggleLanguage } = useLanguage();
+
+  const brandFeatures = [
+    t("auth:loginBrandFeature1"),
+    t("auth:loginBrandFeature2"),
+    t("auth:loginBrandFeature3"),
+  ];
 
   return (
     <>
@@ -40,16 +42,16 @@ export default function LoginPage() {
 
           <div className="relative space-y-8">
             <div className="space-y-3">
-              <h2 className="text-[2.6rem] font-bold leading-[1.15] text-primary-foreground">
-                Share your<br />world.
+              <h2 className="text-[2.6rem] font-bold leading-[1.15] text-primary-foreground whitespace-pre-line">
+                {t("auth:loginBrandHeadline")}
               </h2>
               <p className="text-primary-foreground/60 text-base leading-relaxed max-w-xs">
-                Moments that matter, with people who care.
+                {t("auth:loginBrandTagline")}
               </p>
             </div>
 
             <ul className="space-y-3">
-              {BRAND_FEATURES.map((f) => (
+              {brandFeatures.map((f) => (
                 <li key={f} className="flex items-start gap-3">
                   <span className="mt-1.75 size-1.5 rounded-full bg-primary-foreground/40 shrink-0" />
                   <span className="text-primary-foreground/70 text-sm leading-relaxed">{f}</span>
@@ -58,7 +60,7 @@ export default function LoginPage() {
             </ul>
           </div>
 
-          <span className="relative text-primary-foreground/25 text-xs">© 2026 Pixel</span>
+          <span className="relative text-primary-foreground/25 text-xs">{t("auth:brandCopyright")}</span>
         </div>
 
         {/* Form panel */}

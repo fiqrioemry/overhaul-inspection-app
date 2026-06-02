@@ -1,15 +1,17 @@
 import { Helmet } from "react-helmet-async";
 import { useLanguage } from "@/hooks/useLanguage";
+import { useTranslation } from "react-i18next";
 import RegisterForm from "@/features/auth/components/RegisterForm";
 
-const BRAND_FEATURES = [
-  "Create your profile and start posting in minutes",
-  "Follow friends and discover new communities",
-  "Private and group chats built right in",
-];
-
 export default function RegisterPage() {
+  const { t } = useTranslation(["auth"]);
   const { isEnglish, toggleLanguage } = useLanguage();
+
+  const brandFeatures = [
+    t("auth:registerBrandFeature1"),
+    t("auth:registerBrandFeature2"),
+    t("auth:registerBrandFeature3"),
+  ];
 
   return (
     <>
@@ -40,16 +42,16 @@ export default function RegisterPage() {
 
           <div className="relative space-y-8">
             <div className="space-y-3">
-              <h2 className="text-[2.6rem] font-bold leading-[1.15] text-primary-foreground">
-                Join the<br />community.
+              <h2 className="text-[2.6rem] font-bold leading-[1.15] text-primary-foreground whitespace-pre-line">
+                {t("auth:registerBrandHeadline")}
               </h2>
               <p className="text-primary-foreground/60 text-base leading-relaxed max-w-xs">
-                A new space to connect, express, and belong.
+                {t("auth:registerBrandTagline")}
               </p>
             </div>
 
             <ul className="space-y-3">
-              {BRAND_FEATURES.map((f) => (
+              {brandFeatures.map((f) => (
                 <li key={f} className="flex items-start gap-3">
                   <span className="mt-1.75 size-1.5 rounded-full bg-primary-foreground/40 shrink-0" />
                   <span className="text-primary-foreground/70 text-sm leading-relaxed">{f}</span>
@@ -58,7 +60,7 @@ export default function RegisterPage() {
             </ul>
           </div>
 
-          <span className="relative text-primary-foreground/25 text-xs">© 2026 Pixel</span>
+          <span className="relative text-primary-foreground/25 text-xs">{t("auth:brandCopyright")}</span>
         </div>
 
         {/* Form panel */}
