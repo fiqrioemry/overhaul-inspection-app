@@ -1,17 +1,20 @@
 // src/features/posts/components/ImageCarouselPanel.tsx
 import { cn } from "@/lib/utils";
-import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
+import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut } from "lucide-react";
 import { RATIO_OPTIONS } from "@/constants/posts.constant";
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import type { AspectRatio, CropState } from "@/constants/posts.constant";
 import type { PreviewItem } from "@/features/posts/components/ImageUploadStep";
-import { clampOffset, getCenteredOffset, getImageCoverSize, toCropData } from "@/utils/formatImage";
+import { getImageCoverSize, clampOffset, getCenteredOffset, toCropData } from "@/utils/formatImage";
 
 export interface PerImageCrop {
   offset: CropState;
-  zoom: number;
+  scale: number;
   cropData: { cropX: number; cropY: number; cropW: number; cropH: number };
 }
+
+const MIN_SCALE = 1;
+const MAX_SCALE = 3;
 
 const RATIO_ICONS: Record<AspectRatio, React.ReactNode> = {
   "1:1": (
@@ -36,149 +39,128 @@ const RATIO_ICONS: Record<AspectRatio, React.ReactNode> = {
   ),
 };
 
-const MIN_ZOOM = 1;
-const MAX_ZOOM = 3;
+// ─── Pure math helper ─────────────────────────────────────────────────────────
+
+/**
+ * Computes the largest integer-pixel window that fits the given aspect ratio
+ * inside the container. Integer pixels give predictable CSS overflow clipping.
+ */
+function getWinSize(containerW: number, containerH: number, ratio: number) {
+  let w = containerW;
+  let h = w / ratio;
+  if (h > containerH) {
+    h = containerH;
+    w = h * ratio;
+  }
+  return { w: Math.floor(w), h: Math.floor(h) };
+}
+
+// ─── CropEditor ───────────────────────────────────────────────────────────────
 
 interface CropEditorProps {
   previewUrl: string;
   aspectRatio: AspectRatio;
-  offset: CropState;
-  zoom: number;
-  /** Single callback — always updates offset + cropData together to avoid split-setState overwrites. */
-  onChange: (offset: CropState, cropData: { cropX: number; cropY: number; cropW: number; cropH: number }) => void;
-  onZoomChange: (z: number) => void;
+  /** null = "not yet initialised for this image" */
+  crop: PerImageCrop | null;
+  onChange: (crop: PerImageCrop) => void;
 }
 
-function CropEditor({ previewUrl, aspectRatio, offset, zoom, onChange, onZoomChange }: CropEditorProps) {
+function CropEditor({ previewUrl, aspectRatio, crop, onChange }: CropEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const imgRef = useRef<HTMLImageElement>(null);
-  const [naturalSize, setNaturalSize] = useState({ w: 0, h: 0 });
-  const [containerSize, setContainerSize] = useState({ w: 0, h: 0 });
-
-  // Unified drag state for both pointer and touch
-  const dragStart = useRef<{ mx: number; my: number; ox: number; oy: number } | null>(null);
-  const lastPinchDist = useRef<number | null>(null);
-  // Track zoom in ref so rapid pinch events use the latest value without waiting for re-render
-  const zoomRef = useRef(zoom);
-  useEffect(() => {
-    zoomRef.current = zoom;
-  }, [zoom]);
+  const [natSize, setNatSize] = useState({ w: 0, h: 0 });
+  const [conSize, setConSize] = useState({ w: 0, h: 0 });
+  const dragRef = useRef<{ mx: number; my: number; ox: number; oy: number } | null>(null);
 
   const ratio = RATIO_OPTIONS.find((r) => r.value === aspectRatio)!.ratio;
+  const { w: winW, h: winH } = conSize.w ? getWinSize(conSize.w, conSize.h, ratio) : { w: 0, h: 0 };
+  const zoom = crop?.scale ?? 1;
+  // Exact float sizes — no rounding — so zoom operations are perfectly reversible
+  const img = natSize.w ? getImageCoverSize(natSize.w, natSize.h, winW, winH, zoom) : { w: 0, h: 0 };
+  // 0.5 px threshold handles the sub-pixel case where image exactly covers the window
+  const canDrag = img.w > winW + 0.5 || img.h > winH + 0.5;
 
-  const winSize = useCallback(
-    (cW: number, cH: number) => {
-      let w = cW;
-      let h = w / ratio;
-      if (h > cH) {
-        h = cH;
-        w = h * ratio;
-      }
-      return { w: Math.floor(w), h: Math.floor(h) };
-    },
-    [ratio],
-  );
-
+  // Observe container
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
-    const ro = new ResizeObserver((entries) => {
-      const { width, height } = entries[0].contentRect;
-      setContainerSize({ w: width, h: height });
+    const ro = new ResizeObserver(([e]) => {
+      setConSize({ w: e.contentRect.width, h: e.contentRect.height });
     });
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
 
-  const { w: winW, h: winH } = winSize(containerSize.w, containerSize.h);
-  const baseCover = naturalSize.w > 0 ? getImageCoverSize(naturalSize.w, naturalSize.h, winW, winH) : { w: 0, h: 0 };
-  const imgFit = { w: baseCover.w * zoom, h: baseCover.h * zoom };
-  const canDrag = imgFit.w > winW + 1 || imgFit.h > winH + 1;
-
+  // Initialise or re-clamp when geometry changes
   useEffect(() => {
-    if (imgFit.w === 0 || winW === 0) return;
-
-    // FIX: When dimensions change (new image load, ratio change, resize),
-    // center the image instead of clamping from (0,0) which produces asymmetric crop.
-    const centeredOffset = getCenteredOffset(imgFit.w, imgFit.h, winW, winH);
-
-    // Only re-center if the current offset is at the default (0,0) sentinel —
-    // otherwise honour the user's existing drag position, just re-clamp it.
-    const isDefaultOffset = offset.x === 0 && offset.y === 0;
-    const newOffset = isDefaultOffset ? centeredOffset : clampOffset(offset, imgFit.w, imgFit.h, winW, winH);
-
-    onChange(newOffset, toCropData(newOffset, imgFit.w, winW, winH, naturalSize.w, naturalSize.h));
+    if (!img.w || !winW) return;
+    if (!crop) {
+      const offset = getCenteredOffset(img.w, img.h, winW, winH);
+      onChange({ offset, scale: 1, cropData: toCropData(offset, img.w, img.h, winW, winH) });
+    } else {
+      const clamped = clampOffset(crop.offset, img.w, img.h, winW, winH);
+      if (clamped.x !== crop.offset.x || clamped.y !== crop.offset.y) {
+        onChange({ ...crop, offset: clamped, cropData: toCropData(clamped, img.w, img.h, winW, winH) });
+      }
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [imgFit.w, imgFit.h, winW, winH]);
+  }, [img.w, img.h, winW, winH]);
 
-  // --- Pointer events (mouse & stylus) ---
+  // ── Drag (pointer) ──
   function onPointerDown(e: React.PointerEvent) {
-    if (!canDrag) return;
+    if (!canDrag || !crop) return;
     e.currentTarget.setPointerCapture(e.pointerId);
-    dragStart.current = { mx: e.clientX, my: e.clientY, ox: offset.x, oy: offset.y };
+    dragRef.current = { mx: e.clientX, my: e.clientY, ox: crop.offset.x, oy: crop.offset.y };
   }
-
   function onPointerMove(e: React.PointerEvent) {
-    if (!dragStart.current || imgFit.w === 0) return;
-    const raw = {
-      x: dragStart.current.ox + (e.clientX - dragStart.current.mx),
-      y: dragStart.current.oy + (e.clientY - dragStart.current.my),
-    };
-    const clamped = clampOffset(raw, imgFit.w, imgFit.h, winW, winH);
-    onChange(clamped, toCropData(clamped, imgFit.w, winW, winH, naturalSize.w, naturalSize.h));
+    if (!dragRef.current || !crop || !img.w) return;
+    const raw = { x: dragRef.current.ox + e.clientX - dragRef.current.mx, y: dragRef.current.oy + e.clientY - dragRef.current.my };
+    const offset = clampOffset(raw, img.w, img.h, winW, winH);
+    onChange({ ...crop, offset, cropData: toCropData(offset, img.w, img.h, winW, winH) });
   }
-
   function onPointerUp() {
-    dragStart.current = null;
+    dragRef.current = null;
   }
 
+  // ── Drag (touch) ──
   function onTouchStart(e: React.TouchEvent) {
-    if (e.touches.length === 2) {
-      const dx = e.touches[0].clientX - e.touches[1].clientX;
-      const dy = e.touches[0].clientY - e.touches[1].clientY;
-      lastPinchDist.current = Math.hypot(dx, dy);
-      dragStart.current = null;
-      return;
-    }
-    if (!canDrag) return;
+    if (!canDrag || !crop) return;
     const t = e.touches[0];
-    dragStart.current = { mx: t.clientX, my: t.clientY, ox: offset.x, oy: offset.y };
+    dragRef.current = { mx: t.clientX, my: t.clientY, ox: crop.offset.x, oy: crop.offset.y };
   }
-
   function onTouchMove(e: React.TouchEvent) {
-    if (e.touches.length === 2 && lastPinchDist.current !== null) {
-      e.preventDefault();
-      const dx = e.touches[0].clientX - e.touches[1].clientX;
-      const dy = e.touches[0].clientY - e.touches[1].clientY;
-      const dist = Math.hypot(dx, dy);
-      const scale = dist / lastPinchDist.current;
-      lastPinchDist.current = dist;
-      const newZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoomRef.current * scale));
-      zoomRef.current = newZoom;
-      onZoomChange(newZoom);
-      return;
-    }
-    if (!dragStart.current || imgFit.w === 0) return;
+    if (!dragRef.current || !crop || !img.w) return;
     e.preventDefault();
     const t = e.touches[0];
-    const raw = {
-      x: dragStart.current.ox + (t.clientX - dragStart.current.mx),
-      y: dragStart.current.oy + (t.clientY - dragStart.current.my),
-    };
-    const clamped = clampOffset(raw, imgFit.w, imgFit.h, winW, winH);
-    onChange(clamped, toCropData(clamped, imgFit.w, winW, winH, naturalSize.w, naturalSize.h));
+    const raw = { x: dragRef.current.ox + t.clientX - dragRef.current.mx, y: dragRef.current.oy + t.clientY - dragRef.current.my };
+    const offset = clampOffset(raw, img.w, img.h, winW, winH);
+    onChange({ ...crop, offset, cropData: toCropData(offset, img.w, img.h, winW, winH) });
+  }
+  function onTouchEnd() {
+    dragRef.current = null;
   }
 
-  function onTouchEnd() {
-    lastPinchDist.current = null;
-    dragStart.current = null;
+  // ── Zoom ──
+  function applyZoom(rawZoom: number) {
+    if (!crop || !winW || !img.w) return;
+    // Snap to 2 decimal places to prevent float drift from repeated button clicks
+    const newZoom = Math.min(MAX_SCALE, Math.max(MIN_SCALE, Math.round(rawZoom * 100) / 100));
+    const newImg = getImageCoverSize(natSize.w, natSize.h, winW, winH, newZoom);
+    // Pin the visual centre of the window so zoom in/out is symmetric
+    const cx = winW / 2;
+    const cy = winH / 2;
+    const relX = (cx - crop.offset.x) / img.w;
+    const relY = (cy - crop.offset.y) / img.h;
+    const offset = clampOffset({ x: cx - relX * newImg.w, y: cy - relY * newImg.h }, newImg.w, newImg.h, winW, winH);
+    onChange({ offset, scale: newZoom, cropData: toCropData(offset, newImg.w, newImg.h, winW, winH) });
   }
+
+  const displayOffset = crop?.offset ?? { x: 0, y: 0 };
 
   return (
     <div ref={containerRef} className="relative w-full h-full flex items-center justify-center bg-black">
       {/* Crop window */}
       <div
-        className={cn("relative overflow-hidden  shrink-0", canDrag ? "cursor-grab active:cursor-grabbing" : "cursor-default")}
+        className={cn("relative overflow-hidden shrink-0", canDrag ? "cursor-grab active:cursor-grabbing" : "cursor-default")}
         style={{ width: winW || "100%", height: winH || "100%" }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
@@ -190,20 +172,16 @@ function CropEditor({ previewUrl, aspectRatio, offset, zoom, onChange, onZoomCha
         onTouchCancel={onTouchEnd}
       >
         <img
-          ref={imgRef}
           src={previewUrl}
           alt=""
           draggable={false}
-          onLoad={(e) => {
-            const img = e.currentTarget;
-            setNaturalSize({ w: img.naturalWidth, h: img.naturalHeight });
-          }}
+          onLoad={(e) => setNatSize({ w: e.currentTarget.naturalWidth, h: e.currentTarget.naturalHeight })}
           style={{
             position: "absolute",
-            left: offset.x,
-            top: offset.y,
-            width: imgFit.w || "100%",
-            height: imgFit.h || "100%",
+            left: displayOffset.x,
+            top: displayOffset.y,
+            width: img.w || "100%",
+            height: img.h || "100%",
             userSelect: "none",
             touchAction: "none",
             pointerEvents: "none",
@@ -218,7 +196,6 @@ function CropEditor({ previewUrl, aspectRatio, offset, zoom, onChange, onZoomCha
           {[1, 2].map((i) => (
             <div key={`h${i}`} className="absolute left-0 right-0 h-px bg-white/20" style={{ top: `${(i / 3) * 100}%` }} />
           ))}
-          {/* Corner brackets */}
           {(["tl", "tr", "bl", "br"] as const).map((pos) => (
             <div key={pos} className={cn("absolute size-5 pointer-events-none", pos.startsWith("t") ? "top-0" : "bottom-0", pos.endsWith("l") ? "left-0" : "right-0")}>
               <div className={cn("absolute bg-white h-0.5 w-4", pos.startsWith("t") ? "top-0" : "bottom-0", pos.endsWith("l") ? "left-0" : "right-0")} />
@@ -229,9 +206,33 @@ function CropEditor({ previewUrl, aspectRatio, offset, zoom, onChange, onZoomCha
 
         {canDrag && <div className="pointer-events-none absolute bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-black/50 px-2.5 py-0.5 text-white/70 text-[10px] font-medium whitespace-nowrap">Drag to reposition</div>}
       </div>
+
+      {/* Zoom controls */}
+      <div className="absolute bottom-3 right-3 z-10 flex items-center gap-1.5 rounded-full bg-black/60 px-2 py-1.5">
+        <button
+          type="button"
+          onClick={() => applyZoom(zoom - 0.1)}
+          disabled={zoom <= MIN_SCALE}
+          className="flex size-6 items-center justify-center rounded-full text-white hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+        >
+          <ZoomOut className="size-3.5" />
+        </button>
+        <input type="range" min={MIN_SCALE} max={MAX_SCALE} step={0.01} value={zoom} onChange={(e) => applyZoom(Number(e.target.value))} className="w-20 accent-white cursor-pointer" />
+        <button
+          type="button"
+          onClick={() => applyZoom(zoom + 0.1)}
+          disabled={zoom >= MAX_SCALE}
+          className="flex size-6 items-center justify-center rounded-full text-white hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+        >
+          <ZoomIn className="size-3.5" />
+        </button>
+        <span className="w-8 text-center text-[10px] font-medium text-white/70 tabular-nums">{Math.round(zoom * 100)}%</span>
+      </div>
     </div>
   );
 }
+
+// ─── ImageCarouselPanel ───────────────────────────────────────────────────────
 
 interface ImageCarouselPanelProps {
   previews: PreviewItem[];
@@ -244,27 +245,14 @@ interface ImageCarouselPanelProps {
 export function ImageCarouselPanel({ previews, aspectRatio, onAspectRatioChange, cropMap, onCropChange }: ImageCarouselPanelProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const safeIndex = Math.min(activeIndex, previews.length - 1);
-  const currentCrop = cropMap.get(safeIndex) ?? {
-    // FIX: Use {x:0, y:0} as a sentinel meaning "not yet positioned".
-    // CropEditor's useEffect will convert it to the centered offset on first render.
-    offset: { x: 0, y: 0 },
-    zoom: 1,
-    cropData: { cropX: 0, cropY: 0, cropW: 1, cropH: 1 },
-  };
+
+  // Pass null when this image has never been initialised — CropEditor will centre it.
+  const currentCrop = cropMap.get(safeIndex) ?? null;
 
   return (
     <div className="w-full h-full flex flex-col bg-black">
-      {/* Editor */}
       <div className="relative flex-1 min-h-0">
-        <CropEditor
-          key={`${safeIndex}-${previews[safeIndex]?.previewUrl}-${aspectRatio}`}
-          previewUrl={previews[safeIndex].previewUrl}
-          aspectRatio={aspectRatio}
-          offset={currentCrop.offset}
-          zoom={currentCrop.zoom}
-          onChange={(offset, cropData) => onCropChange(safeIndex, { ...currentCrop, offset, cropData })}
-          onZoomChange={(zoom) => onCropChange(safeIndex, { ...currentCrop, zoom })}
-        />
+        <CropEditor key={`${safeIndex}-${previews[safeIndex]?.previewUrl}-${aspectRatio}`} previewUrl={previews[safeIndex].previewUrl} aspectRatio={aspectRatio} crop={currentCrop} onChange={(crop) => onCropChange(safeIndex, crop)} />
 
         {safeIndex > 0 && (
           <button
@@ -296,31 +284,6 @@ export function ImageCarouselPanel({ previews, aspectRatio, onAspectRatioChange,
         <div className="absolute top-3 right-3 z-10 px-2 py-0.5 rounded-full bg-black/50 text-white text-xs font-medium">
           {safeIndex + 1} / {previews.length}
         </div>
-      </div>
-
-      {/* Zoom toolbar */}
-      <div className="flex items-center gap-3 px-4 py-2.5 border-t border-white/10 shrink-0">
-        <ZoomOut className="size-3.5 text-white/50 shrink-0" />
-        <input
-          type="range"
-          min={MIN_ZOOM * 100}
-          max={MAX_ZOOM * 100}
-          step={5}
-          value={Math.round(currentCrop.zoom * 100)}
-          onChange={(e) => onCropChange(safeIndex, { ...currentCrop, zoom: Number(e.target.value) / 100 })}
-          className="flex-1 h-1 accent-white cursor-pointer"
-          aria-label="Zoom"
-        />
-        <ZoomIn className="size-3.5 text-white/50 shrink-0" />
-        <span className="w-9 text-right text-[11px] text-white/40 tabular-nums shrink-0">{Math.round(currentCrop.zoom * 100)}%</span>
-        <button
-          type="button"
-          onClick={() => onCropChange(safeIndex, { offset: { x: 0, y: 0 }, zoom: 1, cropData: { cropX: 0, cropY: 0, cropW: 1, cropH: 1 } })}
-          className="ml-1 flex items-center justify-center rounded text-white/50 hover:text-white transition-colors"
-          title="Reset crop"
-        >
-          <RotateCcw className="size-3.5" />
-        </button>
       </div>
 
       {/* Aspect ratio toolbar */}
