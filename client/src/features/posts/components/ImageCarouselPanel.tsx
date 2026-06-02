@@ -69,15 +69,26 @@ function CropEditor({ previewUrl, aspectRatio, crop, onChange }: CropEditorProps
   const containerRef = useRef<HTMLDivElement>(null);
   const [natSize, setNatSize] = useState({ w: 0, h: 0 });
   const [conSize, setConSize] = useState({ w: 0, h: 0 });
+  // Both zoom and offset are fully local — no parent round-trip needed for display
+  // or for the geometry effect to read. onChange is fire-and-forget sync to parent.
+  const [zoom, setZoom] = useState(() => crop?.scale ?? 1);
+  const [offset, setOffset] = useState<CropState>(() => crop?.offset ?? { x: 0, y: 0 });
   const dragRef = useRef<{ mx: number; my: number; ox: number; oy: number } | null>(null);
+  const prevImgRef = useRef({ w: 0, h: 0 });
+  // offsetRef mirrors local offset state but is readable inside effects without
+  // adding offset to their dependency array (which would cause infinite loops).
+  const offsetRef = useRef<CropState>(offset);
 
   const ratio = RATIO_OPTIONS.find((r) => r.value === aspectRatio)!.ratio;
   const { w: winW, h: winH } = conSize.w ? getWinSize(conSize.w, conSize.h, ratio) : { w: 0, h: 0 };
-  const zoom = crop?.scale ?? 1;
-  // Exact float sizes — no rounding — so zoom operations are perfectly reversible
   const img = natSize.w ? getImageCoverSize(natSize.w, natSize.h, winW, winH, zoom) : { w: 0, h: 0 };
-  // 0.5 px threshold handles the sub-pixel case where image exactly covers the window
   const canDrag = img.w > winW + 0.5 || img.h > winH + 0.5;
+
+  function applyOffset(newOffset: CropState, imgW: number, imgH: number) {
+    offsetRef.current = newOffset;
+    setOffset(newOffset);
+    onChange({ offset: newOffset, scale: zoom, cropData: toCropData(newOffset, imgW, imgH, winW, winH) });
+  }
 
   // Observe container
   useEffect(() => {
@@ -90,32 +101,46 @@ function CropEditor({ previewUrl, aspectRatio, crop, onChange }: CropEditorProps
     return () => ro.disconnect();
   }, []);
 
-  // Initialise or re-clamp when geometry changes
+  // Fires when the image footprint changes (zoom, window resize, image load).
+  // Reads offsetRef — always current — and re-anchors from the window centre.
   useEffect(() => {
     if (!img.w || !winW) return;
-    if (!crop) {
-      const offset = getCenteredOffset(img.w, img.h, winW, winH);
-      onChange({ offset, scale: 1, cropData: toCropData(offset, img.w, img.h, winW, winH) });
-    } else {
-      const clamped = clampOffset(crop.offset, img.w, img.h, winW, winH);
-      if (clamped.x !== crop.offset.x || clamped.y !== crop.offset.y) {
-        onChange({ ...crop, offset: clamped, cropData: toCropData(clamped, img.w, img.h, winW, winH) });
-      }
+
+    const prev = prevImgRef.current;
+    prevImgRef.current = { w: img.w, h: img.h };
+
+    if (prev.w === 0) {
+      // First valid geometry: restore saved position or centre fresh
+      const base = offsetRef.current;
+      const newOffset = crop ? clampOffset(base, img.w, img.h, winW, winH) : getCenteredOffset(img.w, img.h, winW, winH);
+      applyOffset(newOffset, img.w, img.h);
+      return;
     }
+
+    if (prev.w === img.w && prev.h === img.h) return;
+
+    // Anchor-from-centre: keep the same image point at the window centre
+    const cx = winW / 2;
+    const cy = winH / 2;
+    const cur = offsetRef.current;
+    const raw = {
+      x: cx - (cx - cur.x) * (img.w / prev.w),
+      y: cy - (cy - cur.y) * (img.h / prev.h),
+    };
+    applyOffset(clampOffset(raw, img.w, img.h, winW, winH), img.w, img.h);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [img.w, img.h, winW, winH]);
 
   // ── Drag (pointer) ──
   function onPointerDown(e: React.PointerEvent) {
-    if (!canDrag || !crop) return;
+    if (!canDrag) return;
     e.currentTarget.setPointerCapture(e.pointerId);
-    dragRef.current = { mx: e.clientX, my: e.clientY, ox: crop.offset.x, oy: crop.offset.y };
+    dragRef.current = { mx: e.clientX, my: e.clientY, ox: offset.x, oy: offset.y };
   }
   function onPointerMove(e: React.PointerEvent) {
-    if (!dragRef.current || !crop || !img.w) return;
+    if (!dragRef.current || !img.w) return;
     const raw = { x: dragRef.current.ox + e.clientX - dragRef.current.mx, y: dragRef.current.oy + e.clientY - dragRef.current.my };
-    const offset = clampOffset(raw, img.w, img.h, winW, winH);
-    onChange({ ...crop, offset, cropData: toCropData(offset, img.w, img.h, winW, winH) });
+    applyOffset(clampOffset(raw, img.w, img.h, winW, winH), img.w, img.h);
   }
   function onPointerUp() {
     dragRef.current = null;
@@ -123,38 +148,28 @@ function CropEditor({ previewUrl, aspectRatio, crop, onChange }: CropEditorProps
 
   // ── Drag (touch) ──
   function onTouchStart(e: React.TouchEvent) {
-    if (!canDrag || !crop) return;
+    if (!canDrag) return;
     const t = e.touches[0];
-    dragRef.current = { mx: t.clientX, my: t.clientY, ox: crop.offset.x, oy: crop.offset.y };
+    dragRef.current = { mx: t.clientX, my: t.clientY, ox: offset.x, oy: offset.y };
   }
   function onTouchMove(e: React.TouchEvent) {
-    if (!dragRef.current || !crop || !img.w) return;
+    if (!dragRef.current || !img.w) return;
     e.preventDefault();
     const t = e.touches[0];
     const raw = { x: dragRef.current.ox + t.clientX - dragRef.current.mx, y: dragRef.current.oy + t.clientY - dragRef.current.my };
-    const offset = clampOffset(raw, img.w, img.h, winW, winH);
-    onChange({ ...crop, offset, cropData: toCropData(offset, img.w, img.h, winW, winH) });
+    applyOffset(clampOffset(raw, img.w, img.h, winW, winH), img.w, img.h);
   }
   function onTouchEnd() {
     dragRef.current = null;
   }
 
-  // ── Zoom ──
+  // ── Zoom: only update local scale; geometry effect re-anchors from offsetRef ──
   function applyZoom(rawZoom: number) {
-    if (!crop || !winW || !img.w) return;
-    // Snap to 2 decimal places to prevent float drift from repeated button clicks
     const newZoom = Math.min(MAX_SCALE, Math.max(MIN_SCALE, Math.round(rawZoom * 100) / 100));
-    const newImg = getImageCoverSize(natSize.w, natSize.h, winW, winH, newZoom);
-    // Pin the visual centre of the window so zoom in/out is symmetric
-    const cx = winW / 2;
-    const cy = winH / 2;
-    const relX = (cx - crop.offset.x) / img.w;
-    const relY = (cy - crop.offset.y) / img.h;
-    const offset = clampOffset({ x: cx - relX * newImg.w, y: cy - relY * newImg.h }, newImg.w, newImg.h, winW, winH);
-    onChange({ offset, scale: newZoom, cropData: toCropData(offset, newImg.w, newImg.h, winW, winH) });
+    if (newZoom !== zoom) setZoom(newZoom);
   }
 
-  const displayOffset = crop?.offset ?? { x: 0, y: 0 };
+  const displayOffset = offset;
 
   return (
     <div ref={containerRef} className="relative w-full h-full flex items-center justify-center bg-black">
