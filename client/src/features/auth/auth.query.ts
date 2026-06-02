@@ -1,4 +1,5 @@
 /* eslint-disable react-hooks/exhaustive-deps */
+// src/features/auth/auth.query.ts
 import { toast } from "sonner";
 import { useEffect } from "react";
 import { useAuthStore } from "@/stores/auth.store";

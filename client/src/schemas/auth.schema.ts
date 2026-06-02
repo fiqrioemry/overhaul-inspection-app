@@ -1,3 +1,4 @@
+// src/schemas/auth.schema.ts
 /* eslint-disable no-useless-escape */
 import { z } from "zod";
 

@@ -1,3 +1,4 @@
+// src/types/users.type.ts
 export type GenderOption = "MALE" | "FEMALE";
 
 export interface UserProfile {

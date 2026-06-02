@@ -1,3 +1,4 @@
+// src/utils/formatImage.ts
 import type { CropState } from "@/constants/posts.constant";
 
 export function getImageCoverSize(naturalW: number, naturalH: number, winW: number, winH: number) {

@@ -1,3 +1,4 @@
+// src/stores/auth.store.ts
 import type { User } from "@/types/users.type";
 import { create } from "zustand";
 

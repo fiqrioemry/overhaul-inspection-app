@@ -1,6 +1,6 @@
 // src/features/posts/components/ImageCarouselPanel.tsx
 import { cn } from "@/lib/utils";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
 import { RATIO_OPTIONS } from "@/constants/posts.constant";
 import { useState, useRef, useCallback, useEffect } from "react";
 import type { AspectRatio, CropState } from "@/constants/posts.constant";
@@ -9,6 +9,7 @@ import { clampOffset, getCenteredOffset, getImageCoverSize, toCropData } from "@
 
 export interface PerImageCrop {
   offset: CropState;
+  zoom: number;
   cropData: { cropX: number; cropY: number; cropW: number; cropH: number };
 }
 
@@ -35,15 +36,20 @@ const RATIO_ICONS: Record<AspectRatio, React.ReactNode> = {
   ),
 };
 
+const MIN_ZOOM = 1;
+const MAX_ZOOM = 3;
+
 interface CropEditorProps {
   previewUrl: string;
   aspectRatio: AspectRatio;
   offset: CropState;
+  zoom: number;
   onOffsetChange: (o: CropState) => void;
+  onZoomChange: (z: number) => void;
   onCropDataChange: (data: { cropX: number; cropY: number; cropW: number; cropH: number }) => void;
 }
 
-function CropEditor({ previewUrl, aspectRatio, offset, onOffsetChange, onCropDataChange }: CropEditorProps) {
+function CropEditor({ previewUrl, aspectRatio, offset, zoom, onOffsetChange, onZoomChange, onCropDataChange }: CropEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
   const [naturalSize, setNaturalSize] = useState({ w: 0, h: 0 });
@@ -51,6 +57,12 @@ function CropEditor({ previewUrl, aspectRatio, offset, onOffsetChange, onCropDat
 
   // Unified drag state for both pointer and touch
   const dragStart = useRef<{ mx: number; my: number; ox: number; oy: number } | null>(null);
+  const lastPinchDist = useRef<number | null>(null);
+  // Track zoom in ref so rapid pinch events use the latest value without waiting for re-render
+  const zoomRef = useRef(zoom);
+  useEffect(() => {
+    zoomRef.current = zoom;
+  }, [zoom]);
 
   const ratio = RATIO_OPTIONS.find((r) => r.value === aspectRatio)!.ratio;
 
@@ -79,7 +91,8 @@ function CropEditor({ previewUrl, aspectRatio, offset, onOffsetChange, onCropDat
   }, []);
 
   const { w: winW, h: winH } = winSize(containerSize.w, containerSize.h);
-  const imgFit = naturalSize.w > 0 ? getImageCoverSize(naturalSize.w, naturalSize.h, winW, winH) : { w: 0, h: 0 };
+  const baseCover = naturalSize.w > 0 ? getImageCoverSize(naturalSize.w, naturalSize.h, winW, winH) : { w: 0, h: 0 };
+  const imgFit = { w: baseCover.w * zoom, h: baseCover.h * zoom };
   const canDrag = imgFit.w > winW + 1 || imgFit.h > winH + 1;
 
   useEffect(() => {
@@ -124,14 +137,33 @@ function CropEditor({ previewUrl, aspectRatio, offset, onOffsetChange, onCropDat
   }
 
   function onTouchStart(e: React.TouchEvent) {
+    if (e.touches.length === 2) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      lastPinchDist.current = Math.hypot(dx, dy);
+      dragStart.current = null;
+      return;
+    }
     if (!canDrag) return;
     const t = e.touches[0];
     dragStart.current = { mx: t.clientX, my: t.clientY, ox: offset.x, oy: offset.y };
   }
 
   function onTouchMove(e: React.TouchEvent) {
+    if (e.touches.length === 2 && lastPinchDist.current !== null) {
+      e.preventDefault();
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      const dist = Math.hypot(dx, dy);
+      const scale = dist / lastPinchDist.current;
+      lastPinchDist.current = dist;
+      const newZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoomRef.current * scale));
+      zoomRef.current = newZoom;
+      onZoomChange(newZoom);
+      return;
+    }
     if (!dragStart.current || imgFit.w === 0) return;
-    e.preventDefault(); // prevent page scroll while dragging
+    e.preventDefault();
     const t = e.touches[0];
     const raw = {
       x: dragStart.current.ox + (t.clientX - dragStart.current.mx),
@@ -143,6 +175,7 @@ function CropEditor({ previewUrl, aspectRatio, offset, onOffsetChange, onCropDat
   }
 
   function onTouchEnd() {
+    lastPinchDist.current = null;
     dragStart.current = null;
   }
 
@@ -220,6 +253,7 @@ export function ImageCarouselPanel({ previews, aspectRatio, onAspectRatioChange,
     // FIX: Use {x:0, y:0} as a sentinel meaning "not yet positioned".
     // CropEditor's useEffect will convert it to the centered offset on first render.
     offset: { x: 0, y: 0 },
+    zoom: 1,
     cropData: { cropX: 0, cropY: 0, cropW: 1, cropH: 1 },
   };
 
@@ -232,7 +266,9 @@ export function ImageCarouselPanel({ previews, aspectRatio, onAspectRatioChange,
           previewUrl={previews[safeIndex].previewUrl}
           aspectRatio={aspectRatio}
           offset={currentCrop.offset}
+          zoom={currentCrop.zoom}
           onOffsetChange={(offset) => onCropChange(safeIndex, { ...currentCrop, offset })}
+          onZoomChange={(zoom) => onCropChange(safeIndex, { ...currentCrop, zoom })}
           onCropDataChange={(cropData) => onCropChange(safeIndex, { ...currentCrop, cropData })}
         />
 
@@ -266,6 +302,31 @@ export function ImageCarouselPanel({ previews, aspectRatio, onAspectRatioChange,
         <div className="absolute top-3 right-3 z-10 px-2 py-0.5 rounded-full bg-black/50 text-white text-xs font-medium">
           {safeIndex + 1} / {previews.length}
         </div>
+      </div>
+
+      {/* Zoom toolbar */}
+      <div className="flex items-center gap-3 px-4 py-2.5 border-t border-white/10 shrink-0">
+        <ZoomOut className="size-3.5 text-white/50 shrink-0" />
+        <input
+          type="range"
+          min={MIN_ZOOM * 100}
+          max={MAX_ZOOM * 100}
+          step={5}
+          value={Math.round(currentCrop.zoom * 100)}
+          onChange={(e) => onCropChange(safeIndex, { ...currentCrop, zoom: Number(e.target.value) / 100 })}
+          className="flex-1 h-1 accent-white cursor-pointer"
+          aria-label="Zoom"
+        />
+        <ZoomIn className="size-3.5 text-white/50 shrink-0" />
+        <span className="w-9 text-right text-[11px] text-white/40 tabular-nums shrink-0">{Math.round(currentCrop.zoom * 100)}%</span>
+        <button
+          type="button"
+          onClick={() => onCropChange(safeIndex, { offset: { x: 0, y: 0 }, zoom: 1, cropData: { cropX: 0, cropY: 0, cropW: 1, cropH: 1 } })}
+          className="ml-1 flex items-center justify-center rounded text-white/50 hover:text-white transition-colors"
+          title="Reset crop"
+        >
+          <RotateCcw className="size-3.5" />
+        </button>
       </div>
 
       {/* Aspect ratio toolbar */}

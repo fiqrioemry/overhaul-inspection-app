@@ -1,4 +1,4 @@
-// src/features/posts/pages/FeedPage.tsx
+// src/pages/FeedPage.tsx
 import { Loader2 } from "lucide-react";
 import { useEffect, useRef } from "react";
 import type { Post } from "@/types/posts.type";

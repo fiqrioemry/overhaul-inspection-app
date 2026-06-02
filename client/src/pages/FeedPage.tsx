@@ -1,4 +1,4 @@
-// src/features/posts/pages/FeedPage.tsx
+// src/pages/FeedPage.tsx
 import { useEffect, useRef } from "react";
 import { Loader2, Rss } from "lucide-react";
 import { Helmet } from "react-helmet-async";

@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+// src/lib/query.ts
 import { toast } from "sonner";
 import type { ResponseError } from "@/types/response.type";
 import { QueryClient, QueryCache, MutationCache } from "@tanstack/react-query";

@@ -1,4 +1,4 @@
-// features/auth/auth.endpoints.ts
+// src/constants/auth.constant.ts
 export const AUTH_ENDPOINTS = {
   me: "/auth/me",
   login: "/auth/login",

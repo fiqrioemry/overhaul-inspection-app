@@ -1,3 +1,4 @@
+// src/hooks/useLanguage.ts
 import { useTranslation } from "react-i18next";
 
 export type Language = "en" | "id";

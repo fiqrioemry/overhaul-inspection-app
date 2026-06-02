@@ -1,3 +1,4 @@
+// src/App.tsx
 import Login from "@/pages/LoginPage";
 import useTheme from "./hooks/useTheme";
 import FeedPage from "@/pages/FeedPage";
