@@ -44,12 +44,12 @@ interface CropEditorProps {
   aspectRatio: AspectRatio;
   offset: CropState;
   zoom: number;
-  onOffsetChange: (o: CropState) => void;
+  /** Single callback — always updates offset + cropData together to avoid split-setState overwrites. */
+  onChange: (offset: CropState, cropData: { cropX: number; cropY: number; cropW: number; cropH: number }) => void;
   onZoomChange: (z: number) => void;
-  onCropDataChange: (data: { cropX: number; cropY: number; cropW: number; cropH: number }) => void;
 }
 
-function CropEditor({ previewUrl, aspectRatio, offset, zoom, onOffsetChange, onZoomChange, onCropDataChange }: CropEditorProps) {
+function CropEditor({ previewUrl, aspectRatio, offset, zoom, onChange, onZoomChange }: CropEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
   const [naturalSize, setNaturalSize] = useState({ w: 0, h: 0 });
@@ -107,10 +107,7 @@ function CropEditor({ previewUrl, aspectRatio, offset, zoom, onOffsetChange, onZ
     const isDefaultOffset = offset.x === 0 && offset.y === 0;
     const newOffset = isDefaultOffset ? centeredOffset : clampOffset(offset, imgFit.w, imgFit.h, winW, winH);
 
-    if (newOffset.x !== offset.x || newOffset.y !== offset.y) {
-      onOffsetChange(newOffset);
-    }
-    onCropDataChange(toCropData(newOffset, imgFit.w, winW, winH, naturalSize.w, naturalSize.h));
+    onChange(newOffset, toCropData(newOffset, imgFit.w, winW, winH, naturalSize.w, naturalSize.h));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [imgFit.w, imgFit.h, winW, winH]);
 
@@ -128,8 +125,7 @@ function CropEditor({ previewUrl, aspectRatio, offset, zoom, onOffsetChange, onZ
       y: dragStart.current.oy + (e.clientY - dragStart.current.my),
     };
     const clamped = clampOffset(raw, imgFit.w, imgFit.h, winW, winH);
-    onOffsetChange(clamped);
-    onCropDataChange(toCropData(clamped, imgFit.w, winW, winH, naturalSize.w, naturalSize.h));
+    onChange(clamped, toCropData(clamped, imgFit.w, winW, winH, naturalSize.w, naturalSize.h));
   }
 
   function onPointerUp() {
@@ -170,8 +166,7 @@ function CropEditor({ previewUrl, aspectRatio, offset, zoom, onOffsetChange, onZ
       y: dragStart.current.oy + (t.clientY - dragStart.current.my),
     };
     const clamped = clampOffset(raw, imgFit.w, imgFit.h, winW, winH);
-    onOffsetChange(clamped);
-    onCropDataChange(toCropData(clamped, imgFit.w, winW, winH, naturalSize.w, naturalSize.h));
+    onChange(clamped, toCropData(clamped, imgFit.w, winW, winH, naturalSize.w, naturalSize.h));
   }
 
   function onTouchEnd() {
@@ -267,9 +262,8 @@ export function ImageCarouselPanel({ previews, aspectRatio, onAspectRatioChange,
           aspectRatio={aspectRatio}
           offset={currentCrop.offset}
           zoom={currentCrop.zoom}
-          onOffsetChange={(offset) => onCropChange(safeIndex, { ...currentCrop, offset })}
+          onChange={(offset, cropData) => onCropChange(safeIndex, { ...currentCrop, offset, cropData })}
           onZoomChange={(zoom) => onCropChange(safeIndex, { ...currentCrop, zoom })}
-          onCropDataChange={(cropData) => onCropChange(safeIndex, { ...currentCrop, cropData })}
         />
 
         {safeIndex > 0 && (
