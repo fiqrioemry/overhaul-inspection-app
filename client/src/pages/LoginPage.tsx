@@ -1,7 +1,16 @@
 import LoginForm from "@/features/auth/components/LoginForm";
+import { useLanguage } from "@/hooks/useLanguage";
 import { Helmet } from "react-helmet-async";
 
+const BRAND_FEATURES = [
+  "Share photos and short videos with people you care about",
+  "Real-time messaging with friends and groups",
+  "Discover content tailored to your interests",
+];
+
 export default function LoginPage() {
+  const { isEnglish, toggleLanguage } = useLanguage();
+
   return (
     <>
       <Helmet>
@@ -14,8 +23,80 @@ export default function LoginPage() {
         <meta property="og:url" content="https://pixel.ahmadfiqrioemry/login" />
       </Helmet>
 
-      <div className="flex items-center justify-center min-h-screen container mx-auto">
-        <LoginForm />
+      <div className="min-h-screen flex">
+        {/* Brand panel */}
+        <div className="hidden lg:flex lg:w-[42%] bg-primary flex-col justify-between p-12 relative overflow-hidden">
+          <div
+            className="absolute inset-0 opacity-[0.07]"
+            style={{
+              backgroundImage: "radial-gradient(circle, white 1px, transparent 1px)",
+              backgroundSize: "28px 28px",
+            }}
+          />
+
+          <span className="relative font-bold text-2xl tracking-tight text-primary-foreground">
+            Pixel<span className="opacity-50">.</span>
+          </span>
+
+          <div className="relative space-y-8">
+            <div className="space-y-3">
+              <h2 className="text-[2.6rem] font-bold leading-[1.15] text-primary-foreground">
+                Share your<br />world.
+              </h2>
+              <p className="text-primary-foreground/60 text-base leading-relaxed max-w-xs">
+                Moments that matter, with people who care.
+              </p>
+            </div>
+
+            <ul className="space-y-3">
+              {BRAND_FEATURES.map((f) => (
+                <li key={f} className="flex items-start gap-3">
+                  <span className="mt-1.75 size-1.5 rounded-full bg-primary-foreground/40 shrink-0" />
+                  <span className="text-primary-foreground/70 text-sm leading-relaxed">{f}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <span className="relative text-primary-foreground/25 text-xs">© 2026 Pixel</span>
+        </div>
+
+        {/* Form panel */}
+        <div className="flex-1 flex flex-col min-h-screen bg-background">
+          {/* Top bar */}
+          <div className="flex items-center justify-between px-6 py-5">
+            <span className="lg:hidden font-bold text-xl tracking-tight text-foreground">
+              Pixel<span className="text-primary">.</span>
+            </span>
+            <div className="ml-auto flex items-center gap-0.5 bg-muted rounded-lg p-0.5">
+              <button
+                type="button"
+                onClick={() => !isEnglish && toggleLanguage()}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
+                  isEnglish ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <span>🇺🇸</span>
+                <span>EN</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => isEnglish && toggleLanguage()}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
+                  !isEnglish ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <span>🇮🇩</span>
+                <span>ID</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Centered form */}
+          <div className="flex-1 flex items-center justify-center px-6 pb-10">
+            <LoginForm />
+          </div>
+        </div>
       </div>
     </>
   );

@@ -45,11 +45,9 @@ export default function RegisterForm() {
   }
 
   return (
-    <div className="w-full max-w-sm space-y-6 border p-6 rounded-lg">
-      {/* Header */}
-      <div className="space-y-1 text-center">
-        <div>✨</div>
-        <h1 className="text-2xl font-semibold">{t("auth:registerTitle")}</h1>
+    <div className="w-full max-w-sm space-y-6">
+      <div className="space-y-1">
+        <h1 className="text-2xl font-bold tracking-tight">{t("auth:registerTitle")}</h1>
         <p className="text-sm text-muted-foreground">{t("auth:registerSubtitle")}</p>
       </div>
 

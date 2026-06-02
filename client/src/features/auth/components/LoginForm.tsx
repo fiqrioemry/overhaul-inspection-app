@@ -53,11 +53,9 @@ export default function LoginForm() {
   }
 
   return (
-    <div className="w-full max-w-sm space-y-6 border p-6 rounded-lg">
-      {/* Header */}
-      <div className="space-y-1 text-center">
-        <div>❤️</div>
-        <h1 className="text-2xl font-semibold">{t("auth:loginTitle")}</h1>
+    <div className="w-full max-w-sm space-y-6">
+      <div className="space-y-1">
+        <h1 className="text-2xl font-bold tracking-tight">{t("auth:loginTitle")}</h1>
         <p className="text-sm text-muted-foreground">{t("auth:loginSubtitle")}</p>
       </div>
 
@@ -76,7 +74,7 @@ export default function LoginForm() {
         </Button>
       </form>
 
-      <OAuthDivider />
+      <OAuthDivider label={t("auth:orLoginWith")} />
       <OAuthButtonGroup disabled={isSubmitting} />
 
       <div className="text-center">
