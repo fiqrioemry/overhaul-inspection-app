@@ -8,7 +8,7 @@ const auth = new Hono();
 auth.post("/login", limitter(authLimit.LOGIN), ctrl.login);
 auth.post("/register", limitter(authLimit.REGISTER), ctrl.register);
 auth.post("/logout", protect, ctrl.logout);
-auth.post("/sessions/sessions-revoke", protect, ctrl.logoutAll);
+auth.post("/sessions-revoke", protect, ctrl.logoutAll);
 auth.delete("/sessions/:sessionId", protect, ctrl.deleteSession);
 auth.get("/sessions", protect, limitter(authLimit.SESSIONS), ctrl.getSessions);
 auth.patch("/change-password", protect, limitter(authLimit.PASSWORD_CHANGE), ctrl.changePassword);
