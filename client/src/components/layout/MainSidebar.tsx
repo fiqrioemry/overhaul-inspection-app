@@ -323,7 +323,7 @@ export default function MainSidebar() {
           }
         }}
       >
-        <DialogContent className="max-w-md p-0 gap-0 overflow-hidden">
+        <DialogContent className="max-w-md p-0 gap-0 overflow-hidden flex flex-col h-112">
           <DialogHeader className="sr-only">
             <DialogTitle>{t("common:search")}</DialogTitle>
           </DialogHeader>
@@ -356,7 +356,7 @@ export default function MainSidebar() {
           </div>
 
           {/* Results */}
-          <div className="max-h-80 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto">
             {debouncedSearch.trim().length === 0 ? (
               <div className="px-4 py-6 text-sm text-muted-foreground text-center">{t("common:searchPlaceholder")}</div>
             ) : isSearching ? (
