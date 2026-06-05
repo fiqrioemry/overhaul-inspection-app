@@ -1,7 +1,8 @@
 // src/components/layout/AppLayout.tsx
+import { cn } from "@/lib/utils";
 import MainSidebar from "./MainSidebar";
 import RightSidebar from "./RightSidebar";
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import MobileBottomNav from "./MobileBottomNav";
 
 interface AppLayoutProps {
@@ -10,13 +11,16 @@ interface AppLayoutProps {
 }
 
 export default function AppLayout({ showRightSidebar = true, fullWidth = false }: AppLayoutProps) {
+  const location = useLocation();
+  const isCollapsed = location.pathname.startsWith("/message");
+
   return (
     <div className="min-h-screen bg-background">
       {/* Desktop Sidebar */}
       <MainSidebar />
 
       {/* Main area */}
-      <div className="md:ml-64 xl:ml-72 flex min-h-screen">
+      <div className={cn("flex min-h-screen transition-all duration-300", isCollapsed ? "md:ml-16" : "md:ml-64 xl:ml-72")}>
         {/* Center content */}
         <main className={fullWidth ? "flex-1 min-w-0 pb-20 md:pb-6" : "flex-1 min-w-0 pb-20 md:pb-6 max-w-8xl mx-auto w-full px-4 md:px-6 py-6"}>
           <Outlet />
