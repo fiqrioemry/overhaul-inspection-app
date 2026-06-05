@@ -232,20 +232,22 @@ export default function MainSidebar() {
           {/* Profile Dropdown */}
           <div className={cn("mt-auto pt-4 border-t border-sidebar-border", isCollapsed && "w-full flex justify-center")}>
             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                {isCollapsed ? (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
+              {isCollapsed ? (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <DropdownMenuTrigger asChild>
                       <button className="flex items-center justify-center p-1.5 rounded-xl hover:bg-muted transition-colors">
                         <Avatar className="size-8 shrink-0 ring-2 ring-primary/20">
                           <AvatarImage src={user?.avatar ?? undefined} />
                           <AvatarFallback className="text-xs font-semibold">{formatInitials(user?.name ?? "")}</AvatarFallback>
                         </Avatar>
                       </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="right">{user?.name}</TooltipContent>
-                  </Tooltip>
-                ) : (
+                    </DropdownMenuTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">{user?.name}</TooltipContent>
+                </Tooltip>
+              ) : (
+                <DropdownMenuTrigger asChild>
                   <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-muted transition-colors group">
                     <Avatar className="size-9 shrink-0 ring-2 ring-primary/20">
                       <AvatarImage src={user?.avatar ?? undefined} />
@@ -257,8 +259,8 @@ export default function MainSidebar() {
                     </div>
                     <ChevronDown className="size-4 text-muted-foreground group-hover:text-foreground transition-colors shrink-0" />
                   </button>
-                )}
-              </DropdownMenuTrigger>
+                </DropdownMenuTrigger>
+              )}
               <DropdownMenuContent side="top" align={isCollapsed ? "center" : "start"} className="w-56 mb-1">
                 <DropdownMenuItem asChild>
                   <Link to={`/profile/${user?.username}`} className="flex items-center gap-2 cursor-pointer">
