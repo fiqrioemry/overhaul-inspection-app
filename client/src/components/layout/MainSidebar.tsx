@@ -27,7 +27,7 @@ export default function MainSidebar() {
   const user = useAuthStore((s) => s.user);
   const { t } = useTranslation(["common", "nav"]);
 
-  const isCollapsed = location.pathname.startsWith("/message");
+  const isCollapsed = location.pathname.startsWith("/message") || location.pathname.startsWith("/notifications");
 
   const NAV_ITEMS = [
     { icon: Home, label: t("nav:home"), to: "/" },

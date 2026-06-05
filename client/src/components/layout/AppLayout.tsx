@@ -12,7 +12,7 @@ interface AppLayoutProps {
 
 export default function AppLayout({ showRightSidebar = true, fullWidth = false }: AppLayoutProps) {
   const location = useLocation();
-  const isCollapsed = location.pathname.startsWith("/message");
+  const isCollapsed = location.pathname.startsWith("/message") || location.pathname.startsWith("/notifications");
 
   return (
     <div className="min-h-screen bg-background">

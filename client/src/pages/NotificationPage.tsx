@@ -114,7 +114,7 @@ export default function NotificationPage() {
         <meta property="og:url" content="https://pixel.ahmadfiqrioemry.com/notifications" />
       </Helmet>
 
-      <div className="mx-auto w-full max-w-2xl px-0 md:px-4 py-6 space-y-4">
+      <div className="mx-auto w-full max-w-4xl px-0 md:px-4 py-6 space-y-4">
         <div className="flex items-start justify-between gap-2">
           <div className="space-y-0.5">
             <h1 className="text-xl font-semibold tracking-tight">{t("notif:notifications")}</h1>
