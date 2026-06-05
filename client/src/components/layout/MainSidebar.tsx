@@ -16,6 +16,7 @@ import CreatePostDialog from "@/features/posts/components/CreatePostDialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useUnreadNotificationCount } from "@/features/notifications/notifications.query";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Home, Compass, PlusSquare, LogOut, Settings, Sun, Moon, ChevronDown, Search, X, User, Bell, MessageCircle, Languages } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
@@ -38,6 +39,7 @@ export default function MainSidebar() {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
+  const [showSearchDialog, setShowSearchDialog] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [showCreatePost, setShowCreatePost] = useState(false);
 
@@ -76,12 +78,7 @@ export default function MainSidebar() {
   return (
     <>
       <TooltipProvider delayDuration={0}>
-        <aside
-          className={cn(
-            "hidden md:flex flex-col fixed left-0 top-0 h-full bg-sidebar border-r border-sidebar-border z-40 py-6 gap-2 transition-all duration-300",
-            isCollapsed ? "w-16 px-2 items-center" : "w-64 xl:w-72 px-4",
-          )}
-        >
+        <aside className={cn("hidden md:flex flex-col fixed left-0 top-0 h-full bg-sidebar border-r border-sidebar-border z-40 py-6 gap-2 transition-all duration-300", isCollapsed ? "w-16 px-2 items-center" : "w-64 xl:w-72 px-4")}>
           {/* Logo */}
           <div className={cn("mb-6", isCollapsed ? "flex justify-center px-0" : "px-3")}>
             {isCollapsed ? (
@@ -95,7 +92,20 @@ export default function MainSidebar() {
             )}
           </div>
 
-          {/* Search — hidden in collapsed mode */}
+          {/* Search — icon button in collapsed mode, inline input otherwise */}
+          {isCollapsed && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => setShowSearchDialog(true)}
+                  className="flex items-center justify-center p-2.5 w-full rounded-xl text-muted-foreground hover:bg-muted hover:text-foreground transition-all group mb-2"
+                >
+                  <Search className="size-5 group-hover:scale-110 transition-transform" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right">{t("common:search")}</TooltipContent>
+            </Tooltip>
+          )}
           {!isCollapsed && (
             <div className="relative mb-2" ref={searchRef}>
               <div className="relative flex items-center">
@@ -209,20 +219,14 @@ export default function MainSidebar() {
             {isCollapsed ? (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <button
-                    onClick={() => setShowCreatePost(true)}
-                    className="flex items-center justify-center p-2.5 w-full rounded-xl text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-all group mt-1"
-                  >
+                  <button onClick={() => setShowCreatePost(true)} className="flex items-center justify-center p-2.5 w-full rounded-xl text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-all group mt-1">
                     <PlusSquare className="size-5 shrink-0 group-hover:scale-110 transition-transform" />
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="right">{t("common:createPost")}</TooltipContent>
               </Tooltip>
             ) : (
-              <button
-                onClick={() => setShowCreatePost(true)}
-                className="flex items-center gap-3.5 px-3 py-2.5 rounded-xl text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-all group mt-1"
-              >
+              <button onClick={() => setShowCreatePost(true)} className="flex items-center gap-3.5 px-3 py-2.5 rounded-xl text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-all group mt-1">
                 <PlusSquare className="size-5 shrink-0 group-hover:scale-110 transition-transform" />
                 {t("common:createPost")}
               </button>
@@ -308,6 +312,82 @@ export default function MainSidebar() {
       </TooltipProvider>
 
       {showCreatePost && <CreatePostDialog open={showCreatePost} onOpenChange={setShowCreatePost} />}
+
+      <Dialog
+        open={showSearchDialog}
+        onOpenChange={(open) => {
+          setShowSearchDialog(open);
+          if (!open) {
+            setSearchQuery("");
+            setShowSearch(false);
+          }
+        }}
+      >
+        <DialogContent className="max-w-md p-0 gap-0 overflow-hidden">
+          <DialogHeader className="sr-only">
+            <DialogTitle>{t("common:search")}</DialogTitle>
+          </DialogHeader>
+
+          {/* Search input */}
+          <div className="flex items-center gap-2 px-4 py-3 border-b">
+            <Search className="size-4 text-muted-foreground shrink-0" />
+            <input
+              autoFocus
+              type="text"
+              placeholder={t("common:searchPlaceholder")}
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setShowSearch(true);
+              }}
+              className="flex-1 text-sm bg-transparent outline-none placeholder:text-muted-foreground/60"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => {
+                  setSearchQuery("");
+                  setShowSearch(false);
+                }}
+                className="text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <X className="size-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Results */}
+          <div className="max-h-80 overflow-y-auto">
+            {debouncedSearch.trim().length === 0 ? (
+              <div className="px-4 py-6 text-sm text-muted-foreground text-center">{t("common:searchPlaceholder")}</div>
+            ) : isSearching ? (
+              <div className="px-4 py-4 text-sm text-muted-foreground">{t("common:loading")}</div>
+            ) : searchResults?.data && Array.isArray(searchResults.data) && searchResults.data.length > 0 ? (
+              <ul>
+                {searchResults.data.map((u) => (
+                  <li key={u.id}>
+                    <button
+                      onClick={() => {
+                        navigate(`/profile/${u.username}`, { replace: true });
+                        setSearchQuery("");
+                        setShowSearchDialog(false);
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-muted/60 transition-colors text-left"
+                    >
+                      <UserAvatar user={u} size={"sm"} />
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium truncate">{u.name}</p>
+                        <p className="text-xs text-muted-foreground truncate">@{u.username}</p>
+                      </div>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="px-4 py-4 text-sm text-muted-foreground">{t("common:noResults")}</div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
