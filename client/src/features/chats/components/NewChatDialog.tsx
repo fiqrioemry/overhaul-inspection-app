@@ -86,8 +86,8 @@ export default function NewChatDialog({ open, onOpenChange }: NewChatDialogProps
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md p-0 overflow-hidden">
-        <DialogHeader className="px-5 pt-5 pb-0">
+      <DialogContent className="sm:max-w-md p-0 overflow-hidden flex flex-col h-128">
+        <DialogHeader className="px-5 pt-5 pb-0 shrink-0">
           <div className="flex items-center gap-2">
             {mode !== "select" && (
               <Button variant="ghost" size="icon" className="h-7 w-7 -ml-1" onClick={handleBack}>
@@ -98,7 +98,7 @@ export default function NewChatDialog({ open, onOpenChange }: NewChatDialogProps
           </div>
         </DialogHeader>
 
-        <div className="px-5 pb-5 pt-4">
+        <div className="px-5 pb-5 pt-4 flex-1 flex flex-col overflow-hidden">
           {mode === "select" && (
             <div className="flex flex-col gap-3">
               <button onClick={() => setMode("private")} className="flex items-center gap-3 p-3 rounded-xl border border-border hover:bg-muted/50 transition-colors text-left">
@@ -125,10 +125,10 @@ export default function NewChatDialog({ open, onOpenChange }: NewChatDialogProps
           )}
 
           {(mode === "private" || mode === "group") && (
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4 flex-1 overflow-hidden">
               {/* Group fields */}
               {mode === "group" && (
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-2 shrink-0">
                   <Input placeholder={t("chat:groupName")} value={groupName} onChange={(e) => setGroupName(e.target.value)} className="h-9 text-sm rounded-xl" />
                   <Textarea placeholder={t("chat:groupDescription")} value={groupDesc} onChange={(e) => setGroupDesc(e.target.value)} rows={2} className="text-sm rounded-xl resize-none" />
                 </div>
@@ -136,7 +136,7 @@ export default function NewChatDialog({ open, onOpenChange }: NewChatDialogProps
 
               {/* Selected users (group) */}
               {mode === "group" && selectedUsers.length > 0 && (
-                <div className="flex flex-wrap gap-1.5">
+                <div className="flex flex-wrap gap-1.5 shrink-0">
                   {selectedUsers.map((u) => (
                     <Badge key={u.id} variant="secondary" className="gap-1 pl-2 pr-1 py-1 rounded-full">
                       {u.name}
@@ -149,13 +149,13 @@ export default function NewChatDialog({ open, onOpenChange }: NewChatDialogProps
               )}
 
               {/* Search */}
-              <div className="relative">
+              <div className="relative shrink-0">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
                 <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t("chat:searchUsers")} className="pl-8 h-9 text-sm rounded-xl" />
               </div>
 
               {/* Results */}
-              <div className="max-h-52 overflow-y-auto -mx-1 rounded-xl">
+              <div className="flex-1 overflow-y-auto -mx-1 rounded-xl">
                 {isFetching ? (
                   <div className="flex justify-center py-4">
                     <Loader2 size={16} className="animate-spin text-muted-foreground" />
@@ -203,7 +203,7 @@ export default function NewChatDialog({ open, onOpenChange }: NewChatDialogProps
 
               {/* Create group button */}
               {mode === "group" && (
-                <Button onClick={handleCreateGroup} disabled={!groupName.trim() || selectedUsers.length === 0 || creatingGroup} className="w-full rounded-xl">
+                <Button onClick={handleCreateGroup} disabled={!groupName.trim() || selectedUsers.length === 0 || creatingGroup} className="w-full rounded-xl shrink-0">
                   {creatingGroup && <Loader2 size={14} className="animate-spin mr-2" />}
                   Create Group ({selectedUsers.length} members)
                 </Button>
