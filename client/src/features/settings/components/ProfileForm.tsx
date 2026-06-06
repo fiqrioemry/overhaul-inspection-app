@@ -1,16 +1,21 @@
 // src/features/settings/components/ProfileForm.tsx
 import { useRef } from "react";
-import { Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Controller } from "react-hook-form";
+import { Loader2, CheckCircle2, XCircle } from "lucide-react";
 import { useForm } from "react-hook-form";
 import AvatarUploader from "./AvatarUploader";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useAuthStore } from "@/stores/auth.store";
 import { zodResolver } from "@hookform/resolvers/zod";
 import SelectField from "@/components/fields/SelectField";
 import LongTextField from "@/components/fields/LongTextField";
 import ShortTextField from "@/components/fields/ShortTextField";
-import { useUpdateUserProfile } from "@/features/users/users.query";
+import { useDebounce } from "@/hooks/useDebounce";
+import { useCheckUsername, useUpdateUserProfile } from "@/features/users/users.query";
 import { profileFormSchema, type ProfileFormValues } from "@/schemas/settings.schema";
+import { Field, FieldLabel, FieldError } from "@/components/ui/field";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 
 const GENDER_OPTIONS = [
@@ -26,6 +31,7 @@ export default function ProfileForm() {
     name: user?.name || "",
     bio: user?.bio || "",
     gender: user?.gender || undefined,
+    username: user?.username || "",
   };
   const latestValuesRef = useRef(defaultValues);
 
@@ -41,6 +47,15 @@ export default function ProfileForm() {
   });
 
   const values = watch();
+  const usernameValue = watch("username") ?? "";
+  const debouncedUsername = useDebounce(usernameValue, 600);
+
+  const { data: usernameCheckData, isFetching: isCheckingUsername } = useCheckUsername(debouncedUsername, user?.username ?? "");
+
+  const isUsernameChanged = debouncedUsername !== (user?.username ?? "") && debouncedUsername.length >= 3;
+  const isUsernameAvailable = isUsernameChanged && !isCheckingUsername && usernameCheckData?.data?.available === true;
+  const isUsernameTaken = isUsernameChanged && !isCheckingUsername && usernameCheckData?.data?.available === false;
+  const showUsernameLoader = isUsernameChanged && (isCheckingUsername || usernameValue !== debouncedUsername);
 
   const hasNonEmptyValue = Object.values(values).some((value) => value !== undefined && value !== null && String(value).trim() !== "");
 
@@ -73,11 +88,36 @@ export default function ProfileForm() {
             <p className="text-xs text-muted-foreground mt-1">Email cannot be changed</p>
           </div>
 
-          <div>
-            <label className="text-sm font-medium mb-2 block">Username</label>
-            <input type="text" value={user?.username || ""} disabled className="w-full px-3 py-2 text-sm border rounded-md bg-muted text-muted-foreground cursor-not-allowed" />
-            <p className="text-xs text-muted-foreground mt-1">Username cannot be changed</p>
-          </div>
+          {/* Username */}
+          <Controller
+            control={control}
+            name="username"
+            render={({ field, fieldState }) => (
+              <Field data-invalid={!!fieldState.error || isUsernameTaken}>
+                <FieldLabel htmlFor="username">Username</FieldLabel>
+                <div className="relative">
+                  <Input
+                    id="username"
+                    type="text"
+                    placeholder="Enter your username"
+                    {...field}
+                    className={cn("pr-10", {
+                      "border-green-500 focus-visible:ring-green-500": isUsernameAvailable,
+                      "border-destructive focus-visible:ring-destructive": isUsernameTaken,
+                    })}
+                  />
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    {showUsernameLoader && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+                    {isUsernameAvailable && <CheckCircle2 className="h-4 w-4 text-green-500" />}
+                    {isUsernameTaken && <XCircle className="h-4 w-4 text-destructive" />}
+                  </div>
+                </div>
+                <FieldError errors={[fieldState.error]} />
+                {isUsernameTaken && !fieldState.error && <p className="text-xs text-destructive mt-1">This username is already taken</p>}
+                {isUsernameAvailable && <p className="text-xs text-green-500 mt-1">Username is available</p>}
+              </Field>
+            )}
+          />
 
           {/* Name */}
           <ShortTextField control={control} name="name" label="Full Name" placeholder="Enter your full name" />
@@ -95,7 +135,7 @@ export default function ProfileForm() {
               Cancel
             </Button>
 
-            <Button type="submit" disabled={isSubmitting}>
+            <Button type="submit" disabled={isSubmitting || isUsernameTaken || showUsernameLoader}>
               {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Save Changes
             </Button>

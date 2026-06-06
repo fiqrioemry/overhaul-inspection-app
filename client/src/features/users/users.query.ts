@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import { POST_KEYS } from "@/features/posts/posts.query";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { SearchUsersRequest, UpdateProfileRequest } from "@/schemas/users.schema";
-import { searchUsers, getUserProfile, followUser, unfollowUser, updateUserProfile, updateAvatar, getFollowers, getFollowing, acceptFollowRequest, rejectFollowRequest, getFollowStatus, getFollowRequests } from "@/features/users/users.api";
+import { searchUsers, getUserProfile, followUser, unfollowUser, updateUserProfile, updateAvatar, getFollowers, getFollowing, acceptFollowRequest, rejectFollowRequest, getFollowStatus, getFollowRequests, checkUsernameAvailability } from "@/features/users/users.api";
 import { AUTH_KEYS } from "../auth/auth.query";
 
 export const USER_KEYS = {
@@ -13,7 +13,18 @@ export const USER_KEYS = {
   followers: (userId: string, search = "") => ["users", "followers", userId, search] as const,
   following: (userId: string, search = "") => ["users", "following", userId, search] as const,
   profile: (username: string) => ["users", "profile", username] as const,
+  checkUsername: (username: string) => ["users", "checkUsername", username] as const,
 };
+
+export function useCheckUsername(username: string, currentUsername: string) {
+  return useQuery({
+    queryKey: USER_KEYS.checkUsername(username),
+    queryFn: () => checkUsernameAvailability(username),
+    enabled: username.trim().length >= 3 && username !== currentUsername,
+    staleTime: 1000 * 30,
+    retry: false,
+  });
+}
 
 export function useSearchUsers(query: SearchUsersRequest) {
   return useQuery({

@@ -78,3 +78,8 @@ export async function getFollowStatus(userId: string): Promise<ResponseSuccess<{
   const res = await api.get(USERS_ENDPOINTS.getFollowStatus.replace(":userId", userId));
   return res.data;
 }
+
+export async function checkUsernameAvailability(username: string): Promise<ResponseSuccess<{ available: boolean }>> {
+  const res = await api.get(`${USERS_ENDPOINTS.checkUsername}?username=${encodeURIComponent(username)}`);
+  return res.data;
+}

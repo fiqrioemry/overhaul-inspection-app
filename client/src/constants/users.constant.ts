@@ -13,4 +13,5 @@ export const USERS_ENDPOINTS = {
   acceptFollowRequest: "/users/follow/accept",
   rejectFollowRequest: "/users/follow/reject",
   getFollowStatus: "/users/:userId/follow-status",
+  checkUsername: "/users/check-username",
 } as const;
