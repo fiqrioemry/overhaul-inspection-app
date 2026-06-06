@@ -4,6 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { formatInitials } from "@/utils/formatString";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useTranslation } from "react-i18next";
+import TrendingHashtags from "@/features/hashtags/components/TrendingHashtags";
 
 export default function RightSidebar() {
   const { t } = useTranslation(["nav"]);
@@ -37,6 +38,9 @@ export default function RightSidebar() {
         </div>
         <SuggestedUsersList />
       </div>
+
+      {/* Trending hashtags */}
+      <TrendingHashtags limit={8} />
 
       {/* Footer links */}
       <div className="text-[11px] text-muted-foreground/60 leading-relaxed">

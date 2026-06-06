@@ -1,6 +1,7 @@
 // src/pages/SettingSecurityPage.tsx
 import PasswordForm from "@/features/settings/components/PasswordForm";
 import SessionList from "@/features/settings/components/SessionList";
+import TwoFactorSetup from "@/features/settings/components/TwoFactorSetup";
 import { Helmet } from "react-helmet-async";
 
 export default function SettingSecurityPage() {
@@ -16,6 +17,7 @@ export default function SettingSecurityPage() {
         <meta property="og:url" content="https://pixel.ahmadfiqrioemry.com/settings/security" />
       </Helmet>
       <div className="space-y-6 max-w-2xl md:max-w-3xl w-full">
+        <TwoFactorSetup />
         <PasswordForm />
         <SessionList />
       </div>

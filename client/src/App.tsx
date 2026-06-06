@@ -18,6 +18,7 @@ import OAuthCallbackPage from "@/pages/OAuthCallbackPage";
 import SettingAccountPage from "@/pages/SettingAccountPage";
 import SettingSecurityPage from "@/pages/SettingSecurityPage";
 import SettingNotificationPage from "@/pages/SettingNotificationPage";
+import HashtagPage from "@/pages/HashtagPage";
 
 import { Toaster } from "sonner";
 import { ScrollToTop } from "./hooks/useScrollToTop";
@@ -51,6 +52,7 @@ export default function AppRouter() {
             <Route path="/notifications" element={<NotificationPage />} />
             <Route path="/profile/:username" element={<ProfilePage />} />
             <Route path="/p/:postId" element={<PostDetail />} />
+            <Route path="/hashtag/:name" element={<HashtagPage />} />
             <Route path="/settings" element={<SettingPage />}>
               <Route index element={<Navigate to="account" replace />} />
               <Route path="account" element={<SettingAccountPage />} />

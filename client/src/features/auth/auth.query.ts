@@ -6,7 +6,7 @@ import { useAuthStore } from "@/stores/auth.store";
 import type { ResetPasswordRequest } from "@/schemas/auth.schema";
 import type { ChangePasswordFormValues } from "@/schemas/settings.schema";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchMe, getSessions, deleteSession, logoutAll, changePassword, resetPassword } from "./auth.api";
+import { fetchMe, getSessions, deleteSession, logoutAll, changePassword, resetPassword, setup2FA, verify2FA, disable2FA } from "./auth.api";
 
 export const AUTH_KEYS = {
   me: ["auth", "me"] as const,
@@ -74,6 +74,34 @@ export function useResetPassword(token: string) {
     mutationFn: (payload: ResetPasswordRequest) => resetPassword(token, payload),
     onError: (err) => {
       toast.error(err.message || "Gagal mereset password, coba lagi.");
+    },
+  });
+}
+
+export function useSetup2FA() {
+  return useMutation({
+    mutationFn: setup2FA,
+  });
+}
+
+export function useVerify2FA() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (code: string) => verify2FA(code),
+    onSuccess: (res) => {
+      toast.success(res.message || "2FA enabled successfully");
+      queryClient.invalidateQueries({ queryKey: AUTH_KEYS.me });
+    },
+  });
+}
+
+export function useDisable2FA() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (code: string) => disable2FA(code),
+    onSuccess: (res) => {
+      toast.success(res.message || "2FA disabled successfully");
+      queryClient.invalidateQueries({ queryKey: AUTH_KEYS.me });
     },
   });
 }

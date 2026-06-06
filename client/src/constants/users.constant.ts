@@ -14,4 +14,10 @@ export const USERS_ENDPOINTS = {
   rejectFollowRequest: "/users/follow/reject",
   getFollowStatus: "/users/:userId/follow-status",
   checkUsername: "/users/check-username",
+  blockUser: "/users/block",
+  unblockUser: "/users/block",
+  getBlockedUsers: "/users/blocked",
+  muteUser: "/users/mute",
+  unmuteUser: "/users/mute",
+  getMutedUsers: "/users/muted",
 } as const;

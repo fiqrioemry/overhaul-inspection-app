@@ -30,6 +30,13 @@ export interface LastMessage {
   };
 }
 
+export interface ReplyToMessage {
+  id: string;
+  text: string;
+  type: MessageType;
+  sender: { id: string; name: string; username: string };
+}
+
 export interface ChatMessage {
   id: string;
   chatId: string;
@@ -40,6 +47,7 @@ export interface ChatMessage {
   readBy: string[];
   createdAt: string;
   sender: ChatParticipantUser;
+  replyTo: ReplyToMessage | null;
 }
 
 export interface ChatListItem {
@@ -119,6 +127,7 @@ export interface SendMessageRequest {
   text: string;
   type?: MessageType;
   media?: File;
+  replyToId?: string;
 }
 
 export interface DeleteMessagesRequest {

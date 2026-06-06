@@ -6,6 +6,7 @@ import type { Comments } from "@/types/comments.type";
 import ReplyList from "@/features/comments/components/ReplyList";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import CommentOptionMenu from "@/features/comments/components/CommentOptionMenu";
+import ContentRenderer from "@/components/common/ContentRenderer";
 
 interface CommentItemProps {
   postId: string;
@@ -38,7 +39,7 @@ export default function CommentItem({ postId, comment, onReply }: CommentItemPro
               {comment.user?.username}
             </Link>
             <span className="text-muted-foreground"> · </span>
-            <span className="wrap-break-words">{comment.content}</span>
+            <ContentRenderer content={comment.content} />
           </div>
 
           {/* Options Menu - Shows on hover if editable */}

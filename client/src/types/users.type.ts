@@ -1,5 +1,6 @@
 // src/types/users.type.ts
 export type GenderOption = "MALE" | "FEMALE";
+export type MuteType = "posts" | "stories" | "all";
 
 export interface UserProfile {
   id: string;
@@ -7,6 +8,7 @@ export interface UserProfile {
   username: string;
   avatar: string | null;
   bio: string | null;
+  website: string | null;
   email: string;
   lastLogin: Date;
   joinedAt: Date;
@@ -16,6 +18,53 @@ export interface UserProfile {
   totalFollowings: number;
   totalPosts: number;
   followStatus: "ACCEPTED" | "PENDING" | "NONE";
+}
+
+export interface BlockData {
+  id: string;
+  blockedId: string;
+  createdAt: Date;
+}
+
+export interface BlockedUser {
+  id: string;
+  blockedId: string;
+  createdAt: Date;
+  user: {
+    id: string;
+    name: string;
+    username: string;
+    avatar: string | null;
+  };
+}
+
+export interface MuteData {
+  id: string;
+  mutedId: string;
+  muteType: MuteType;
+  createdAt: Date;
+}
+
+export interface MutedUser {
+  id: string;
+  mutedId: string;
+  muteType: MuteType;
+  createdAt: Date;
+  user: {
+    id: string;
+    name: string;
+    username: string;
+    avatar: string | null;
+  };
+}
+
+export interface TwoFactorSetupData {
+  otpauthUrl: string;
+  secret: string;
+}
+
+export interface TwoFactorVerifyData {
+  backupCodes: string[];
 }
 
 export interface User {
@@ -38,11 +87,18 @@ export interface followerInfo {
   id: string;
 }
 
-export interface LoginData {
+export interface LoginSuccess {
   token: string;
   expiredAt: Date;
   user: User;
 }
+
+export interface TwoFactorLoginChallenge {
+  requiresTwoFactor: true;
+  challengeToken: string;
+}
+
+export type LoginData = LoginSuccess | TwoFactorLoginChallenge;
 
 export interface UserAccount {
   id: string;
@@ -50,6 +106,7 @@ export interface UserAccount {
   username: string;
   avatar: string | null;
   bio: string | null;
+  website: string | null;
   email: string;
   lastLogin: Date;
   joinedAt: Date;
@@ -58,6 +115,7 @@ export interface UserAccount {
   lastChangePasswordAt: Date;
   isPublic: boolean;
   isOwner: boolean;
+  twoFactorEnabled: boolean;
   totalFollowers: number;
   totalFollowings: number;
   totalPosts: number;

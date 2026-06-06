@@ -1,6 +1,8 @@
 // src/pages/SettingAccountPage.tsx
 import ProfileForm from "@/features/settings/components/ProfileForm";
 import PrivacyToggle from "@/features/settings/components/PrivacyToggle";
+import BlockedUserList from "@/features/settings/components/BlockedUserList";
+import MutedUserList from "@/features/settings/components/MutedUserList";
 import { Helmet } from "react-helmet-async";
 
 export default function SettingAccountPage() {
@@ -18,6 +20,8 @@ export default function SettingAccountPage() {
       <div className="space-y-6 max-w-2xl md:max-w-3xl w-full">
         <ProfileForm />
         <PrivacyToggle />
+        <BlockedUserList />
+        <MutedUserList />
       </div>
     </>
   );

@@ -11,6 +11,10 @@ export const AUTH_ENDPOINTS = {
   changePassword: "/auth/change-password",
   revokeSessions: "/auth/sessions-revoke",
   resendVerification: "/auth/resend-verification",
+  twoFactorSetup: "/auth/2fa/setup",
+  twoFactorVerify: "/auth/2fa/verify",
+  twoFactorDisable: "/auth/2fa/disable",
+  twoFactorChallenge: "/auth/2fa/challenge",
 } as const;
 
 export const OAUTH_ENDPOINTS = {

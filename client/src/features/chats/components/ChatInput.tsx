@@ -6,14 +6,16 @@ import { Button } from "@/components/ui/button";
 import { useState, useRef, useEffect } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { CHAT_LIMITS } from "@/constants/chats.constant";
-import type { MessageType } from "@/schemas/chats.schema";
+import type { MessageType, ReplyToMessage } from "@/schemas/chats.schema";
 import { useSendMessage } from "@/features/chats/chats.query";
 import EmojiPicker, { type EmojiClickData, Theme } from "emoji-picker-react";
-import { Send, Paperclip, X, FileText, Music, ImageIcon, Loader2, Smile } from "lucide-react";
+import { Send, Paperclip, X, FileText, Music, ImageIcon, Loader2, Smile, CornerUpLeft } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 interface ChatInputProps {
   chatId: string;
+  replyTo?: ReplyToMessage | null;
+  onCancelReply?: () => void;
 }
 
 function getFileType(file: File): MessageType {
@@ -28,7 +30,7 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export default function ChatInput({ chatId }: ChatInputProps) {
+export default function ChatInput({ chatId, replyTo, onCancelReply }: ChatInputProps) {
   const [text, setText] = useState("");
   const { t } = useTranslation(["chat"]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -43,7 +45,7 @@ export default function ChatInput({ chatId }: ChatInputProps) {
   const { resolvedTheme } = useTheme();
   const { mutate: sendMessage, isPending } = useSendMessage(chatId);
 
-  // Close emoji picker on outside click — same pattern as CreateCommentForm
+  // Close emoji picker on outside click
   useEffect(() => {
     if (!showEmojiPicker) return;
 
@@ -68,12 +70,10 @@ export default function ChatInput({ chatId }: ChatInputProps) {
 
     setText(newText);
 
-    // Restore cursor position after emoji insertion
     requestAnimationFrame(() => {
       const newPos = start + emojiData.emoji.length;
       textarea.focus();
       textarea.setSelectionRange(newPos, newPos);
-      // Re-trigger auto-resize
       textarea.style.height = "auto";
       textarea.style.height = Math.min(textarea.scrollHeight, 120) + "px";
     });
@@ -109,12 +109,14 @@ export default function ChatInput({ chatId }: ChatInputProps) {
         text: trimmed || (selectedFile?.name ?? ""),
         type: selectedFile ? fileType : "text",
         media: selectedFile ?? undefined,
+        replyToId: replyTo?.id,
       },
       {
         onSuccess: () => {
           setText("");
           setSelectedFile(null);
           setShowEmojiPicker(false);
+          onCancelReply?.();
           textareaRef.current?.focus();
         },
       },
@@ -127,8 +129,9 @@ export default function ChatInput({ chatId }: ChatInputProps) {
       handleSend();
       return;
     }
-    if (e.key === "Escape" && showEmojiPicker) {
-      setShowEmojiPicker(false);
+    if (e.key === "Escape") {
+      if (showEmojiPicker) setShowEmojiPicker(false);
+      else onCancelReply?.();
     }
   }
 
@@ -144,10 +147,24 @@ export default function ChatInput({ chatId }: ChatInputProps) {
 
   return (
     <div className="relative px-4 py-3 border-t border-border bg-background/95 backdrop-blur-sm shrink-0">
-      {/* Emoji Picker — anchored above the input, same pattern as CreateCommentForm */}
+      {/* Emoji Picker */}
       {showEmojiPicker && (
         <div ref={emojiPickerRef} className="absolute bottom-full left-4 mb-2 z-50">
           <EmojiPicker onEmojiClick={handleEmojiClick} theme={resolvedTheme === "dark" ? Theme.DARK : Theme.LIGHT} lazyLoadEmojis searchPlaceholder="Cari emoji..." width={300} height={380} />
+        </div>
+      )}
+
+      {/* Reply preview */}
+      {replyTo && (
+        <div className="flex items-start gap-2 mb-2 px-3 py-2 rounded-xl bg-muted/60 border border-border border-l-4 border-l-primary">
+          <CornerUpLeft size={14} className="text-primary mt-0.5 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-[11px] font-medium text-primary">{replyTo.sender.name}</p>
+            <p className="text-xs text-muted-foreground truncate">{replyTo.text}</p>
+          </div>
+          <Button type="button" variant="ghost" size="icon" className="h-5 w-5 shrink-0 text-muted-foreground hover:text-foreground" onClick={onCancelReply}>
+            <X size={12} />
+          </Button>
         </div>
       )}
 

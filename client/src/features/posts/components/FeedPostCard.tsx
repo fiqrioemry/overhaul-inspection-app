@@ -6,8 +6,8 @@ import PostHeading from "@/features/posts/components/PostHeading";
 import PostGallery from "@/features/posts/components/PostGallery";
 import { useLikePost, useUnlikePost } from "@/features/posts/posts.query";
 import PostDetailDialog from "@/features/posts/components/PostDetailDialog";
-// import CreateCommentForm from "@/features/comments/components/CreateCommentForm";
 import PostActions, { PostActionCounts } from "@/features/posts/components/PostActions";
+import ContentRenderer from "@/components/common/ContentRenderer";
 
 interface FeedPostCardProps {
   post: Post;
@@ -49,14 +49,14 @@ export default function FeedPostCard({ post }: FeedPostCardProps) {
             <span className="font-semibold mr-1">{post.user?.username}</span>
             {captionTrimmed ? (
               <>
-                {caption.slice(0, 125)}
+                <ContentRenderer content={caption.slice(0, 125)} />
                 {"... "}
                 <button onClick={() => setCaptionExpanded(true)} className="text-muted-foreground hover:text-foreground transition-colors">
                   more
                 </button>
               </>
             ) : (
-              caption
+              <ContentRenderer content={caption} />
             )}
           </p>
         )}

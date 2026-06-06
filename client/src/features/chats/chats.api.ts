@@ -55,6 +55,9 @@ export async function sendMessage(chatId: string, payload: SendMessageRequest): 
   if (payload.media) {
     formData.append("media", payload.media);
   }
+  if (payload.replyToId) {
+    formData.append("replyToId", payload.replyToId);
+  }
 
   const res = await api.post(CHAT_ENDPOINTS.sendMessage.replace(":chatId", chatId), formData, { headers: { "Content-Type": "multipart/form-data" } });
   return res.data;

@@ -16,6 +16,23 @@ export interface PostGallery {
   order: string;
 }
 
+export interface PostHashtag {
+  id: string;
+  name: string;
+}
+
+export interface PostMention {
+  id: string;
+  username: string;
+  avatar: string | null;
+}
+
+export interface Hashtag {
+  id: string;
+  name: string;
+  postCount: number;
+}
+
 export interface PostComment {
   id: string;
   content: string;
@@ -25,6 +42,7 @@ export interface PostComment {
   totalLikes: number;
   isLiked: boolean;
   isEditable: boolean;
+  mentions: PostMention[];
 }
 
 export interface PostDetail extends Post {
@@ -47,4 +65,6 @@ export interface Post {
   isFollowing: boolean;
   isSaved: boolean;
   isReported: boolean;
+  hashtags: PostHashtag[];
+  mentions: PostMention[];
 }

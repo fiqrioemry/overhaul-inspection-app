@@ -50,6 +50,21 @@ export interface ResetPasswordRequest {
   confirmPassword: string;
 }
 
+export const twoFactorChallengeSchema = z.object({
+  code: z.string().min(6, "Code must be at least 6 characters").max(8, "Code must be at most 8 characters"),
+});
+
+export const twoFactorVerifySchema = z.object({
+  code: z.string().length(6, "TOTP code must be exactly 6 digits"),
+});
+
+export const twoFactorDisableSchema = z.object({
+  code: z.string().min(6, "Code must be at least 6 characters").max(8, "Code must be at most 8 characters"),
+});
+
 export type LoginFormValues = z.infer<typeof loginSchema>;
 export type RegisterFormValues = z.infer<typeof registerSchema>;
 export type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>;
+export type TwoFactorChallengeFormValues = z.infer<typeof twoFactorChallengeSchema>;
+export type TwoFactorVerifyFormValues = z.infer<typeof twoFactorVerifySchema>;
+export type TwoFactorDisableFormValues = z.infer<typeof twoFactorDisableSchema>;

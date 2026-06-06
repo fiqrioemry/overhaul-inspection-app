@@ -31,6 +31,7 @@ export default function ProfileForm() {
     name: user?.name || "",
     bio: user?.bio || "",
     gender: user?.gender || undefined,
+    website: (user as import("@/types/users.type").UserAccount | null)?.website || "",
     username: user?.username || "",
   };
   const latestValuesRef = useRef(defaultValues);
@@ -124,6 +125,9 @@ export default function ProfileForm() {
 
           {/* Bio */}
           <LongTextField control={control} name="bio" label="Bio" placeholder="Tell us about yourself" description="Brief description for your profile. Max 160 characters" rows={3} />
+
+          {/* Website */}
+          <ShortTextField control={control} name="website" label="Website" placeholder="https://yourwebsite.com" description="Your personal website or portfolio URL" />
 
           {/* Gender */}
           <SelectField control={control} name="gender" label="Gender" options={GENDER_OPTIONS} placeholder="Select gender" />

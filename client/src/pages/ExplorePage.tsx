@@ -1,10 +1,11 @@
-// src/pages/FeedPage.tsx
+// src/pages/ExplorePage.tsx
 import { Loader2 } from "lucide-react";
 import { useEffect, useRef } from "react";
 import type { Post } from "@/types/posts.type";
 import PostGridSkeleton from "@/components/common/PostGridSkeleton";
 import { useInfinitePublicPosts } from "@/features/posts/posts.query";
 import ExplorePostCard from "@/features/posts/components/ExplorePostCard";
+import TrendingHashtags from "@/features/hashtags/components/TrendingHashtags";
 import { Helmet } from "react-helmet-async";
 
 export default function ExplorePage() {
@@ -52,6 +53,9 @@ export default function ExplorePage() {
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold tracking-tight">Explore</h1>
         </div>
+
+        {/* Trending Hashtags */}
+        <TrendingHashtags limit={10} variant="explore" />
 
         {/* Posts Grid */}
         <div className="grid grid-cols-3 gap-1 md:gap-2">

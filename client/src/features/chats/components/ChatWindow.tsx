@@ -5,11 +5,11 @@ import { useEffect, useRef } from "react";
 import { useAuthStore } from "@/stores/auth.store";
 import { useChatStore } from "@/stores/chat.store";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { ChatMessage } from "@/schemas/chats.schema";
+import type { ChatMessage, ReplyToMessage } from "@/schemas/chats.schema";
 import ChatInput from "@/features/chats/components/ChatInput";
 import ChatHeader from "@/features/chats/components/ChatHeader";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ArrowDown, Check, CheckCheck, FileText, Music, Loader2 } from "lucide-react";
+import { ArrowDown, Check, CheckCheck, FileText, Music, Loader2, CornerUpLeft } from "lucide-react";
 import { formatMessageTime, formatMessageDate, formatInitials } from "@/utils/formatChat";
 import { useChatById, useInfiniteMessages, useReadMessages } from "@/features/chats/chats.query";
 import { useTranslation } from "react-i18next";
@@ -25,6 +25,7 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const [isNearBottom, setIsNearBottom] = useState(true);
+  const [replyTo, setReplyTo] = useState<ReplyToMessage | null>(null);
 
   const { data: chatData } = useChatById(chatId);
   const chat = chatData?.data;
@@ -35,21 +36,15 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
 
   const { mutate: readMessages } = useReadMessages(chatId);
 
-  // Merge server messages with optimistic messages
   const serverMessages = data?.pages.flatMap((p) => p.data ?? []) ?? [];
   const optimistic = optimisticMessages[chatId] ?? [];
 
-  // Optimistic messages that aren't in server yet
   const serverIds = new Set(serverMessages.map((m) => m.id));
   const pendingOptimistic = optimistic.filter((m) => !serverIds.has(m.id));
 
-  // Combine: optimistic first (newest), then server
   const allMessages = [...pendingOptimistic, ...serverMessages];
-
-  // Sort ascending for display
   const sortedMessages = [...allMessages].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
-  // Read messages
   useEffect(() => {
     if (!chatId || !user) return;
     const unreadIds = sortedMessages.filter((m) => m.senderId !== user.id && !m.readBy.includes(user.id)).map((m) => m.id);
@@ -59,16 +54,19 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
     }
   }, [chatId, sortedMessages.length]);
 
-  // Scroll to bottom on new messages if near bottom
   useEffect(() => {
     if (isNearBottom) {
       bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     }
   }, [sortedMessages.length]);
 
-  // Initial scroll to bottom
   useEffect(() => {
     bottomRef.current?.scrollIntoView();
+  }, [chatId]);
+
+  // Clear reply when switching chats
+  useEffect(() => {
+    setReplyTo(null);
   }, [chatId]);
 
   function handleScroll() {
@@ -78,11 +76,9 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
     setIsNearBottom(distFromBottom < 100);
     setShowScrollBtn(distFromBottom > 300);
 
-    // Load more when near top
     if (el.scrollTop < 100 && hasNextPage && !isFetchingNextPage) {
       const prevScrollHeight = el.scrollHeight;
       fetchNextPage().then(() => {
-        // Maintain scroll position after loading
         requestAnimationFrame(() => {
           if (scrollRef.current) {
             scrollRef.current.scrollTop = scrollRef.current.scrollHeight - prevScrollHeight;
@@ -98,29 +94,41 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
 
   return (
     <div className="flex flex-col h-full bg-background">
-      {/* Header */}
       <ChatHeader chat={chat} />
 
-      {/* Messages */}
       <div
         ref={scrollRef}
         onScroll={handleScroll}
         className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-1"
         style={{ backgroundImage: "radial-gradient(circle at 1px 1px, hsl(var(--muted)) 1px, transparent 0)", backgroundSize: "24px 24px", backgroundAttachment: "local" }}
       >
-        {/* Load more indicator */}
         {isFetchingNextPage && (
           <div className="flex justify-center py-2">
             <Loader2 size={16} className="animate-spin text-muted-foreground" />
           </div>
         )}
 
-        {isLoading ? <MessagesSkeleton /> : <MessageList messages={sortedMessages} currentUserId={user?.id ?? ""} isGroup={isGroup} />}
+        {isLoading ? (
+          <MessagesSkeleton />
+        ) : (
+          <MessageList
+            messages={sortedMessages}
+            currentUserId={user?.id ?? ""}
+            isGroup={isGroup}
+            onReply={(msg) =>
+              setReplyTo({
+                id: msg.id,
+                text: msg.text,
+                type: msg.type,
+                sender: { id: msg.sender.id, name: msg.sender.name, username: msg.sender.username },
+              })
+            }
+          />
+        )}
 
         <div ref={bottomRef} />
       </div>
 
-      {/* Scroll to bottom button */}
       {showScrollBtn && (
         <button
           onClick={() => bottomRef.current?.scrollIntoView({ behavior: "smooth" })}
@@ -130,13 +138,22 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
         </button>
       )}
 
-      {/* Input */}
-      <ChatInput chatId={chatId} />
+      <ChatInput chatId={chatId} replyTo={replyTo} onCancelReply={() => setReplyTo(null)} />
     </div>
   );
 }
 
-function MessageList({ messages, currentUserId, isGroup }: { messages: ChatMessage[]; currentUserId: string; isGroup: boolean }) {
+function MessageList({
+  messages,
+  currentUserId,
+  isGroup,
+  onReply,
+}: {
+  messages: ChatMessage[];
+  currentUserId: string;
+  isGroup: boolean;
+  onReply: (msg: ChatMessage) => void;
+}) {
   const { t } = useTranslation(["chat"]);
 
   if (messages.length === 0) {
@@ -157,17 +174,25 @@ function MessageList({ messages, currentUserId, isGroup }: { messages: ChatMessa
     const prevMsg = messages[i - 1];
     const nextMsg = messages[i + 1];
 
-    // Group messages from same sender
     const isSameAsPrev = prevMsg?.senderId === msg.senderId && new Date(msg.createdAt).getTime() - new Date(prevMsg.createdAt).getTime() < 5 * 60 * 1000;
     const isSameAsNext = nextMsg?.senderId === msg.senderId && new Date(nextMsg.createdAt).getTime() - new Date(msg.createdAt).getTime() < 5 * 60 * 1000;
 
-    // Date separator
     if (dateStr !== lastDateStr) {
       lastDateStr = dateStr;
       elements.push(<DateSeparator key={`date-${msg.id}`} dateStr={msg.createdAt} />);
     }
 
-    elements.push(<MessageBubble key={msg.id} message={msg} isMine={isMine} isGroup={isGroup} showAvatar={!isMine && !isSameAsNext} showSenderName={isGroup && !isMine && !isSameAsPrev} />);
+    elements.push(
+      <MessageBubble
+        key={msg.id}
+        message={msg}
+        isMine={isMine}
+        isGroup={isGroup}
+        showAvatar={!isMine && !isSameAsNext}
+        showSenderName={isGroup && !isMine && !isSameAsPrev}
+        onReply={onReply}
+      />,
+    );
   }
 
   return <>{elements}</>;
@@ -181,12 +206,25 @@ function DateSeparator({ dateStr }: { dateStr: string }) {
   );
 }
 
-function MessageBubble({ message, isMine, isGroup, showAvatar, showSenderName }: { message: ChatMessage; isMine: boolean; isGroup: boolean; showAvatar: boolean; showSenderName: boolean }) {
+function MessageBubble({
+  message,
+  isMine,
+  isGroup,
+  showAvatar,
+  showSenderName,
+  onReply,
+}: {
+  message: ChatMessage;
+  isMine: boolean;
+  isGroup: boolean;
+  showAvatar: boolean;
+  showSenderName: boolean;
+  onReply: (msg: ChatMessage) => void;
+}) {
   const isRead = message.readBy.length > 1 || (message.readBy.length > 0 && !message.readBy.includes(message.senderId));
 
   return (
-    <div className={cn("flex items-end gap-2", isMine ? "flex-row-reverse" : "flex-row", "mb-0.5")}>
-      {/* Avatar placeholder for alignment */}
+    <div className={cn("flex items-end gap-2 group", isMine ? "flex-row-reverse" : "flex-row", "mb-0.5")}>
       {!isMine && isGroup && (
         <div className="w-7 shrink-0">
           {showAvatar && (
@@ -199,15 +237,32 @@ function MessageBubble({ message, isMine, isGroup, showAvatar, showSenderName }:
       )}
 
       <div className={cn("flex flex-col max-w-[70%] gap-0.5", isMine && "items-end")}>
-        {/* Sender name for group */}
         {showSenderName && <span className="text-[11px] font-medium text-primary ml-1">{message.sender.name}</span>}
 
+        {/* Reply context */}
+        {message.replyTo && (
+          <div className={cn("text-[11px] px-2 py-1 rounded-lg border-l-2 border-primary/50 bg-muted/40 max-w-full", isMine ? "self-end" : "self-start")}>
+            <p className="font-medium text-primary/80">{message.replyTo.sender.name}</p>
+            <p className="text-muted-foreground truncate max-w-40">{message.replyTo.text}</p>
+          </div>
+        )}
+
         {/* Bubble */}
-        <div className={cn("rounded-2xl px-3 py-2 text-sm shadow-sm", isMine ? "bg-primary text-primary-foreground rounded-br-sm" : "bg-card border border-border text-foreground rounded-bl-sm")}>
+        <div className={cn("rounded-2xl px-3 py-2 text-sm shadow-sm relative", isMine ? "bg-primary text-primary-foreground rounded-br-sm" : "bg-card border border-border text-foreground rounded-bl-sm")}>
           <MessageContent message={message} isMine={isMine} />
+
+          {/* Reply button shown on hover */}
+          <button
+            onClick={() => onReply(message)}
+            className={cn(
+              "absolute -top-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-full bg-background border border-border shadow-sm text-muted-foreground hover:text-foreground",
+              isMine ? "-left-7" : "-right-7",
+            )}
+          >
+            <CornerUpLeft size={12} />
+          </button>
         </div>
 
-        {/* Time + read status */}
         <div className={cn("flex items-center gap-1", isMine ? "flex-row-reverse" : "flex-row")}>
           <span className="text-[10px] text-muted-foreground">{formatMessageTime(message.createdAt)}</span>
           {isMine && (isRead ? <CheckCheck size={12} className="text-primary" /> : <Check size={12} className="text-muted-foreground" />)}

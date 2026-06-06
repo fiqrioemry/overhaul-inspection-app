@@ -5,6 +5,7 @@ import FollowListDialog from "./FollowListDialog";
 import type { UserProfile } from "@/types/users.type";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Link2 } from "lucide-react";
 
 interface ProfileHeaderProps {
   profile: UserProfile;
@@ -40,6 +41,19 @@ export default function ProfileHeader({ profile, refetchProfile }: ProfileHeader
 
             {/* Bio */}
             {profile.bio && <p className="text-sm text-muted-foreground leading-snug max-w-xs">{profile.bio}</p>}
+
+            {/* Website */}
+            {profile.website && (
+              <a
+                href={profile.website}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 text-xs text-primary hover:underline max-w-xs truncate"
+              >
+                <Link2 className="size-3 shrink-0" />
+                {profile.website.replace(/^https?:\/\//, "")}
+              </a>
+            )}
           </div>
         </div>
 

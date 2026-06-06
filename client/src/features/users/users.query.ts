@@ -3,7 +3,8 @@ import { toast } from "sonner";
 import { POST_KEYS } from "@/features/posts/posts.query";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { SearchUsersRequest, UpdateProfileRequest } from "@/schemas/users.schema";
-import { searchUsers, getUserProfile, followUser, unfollowUser, updateUserProfile, updateAvatar, getFollowers, getFollowing, acceptFollowRequest, rejectFollowRequest, getFollowStatus, getFollowRequests, checkUsernameAvailability } from "@/features/users/users.api";
+import type { MuteType } from "@/types/users.type";
+import { searchUsers, getUserProfile, followUser, unfollowUser, updateUserProfile, updateAvatar, getFollowers, getFollowing, acceptFollowRequest, rejectFollowRequest, getFollowStatus, getFollowRequests, checkUsernameAvailability, blockUser, unblockUser, getBlockedUsers, muteUser, unmuteUser, getMutedUsers } from "@/features/users/users.api";
 import { AUTH_KEYS } from "../auth/auth.query";
 
 export const USER_KEYS = {
@@ -14,6 +15,8 @@ export const USER_KEYS = {
   following: (userId: string, search = "") => ["users", "following", userId, search] as const,
   profile: (username: string) => ["users", "profile", username] as const,
   checkUsername: (username: string) => ["users", "checkUsername", username] as const,
+  blocked: (page?: number) => ["users", "blocked", page] as const,
+  muted: (page?: number) => ["users", "muted", page] as const,
 };
 
 export function useCheckUsername(username: string, currentUsername: string) {
@@ -153,6 +156,70 @@ export function useRejectFollowRequest() {
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
       queryClient.invalidateQueries({ queryKey: ["users", "followRequests"] });
       queryClient.invalidateQueries({ queryKey: ["users", "followStatus", followerId] });
+    },
+  });
+}
+
+export function useGetBlockedUsers(page = 1) {
+  return useQuery({
+    queryKey: USER_KEYS.blocked(page),
+    queryFn: () => getBlockedUsers(page),
+    staleTime: 1000 * 60,
+  });
+}
+
+export function useBlockUser() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (targetUserId: string) => blockUser(targetUserId),
+    onSuccess: (res) => {
+      toast.success(res.message || "User blocked successfully");
+      queryClient.invalidateQueries({ queryKey: USER_KEYS.blocked() });
+      queryClient.invalidateQueries({ queryKey: USER_KEYS.all });
+      queryClient.invalidateQueries({ queryKey: POST_KEYS.all });
+    },
+  });
+}
+
+export function useUnblockUser() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (targetUserId: string) => unblockUser(targetUserId),
+    onSuccess: (res) => {
+      toast.success(res.message || "User unblocked successfully");
+      queryClient.invalidateQueries({ queryKey: USER_KEYS.blocked() });
+      queryClient.invalidateQueries({ queryKey: USER_KEYS.all });
+    },
+  });
+}
+
+export function useGetMutedUsers(page = 1) {
+  return useQuery({
+    queryKey: USER_KEYS.muted(page),
+    queryFn: () => getMutedUsers(page),
+    staleTime: 1000 * 60,
+  });
+}
+
+export function useMuteUser() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ targetUserId, muteType }: { targetUserId: string; muteType?: MuteType }) => muteUser(targetUserId, muteType),
+    onSuccess: (res) => {
+      toast.success(res.message || "User muted successfully");
+      queryClient.invalidateQueries({ queryKey: USER_KEYS.muted() });
+      queryClient.invalidateQueries({ queryKey: POST_KEYS.all });
+    },
+  });
+}
+
+export function useUnmuteUser() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (targetUserId: string) => unmuteUser(targetUserId),
+    onSuccess: (res) => {
+      toast.success(res.message || "User unmuted successfully");
+      queryClient.invalidateQueries({ queryKey: USER_KEYS.muted() });
     },
   });
 }

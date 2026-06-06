@@ -15,6 +15,11 @@ const updateProfileRequest = z.object({
   name: z.string().min(1, "Name is required"),
   bio: z.string().max(160, "Bio must be at most 160 characters").optional(),
   gender: z.enum(["MALE", "FEMALE"]).optional(),
+  website: z
+    .string()
+    .max(200, "Website URL must be at most 200 characters")
+    .refine((v) => !v || /^https?:\/\/.+/.test(v), { message: "Website must be a valid URL" })
+    .optional(),
   username: z
     .string()
     .min(3, "Username must be at least 3 characters")
