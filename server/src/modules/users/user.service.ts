@@ -426,8 +426,6 @@ export class UserService {
     };
   }
 
-  // ── Profile website ────────────────────────────────────────────────────────
-
   static async updateWebsite(userId: string, website: string | null): Promise<void> {
     await UserRepository.updateWebsite(userId, website);
   }

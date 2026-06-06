@@ -4,6 +4,7 @@ import { useState } from "react";
 import SessionItem from "./SessionItem";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, Loader2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type { SessionWithCurrent } from "@/types/sessions.type";
 import { useSessions, useDeleteSession, useLogoutAll } from "@/features/auth/auth.query";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -37,6 +38,7 @@ function parseUserAgent(userAgent: string): { browser: string; os: string; devic
 }
 
 export default function SessionList() {
+  const { t } = useTranslation(["setting"]);
   const [showLogoutAll, setShowLogoutAll] = useState(false);
   const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null);
 
@@ -82,13 +84,13 @@ export default function SessionList() {
     <>
       <Card>
         <CardHeader>
-          <CardTitle>Active Sessions</CardTitle>
-          <CardDescription>Manage devices that are currently logged into your account</CardDescription>
+          <CardTitle>{t("setting:sessionsTitle")}</CardTitle>
+          <CardDescription>{t("setting:sessionsDescription")}</CardDescription>
         </CardHeader>
 
         <CardContent className="space-y-3">
           {sessions.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-8">No active sessions found</p>
+            <p className="text-sm text-muted-foreground text-center py-8">{t("setting:noActiveSessions")}</p>
           ) : (
             sessions.map((session) => <SessionItem key={session.id} session={session} onDelete={handleDeleteSession} isDeleting={deletingSessionId === session.id} />)
           )}
@@ -98,7 +100,7 @@ export default function SessionList() {
           <CardFooter className="border-t pt-6">
             <Button variant="destructive" onClick={() => setShowLogoutAll(true)} disabled={logoutAll.isPending}>
               {logoutAll.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <AlertTriangle className="h-4 w-4 mr-2" />}
-              Log Out All Other Sessions
+              {t("setting:logoutAllButton")}
             </Button>
           </CardFooter>
         )}
@@ -108,13 +110,13 @@ export default function SessionList() {
       <AlertDialog open={showLogoutAll} onOpenChange={setShowLogoutAll}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Log out all other sessions?</AlertDialogTitle>
-            <AlertDialogDescription>This will log you out from all devices except this one. You'll need to log in again on those devices.</AlertDialogDescription>
+            <AlertDialogTitle>{t("setting:logoutAllDialogTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("setting:logoutAllDialogDescription")}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("setting:cancelButton")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleLogoutAll} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Log Out All
+              {t("setting:logoutAllConfirm")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

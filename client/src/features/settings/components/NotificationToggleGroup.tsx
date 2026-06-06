@@ -2,39 +2,41 @@
 import { Switch } from "@/components/ui/switch";
 import type { NotificationSetting } from "@/types/notifications.type";
 import { Bell, Heart, MessageCircle, UserPlus, AtSign, Loader2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNotificationSettings, useUpdateNotificationSetting } from "@/features/settings/settings.query";
 
-const NOTIFICATION_CONFIG = [
-  {
-    type: "LIKE",
-    icon: Heart,
-    label: "Likes",
-    description: "Get notified when someone likes your post",
-  },
-  {
-    type: "COMMENT",
-    icon: MessageCircle,
-    label: "Comments",
-    description: "Get notified when someone comments on your post",
-  },
-  {
-    type: "FOLLOW",
-    icon: UserPlus,
-    label: "New Followers",
-    description: "Get notified when someone follows you",
-  },
-  {
-    type: "MENTION",
-    icon: AtSign,
-    label: "Mentions",
-    description: "Get notified when someone mentions you",
-  },
-];
-
 export default function NotificationToggleGroup() {
+  const { t } = useTranslation(["setting"]);
   const { data, isLoading } = useNotificationSettings();
   const updateSetting = useUpdateNotificationSetting();
+
+  const NOTIFICATION_CONFIG = [
+    {
+      type: "LIKE",
+      icon: Heart,
+      label: t("setting:notifLikeLabel"),
+      description: t("setting:notifLikeDescription"),
+    },
+    {
+      type: "COMMENT",
+      icon: MessageCircle,
+      label: t("setting:notifCommentLabel"),
+      description: t("setting:notifCommentDescription"),
+    },
+    {
+      type: "FOLLOW",
+      icon: UserPlus,
+      label: t("setting:notifFollowLabel"),
+      description: t("setting:notifFollowDescription"),
+    },
+    {
+      type: "MENTION",
+      icon: AtSign,
+      label: t("setting:notifMentionLabel"),
+      description: t("setting:notifMentionDescription"),
+    },
+  ];
 
   const settings = data?.data || [];
 
@@ -68,9 +70,9 @@ export default function NotificationToggleGroup() {
       <CardHeader>
         <div className="flex items-center gap-2">
           <Bell className="h-5 w-5" />
-          <CardTitle>Push Notifications</CardTitle>
+          <CardTitle>{t("setting:notifTitle")}</CardTitle>
         </div>
-        <CardDescription>Choose what notifications you want to receive</CardDescription>
+        <CardDescription>{t("setting:notifDescription")}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         {NOTIFICATION_CONFIG.map((config) => {

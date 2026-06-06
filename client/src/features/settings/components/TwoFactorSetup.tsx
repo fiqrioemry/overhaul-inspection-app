@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Shield, ShieldCheck, ShieldOff, Copy, Eye, EyeOff, Loader2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import { useAuthStore } from "@/stores/auth.store";
 import { setup2FA } from "@/features/auth/auth.api";
 import { useVerify2FA, useDisable2FA } from "@/features/auth/auth.query";
@@ -20,6 +21,7 @@ import { Separator } from "@/components/ui/separator";
 type Step = "idle" | "setup" | "verify" | "backupCodes" | "disable";
 
 export default function TwoFactorSetup() {
+  const { t } = useTranslation(["setting"]);
   const { user } = useAuthStore();
   const userAccount = user as UserAccount | null;
   const twoFactorEnabled = userAccount?.twoFactorEnabled ?? false;
@@ -50,7 +52,7 @@ export default function TwoFactorSetup() {
       setSetupData(res.data ?? null);
       setStep("setup");
     } catch {
-      toast.error("Failed to start 2FA setup");
+      toast.error(t("setting:twoFaSetupFailed"));
     } finally {
       setIsSettingUp(false);
     }
@@ -81,13 +83,13 @@ export default function TwoFactorSetup() {
   function handleCopySecret() {
     if (setupData?.secret) {
       navigator.clipboard.writeText(setupData.secret);
-      toast.success("Secret copied to clipboard");
+      toast.success(t("setting:twoFaSecretCopied"));
     }
   }
 
   function handleCopyBackupCodes() {
     navigator.clipboard.writeText(backupCodes.join("\n"));
-    toast.success("Backup codes copied to clipboard");
+    toast.success(t("setting:twoFaBackupCodesCopied"));
   }
 
   return (
@@ -96,10 +98,10 @@ export default function TwoFactorSetup() {
         <div className="flex items-center gap-3">
           {twoFactorEnabled ? <ShieldCheck className="size-5 text-green-500" /> : <Shield className="size-5 text-muted-foreground" />}
           <div>
-            <CardTitle>Two-Factor Authentication</CardTitle>
-            <CardDescription>Add an extra layer of security to your account using a TOTP authenticator app.</CardDescription>
+            <CardTitle>{t("setting:twoFaTitle")}</CardTitle>
+            <CardDescription>{t("setting:twoFaDescription")}</CardDescription>
           </div>
-          {twoFactorEnabled && <Badge variant="secondary" className="ml-auto text-green-600 bg-green-50 border-green-200">Enabled</Badge>}
+          {twoFactorEnabled && <Badge variant="secondary" className="ml-auto text-green-600 bg-green-50 border-green-200">{t("setting:twoFaEnabledBadge")}</Badge>}
         </div>
       </CardHeader>
 
@@ -107,12 +109,10 @@ export default function TwoFactorSetup() {
         {/* Idle — 2FA not enabled */}
         {!twoFactorEnabled && step === "idle" && (
           <div className="space-y-3">
-            <p className="text-sm text-muted-foreground">
-              Two-factor authentication adds an extra layer of security. You'll need your authenticator app (Google Authenticator, Authy, etc.) each time you log in.
-            </p>
+            <p className="text-sm text-muted-foreground">{t("setting:twoFaIdleDescription")}</p>
             <Button onClick={handleStartSetup} disabled={isSettingUp}>
               {isSettingUp && <Loader2 className="size-4 mr-2 animate-spin" />}
-              Enable 2FA
+              {t("setting:twoFaEnableButton")}
             </Button>
           </div>
         )}
@@ -120,14 +120,12 @@ export default function TwoFactorSetup() {
         {/* Step 1: Scan QR or enter secret */}
         {step === "setup" && setupData && (
           <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Scan the QR code with your authenticator app, or enter the secret key manually.
-            </p>
+            <p className="text-sm text-muted-foreground">{t("setting:twoFaSetupDescription")}</p>
 
             <div className="flex justify-center">
               <img
                 src={`https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(setupData.otpauthUrl)}&size=180x180`}
-                alt="QR Code for 2FA setup"
+                alt={t("setting:twoFaQrAlt")}
                 className="rounded-lg border border-border"
                 width={180}
                 height={180}
@@ -135,7 +133,7 @@ export default function TwoFactorSetup() {
             </div>
 
             <div className="space-y-2">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Manual entry key</p>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t("setting:twoFaManualEntryKey")}</p>
               <div className="flex items-center gap-2">
                 <Input
                   type={showSecret ? "text" : "password"}
@@ -153,7 +151,7 @@ export default function TwoFactorSetup() {
             </div>
 
             <Button onClick={() => setStep("verify")} className="w-full">
-              I've scanned the QR code — Continue
+              {t("setting:twoFaScannedButton")}
             </Button>
           </div>
         )}
@@ -161,9 +159,9 @@ export default function TwoFactorSetup() {
         {/* Step 2: Verify TOTP code */}
         {step === "verify" && (
           <form onSubmit={verifyForm.handleSubmit(handleVerify)} className="space-y-4">
-            <p className="text-sm text-muted-foreground">Enter the 6-digit code from your authenticator app to confirm setup.</p>
+            <p className="text-sm text-muted-foreground">{t("setting:twoFaVerifyDescription")}</p>
             <Field data-invalid={!!verifyForm.formState.errors.code}>
-              <FieldLabel>Verification Code</FieldLabel>
+              <FieldLabel>{t("setting:twoFaVerificationCodeLabel")}</FieldLabel>
               <Input
                 {...verifyForm.register("code")}
                 placeholder="000000"
@@ -175,11 +173,11 @@ export default function TwoFactorSetup() {
             </Field>
             <div className="flex gap-2">
               <Button type="button" variant="outline" onClick={() => setStep("setup")} disabled={isVerifying}>
-                Back
+                {t("setting:twoFaBackButton")}
               </Button>
               <Button type="submit" className="flex-1" disabled={isVerifying}>
                 {isVerifying && <Loader2 className="size-4 mr-2 animate-spin" />}
-                Verify & Enable
+                {t("setting:twoFaVerifyEnableButton")}
               </Button>
             </div>
           </form>
@@ -190,7 +188,7 @@ export default function TwoFactorSetup() {
           <div className="space-y-4">
             <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800">
               <AlertTriangle className="size-4 mt-0.5 shrink-0" />
-              <p className="text-xs">Save these backup codes in a safe place. Each code can only be used once if you lose access to your authenticator app.</p>
+              <p className="text-xs">{t("setting:twoFaBackupCodesWarning")}</p>
             </div>
             <div className="grid grid-cols-2 gap-2">
               {backupCodes.map((code, i) => (
@@ -201,10 +199,10 @@ export default function TwoFactorSetup() {
             </div>
             <Button variant="outline" onClick={handleCopyBackupCodes} className="w-full">
               <Copy className="size-4 mr-2" />
-              Copy All Backup Codes
+              {t("setting:twoFaCopyBackupCodes")}
             </Button>
             <Button onClick={() => setStep("idle")} className="w-full">
-              Done — I've saved my codes
+              {t("setting:twoFaDoneButton")}
             </Button>
           </div>
         )}
@@ -212,13 +210,11 @@ export default function TwoFactorSetup() {
         {/* 2FA enabled — show manage options */}
         {twoFactorEnabled && step === "idle" && (
           <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Two-factor authentication is active on your account. You'll be asked for a code each time you sign in.
-            </p>
+            <p className="text-sm text-muted-foreground">{t("setting:twoFaActiveDescription")}</p>
             <Separator />
             <Button variant="destructive" size="sm" onClick={() => setStep("disable")}>
               <ShieldOff className="size-4 mr-2" />
-              Disable 2FA
+              {t("setting:twoFaDisableButton")}
             </Button>
           </div>
         )}
@@ -226,9 +222,9 @@ export default function TwoFactorSetup() {
         {/* Disable 2FA form */}
         {step === "disable" && (
           <form onSubmit={disableForm.handleSubmit(handleDisable)} className="space-y-4">
-            <p className="text-sm text-muted-foreground">Enter your current TOTP code or a backup code to disable 2FA.</p>
+            <p className="text-sm text-muted-foreground">{t("setting:twoFaDisableDescription")}</p>
             <Field data-invalid={!!disableForm.formState.errors.code}>
-              <FieldLabel>Code</FieldLabel>
+              <FieldLabel>{t("setting:twoFaCodeLabel")}</FieldLabel>
               <Input
                 {...disableForm.register("code")}
                 placeholder="000000"
@@ -239,11 +235,11 @@ export default function TwoFactorSetup() {
             </Field>
             <div className="flex gap-2">
               <Button type="button" variant="outline" onClick={() => setStep("idle")} disabled={isDisabling}>
-                Cancel
+                {t("setting:cancelButton")}
               </Button>
               <Button type="submit" variant="destructive" className="flex-1" disabled={isDisabling}>
                 {isDisabling && <Loader2 className="size-4 mr-2 animate-spin" />}
-                Disable 2FA
+                {t("setting:twoFaDisableButton")}
               </Button>
             </div>
           </form>

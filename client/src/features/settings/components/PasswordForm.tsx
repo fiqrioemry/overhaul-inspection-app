@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Loader2, Info } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/stores/auth.store";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -14,6 +15,7 @@ import { changePasswordSchema, type ChangePasswordFormValues } from "@/schemas/s
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function PasswordForm() {
+  const { t } = useTranslation(["setting"]);
   const { user } = useAuthStore();
   const changePassword = useChangePassword();
   const [error, setError] = useState<ResponseError | null>(null);
@@ -53,8 +55,8 @@ export default function PasswordForm() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Change Password</CardTitle>
-        <CardDescription>Update your password to keep your account secure</CardDescription>
+        <CardTitle>{t("setting:passwordTitle")}</CardTitle>
+        <CardDescription>{t("setting:passwordDescription")}</CardDescription>
       </CardHeader>
 
       <form onSubmit={handleSubmit(onSubmit)}>
@@ -63,29 +65,29 @@ export default function PasswordForm() {
           <div className="flex gap-3 p-3 rounded-lg bg-muted/50 border">
             <Info className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
             <div className="text-sm">
-              <p className="font-medium">Password last changed</p>
+              <p className="font-medium">{t("setting:passwordLastChanged")}</p>
               <p className="text-muted-foreground">{lastChanged}</p>
             </div>
           </div>
           <AlertCard message={error?.message} errors={error?.errors} />
 
           {/* Current Password */}
-          <PasswordField control={control} name="currentPassword" label="Current Password" placeholder="Enter your current password" />
+          <PasswordField control={control} name="currentPassword" label={t("setting:currentPasswordLabel")} placeholder={t("setting:currentPasswordPlaceholder")} />
 
           {/* New Password */}
-          <PasswordField control={control} name="newPassword" label="New Password" placeholder="Enter your new password" description="Must be at least 8 characters" />
+          <PasswordField control={control} name="newPassword" label={t("setting:newPasswordLabel")} placeholder={t("setting:newPasswordPlaceholder")} description={t("setting:newPasswordDescription")} />
 
           {/* Confirm Password */}
-          <PasswordField control={control} name="confirmPassword" label="Confirm New Password" placeholder="Confirm your new password" />
+          <PasswordField control={control} name="confirmPassword" label={t("setting:confirmNewPasswordLabel")} placeholder={t("setting:confirmNewPasswordPlaceholder")} />
         </CardContent>
 
         <CardFooter className="flex justify-end gap-3 mt-3">
           <Button type="button" variant="outline" disabled={!isDirty || isSubmitting} onClick={() => reset()}>
-            Cancel
+            {t("setting:cancelButton")}
           </Button>
           <Button type="submit" disabled={!isDirty || isSubmitting}>
             {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            Update Password
+            {t("setting:updatePasswordButton")}
           </Button>
         </CardFooter>
       </form>
