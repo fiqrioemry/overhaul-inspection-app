@@ -1,5 +1,5 @@
 // src/features/posts/components/PostOptionMenu.tsx
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { MoreHorizontal } from "lucide-react";
 import type { Post } from "@/types/posts.type";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ interface PostOptionMenuProps {
 }
 
 export default function PostOptionMenu({ post }: PostOptionMenuProps) {
+  const navigate = useNavigate();
   const { user } = useAuthStore();
   const savePost = useSavePost(post.id);
   const unsavePost = useUnsavePost(post.id);
@@ -71,9 +72,15 @@ export default function PostOptionMenu({ post }: PostOptionMenuProps) {
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-44">
-          <Link to={`/p/${post.id}`} className="block w-full">
-            <DropdownMenuItem className="cursor-pointer">Go to post</DropdownMenuItem>
-          </Link>
+          <DropdownMenuItem
+            className="cursor-pointer"
+            onClick={() => {
+              openDialog({ isOpen: false, target: "" });
+              navigate(`/p/${post.id}`);
+            }}
+          >
+            Go to post
+          </DropdownMenuItem>
 
           <DropdownMenuSeparator />
 

@@ -1,6 +1,7 @@
 // src/features/posts/components/PostDetailDialog.tsx
-import { formatDistanceToNow } from "date-fns";
+import { useEffect } from "react";
 import type { Post } from "@/types/posts.type";
+import { formatDistanceToNow } from "date-fns";
 import { usePostStore } from "@/stores/post.store";
 import PostGallery from "@/features/posts/components/PostGallery";
 import PostHeading from "@/features/posts/components/PostHeading";
@@ -8,7 +9,6 @@ import CommentList from "@/features/comments/components/CommentList";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import CreateCommentForm from "@/features/comments/components/CreateCommentForm";
 import PostActions, { PostActionCounts } from "@/features/posts/components/PostActions";
-import { useEffect } from "react";
 
 interface PostDetailDialogProps {
   post: Post;
@@ -33,6 +33,12 @@ export default function PostDetailDialog({ post }: PostDetailDialogProps) {
   useEffect(() => {
     onReply?.(null);
   }, [post.id, onReply]);
+
+  useEffect(() => {
+    return () => {
+      openDialog({ isOpen: false, target: "" });
+    };
+  }, [openDialog]);
 
   return (
     <Dialog open={isOpen && target === post.id} onOpenChange={handleOpenChange}>
