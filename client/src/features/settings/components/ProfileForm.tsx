@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { Controller } from "react-hook-form";
 import { Loader2, CheckCircle2, XCircle } from "lucide-react";
 import { useForm } from "react-hook-form";
+import { useTranslation } from "react-i18next";
 import AvatarUploader from "./AvatarUploader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,14 +19,15 @@ import { profileFormSchema, type ProfileFormValues } from "@/schemas/settings.sc
 import { Field, FieldLabel, FieldError } from "@/components/ui/field";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 
-const GENDER_OPTIONS = [
-  { label: "Male", value: "MALE" },
-  { label: "Female", value: "FEMALE" },
-];
-
 export default function ProfileForm() {
+  const { t } = useTranslation(["setting"]);
   const { user } = useAuthStore();
   const updateProfile = useUpdateUserProfile();
+
+  const GENDER_OPTIONS = [
+    { label: t("setting:genderMale"), value: "MALE" },
+    { label: t("setting:genderFemale"), value: "FEMALE" },
+  ];
 
   const defaultValues: ProfileFormValues = {
     name: user?.name || "",
@@ -71,22 +73,22 @@ export default function ProfileForm() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Profile Information</CardTitle>
-        <CardDescription>Update your account's profile information and avatar</CardDescription>
+        <CardTitle>{t("setting:profileTitle")}</CardTitle>
+        <CardDescription>{t("setting:profileDescription")}</CardDescription>
       </CardHeader>
 
       <form onSubmit={handleSubmit(onSubmit)}>
         <CardContent className="space-y-6">
           {/* Avatar */}
           <div>
-            <label className="text-sm font-medium mb-3 block">Avatar</label>
+            <label className="text-sm font-medium mb-3 block">{t("setting:avatarLabel")}</label>
             <AvatarUploader />
           </div>
 
           <div>
-            <label className="text-sm font-medium mb-2 block">Email</label>
+            <label className="text-sm font-medium mb-2 block">{t("setting:emailLabel")}</label>
             <input type="text" value={user?.email || ""} disabled className="w-full px-3 py-2 text-sm border rounded-md bg-muted text-muted-foreground cursor-not-allowed" />
-            <p className="text-xs text-muted-foreground mt-1">Email cannot be changed</p>
+            <p className="text-xs text-muted-foreground mt-1">{t("setting:emailCannotChange")}</p>
           </div>
 
           {/* Username */}
@@ -95,12 +97,12 @@ export default function ProfileForm() {
             name="username"
             render={({ field, fieldState }) => (
               <Field data-invalid={!!fieldState.error || isUsernameTaken}>
-                <FieldLabel htmlFor="username">Username</FieldLabel>
+                <FieldLabel htmlFor="username">{t("setting:usernameLabel")}</FieldLabel>
                 <div className="relative">
                   <Input
                     id="username"
                     type="text"
-                    placeholder="Enter your username"
+                    placeholder={t("setting:usernamePlaceholder")}
                     {...field}
                     className={cn("pr-10", {
                       "border-green-500 focus-visible:ring-green-500": isUsernameAvailable,
@@ -114,34 +116,34 @@ export default function ProfileForm() {
                   </div>
                 </div>
                 <FieldError errors={[fieldState.error]} />
-                {isUsernameTaken && !fieldState.error && <p className="text-xs text-destructive mt-1">This username is already taken</p>}
-                {isUsernameAvailable && <p className="text-xs text-green-500 mt-1">Username is available</p>}
+                {isUsernameTaken && !fieldState.error && <p className="text-xs text-destructive mt-1">{t("setting:usernameTaken")}</p>}
+                {isUsernameAvailable && <p className="text-xs text-green-500 mt-1">{t("setting:usernameAvailable")}</p>}
               </Field>
             )}
           />
 
           {/* Name */}
-          <ShortTextField control={control} name="name" label="Full Name" placeholder="Enter your full name" />
+          <ShortTextField control={control} name="name" label={t("setting:fullNameLabel")} placeholder={t("setting:fullNamePlaceholder")} />
 
           {/* Bio */}
-          <LongTextField control={control} name="bio" label="Bio" placeholder="Tell us about yourself" description="Brief description for your profile. Max 160 characters" rows={3} />
+          <LongTextField control={control} name="bio" label={t("setting:bioLabel")} placeholder={t("setting:bioPlaceholder")} description={t("setting:bioDescription")} rows={3} />
 
           {/* Website */}
-          <ShortTextField control={control} name="website" label="Website" placeholder="https://yourwebsite.com" description="Your personal website or portfolio URL" />
+          <ShortTextField control={control} name="website" label={t("setting:websiteLabel")} placeholder={t("setting:websitePlaceholder")} description={t("setting:websiteDescription")} />
 
           {/* Gender */}
-          <SelectField control={control} name="gender" label="Gender" options={GENDER_OPTIONS} placeholder="Select gender" />
+          <SelectField control={control} name="gender" label={t("setting:genderLabel")} options={GENDER_OPTIONS} placeholder={t("setting:genderPlaceholder")} />
         </CardContent>
 
         {showActionButtons && (
           <CardFooter className="flex justify-end gap-3 mt-3">
             <Button type="button" variant="outline" disabled={isSubmitting} onClick={() => reset(latestValuesRef.current)}>
-              Cancel
+              {t("setting:cancelButton")}
             </Button>
 
             <Button type="submit" disabled={isSubmitting || isUsernameTaken || showUsernameLoader}>
               {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Save Changes
+              {t("setting:saveChanges")}
             </Button>
           </CardFooter>
         )}

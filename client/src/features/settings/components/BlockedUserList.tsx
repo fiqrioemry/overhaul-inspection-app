@@ -1,6 +1,7 @@
 // src/features/settings/components/BlockedUserList.tsx
 import { Link } from "react-router-dom";
 import { ShieldOff, UserX } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useGetBlockedUsers, useUnblockUser } from "@/features/users/users.query";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -9,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { formatInitials } from "@/utils/formatString";
 
 export default function BlockedUserList() {
+  const { t } = useTranslation(["setting"]);
   const { data, isLoading } = useGetBlockedUsers();
   const { mutate: unblock, isPending } = useUnblockUser();
 
@@ -20,8 +22,8 @@ export default function BlockedUserList() {
         <div className="flex items-center gap-2">
           <ShieldOff className="size-4 text-muted-foreground" />
           <div>
-            <CardTitle>Blocked Users</CardTitle>
-            <CardDescription>Users you've blocked can't see your posts or send you messages.</CardDescription>
+            <CardTitle>{t("setting:blockedUsersTitle")}</CardTitle>
+            <CardDescription>{t("setting:blockedUsersDescription")}</CardDescription>
           </div>
         </div>
       </CardHeader>
@@ -45,7 +47,7 @@ export default function BlockedUserList() {
         {!isLoading && blockedUsers.length === 0 && (
           <div className="flex flex-col items-center gap-2 py-6 text-center">
             <UserX className="size-8 text-muted-foreground/40" />
-            <p className="text-sm text-muted-foreground">No blocked users</p>
+            <p className="text-sm text-muted-foreground">{t("setting:noBlockedUsers")}</p>
           </div>
         )}
 
@@ -71,7 +73,7 @@ export default function BlockedUserList() {
                   disabled={isPending}
                   onClick={() => unblock(item.blockedId)}
                 >
-                  Unblock
+                  {t("setting:unblockButton")}
                 </Button>
               </div>
             ))}

@@ -1,6 +1,7 @@
 // src/features/settings/components/MutedUserList.tsx
 import { Link } from "react-router-dom";
 import { BellOff, VolumeX } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useGetMutedUsers, useUnmuteUser } from "@/features/users/users.query";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { formatInitials } from "@/utils/formatString";
 
 export default function MutedUserList() {
+  const { t } = useTranslation(["setting"]);
   const { data, isLoading } = useGetMutedUsers();
   const { mutate: unmute, isPending } = useUnmuteUser();
 
@@ -21,8 +23,8 @@ export default function MutedUserList() {
         <div className="flex items-center gap-2">
           <BellOff className="size-4 text-muted-foreground" />
           <div>
-            <CardTitle>Muted Users</CardTitle>
-            <CardDescription>Muted users' posts won't appear in your feed. They can still see your content.</CardDescription>
+            <CardTitle>{t("setting:mutedUsersTitle")}</CardTitle>
+            <CardDescription>{t("setting:mutedUsersDescription")}</CardDescription>
           </div>
         </div>
       </CardHeader>
@@ -46,7 +48,7 @@ export default function MutedUserList() {
         {!isLoading && mutedUsers.length === 0 && (
           <div className="flex flex-col items-center gap-2 py-6 text-center">
             <VolumeX className="size-8 text-muted-foreground/40" />
-            <p className="text-sm text-muted-foreground">No muted users</p>
+            <p className="text-sm text-muted-foreground">{t("setting:noMutedUsers")}</p>
           </div>
         )}
 
@@ -76,7 +78,7 @@ export default function MutedUserList() {
                     disabled={isPending}
                     onClick={() => unmute(item.mutedId)}
                   >
-                    Unmute
+                    {t("setting:unmuteButton")}
                   </Button>
                 </div>
               </div>
