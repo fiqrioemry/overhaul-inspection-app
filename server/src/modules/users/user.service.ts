@@ -7,8 +7,8 @@ import { FileRepository } from "@/modules/files/file.repository";
 import { FollowStatus, NotificationType, Prisma } from "generated/prisma";
 import { NotificationRepository } from "@/modules/notifications/notification.repository";
 import { userAction, userErrorCode, userErrorMessage } from "@/config/constant/user.constant";
-import { followingResponse, followRequestResponse, metaResponse, profileResponse, userSearchResponse } from "@/modules/users/user.types";
-import { FollowUserRequest, GetFollowRequest, GetFollowRequestsQuery, RespondFollowRequest, UpdatePrivacyRequest, UpdateProfileRequest } from "@/modules/users/user.schema";
+import { blockResponse, followingResponse, followRequestResponse, metaResponse, muteResponse, profileResponse, userSearchResponse } from "@/modules/users/user.types";
+import { BlockUserRequest, FollowUserRequest, GetFollowRequest, GetFollowRequestsQuery, MuteUserRequest, PaginatedQuery, RespondFollowRequest, UnmuteUserRequest, UpdatePrivacyRequest, UpdateProfileRequest } from "@/modules/users/user.schema";
 
 export class UserService {
   static async searchUsersByUsername(username: string, userId: string): Promise<userSearchResponse[]> {
@@ -107,6 +107,7 @@ export class UserService {
       username: user.username,
       avatar: user.avatar,
       bio: user.bio,
+      website: user.website ?? null,
       lastLogin: user.lastLogin,
       joinedAt: user.createdAt,
       isPublic: user.isPublic,
@@ -317,6 +318,118 @@ export class UserService {
 
     // Simply delete the record — no notification needed (Instagram behaviour)
     await UserRepository.deleteFollow(payload.followerId, payload.userId!);
+  }
+
+  // ── Block ──────────────────────────────────────────────────────────────────
+
+  static async blockUser(payload: BlockUserRequest): Promise<blockResponse> {
+    if (payload.userId === payload.targetUserId) {
+      throw new HTTPException(400, { message: userErrorMessage.CANNOT_BLOCK_SELF, cause: userErrorCode.CANNOT_BLOCK_SELF });
+    }
+
+    const target = await UserRepository.findById(payload.targetUserId);
+    if (!target) throw new HTTPException(404, { message: userErrorMessage.USER_NOT_FOUND, cause: userErrorCode.USER_NOT_FOUND });
+
+    const existing = await UserRepository.findBlock(payload.userId!, payload.targetUserId);
+    if (existing) throw new HTTPException(409, { message: userErrorMessage.ALREADY_BLOCKED, cause: userErrorCode.ALREADY_BLOCKED });
+
+    return await pgsql.$transaction(async (tx: Prisma.TransactionClient) => {
+      const block = await UserRepository.createBlock(tx, payload.userId!, payload.targetUserId);
+
+      // remove any existing follow in either direction silently
+      await tx.following.deleteMany({
+        where: {
+          OR: [
+            { followerId: payload.userId!, followingId: payload.targetUserId },
+            { followerId: payload.targetUserId, followingId: payload.userId! },
+          ],
+        },
+      });
+
+      await UserRepository.createActivityLog(tx, { userId: payload.userId!, action: userAction.BLOCK_USER, metadata: { blockedId: payload.targetUserId } });
+
+      return {
+        id: block.id,
+        blockedId: block.blockedId,
+        createdAt: block.createdAt,
+        user: { id: target.id, name: target.name, username: target.username, avatar: target.avatar ?? null },
+      };
+    });
+  }
+
+  static async unblockUser(payload: BlockUserRequest): Promise<void> {
+    const existing = await UserRepository.findBlock(payload.userId!, payload.targetUserId);
+    if (!existing) throw new HTTPException(404, { message: userErrorMessage.NOT_BLOCKED, cause: userErrorCode.NOT_BLOCKED });
+
+    await pgsql.$transaction(async (tx: Prisma.TransactionClient) => {
+      await UserRepository.deleteBlock(payload.userId!, payload.targetUserId);
+      await UserRepository.createActivityLog(tx, { userId: payload.userId!, action: userAction.UNBLOCK_USER, metadata: { unblockedId: payload.targetUserId } });
+    });
+  }
+
+  static async getBlockedUsers(query: PaginatedQuery): Promise<{ data: blockResponse[]; meta: metaResponse }> {
+    const page = Number(query.page ?? 1);
+    const limit = Number(query.limit ?? 20);
+    const { results, totalItems } = await UserRepository.getBlockedUsers(query.userId!, page, limit);
+
+    return {
+      data: results.map((r) => ({ id: r.id, blockedId: r.blockedId, createdAt: r.createdAt, user: r.blocked })),
+      meta: { pagination: { page, limit, totalItems, totalPages: Math.ceil(totalItems / limit) } },
+    };
+  }
+
+  // ── Mute ──────────────────────────────────────────────────────────────────
+
+  static async muteUser(payload: MuteUserRequest): Promise<muteResponse> {
+    if (payload.userId === payload.targetUserId) {
+      throw new HTTPException(400, { message: userErrorMessage.CANNOT_MUTE_SELF, cause: userErrorCode.CANNOT_MUTE_SELF });
+    }
+
+    const target = await UserRepository.findById(payload.targetUserId);
+    if (!target) throw new HTTPException(404, { message: userErrorMessage.USER_NOT_FOUND, cause: userErrorCode.USER_NOT_FOUND });
+
+    const existing = await UserRepository.findMute(payload.userId!, payload.targetUserId);
+    if (existing) throw new HTTPException(409, { message: userErrorMessage.ALREADY_MUTED, cause: userErrorCode.ALREADY_MUTED });
+
+    return await pgsql.$transaction(async (tx: Prisma.TransactionClient) => {
+      const mute = await UserRepository.createMute(tx, payload.userId!, payload.targetUserId, payload.muteType ?? "all");
+      await UserRepository.createActivityLog(tx, { userId: payload.userId!, action: userAction.MUTE_USER, metadata: { mutedId: payload.targetUserId } });
+
+      return {
+        id: mute.id,
+        mutedId: mute.mutedId,
+        muteType: mute.muteType,
+        createdAt: mute.createdAt,
+        user: { id: target.id, name: target.name, username: target.username, avatar: target.avatar ?? null },
+      };
+    });
+  }
+
+  static async unmuteUser(payload: UnmuteUserRequest): Promise<void> {
+    const existing = await UserRepository.findMute(payload.userId!, payload.targetUserId);
+    if (!existing) throw new HTTPException(404, { message: userErrorMessage.NOT_MUTED, cause: userErrorCode.NOT_MUTED });
+
+    await pgsql.$transaction(async (tx: Prisma.TransactionClient) => {
+      await UserRepository.deleteMute(payload.userId!, payload.targetUserId);
+      await UserRepository.createActivityLog(tx, { userId: payload.userId!, action: userAction.UNMUTE_USER, metadata: { unmutedId: payload.targetUserId } });
+    });
+  }
+
+  static async getMutedUsers(query: PaginatedQuery): Promise<{ data: muteResponse[]; meta: metaResponse }> {
+    const page = Number(query.page ?? 1);
+    const limit = Number(query.limit ?? 20);
+    const { results, totalItems } = await UserRepository.getMutedUsers(query.userId!, page, limit);
+
+    return {
+      data: results.map((r) => ({ id: r.id, mutedId: r.mutedId, muteType: r.muteType, createdAt: r.createdAt, user: r.muted })),
+      meta: { pagination: { page, limit, totalItems, totalPages: Math.ceil(totalItems / limit) } },
+    };
+  }
+
+  // ── Profile website ────────────────────────────────────────────────────────
+
+  static async updateWebsite(userId: string, website: string | null): Promise<void> {
+    await UserRepository.updateWebsite(userId, website);
   }
 
   static async getFollowRequests(query: GetFollowRequestsQuery): Promise<{ data: followRequestResponse[]; meta: metaResponse }> {

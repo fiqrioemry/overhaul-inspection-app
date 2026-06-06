@@ -19,6 +19,7 @@ import { authErrorCode, authErrorMessage, authLimit } from "@/config/constant/au
 import { generateRandomAvatarURL, generateRandomToken, generateRandomUsername } from "@/utils/generator";
 import { NotificationChannel, NotificationStatus, NotificationType, OAuthProvider, Prisma } from "generated/prisma/edge";
 import { ChangePasswordRequest, LoginRequest, RegisterRequest, ResetPasswordRequest } from "@/modules/auth/auth.schema";
+import { buildTOTPUri, generateBackupCodes, generateTOTPSecret, verifyTOTP } from "@/utils/totp";
 
 const oauthStateKey = (provider: OAuthProviderKey, state: string) => `oauth:state:${provider}:${state}`;
 
@@ -110,19 +111,12 @@ export class AuthService {
     });
   }
 
-  static async login(c: Context, request: LoginRequest): Promise<loginResponse> {
-    // check email
+  static async login(c: Context, request: LoginRequest): Promise<loginResponse | { requiresTwoFactor: true; challengeToken: string }> {
     const isEmailExist = await UserRepository.findByEmail(request.email);
 
-    if (isEmailExist?.passwordHash === "") {
+    if (!isEmailExist || isEmailExist?.passwordHash === "") {
       throw new HTTPException(400, { message: authErrorMessage.INVALID_CREDENTIALS, cause: authErrorCode.INVALID_CREDENTIALS });
     }
-
-    if (!isEmailExist) {
-      throw new HTTPException(400, { message: authErrorMessage.INVALID_CREDENTIALS, cause: authErrorCode.INVALID_CREDENTIALS });
-    }
-
-    const isValid = await verifyPassword({ password: request.password, hash: isEmailExist?.passwordHash! });
 
     if (isEmailExist.status === "INACTIVE" || !isEmailExist.verifiedAt) {
       throw new HTTPException(400, { message: authErrorMessage.EMAIL_NOT_VERIFIED, cause: authErrorCode.EMAIL_NOT_VERIFIED });
@@ -131,52 +125,145 @@ export class AuthService {
     if (isEmailExist.status === "BANNED") {
       throw new HTTPException(403, { message: authErrorMessage.ACCOUNT_BANNED, cause: authErrorCode.ACCOUNT_BANNED });
     }
-    // check password
+
+    const isValid = await verifyPassword({ password: request.password, hash: isEmailExist?.passwordHash! });
     if (!isValid) {
       throw new HTTPException(400, { message: authErrorMessage.INVALID_CREDENTIALS, cause: authErrorCode.INVALID_CREDENTIALS });
     }
 
+    if (isEmailExist.twoFactorEnabled) {
+      const challengeToken = generateRandomToken();
+      const cacheKey = `2fa:challenge:${challengeToken}`;
+      await cache.set(
+        cacheKey,
+        JSON.stringify({ userId: isEmailExist.id, userAgent: c.req.header("user-agent") || "unknown" }),
+        authLimit.TWO_FACTOR_CHALLENGE_TTL,
+      );
+      return { requiresTwoFactor: true, challengeToken };
+    }
+
+    return this._createSession(c, isEmailExist);
+  }
+
+  private static async _createSession(
+    c: Context,
+    user: { id: string; name: string; username: string; avatar: string | null; email: string },
+    userAgent?: string,
+  ): Promise<loginResponse> {
     const randomToken = generateRandomToken();
     const hashedToken = await hashToken(randomToken);
+    const agent = userAgent ?? c.req.header("user-agent") ?? "unknown";
 
     const sessionPayload = {
       id: cuid(),
-      userId: isEmailExist.id,
+      userId: user.id,
       token: hashedToken,
-      userAgent: c.req.header("user-agent") || "unknown",
+      userAgent: agent,
       expiresAt: new Date(Date.now() + authLimit.SESSION_TOKEN_EXP),
     };
 
     const newSession = await db.$transaction(async (tx: Prisma.TransactionClient) => {
-      await UserRepository.updateLastLogin(tx, isEmailExist.id, new Date());
+      await UserRepository.updateLastLogin(tx, user.id, new Date());
       const session = await SessionRepository.createSession(tx, sessionPayload);
-
-      await UserRepository.createActivityLog(tx, {
-        userId: isEmailExist.id,
-        action: userAction.LOGIN,
-        metadata: {
-          userAgent: sessionPayload.userAgent,
-        },
-      });
-
+      await UserRepository.createActivityLog(tx, { userId: user.id, action: userAction.LOGIN, metadata: { userAgent: agent } });
       return session;
     });
 
-    const sessionToken = await generateSessionToken({ sub: isEmailExist.id, sid: newSession.id });
-
+    const sessionToken = await generateSessionToken({ sub: user.id, sid: newSession.id });
     setCookie(c, redisConfig.TOKEN_PREFIX_DEFAULT, sessionToken);
 
     return {
       token: sessionToken,
       expiredAt: sessionPayload.expiresAt,
-      user: {
-        id: isEmailExist.id,
-        name: isEmailExist.name,
-        username: isEmailExist.username,
-        avatar: isEmailExist.avatar,
-        email: isEmailExist.email,
-      },
+      user: { id: user.id, name: user.name, username: user.username, avatar: user.avatar, email: user.email },
     };
+  }
+
+  // ── 2FA ───────────────────────────────────────────────────────────────────
+
+  static async setup2FA(userId: string): Promise<{ otpauthUrl: string; secret: string }> {
+    const user = await UserRepository.findByIdWithTwoFactor(userId);
+    if (!user) throw new HTTPException(404, { message: authErrorMessage.USER_NOT_FOUND, cause: authErrorCode.USER_NOT_FOUND });
+    if (user.twoFactorEnabled) throw new HTTPException(409, { message: authErrorMessage.TWO_FACTOR_ALREADY_ENABLED, cause: authErrorCode.TWO_FACTOR_ALREADY_ENABLED });
+
+    const secret = generateTOTPSecret();
+    await cache.set(`2fa:setup:${userId}`, secret, authLimit.TWO_FACTOR_SETUP_TTL);
+
+    return { otpauthUrl: buildTOTPUri(secret, user.email, "SocialApp"), secret };
+  }
+
+  static async verify2FA(userId: string, code: string): Promise<{ backupCodes: string[] }> {
+    const secret = await cache.get(`2fa:setup:${userId}`);
+    if (!secret) throw new HTTPException(400, { message: authErrorMessage.TWO_FACTOR_SETUP_REQUIRED, cause: authErrorCode.TWO_FACTOR_SETUP_REQUIRED });
+
+    if (!verifyTOTP(secret, code)) throw new HTTPException(400, { message: authErrorMessage.TWO_FACTOR_INVALID_CODE, cause: authErrorCode.TWO_FACTOR_INVALID_CODE });
+
+    const rawCodes = generateBackupCodes();
+    const hashedCodes = await Promise.all(rawCodes.map((c) => hashPassword(c)));
+
+    await db.$transaction(async (tx) => {
+      await UserRepository.updateTwoFactor(userId, { twoFactorEnabled: true, twoFactorSecret: secret, twoFactorBackupCodes: hashedCodes }, tx);
+      await cache.del(`2fa:setup:${userId}`);
+    });
+
+    return { backupCodes: rawCodes };
+  }
+
+  static async disable2FA(userId: string, code: string): Promise<void> {
+    const user = await UserRepository.findByIdWithTwoFactor(userId);
+    if (!user) throw new HTTPException(404, { message: authErrorMessage.USER_NOT_FOUND, cause: authErrorCode.USER_NOT_FOUND });
+    if (!user.twoFactorEnabled || !user.twoFactorSecret) throw new HTTPException(400, { message: authErrorMessage.TWO_FACTOR_NOT_ENABLED, cause: authErrorCode.TWO_FACTOR_NOT_ENABLED });
+
+    const totpValid = verifyTOTP(user.twoFactorSecret, code);
+    let backupValid = false;
+    if (!totpValid) {
+      for (const hashed of user.twoFactorBackupCodes) {
+        if (await verifyPassword({ password: code, hash: hashed })) {
+          backupValid = true;
+          break;
+        }
+      }
+    }
+
+    if (!totpValid && !backupValid) throw new HTTPException(400, { message: authErrorMessage.TWO_FACTOR_INVALID_CODE, cause: authErrorCode.TWO_FACTOR_INVALID_CODE });
+
+    await UserRepository.updateTwoFactor(userId, { twoFactorEnabled: false, twoFactorSecret: null, twoFactorBackupCodes: [] });
+  }
+
+  static async challenge2FA(c: Context, challengeToken: string, code: string): Promise<loginResponse> {
+    const cacheKey = `2fa:challenge:${challengeToken}`;
+    const raw = await cache.get(cacheKey);
+    if (!raw) throw new HTTPException(400, { message: authErrorMessage.TWO_FACTOR_CHALLENGE_INVALID, cause: authErrorCode.TWO_FACTOR_CHALLENGE_INVALID });
+
+    const { userId, userAgent } = JSON.parse(raw) as { userId: string; userAgent: string };
+
+    const user = await UserRepository.findByIdWithTwoFactor(userId);
+    if (!user || !user.twoFactorEnabled || !user.twoFactorSecret) throw new HTTPException(400, { message: authErrorMessage.TWO_FACTOR_CHALLENGE_INVALID, cause: authErrorCode.TWO_FACTOR_CHALLENGE_INVALID });
+
+    const totpValid = verifyTOTP(user.twoFactorSecret, code);
+    let backupValid = false;
+    let usedBackupIndex = -1;
+
+    if (!totpValid) {
+      for (let i = 0; i < user.twoFactorBackupCodes.length; i++) {
+        if (await verifyPassword({ password: code, hash: user.twoFactorBackupCodes[i] })) {
+          backupValid = true;
+          usedBackupIndex = i;
+          break;
+        }
+      }
+    }
+
+    if (!totpValid && !backupValid) throw new HTTPException(400, { message: authErrorMessage.TWO_FACTOR_INVALID_CODE, cause: authErrorCode.TWO_FACTOR_INVALID_CODE });
+
+    if (backupValid && usedBackupIndex >= 0) {
+      const remaining = user.twoFactorBackupCodes.filter((_, i) => i !== usedBackupIndex);
+      await UserRepository.updateTwoFactor(userId, { twoFactorEnabled: true, twoFactorBackupCodes: remaining });
+    }
+
+    await cache.del(cacheKey);
+
+    return this._createSession(c, { id: user.id, name: user.name, username: user.username, avatar: user.avatar, email: user.email }, userAgent);
   }
 
   static async resendVerificationEmail(c: Context, email: string) {
@@ -211,24 +298,24 @@ export class AuthService {
     sendVerificationLink(mailSetup);
   }
 
-  static async getMe(c: Context, userId: string): Promise<userResponse> {
-    const result = await UserRepository.findById(userId);
+  static async getMe(c: Context, userId: string): Promise<userResponse & { twoFactorEnabled: boolean }> {
+    const result = await UserRepository.findByIdWithTwoFactor(userId);
 
     if (!result) {
       throw new HTTPException(404, { message: authErrorMessage.USER_NOT_FOUND, cause: authErrorCode.USER_NOT_FOUND });
     }
 
-    const user = {
+    return {
       id: result.id,
       name: result.name,
       username: result.username,
-      avatar: result?.avatar,
+      avatar: result.avatar,
       email: result.email,
       lastLogin: result.lastLogin,
       joinedAt: result.createdAt,
       lastChangePasswordAt: result.lastChangePasswordAt,
+      twoFactorEnabled: result.twoFactorEnabled,
     };
-    return user;
   }
 
   static async logout(c: Context, sessionId: string): Promise<void> {

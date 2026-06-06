@@ -3,7 +3,7 @@ import { AuthService } from "@/modules/auth/auth.service";
 import { responseCreated, responseOK } from "@/utils/response";
 import { databaseConfig, OAuthProviderKey } from "@/config/env";
 import { authSuccessMessage } from "@/config/constant/auth.constant";
-import { changePasswordRequest, forgotPasswordRequest, loginRequest, registerRequest, resendVerificationEmailRequest, resetPasswordRequest } from "@/modules/auth/auth.schema";
+import { changePasswordRequest, forgotPasswordRequest, loginRequest, registerRequest, resendVerificationEmailRequest, resetPasswordRequest, twoFactorChallengeRequest, twoFactorCodeRequest } from "@/modules/auth/auth.schema";
 
 export class AuthController {
   static async register(c: Context) {
@@ -88,6 +88,32 @@ export class AuthController {
     const user = c.get("user");
     const response = await AuthService.getMe(c, user.userId);
     return responseOK(c, authSuccessMessage.GET_ME_SUCCESS, response);
+  }
+
+  static async setup2FA(c: Context) {
+    const user = c.get("user");
+    const response = await AuthService.setup2FA(user.userId);
+    return responseOK(c, authSuccessMessage.TWO_FACTOR_SETUP_SUCCESS, response);
+  }
+
+  static async verify2FA(c: Context) {
+    const user = c.get("user");
+    const { code } = twoFactorCodeRequest.parse(await c.req.json());
+    const response = await AuthService.verify2FA(user.userId, code);
+    return responseOK(c, authSuccessMessage.TWO_FACTOR_ENABLED, response);
+  }
+
+  static async disable2FA(c: Context) {
+    const user = c.get("user");
+    const { code } = twoFactorCodeRequest.parse(await c.req.json());
+    await AuthService.disable2FA(user.userId, code);
+    return responseOK(c, authSuccessMessage.TWO_FACTOR_DISABLED);
+  }
+
+  static async challenge2FA(c: Context) {
+    const { challengeToken, code } = twoFactorChallengeRequest.parse(await c.req.json());
+    const response = await AuthService.challenge2FA(c, challengeToken, code);
+    return responseOK(c, authSuccessMessage.TWO_FACTOR_CHALLENGE_PASSED, response);
   }
 
   static async oauthRedirect(c: Context) {

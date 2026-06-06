@@ -48,6 +48,11 @@ model User {
   updatedAt    DateTime  @updatedAt @map("updated_at")
   deletedAt    DateTime? @map("deleted_at")
 
+  website             String?
+  twoFactorEnabled    Boolean  @default(false) @map("two_factor_enabled")
+  twoFactorSecret     String?  @map("two_factor_secret")
+  twoFactorBackupCodes String[] @map("two_factor_backup_codes")
+
   sessions     Session[]
   posts        Post[]
   postReports  PostReport[]
@@ -65,7 +70,14 @@ model User {
 
   activities   UserActivityLog[]
   sentMessages Message[]
- oauthAccounts OAuthAccount[] 
+  oauthAccounts OAuthAccount[]
+
+  blockedUsers   UserBlock[] @relation("BlockedBy")
+  blockedByUsers UserBlock[] @relation("BlockedUsers")
+  mutedUsers     UserMute[]  @relation("MutedBy")
+  mutedByUsers   UserMute[]  @relation("MutedUsers")
+  mentions       PostMention[]
+
   @@map("users")
 }
 
@@ -152,10 +164,12 @@ model Post {
 
   user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   postReports PostReport[]
-  comments   Comment[]    
+  comments   Comment[]
   bookmarks  Bookmark[]
   galleries  PostGallery[]
   likes      Like[]
+  hashtags   PostHashtag[]
+  mentions   PostMention[]
 
   @@index([userId])
   @@map("posts")
@@ -266,9 +280,10 @@ model Comment {
 
   post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  likes      Like[]
+  likes     Like[]
+  mentions  PostMention[]
 
-  parent    Comment? @relation("CommentChildren", fields: [parentId], references: [id])
+  parent    Comment?  @relation("CommentChildren", fields: [parentId], references: [id])
   children  Comment[] @relation("CommentChildren")
 
   @@index([postId])
@@ -390,18 +405,21 @@ model Notification {
 }
 
 model Message {
-  id        String   @id @default(cuid())
-  chatId    String   @map("chat_id")
-  senderId  String   @map("sender_id")
-  type      MessageType @default(text)
-  text      String
-  mediaUrl String?  @map("media_url")
-  readBy    String[] @map("read_by")
-  createdAt DateTime @default(now()) @map("created_at")
+  id          String      @id @default(cuid())
+  chatId      String      @map("chat_id")
+  senderId    String      @map("sender_id")
+  type        MessageType @default(text)
+  text        String
+  mediaUrl    String?     @map("media_url")
+  readBy      String[]    @map("read_by")
+  replyToId   String?     @map("reply_to_id")
+  createdAt   DateTime    @default(now()) @map("created_at")
 
-  chat      Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
-  sender    User @relation(fields: [senderId], references: [id], onDelete: Cascade)
-  lastMessageInChat Chat? @relation("LastMessage")
+  chat              Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  sender            User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  lastMessageInChat Chat?    @relation("LastMessage")
+  replyTo           Message? @relation("MessageReplies", fields: [replyToId], references: [id], onDelete: SetNull)
+  replies           Message[] @relation("MessageReplies")
 
   @@index([chatId])
   @@index([senderId])
@@ -422,13 +440,84 @@ model PostReport {
   postId      String
   userId      String
   reason      PostReportReason
-  description String?          // required only when reason = OTHER
+  description String?
+  status      String           @default("PENDING")
+  reviewedBy  String?          @map("reviewed_by")
+  reviewedAt  DateTime?        @map("reviewed_at")
+  actionTaken String?          @map("action_taken")
   createdAt   DateTime         @default(now())
 
   post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, postId])  
-  @@index([postId, reason])  
+  @@unique([userId, postId])
+  @@index([postId, reason])
+  @@index([status])
   @@map("post_reports")
+}
+
+model UserBlock {
+  id        String   @id @default(cuid())
+  blockerId String   @map("blocker_id")
+  blockedId String   @map("blocked_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  blocker User @relation("BlockedBy", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked User @relation("BlockedUsers", fields: [blockedId], references: [id], onDelete: Cascade)
+
+  @@unique([blockerId, blockedId])
+  @@index([blockerId])
+  @@map("user_blocks")
+}
+
+model UserMute {
+  id        String   @id @default(cuid())
+  muterId   String   @map("muter_id")
+  mutedId   String   @map("muted_id")
+  muteType  String   @default("all")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  muter User @relation("MutedBy", fields: [muterId], references: [id], onDelete: Cascade)
+  muted User @relation("MutedUsers", fields: [mutedId], references: [id], onDelete: Cascade)
+
+  @@unique([muterId, mutedId])
+  @@index([muterId])
+  @@map("user_mutes")
+}
+
+model Hashtag {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+
+  posts PostHashtag[]
+
+  @@map("hashtags")
+}
+
+model PostHashtag {
+  postId    String @map("post_id")
+  hashtagId String @map("hashtag_id")
+
+  post    Post    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  hashtag Hashtag @relation(fields: [hashtagId], references: [id], onDelete: Cascade)
+
+  @@id([postId, hashtagId])
+  @@map("post_hashtags")
+}
+
+model PostMention {
+  id        String   @id @default(cuid())
+  postId    String?  @map("post_id")
+  commentId String?  @map("comment_id")
+  userId    String   @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  post    Post?    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  comment Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([postId])
+  @@map("post_mentions")
 }

@@ -15,6 +15,13 @@ export type participantData = {
   };
 };
 
+export type messageReplyTo = {
+  id: string;
+  text: string;
+  type: MessageType;
+  sender: { id: string; name: string; username: string };
+} | null;
+
 export type messageData = {
   id: string;
   chatId: string;
@@ -30,6 +37,7 @@ export type messageData = {
     username: string;
     avatar: string | null;
   };
+  replyTo: messageReplyTo;
 };
 
 export type lastMessageData = {

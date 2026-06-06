@@ -16,6 +16,7 @@ export class UserRepository {
         passwordHash: true,
         status: true,
         verifiedAt: true,
+        twoFactorEnabled: true,
       },
     });
   }
@@ -66,6 +67,34 @@ export class UserRepository {
     });
   }
 
+  static async findByIdWithTwoFactor(id: string) {
+    return database.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        username: true,
+        avatar: true,
+        lastLogin: true,
+        createdAt: true,
+        lastChangePasswordAt: true,
+        twoFactorEnabled: true,
+        twoFactorSecret: true,
+        twoFactorBackupCodes: true,
+      },
+    });
+  }
+
+  static async updateTwoFactor(
+    userId: string,
+    data: { twoFactorEnabled: boolean; twoFactorSecret?: string | null; twoFactorBackupCodes?: string[] },
+    tx: Prisma.TransactionClient | null = null,
+  ) {
+    const db = tx ?? database;
+    return db.user.update({ where: { id: userId }, data });
+  }
+
   static async getProfileByUsername(username: string, currentUserId?: string) {
     return await database.user.findUnique({
       where: { username },
@@ -77,6 +106,7 @@ export class UserRepository {
         username: true,
         avatar: true,
         bio: true,
+        website: true,
         lastLogin: true,
         createdAt: true,
         followers: {
@@ -197,6 +227,7 @@ export class UserRepository {
         name: request.name,
         bio: request.bio,
         gender: request.gender,
+        website: request.website === "" ? null : request.website,
         ...(request.username ? { username: request.username } : {}),
       },
     });
@@ -539,5 +570,113 @@ export class UserRepository {
       select: { isPublic: true },
     });
     return result?.isPublic ?? true;
+  }
+
+  // ── Block ──────────────────────────────────────────────────────────────────
+
+  static async findBlock(blockerId: string, blockedId: string) {
+    return database.userBlock.findUnique({
+      where: { blockerId_blockedId: { blockerId, blockedId } },
+      select: { id: true },
+    });
+  }
+
+  static async createBlock(tx: Prisma.TransactionClient, blockerId: string, blockedId: string) {
+    return tx.userBlock.create({
+      data: { blockerId, blockedId },
+      select: { id: true, blockedId: true, createdAt: true },
+    });
+  }
+
+  static async deleteBlock(blockerId: string, blockedId: string) {
+    return database.userBlock.delete({
+      where: { blockerId_blockedId: { blockerId, blockedId } },
+    });
+  }
+
+  static async getBlockedUsers(blockerId: string, page: number, limit: number) {
+    const where = { blockerId };
+    const [results, totalItems] = await Promise.all([
+      database.userBlock.findMany({
+        where,
+        select: {
+          id: true,
+          blockedId: true,
+          createdAt: true,
+          blocked: { select: { id: true, name: true, username: true, avatar: true } },
+        },
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { createdAt: "desc" },
+      }),
+      database.userBlock.count({ where }),
+    ]);
+    return { results, totalItems };
+  }
+
+  // ── Mute ──────────────────────────────────────────────────────────────────
+
+  static async findMute(muterId: string, mutedId: string) {
+    return database.userMute.findUnique({
+      where: { muterId_mutedId: { muterId, mutedId } },
+      select: { id: true },
+    });
+  }
+
+  static async createMute(tx: Prisma.TransactionClient, muterId: string, mutedId: string, muteType: string) {
+    return tx.userMute.create({
+      data: { muterId, mutedId, muteType },
+      select: { id: true, mutedId: true, muteType: true, createdAt: true },
+    });
+  }
+
+  static async deleteMute(muterId: string, mutedId: string) {
+    return database.userMute.delete({
+      where: { muterId_mutedId: { muterId, mutedId } },
+    });
+  }
+
+  static async getMutedUsers(muterId: string, page: number, limit: number) {
+    const where = { muterId };
+    const [results, totalItems] = await Promise.all([
+      database.userMute.findMany({
+        where,
+        select: {
+          id: true,
+          mutedId: true,
+          muteType: true,
+          createdAt: true,
+          muted: { select: { id: true, name: true, username: true, avatar: true } },
+        },
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { createdAt: "desc" },
+      }),
+      database.userMute.count({ where }),
+    ]);
+    return { results, totalItems };
+  }
+
+  static async getMutedUserIds(muterId: string): Promise<string[]> {
+    const mutes = await database.userMute.findMany({
+      where: { muterId },
+      select: { mutedId: true },
+    });
+    return mutes.map((m) => m.mutedId);
+  }
+
+  static async getBlockedAndBlockingIds(userId: string): Promise<string[]> {
+    const [blocked, blocking] = await Promise.all([
+      database.userBlock.findMany({ where: { blockerId: userId }, select: { blockedId: true } }),
+      database.userBlock.findMany({ where: { blockedId: userId }, select: { blockerId: true } }),
+    ]);
+    return [...blocked.map((b) => b.blockedId), ...blocking.map((b) => b.blockerId)];
+  }
+
+  // ── Profile ───────────────────────────────────────────────────────────────
+
+  static async updateWebsite(userId: string, website: string | null, tx: Prisma.TransactionClient | null = null) {
+    const db = tx ?? database;
+    return db.user.update({ where: { id: userId }, data: { website } });
   }
 }

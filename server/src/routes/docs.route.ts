@@ -6,6 +6,8 @@ import { userPaths, userSchemas } from "@/modules/users/user.swagger";
 import { notificationPaths, notificationSchemas } from "@/modules/notifications/notification.swagger";
 import { commentPaths, commentSchemas } from "@/modules/comments/comment.swagger";
 import { chatPaths, chatSchemas } from "@/modules/chats/chat.swagger";
+import { adminPaths, adminSchemas } from "@/modules/admin/admin.swagger";
+import { hashtagPaths, hashtagSchemas } from "@/modules/hashtags/hashtag.swagger";
 
 const docs = new Hono();
 
@@ -22,16 +24,19 @@ const spec = {
       ...commentSchemas,
       ...chatSchemas,
       ...notificationSchemas,
+      ...adminSchemas,
+      ...hashtagSchemas,
     },
   },
   paths: {
     ...authPaths,
-    ...postPaths, // create export postPaths in posts.swagger.ts which contains paths for all post endpoints
+    ...postPaths,
     ...userPaths,
     ...commentPaths,
     ...chatPaths,
     ...notificationPaths,
-    // add other modules here: ...userPaths, ...postPaths
+    ...adminPaths,
+    ...hashtagPaths,
   },
 };
 

@@ -54,6 +54,7 @@ type loginResponse = {
 
 type userResponse = {
   id: string;
+  email: string;
   name: string;
   username: string;
   avatar: string | null;
@@ -69,6 +70,7 @@ type profileResponse = {
   username: string;
   avatar: string | null;
   bio: string | null;
+  website: string | null;
   lastLogin: Date | null;
   joinedAt: Date;
   isPublic: boolean;
@@ -76,7 +78,22 @@ type profileResponse = {
   totalFollowers: number;
   totalFollowings: number;
   totalPosts: number;
-  followStatus: FollowStatus; // replaces isFollowing boolean
+  followStatus: FollowStatus;
+};
+
+type blockResponse = {
+  id: string;
+  blockedId: string;
+  createdAt: Date;
+  user: { id: string; name: string; username: string; avatar: string | null };
+};
+
+type muteResponse = {
+  id: string;
+  mutedId: string;
+  muteType: string;
+  createdAt: Date;
+  user: { id: string; name: string; username: string; avatar: string | null };
 };
 
 type createUserData = {
@@ -126,6 +143,7 @@ type filterMeta = {
   search?: string;
   orderBy?: string;
   sortBy?: string;
+  [key: string]: string | undefined;
 };
 
 type metaResponse = {
@@ -162,6 +180,8 @@ export {
   loginResponse,
   createUserData,
   profileResponse,
+  blockResponse,
+  muteResponse,
   userCredential,
   createVerificationData,
   userVerificationData,

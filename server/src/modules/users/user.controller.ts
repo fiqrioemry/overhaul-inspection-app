@@ -3,7 +3,7 @@ import { UserService } from "@/modules/users/user.service";
 import { responseError, responseOK } from "@/utils/response";
 import { userSuccessMessage } from "@/config/constant/user.constant";
 import { fileErrorCode, fileErrorMessage } from "@/config/constant/file.constant";
-import { followUserRequest, getFollowRequest, getFollowRequestsQuery, respondFollowRequest, updatePrivacyRequest, updateProfileRequest } from "@/modules/users/user.schema";
+import { blockUserRequest, followUserRequest, getFollowRequest, getFollowRequestsQuery, muteUserRequest, paginatedQuery, respondFollowRequest, unmuteUserRequest, updatePrivacyRequest, updateProfileRequest } from "@/modules/users/user.schema";
 
 export class UserController {
   static async searchUsersByUsername(c: Context) {
@@ -44,6 +44,54 @@ export class UserController {
     request.userId = user.userId;
     await UserService.updateProfile(c, request);
     return responseOK(c, userSuccessMessage.UPDATE_PROFILE_SUCCESS);
+  }
+
+  static async blockUser(c: Context) {
+    const user = c.get("user");
+    const payload = blockUserRequest.parse(await c.req.json());
+    payload.userId = user.userId;
+    const response = await UserService.blockUser(payload);
+    return responseOK(c, userSuccessMessage.BLOCK_USER_SUCCESS, response);
+  }
+
+  static async unblockUser(c: Context) {
+    const user = c.get("user");
+    const payload = blockUserRequest.parse(await c.req.json());
+    payload.userId = user.userId;
+    await UserService.unblockUser(payload);
+    return responseOK(c, userSuccessMessage.UNBLOCK_USER_SUCCESS);
+  }
+
+  static async getBlockedUsers(c: Context) {
+    const user = c.get("user");
+    const query = paginatedQuery.parse(c.req.query());
+    query.userId = user.userId;
+    const response = await UserService.getBlockedUsers(query);
+    return responseOK(c, userSuccessMessage.GET_BLOCKED_USERS_SUCCESS, response.data, response.meta);
+  }
+
+  static async muteUser(c: Context) {
+    const user = c.get("user");
+    const payload = muteUserRequest.parse(await c.req.json());
+    payload.userId = user.userId;
+    const response = await UserService.muteUser(payload);
+    return responseOK(c, userSuccessMessage.MUTE_USER_SUCCESS, response);
+  }
+
+  static async unmuteUser(c: Context) {
+    const user = c.get("user");
+    const payload = unmuteUserRequest.parse(await c.req.json());
+    payload.userId = user.userId;
+    await UserService.unmuteUser(payload);
+    return responseOK(c, userSuccessMessage.UNMUTE_USER_SUCCESS);
+  }
+
+  static async getMutedUsers(c: Context) {
+    const user = c.get("user");
+    const query = paginatedQuery.parse(c.req.query());
+    query.userId = user.userId;
+    const response = await UserService.getMutedUsers(query);
+    return responseOK(c, userSuccessMessage.GET_MUTED_USERS_SUCCESS, response.data, response.meta);
   }
 
   static async followUser(c: Context) {

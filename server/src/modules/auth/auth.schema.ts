@@ -69,3 +69,14 @@ export const googleCallbackSchema = z.object({
 });
 
 export type GoogleCallbackRequest = z.infer<typeof googleCallbackSchema>;
+
+export const twoFactorCodeRequest = z.object({
+  code: z.string().min(6, "Code is required"),
+});
+export type TwoFactorCodeRequest = z.infer<typeof twoFactorCodeRequest>;
+
+export const twoFactorChallengeRequest = z.object({
+  challengeToken: z.string().min(1, "Challenge token is required"),
+  code: z.string().min(6, "Code is required"),
+});
+export type TwoFactorChallengeRequest = z.infer<typeof twoFactorChallengeRequest>;

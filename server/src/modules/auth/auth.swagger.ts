@@ -95,6 +95,48 @@ export const authSchemas = {
       lastLogin: { type: "string", format: "date-time" },
       joinedAt: { type: "string", format: "date-time" },
       lastChangePasswordAt: { type: "string", format: "date-time", nullable: true },
+      twoFactorEnabled: { type: "boolean", example: false },
+    },
+  },
+
+  // 2FA setup response — secret + QR URI + backup codes
+  TwoFactorSetupResponse: {
+    type: "object",
+    properties: {
+      secret: { type: "string", example: "JBSWY3DPEHPK3PXP", description: "Base32-encoded TOTP secret untuk dimasukkan manual ke authenticator app" },
+      otpUri: { type: "string", example: "otpauth://totp/PixelApp:john@example.com?secret=JBSWY3DPEHPK3PXP&issuer=PixelApp", description: "URI yang bisa di-encode sebagai QR code" },
+      backupCodes: {
+        type: "array",
+        items: { type: "string" },
+        example: ["a1b2c3d4", "e5f6g7h8"],
+        description: "8 backup code satu-kali-pakai. Simpan di tempat aman.",
+      },
+    },
+  },
+
+  // Login challenge response (when 2FA is enabled)
+  TwoFactorChallengeRequired: {
+    type: "object",
+    properties: {
+      requiresTwoFactor: { type: "boolean", example: true },
+      challengeToken: { type: "string", example: "rand_challenge_token_abc123", description: "Token sementara (TTL 5 menit) untuk dikirim ke POST /auth/2fa/challenge" },
+    },
+  },
+
+  TwoFactorCodeRequest: {
+    type: "object",
+    required: ["code"],
+    properties: {
+      code: { type: "string", minLength: 6, maxLength: 8, example: "123456", description: "6-digit TOTP code dari authenticator app, atau 8-char backup code" },
+    },
+  },
+
+  TwoFactorChallengeRequest: {
+    type: "object",
+    required: ["challengeToken", "code"],
+    properties: {
+      challengeToken: { type: "string", example: "rand_challenge_token_abc123", description: "Challenge token dari response login" },
+      code: { type: "string", minLength: 6, maxLength: 8, example: "123456", description: "6-digit TOTP code dari authenticator app" },
     },
   },
 
@@ -182,7 +224,7 @@ export const authPaths = {
     post: {
       tags: ["Auth"],
       summary: "Login dengan email & password",
-      description: "Mengembalikan JWT session token dan set cookie otomatis.",
+      description: "Mengembalikan JWT session token jika login berhasil. Jika 2FA aktif, mengembalikan `{ requiresTwoFactor: true, challengeToken }` — lanjutkan ke `POST /auth/2fa/challenge` untuk menyelesaikan login.",
       requestBody: {
         required: true,
         content: {
@@ -191,16 +233,30 @@ export const authPaths = {
       },
       responses: {
         200: {
-          description: "Login berhasil",
+          description: "Login berhasil atau 2FA challenge diperlukan",
           content: {
             "application/json": {
               schema: {
-                type: "object",
-                properties: {
-                  status: { type: "integer", example: 200 },
-                  message: { type: "string", example: "Login successful" },
-                  data: { $ref: "#/components/schemas/LoginResponse" },
-                },
+                oneOf: [
+                  {
+                    title: "Login berhasil (tanpa 2FA)",
+                    type: "object",
+                    properties: {
+                      status: { type: "integer", example: 200 },
+                      message: { type: "string", example: "Login successful" },
+                      data: { $ref: "#/components/schemas/LoginResponse" },
+                    },
+                  },
+                  {
+                    title: "2FA challenge diperlukan",
+                    type: "object",
+                    properties: {
+                      status: { type: "integer", example: 200 },
+                      message: { type: "string", example: "Two factor authentication required" },
+                      data: { $ref: "#/components/schemas/TwoFactorChallengeRequired" },
+                    },
+                  },
+                ],
               },
             },
           },
@@ -508,6 +564,152 @@ export const authPaths = {
           description: "Provider tidak valid",
           content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } },
         },
+      },
+    },
+  },
+
+  // ── POST /v1/auth/2fa/setup ──────────────────────────────────
+  "/v1/auth/2fa/setup": {
+    post: {
+      tags: ["Auth"],
+      summary: "Mulai setup 2FA",
+      description: "Menghasilkan TOTP secret, OTP URI (untuk QR code), dan 8 backup codes satu-kali-pakai. Secret disimpan sementara di Redis (TTL 10 menit) — harus dikonfirmasi via `POST /auth/2fa/verify` sebelum aktif.",
+      security: [{ bearerAuth: [] }, { cookieAuth: [] }],
+      responses: {
+        200: {
+          description: "Setup data 2FA berhasil dibuat",
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {
+                  status: { type: "integer", example: 200 },
+                  message: { type: "string", example: "Two factor setup initiated" },
+                  data: { $ref: "#/components/schemas/TwoFactorSetupResponse" },
+                },
+              },
+            },
+          },
+        },
+        400: {
+          description: "2FA sudah diaktifkan sebelumnya",
+          content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } },
+        },
+        401: { $ref: "#/components/responses/UnauthorizedError" },
+        429: { $ref: "#/components/responses/TooManyRequests" },
+      },
+    },
+  },
+
+  // ── POST /v1/auth/2fa/verify ─────────────────────────────────
+  "/v1/auth/2fa/verify": {
+    post: {
+      tags: ["Auth"],
+      summary: "Konfirmasi aktivasi 2FA",
+      description: "Memverifikasi TOTP code untuk mengaktifkan 2FA. Secret yang tersimpan sementara di Redis akan dipersist ke database setelah verifikasi berhasil.",
+      security: [{ bearerAuth: [] }, { cookieAuth: [] }],
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": { schema: { $ref: "#/components/schemas/TwoFactorCodeRequest" } },
+        },
+      },
+      responses: {
+        200: {
+          description: "2FA berhasil diaktifkan",
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {
+                  status: { type: "integer", example: 200 },
+                  message: { type: "string", example: "Two factor authentication enabled" },
+                },
+              },
+            },
+          },
+        },
+        400: {
+          description: "Kode TOTP tidak valid atau setup belum dimulai",
+          content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } },
+        },
+        401: { $ref: "#/components/responses/UnauthorizedError" },
+        429: { $ref: "#/components/responses/TooManyRequests" },
+      },
+    },
+  },
+
+  // ── DELETE /v1/auth/2fa/disable ──────────────────────────────
+  "/v1/auth/2fa/disable": {
+    delete: {
+      tags: ["Auth"],
+      summary: "Nonaktifkan 2FA",
+      description: "Menonaktifkan 2FA setelah memverifikasi TOTP code. Secret dan backup codes dihapus dari database.",
+      security: [{ bearerAuth: [] }, { cookieAuth: [] }],
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": { schema: { $ref: "#/components/schemas/TwoFactorCodeRequest" } },
+        },
+      },
+      responses: {
+        200: {
+          description: "2FA berhasil dinonaktifkan",
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {
+                  status: { type: "integer", example: 200 },
+                  message: { type: "string", example: "Two factor authentication disabled" },
+                },
+              },
+            },
+          },
+        },
+        400: {
+          description: "2FA belum aktif atau kode TOTP tidak valid",
+          content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } },
+        },
+        401: { $ref: "#/components/responses/UnauthorizedError" },
+        429: { $ref: "#/components/responses/TooManyRequests" },
+      },
+    },
+  },
+
+  // ── POST /v1/auth/2fa/challenge ──────────────────────────────
+  "/v1/auth/2fa/challenge": {
+    post: {
+      tags: ["Auth"],
+      summary: "Selesaikan login 2FA challenge",
+      description: "Menyelesaikan proses login untuk akun dengan 2FA aktif. Memerlukan `challengeToken` dari response login dan TOTP code dari authenticator app. Mengembalikan session token yang sama seperti login biasa.",
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": { schema: { $ref: "#/components/schemas/TwoFactorChallengeRequest" } },
+        },
+      },
+      responses: {
+        200: {
+          description: "2FA challenge berhasil — session token diterbitkan",
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {
+                  status: { type: "integer", example: 200 },
+                  message: { type: "string", example: "Two factor challenge passed" },
+                  data: { $ref: "#/components/schemas/LoginResponse" },
+                },
+              },
+            },
+          },
+        },
+        400: {
+          description: "Challenge token tidak valid / expired, atau kode TOTP salah",
+          content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } },
+        },
+        429: { $ref: "#/components/responses/TooManyRequests" },
       },
     },
   },

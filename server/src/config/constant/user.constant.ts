@@ -1,4 +1,10 @@
 const userSuccessMessage = {
+  BLOCK_USER_SUCCESS: "User blocked successfully",
+  UNBLOCK_USER_SUCCESS: "User unblocked successfully",
+  GET_BLOCKED_USERS_SUCCESS: "Blocked users fetched successfully",
+  MUTE_USER_SUCCESS: "User muted successfully",
+  UNMUTE_USER_SUCCESS: "User unmuted successfully",
+  GET_MUTED_USERS_SUCCESS: "Muted users fetched successfully",
   FOLLOW_USER_SUCCESS: "User followed successfully",
   FOLLOW_REQUEST_SENT: "Follow request sent",
   UNFOLLOW_USER_SUCCESS: "User unfollowed successfully",
@@ -17,6 +23,12 @@ const userSuccessMessage = {
 };
 
 const userErrorMessage = {
+  ALREADY_BLOCKED: "You have already blocked this user",
+  NOT_BLOCKED: "You have not blocked this user",
+  CANNOT_BLOCK_SELF: "You cannot block yourself",
+  ALREADY_MUTED: "You have already muted this user",
+  NOT_MUTED: "You have not muted this user",
+  CANNOT_MUTE_SELF: "You cannot mute yourself",
   NOT_FOLLOWING: "You are not following this user",
   ALREADY_FOLLOWING: "You are already following this user",
   FOLLOW_REQUEST_ALREADY_SENT: "Follow request already sent",
@@ -30,6 +42,12 @@ const userErrorMessage = {
 };
 
 const userErrorCode = {
+  ALREADY_BLOCKED: "ALREADY_BLOCKED",
+  NOT_BLOCKED: "NOT_BLOCKED",
+  CANNOT_BLOCK_SELF: "CANNOT_BLOCK_SELF",
+  ALREADY_MUTED: "ALREADY_MUTED",
+  NOT_MUTED: "NOT_MUTED",
+  CANNOT_MUTE_SELF: "CANNOT_MUTE_SELF",
   NOT_FOLLOWING: "NOT_FOLLOWING",
   ALREADY_FOLLOWING: "ALREADY_FOLLOWING",
   FOLLOW_REQUEST_ALREADY_SENT: "FOLLOW_REQUEST_ALREADY_SENT",
@@ -47,6 +65,10 @@ const userAction = {
   LOGOUT: "logout",
   UPDATE_AVATAR: "updateAvatar",
   UPDATE_PROFILE: "updateProfile",
+  BLOCK_USER: "blockUser",
+  UNBLOCK_USER: "unblockUser",
+  MUTE_USER: "muteUser",
+  UNMUTE_USER: "unmuteUser",
 };
 
 const userLimit = {
@@ -63,6 +85,12 @@ const userLimit = {
   ACCEPT_FOLLOW_REQUEST: { limit: 60, windowSec: 60 },
   REJECT_FOLLOW_REQUEST: { limit: 60, windowSec: 60 },
   GET_FOLLOW_REQUESTS: { limit: 60, windowSec: 60 },
+  BLOCK_USER: { limit: 20, windowSec: 60 },
+  UNBLOCK_USER: { limit: 20, windowSec: 60 },
+  GET_BLOCKED_USERS: { limit: 60, windowSec: 60 },
+  MUTE_USER: { limit: 20, windowSec: 60 },
+  UNMUTE_USER: { limit: 20, windowSec: 60 },
+  GET_MUTED_USERS: { limit: 60, windowSec: 60 },
 };
 
 export { userSuccessMessage, userErrorMessage, userErrorCode, userAction, userLimit };

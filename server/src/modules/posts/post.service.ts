@@ -11,6 +11,8 @@ import { NotificationRepository } from "@/modules/notifications/notification.rep
 import { postAction, postErrorCode, postErrorMessage } from "@/config/constant/post.constant";
 import { CreatePostRequest, GetFollowingPostsRequest, GetPublicPostsRequest, GetSavedPostsRequest, ReportPostRequest, UpdatePostRequest } from "@/modules/posts/post.schema";
 import { FileRepository } from "../files/file.repository";
+import { HashtagRepository } from "@/modules/hashtags/hashtag.repository";
+import { extractHashtags, extractMentions } from "@/utils/content";
 
 export class PostService {
   static async createPost(c: Context, userId: string, request: CreatePostRequest) {
@@ -47,6 +49,37 @@ export class PostService {
 
         for (const fileRecord of fileRecords) {
           await FileService.uploadFileToStorage(c, fileRecord);
+        }
+      }
+
+      // sync hashtags
+      const tagNames = extractHashtags(request.content);
+      if (tagNames.length > 0) {
+        const hashtags = await HashtagRepository.upsertHashtags(tx, tagNames);
+        await HashtagRepository.syncPostHashtags(tx, post.id, hashtags.map((h) => h.id));
+      }
+
+      // sync mentions
+      const mentionedUsernames = extractMentions(request.content);
+      if (mentionedUsernames.length > 0) {
+        const mentionedUsers = await Promise.all(mentionedUsernames.map((un) => UserRepository.getUserByUsername(un)));
+        const validUsers = mentionedUsers.filter(Boolean) as { id: string }[];
+
+        if (validUsers.length > 0) {
+          await tx.postMention.createMany({ data: validUsers.map((u) => ({ postId: post.id, userId: u.id })), skipDuplicates: true });
+
+          const notifSettings = await Promise.all(validUsers.map((u) => NotificationRepository.getNotificationByType(u.id, NotificationType.MENTION)));
+          for (let i = 0; i < validUsers.length; i++) {
+            if (validUsers[i].id !== userId && notifSettings[i]?.status === "ENABLED") {
+              await NotificationRepository.createNotification(tx, {
+                userId: validUsers[i].id,
+                type: NotificationType.MENTION,
+                title: "You were mentioned",
+                description: `@${userId} mentioned you in a post`,
+                metadata: { postId: post.id, mentionedBy: userId, path: `/p/${post.id}` },
+              });
+            }
+          }
         }
       }
 
@@ -136,24 +169,30 @@ export class PostService {
     }
 
     return await db.$transaction(async (tx: Prisma.TransactionClient) => {
-      // update post from records
       await PostRepository.updatePost(tx, postId, request);
 
-      const previousPost = {
-        title: post.title,
-        content: post.content,
-      };
+      // re-sync hashtags
+      const tagNames = extractHashtags(request.content);
+      const hashtags = tagNames.length > 0 ? await HashtagRepository.upsertHashtags(tx, tagNames) : [];
+      await HashtagRepository.syncPostHashtags(tx, postId, hashtags.map((h) => h.id));
 
-      const updatedPost = {
-        id: post.id,
-        title: request.title,
-        content: request.content,
-      };
+      // re-sync mentions
+      await tx.postMention.deleteMany({ where: { postId } });
+      const mentionedUsernames = extractMentions(request.content);
+      if (mentionedUsernames.length > 0) {
+        const mentionedUsers = await Promise.all(mentionedUsernames.map((un) => UserRepository.getUserByUsername(un)));
+        const validUsers = mentionedUsers.filter(Boolean) as { id: string }[];
+        if (validUsers.length > 0) {
+          await tx.postMention.createMany({ data: validUsers.map((u) => ({ postId, userId: u.id })), skipDuplicates: true });
+        }
+      }
+
+      const updatedPost = { id: post.id, title: request.title, content: request.content };
 
       await UserRepository.createActivityLog(tx, {
         userId,
         action: postAction.UPDATE_POST,
-        metadata: { previousPost, updatedPost },
+        metadata: { previousPost: { title: post.title, content: post.content }, updatedPost },
       });
 
       return updatedPost;

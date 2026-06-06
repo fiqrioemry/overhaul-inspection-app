@@ -61,6 +61,7 @@ export class ChatController {
       text: body.text,
       type: body.type,
       media: body?.media,
+      replyToId: body.replyToId,
     });
 
     request.chatId = chatId;

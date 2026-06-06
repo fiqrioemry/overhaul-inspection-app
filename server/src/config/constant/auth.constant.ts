@@ -11,6 +11,10 @@ const authSuccessMessage = {
   RESEND_VERIFICATION_EMAIL_SUCCESS: "Verification email resent successfully",
   GET_ME_SUCCESS: "User fetched successfully",
   LOGOUT_ALL_SUCCESS: "All sessions logged out successfully",
+  TWO_FACTOR_SETUP_SUCCESS: "2FA setup initiated",
+  TWO_FACTOR_ENABLED: "2FA enabled successfully",
+  TWO_FACTOR_DISABLED: "2FA disabled successfully",
+  TWO_FACTOR_CHALLENGE_PASSED: "2FA verified successfully",
 };
 
 const authErrorMessage = {
@@ -34,6 +38,12 @@ const authErrorMessage = {
   OAUTH_FAILED: "OAuth authentication failed",
   OAUTH_EMAIL_NOT_PROVIDED: "Email not provided by OAuth provider",
   OAUTH_STATE_INVALID: "Invalid OAuth state, possible CSRF attack",
+  TWO_FACTOR_NOT_ENABLED: "2FA is not enabled on this account",
+  TWO_FACTOR_ALREADY_ENABLED: "2FA is already enabled",
+  TWO_FACTOR_INVALID_CODE: "Invalid or expired 2FA code",
+  TWO_FACTOR_SETUP_REQUIRED: "Complete 2FA setup before verifying",
+  TWO_FACTOR_CHALLENGE_INVALID: "Invalid or expired 2FA challenge",
+  TWO_FACTOR_REQUIRED: "2FA verification required",
 };
 
 const authErrorCode = {
@@ -57,6 +67,12 @@ const authErrorCode = {
   OAUTH_FAILED: "OAUTH_FAILED",
   OAUTH_EMAIL_NOT_PROVIDED: "OAUTH_EMAIL_NOT_PROVIDED",
   OAUTH_STATE_INVALID: "OAUTH_STATE_INVALID",
+  TWO_FACTOR_NOT_ENABLED: "TWO_FACTOR_NOT_ENABLED",
+  TWO_FACTOR_ALREADY_ENABLED: "TWO_FACTOR_ALREADY_ENABLED",
+  TWO_FACTOR_INVALID_CODE: "TWO_FACTOR_INVALID_CODE",
+  TWO_FACTOR_SETUP_REQUIRED: "TWO_FACTOR_SETUP_REQUIRED",
+  TWO_FACTOR_CHALLENGE_INVALID: "TWO_FACTOR_CHALLENGE_INVALID",
+  TWO_FACTOR_REQUIRED: "TWO_FACTOR_REQUIRED",
 };
 
 const authLimit = {
@@ -108,8 +124,16 @@ const authLimit = {
 
   RESEND_VERIFICATION_EMAIL: {
     limit: 3,
-    windowSec: 60, // 60 seconds in seconds
+    windowSec: 60,
   },
+
+  TWO_FACTOR_SETUP: { limit: 5, windowSec: 60 },
+  TWO_FACTOR_VERIFY: { limit: 10, windowSec: 60 },
+  TWO_FACTOR_DISABLE: { limit: 5, windowSec: 60 },
+  TWO_FACTOR_CHALLENGE: { limit: 10, windowSec: 60 },
+
+  TWO_FACTOR_CHALLENGE_TTL: 5 * 60, // 5 minutes in seconds
+  TWO_FACTOR_SETUP_TTL: 10 * 60,   // 10 minutes in seconds
 };
 
 export { authSuccessMessage, authErrorMessage, authErrorCode, authLimit };

@@ -5,6 +5,7 @@ const updateProfileRequest = z.object({
   name: z.string().min(1, "Name is required"),
   bio: z.string().max(160, "Bio must be at most 160 characters").optional(),
   gender: z.enum(["MALE", "FEMALE"]).optional(),
+  website: z.url("Invalid URL").max(200).optional().or(z.literal("")),
   username: z
     .string()
     .min(3, "Username must be at least 3 characters")
@@ -57,4 +58,42 @@ const updatePrivacyRequest = z.object({
 });
 export type UpdatePrivacyRequest = z.infer<typeof updatePrivacyRequest>;
 
-export { updateProfileRequest, updatePrivacyRequest, createUserActivityLogRequest, followUserRequest, respondFollowRequest, getFollowRequestsQuery, getFollowRequest };
+const blockUserRequest = z.object({
+  userId: z.cuid().optional(),
+  targetUserId: z.cuid({ message: "Target user ID is required" }),
+});
+export type BlockUserRequest = z.infer<typeof blockUserRequest>;
+
+const muteUserRequest = z.object({
+  userId: z.cuid().optional(),
+  targetUserId: z.cuid({ message: "Target user ID is required" }),
+  muteType: z.enum(["posts", "stories", "all"]).default("all"),
+});
+export type MuteUserRequest = z.infer<typeof muteUserRequest>;
+
+const unmuteUserRequest = z.object({
+  userId: z.cuid().optional(),
+  targetUserId: z.cuid({ message: "Target user ID is required" }),
+});
+export type UnmuteUserRequest = z.infer<typeof unmuteUserRequest>;
+
+const paginatedQuery = z.object({
+  userId: z.string().optional(),
+  page: z.string().default("1").optional(),
+  limit: z.string().default("20").optional(),
+});
+export type PaginatedQuery = z.infer<typeof paginatedQuery>;
+
+export {
+  updateProfileRequest,
+  updatePrivacyRequest,
+  createUserActivityLogRequest,
+  followUserRequest,
+  respondFollowRequest,
+  getFollowRequestsQuery,
+  getFollowRequest,
+  blockUserRequest,
+  muteUserRequest,
+  unmuteUserRequest,
+  paginatedQuery,
+};

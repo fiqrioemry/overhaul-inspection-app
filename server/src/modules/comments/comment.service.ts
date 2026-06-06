@@ -12,6 +12,7 @@ import { NotificationRepository } from "@/modules/notifications/notification.rep
 import { commentAction, commentErrorCode, commentErrorMessage } from "@/config/constant/comment.constant";
 import { notificationErrorCode, notificationErrorMessage } from "@/config/constant/notification.constant";
 import { CreateCommentRequest, EditCommentRequest, GetCommentsRequest } from "@/modules/comments/comment.schema";
+import { extractMentions } from "@/utils/content";
 
 export class CommentService {
   static async createComment(c: Context, request: CreateCommentRequest) {
@@ -97,6 +98,30 @@ export class CommentService {
           type: notificationType,
           metadata: notificationMetadata,
         });
+      }
+
+      // sync @mentions in comment content
+      const mentionedUsernames = extractMentions(request.content);
+      if (mentionedUsernames.length > 0) {
+        const mentionedUsers = await Promise.all(mentionedUsernames.map((un) => UserRepository.getUserByUsername(un)));
+        const validUsers = mentionedUsers.filter(Boolean) as { id: string }[];
+        if (validUsers.length > 0) {
+          await tx.postMention.createMany({ data: validUsers.map((u) => ({ commentId: comment.id, userId: u.id })), skipDuplicates: true });
+
+          for (const mentionedUser of validUsers) {
+            if (mentionedUser.id === request.userId) continue;
+            const settings = await NotificationRepository.getNotificationByType(mentionedUser.id, NotificationType.MENTION);
+            if (settings?.status === "ENABLED") {
+              await NotificationRepository.createNotification(tx, {
+                userId: mentionedUser.id,
+                type: NotificationType.MENTION,
+                title: "You were mentioned",
+                description: `@${c.var.user.username} mentioned you in a comment`,
+                metadata: { commentId: comment.id, postId: request.postId, mentionedBy: request.userId, path: `/p/${request.postId}` },
+              });
+            }
+          }
+        }
       }
 
       await UserRepository.createActivityLog(tx, {

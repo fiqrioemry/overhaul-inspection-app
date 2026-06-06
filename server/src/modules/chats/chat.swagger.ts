@@ -51,6 +51,7 @@ export const chatSchemas = {
       type: { type: "string", enum: ["text", "image", "file", "audio"], example: "text" },
       text: { type: "string", example: "Hey, how are you?" },
       mediaUrl: { type: "string", format: "uri", nullable: true },
+      replyToId: { type: "string", nullable: true, example: "cuid_msg_001", description: "ID pesan yang dibalas. null jika bukan reply." },
       readBy: {
         type: "array",
         items: { type: "string" },
@@ -65,6 +66,24 @@ export const chatSchemas = {
           name: { type: "string", example: "John Doe" },
           username: { type: "string", example: "johndoe_x7k" },
           avatar: { type: "string", format: "uri", nullable: true },
+        },
+      },
+      replyTo: {
+        type: "object",
+        nullable: true,
+        description: "Preview pesan yang dibalas. null jika bukan reply.",
+        properties: {
+          id: { type: "string", example: "cuid_msg_001" },
+          text: { type: "string", example: "Original message text..." },
+          type: { type: "string", enum: ["text", "image", "file", "audio"], example: "text" },
+          sender: {
+            type: "object",
+            properties: {
+              id: { type: "string", example: "cuid_user_456" },
+              name: { type: "string", example: "Jane Doe" },
+              username: { type: "string", example: "janedoe" },
+            },
+          },
         },
       },
     },
@@ -148,6 +167,12 @@ export const chatSchemas = {
         enum: ["text", "image", "file", "audio"],
         default: "text",
         description: "Tipe pesan. Jika bukan text, sertakan file di field `media`.",
+      },
+      replyToId: {
+        type: "string",
+        nullable: true,
+        example: "cuid_msg_001",
+        description: "ID pesan yang ingin dibalas (reply-to). Opsional.",
       },
       media: {
         type: "string",

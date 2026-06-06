@@ -234,7 +234,6 @@ export class ChatRepository {
 
   static async createMessage(tx: Prisma.TransactionClient | null, data: SendMessageRequest): Promise<messageData> {
     const db = tx ?? database;
-    // Ensure type is MessageType
     return db.message.create({
       data: {
         chatId: data.chatId!,
@@ -242,7 +241,8 @@ export class ChatRepository {
         type: data.type,
         text: data.text,
         mediaUrl: data.mediaUrl,
-        readBy: [data.senderId!], // sender auto-reads their own message
+        replyToId: data.replyToId ?? null,
+        readBy: [data.senderId!],
       },
       select: {
         id: true,
@@ -253,12 +253,13 @@ export class ChatRepository {
         mediaUrl: true,
         readBy: true,
         createdAt: true,
-        sender: {
+        sender: { select: { id: true, name: true, username: true, avatar: true } },
+        replyTo: {
           select: {
             id: true,
-            name: true,
-            username: true,
-            avatar: true,
+            text: true,
+            type: true,
+            sender: { select: { id: true, name: true, username: true } },
           },
         },
       },
@@ -301,17 +302,18 @@ export class ChatRepository {
         mediaUrl: true,
         readBy: true,
         createdAt: true,
-        sender: {
+        sender: { select: { id: true, name: true, username: true, avatar: true } },
+        replyTo: {
           select: {
             id: true,
-            name: true,
-            username: true,
-            avatar: true,
+            text: true,
+            type: true,
+            sender: { select: { id: true, name: true, username: true } },
           },
         },
       },
       orderBy: { createdAt: "desc" },
-      take: limit + 1, // fetch one extra to determine hasMore
+      take: limit + 1,
     })) as messageData[];
 
     const hasMore = results.length > limit;

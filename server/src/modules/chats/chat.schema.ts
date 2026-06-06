@@ -43,12 +43,13 @@ export const createGroupChatRequest = z.object({
 export type CreateGroupChatRequest = z.infer<typeof createGroupChatRequest>;
 
 export const sendMessageRequest = z.object({
-  chatId: z.string().cuid("Invalid chat ID").optional(), // will be set in controller
-  senderId: z.string().cuid("Invalid user ID").optional(), // will be set in controller
+  chatId: z.string().cuid("Invalid chat ID").optional(),
+  senderId: z.string().cuid("Invalid user ID").optional(),
   text: z.string().min(1, "Message cannot be empty").max(2000, "Message too long"),
   type: z.enum(["text", "image", "file", "audio"]).default("text"),
   media: chatFileSchema.optional(),
-  mediaUrl: z.string().url("Invalid media URL").optional(), // for already uploaded media
+  mediaUrl: z.string().url("Invalid media URL").optional(),
+  replyToId: z.string().cuid("Invalid message ID").optional(),
 });
 export type SendMessageRequest = z.infer<typeof sendMessageRequest>;
 

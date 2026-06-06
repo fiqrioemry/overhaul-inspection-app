@@ -17,6 +17,10 @@ auth.post("/forgot-password", limitter(authLimit.PASSWORD_FORGOT), ctrl.forgotPa
 auth.post("/resend-verification-email", limitter(authLimit.RESEND_VERIFICATION_EMAIL), ctrl.resendVerificationEmail);
 auth.post("/verify-email", limitter(authLimit.VERIFY_EMAIL), ctrl.verifyEmail);
 auth.get("/me", protect, limitter(authLimit.GET_ME), ctrl.getMe);
+auth.post("/2fa/setup", protect, limitter(authLimit.TWO_FACTOR_SETUP), ctrl.setup2FA);
+auth.post("/2fa/verify", protect, limitter(authLimit.TWO_FACTOR_VERIFY), ctrl.verify2FA);
+auth.delete("/2fa/disable", protect, limitter(authLimit.TWO_FACTOR_DISABLE), ctrl.disable2FA);
+auth.post("/2fa/challenge", limitter(authLimit.TWO_FACTOR_CHALLENGE), ctrl.challenge2FA);
 auth.get("/:provider", ctrl.oauthRedirect);
 auth.get("/:provider/callback", ctrl.oauthCallback);
 

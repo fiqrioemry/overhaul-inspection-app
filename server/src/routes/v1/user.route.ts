@@ -22,4 +22,14 @@ user.patch("/profile/privacy", protect, limitter(userLimit.UPDATE_PROFILE), ctrl
 user.patch("/profile/avatar", protect, limitter(userLimit.UPDATE_AVATAR), singleFile(fileLimit.AVATAR_OPTIONS, "avatar"), ctrl.updateAvatar);
 user.get("/follow/requests", protect, limitter(userLimit.GET_FOLLOW_REQUESTS), ctrl.getFollowRequests);
 
+// block
+user.post("/block", protect, limitter(userLimit.BLOCK_USER), ctrl.blockUser);
+user.delete("/block", protect, limitter(userLimit.UNBLOCK_USER), ctrl.unblockUser);
+user.get("/blocked", protect, limitter(userLimit.GET_BLOCKED_USERS), ctrl.getBlockedUsers);
+
+// mute
+user.post("/mute", protect, limitter(userLimit.MUTE_USER), ctrl.muteUser);
+user.delete("/mute", protect, limitter(userLimit.UNMUTE_USER), ctrl.unmuteUser);
+user.get("/muted", protect, limitter(userLimit.GET_MUTED_USERS), ctrl.getMutedUsers);
+
 export default user;

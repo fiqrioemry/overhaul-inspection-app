@@ -24,6 +24,7 @@ export const userSchemas = {
       username: { type: "string", example: "johndoe_x7k" },
       avatar: { type: "string", format: "uri", nullable: true },
       bio: { type: "string", nullable: true, example: "Software engineer & coffee addict" },
+      website: { type: "string", format: "uri", nullable: true, example: "https://johndoe.dev" },
       lastLogin: { type: "string", format: "date-time", nullable: true },
       joinedAt: { type: "string", format: "date-time" },
       isPublic: { type: "boolean", example: true },
@@ -32,6 +33,43 @@ export const userSchemas = {
       totalFollowers: { type: "integer", example: 300 },
       totalFollowings: { type: "integer", example: 150 },
       isFollowing: { type: "boolean", example: false },
+    },
+  },
+
+  BlockedUserItem: {
+    type: "object",
+    properties: {
+      id: { type: "string", example: "cuid_block_123" },
+      blockedId: { type: "string", example: "cuid_user_456" },
+      createdAt: { type: "string", format: "date-time" },
+      user: {
+        type: "object",
+        properties: {
+          id: { type: "string", example: "cuid_user_456" },
+          name: { type: "string", example: "Jane Doe" },
+          username: { type: "string", example: "janedoe" },
+          avatar: { type: "string", format: "uri", nullable: true },
+        },
+      },
+    },
+  },
+
+  MutedUserItem: {
+    type: "object",
+    properties: {
+      id: { type: "string", example: "cuid_mute_123" },
+      mutedId: { type: "string", example: "cuid_user_456" },
+      muteType: { type: "string", enum: ["posts", "stories", "all"], example: "all" },
+      createdAt: { type: "string", format: "date-time" },
+      user: {
+        type: "object",
+        properties: {
+          id: { type: "string", example: "cuid_user_456" },
+          name: { type: "string", example: "Jane Doe" },
+          username: { type: "string", example: "janedoe" },
+          avatar: { type: "string", format: "uri", nullable: true },
+        },
+      },
     },
   },
 
@@ -59,6 +97,43 @@ export const userSchemas = {
         enum: ["MALE", "FEMALE", "OTHER"],
         nullable: true,
         example: "MALE",
+      },
+      website: {
+        type: "string",
+        format: "uri",
+        maxLength: 200,
+        nullable: true,
+        example: "https://johndoe.dev",
+        description: "URL website personal. Kirim string kosong untuk menghapus.",
+      },
+      username: {
+        type: "string",
+        minLength: 3,
+        maxLength: 30,
+        example: "johndoe_x7k",
+        description: "Username baru. Harus unik dan hanya mengandung huruf kecil, angka, titik, atau underscore.",
+      },
+    },
+  },
+
+  BlockUserRequest: {
+    type: "object",
+    required: ["targetUserId"],
+    properties: {
+      targetUserId: { type: "string", example: "cuid_user_456", description: "ID user yang ingin di-block" },
+    },
+  },
+
+  MuteUserRequest: {
+    type: "object",
+    required: ["targetUserId"],
+    properties: {
+      targetUserId: { type: "string", example: "cuid_user_456", description: "ID user yang ingin di-mute" },
+      muteType: {
+        type: "string",
+        enum: ["posts", "stories", "all"],
+        default: "all",
+        description: "Jenis konten yang ingin di-mute dari user tersebut",
       },
     },
   },
@@ -393,6 +468,250 @@ export const userPaths = {
         },
         401: unauthorizedRef,
         404: { description: "User tidak ditemukan", content: errorContent },
+        429: tooManyRef,
+      },
+    },
+  },
+
+  // ── GET /v1/users/check-username ─────────────────────────────
+  "/v1/users/check-username": {
+    get: {
+      tags: ["Users"],
+      summary: "Cek ketersediaan username",
+      description: "Memeriksa apakah username sudah digunakan user lain. Username milik sendiri dianggap tersedia (false conflict).",
+      security,
+      parameters: [
+        {
+          name: "username",
+          in: "query",
+          required: true,
+          schema: { type: "string", example: "johndoe_x7k" },
+          description: "Username yang ingin dicek",
+        },
+      ],
+      responses: {
+        200: {
+          description: "Hasil cek username",
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {
+                  status: { type: "integer", example: 200 },
+                  message: { type: "string", example: "Username check successful" },
+                  data: {
+                    type: "object",
+                    properties: {
+                      available: { type: "boolean", example: true },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        401: unauthorizedRef,
+        429: tooManyRef,
+      },
+    },
+  },
+
+  // ── POST /v1/users/block ─────────────────────────────────────
+  "/v1/users/block": {
+    post: {
+      tags: ["Users"],
+      summary: "Block user",
+      description: "Memblokir user lain. Relasi follow di kedua arah dihapus secara otomatis. User yang diblokir tidak bisa melihat konten atau mengikuti blocker.",
+      security,
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": { schema: { $ref: "#/components/schemas/BlockUserRequest" } },
+        },
+      },
+      responses: {
+        200: {
+          description: "User berhasil diblokir",
+          content: simpleOK("User blocked successfully"),
+        },
+        400: { description: "Tidak bisa block diri sendiri atau sudah diblokir", content: errorContent },
+        401: unauthorizedRef,
+        404: { description: "User target tidak ditemukan", content: errorContent },
+        429: tooManyRef,
+      },
+    },
+
+    // ── DELETE /v1/users/block ────────────────────────────────
+    delete: {
+      tags: ["Users"],
+      summary: "Unblock user",
+      description: "Membatalkan blokir terhadap user. Relasi follow tidak otomatis dikembalikan.",
+      security,
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": { schema: { $ref: "#/components/schemas/BlockUserRequest" } },
+        },
+      },
+      responses: {
+        200: {
+          description: "User berhasil di-unblock",
+          content: simpleOK("User unblocked successfully"),
+        },
+        400: { description: "User tidak sedang diblokir", content: errorContent },
+        401: unauthorizedRef,
+        404: { description: "User target tidak ditemukan", content: errorContent },
+        429: tooManyRef,
+      },
+    },
+  },
+
+  // ── GET /v1/users/blocked ────────────────────────────────────
+  "/v1/users/blocked": {
+    get: {
+      tags: ["Users"],
+      summary: "Ambil daftar user yang diblokir",
+      description: "Mengembalikan daftar user yang sedang diblokir oleh user yang login, diurutkan by tanggal terbaru.",
+      security,
+      parameters: [
+        { name: "page", in: "query", schema: { type: "string", default: "1" }, description: "Nomor halaman" },
+        { name: "limit", in: "query", schema: { type: "string", default: "20" }, description: "Item per halaman" },
+      ],
+      responses: {
+        200: {
+          description: "Daftar blocked users berhasil diambil",
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {
+                  status: { type: "integer", example: 200 },
+                  message: { type: "string", example: "Get blocked users successful" },
+                  data: { type: "array", items: { $ref: "#/components/schemas/BlockedUserItem" } },
+                  meta: {
+                    type: "object",
+                    properties: {
+                      pagination: {
+                        type: "object",
+                        properties: {
+                          page: { type: "integer", example: 1 },
+                          limit: { type: "integer", example: 20 },
+                          totalItems: { type: "integer", example: 5 },
+                          totalPages: { type: "integer", example: 1 },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        401: unauthorizedRef,
+        429: tooManyRef,
+      },
+    },
+  },
+
+  // ── POST /v1/users/mute · DELETE /v1/users/mute ─────────────
+  "/v1/users/mute": {
+    post: {
+      tags: ["Users"],
+      summary: "Mute user",
+      description: "Membisukan konten dari user lain. Berbeda dari block — user yang di-mute tidak tahu mereka di-mute. `muteType` mengontrol jenis konten yang disembunyikan.",
+      security,
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": { schema: { $ref: "#/components/schemas/MuteUserRequest" } },
+        },
+      },
+      responses: {
+        200: {
+          description: "User berhasil di-mute",
+          content: simpleOK("User muted successfully"),
+        },
+        400: { description: "Tidak bisa mute diri sendiri atau sudah di-mute", content: errorContent },
+        401: unauthorizedRef,
+        404: { description: "User target tidak ditemukan", content: errorContent },
+        429: tooManyRef,
+      },
+    },
+
+    delete: {
+      tags: ["Users"],
+      summary: "Unmute user",
+      description: "Membatalkan mute terhadap user. Konten dari user tersebut akan kembali muncul di feed.",
+      security,
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": {
+            schema: {
+              type: "object",
+              required: ["targetUserId"],
+              properties: {
+                targetUserId: { type: "string", example: "cuid_user_456" },
+              },
+            },
+          },
+        },
+      },
+      responses: {
+        200: {
+          description: "User berhasil di-unmute",
+          content: simpleOK("User unmuted successfully"),
+        },
+        400: { description: "User tidak sedang di-mute", content: errorContent },
+        401: unauthorizedRef,
+        404: { description: "User target tidak ditemukan", content: errorContent },
+        429: tooManyRef,
+      },
+    },
+  },
+
+  // ── GET /v1/users/muted ──────────────────────────────────────
+  "/v1/users/muted": {
+    get: {
+      tags: ["Users"],
+      summary: "Ambil daftar user yang di-mute",
+      description: "Mengembalikan daftar user yang sedang di-mute beserta jenis mute-nya.",
+      security,
+      parameters: [
+        { name: "page", in: "query", schema: { type: "string", default: "1" }, description: "Nomor halaman" },
+        { name: "limit", in: "query", schema: { type: "string", default: "20" }, description: "Item per halaman" },
+      ],
+      responses: {
+        200: {
+          description: "Daftar muted users berhasil diambil",
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {
+                  status: { type: "integer", example: 200 },
+                  message: { type: "string", example: "Get muted users successful" },
+                  data: { type: "array", items: { $ref: "#/components/schemas/MutedUserItem" } },
+                  meta: {
+                    type: "object",
+                    properties: {
+                      pagination: {
+                        type: "object",
+                        properties: {
+                          page: { type: "integer", example: 1 },
+                          limit: { type: "integer", example: 20 },
+                          totalItems: { type: "integer", example: 3 },
+                          totalPages: { type: "integer", example: 1 },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        401: unauthorizedRef,
         429: tooManyRef,
       },
     },
