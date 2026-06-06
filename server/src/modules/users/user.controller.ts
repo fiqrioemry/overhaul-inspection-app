@@ -13,6 +13,13 @@ export class UserController {
     return responseOK(c, userSuccessMessage.SEARCH_USER_SUCCESS, response);
   }
 
+  static async checkUsernameAvailability(c: Context) {
+    const userId = c.get("user").userId;
+    const username = c.req.query("username")!;
+    const response = await UserService.checkUsernameAvailability(username, userId);
+    return responseOK(c, userSuccessMessage.CHECK_USERNAME_SUCCESS, response);
+  }
+
   static async getUserProfile(c: Context) {
     const user = await c.get("user");
     const username = c.req.param("username");

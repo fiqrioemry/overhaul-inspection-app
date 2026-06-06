@@ -9,6 +9,7 @@ import { UserController as ctrl } from "@/modules/users/user.controller";
 const user = new Hono();
 
 user.get("", protect, limitter(userLimit.SEARCH_USERS), ctrl.searchUsersByUsername);
+user.get("/check-username", protect, limitter(userLimit.CHECK_USERNAME), ctrl.checkUsernameAvailability);
 user.post("/follow/accept", protect, limitter(userLimit.ACCEPT_FOLLOW_REQUEST), ctrl.acceptFollowRequest);
 user.post("/follow/reject", protect, limitter(userLimit.REJECT_FOLLOW_REQUEST), ctrl.rejectFollowRequest);
 user.post("/follow", protect, limitter(userLimit.FOLLOW_USER), ctrl.followUser);

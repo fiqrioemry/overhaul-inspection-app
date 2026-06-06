@@ -23,3 +23,4 @@ auth.get("/:provider/callback", ctrl.oauthCallback);
 // total endpoints: 12
 
 export default auth;
+ 

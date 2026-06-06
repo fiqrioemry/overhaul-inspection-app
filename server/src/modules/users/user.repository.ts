@@ -193,7 +193,12 @@ export class UserRepository {
     const db = tx ?? database;
     await db.user.update({
       where: { id: userId },
-      data: { name: request.name, bio: request.bio, gender: request.gender },
+      data: {
+        name: request.name,
+        bio: request.bio,
+        gender: request.gender,
+        ...(request.username ? { username: request.username } : {}),
+      },
     });
   }
 

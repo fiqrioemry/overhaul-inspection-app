@@ -13,6 +13,7 @@ const userSuccessMessage = {
   UPDATE_PROFILE_SUCCESS: "User profile updated successfully",
   UPDATE_PRIVACY_SUCCESS: "User privacy updated successfully",
   FOLLOW_REQUEST_CANCELLED: "Follow request cancelled",
+  CHECK_USERNAME_SUCCESS: "Username is available",
 };
 
 const userErrorMessage = {
@@ -25,6 +26,7 @@ const userErrorMessage = {
   INVALID_USER_ID: "Invalid user ID",
   EMAIL_ALREADY_EXISTS: "Email already exists",
   USERNAME_ALREADY_EXISTS: "Username already exists",
+  USERNAME_TAKEN: "This username is already taken",
 };
 
 const userErrorCode = {
@@ -37,6 +39,7 @@ const userErrorCode = {
   INVALID_USER_ID: "INVALID_USER_ID",
   EMAIL_ALREADY_EXISTS: "EMAIL_ALREADY_EXISTS",
   USERNAME_ALREADY_EXISTS: "USERNAME_ALREADY_EXISTS",
+  USERNAME_TAKEN: "USERNAME_TAKEN",
 };
 
 const userAction = {
@@ -53,6 +56,7 @@ const userLimit = {
   UPDATE_PROFILE: { limit: 10, windowSec: 60 },
   UPDATE_AVATAR: { limit: 5, windowSec: 60 },
   SEARCH_USERS: { limit: 30, windowSec: 60 },
+  CHECK_USERNAME: { limit: 60, windowSec: 60 },
   FOLLOW_REQUEST_CANCELLED: "Follow request cancelled",
   FOLLOW_USER: { limit: 20, windowSec: 60 },
   UNFOLLOW_USER: { limit: 20, windowSec: 60 },

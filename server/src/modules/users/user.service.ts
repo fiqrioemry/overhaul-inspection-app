@@ -27,6 +27,14 @@ export class UserService {
 
   static async updateProfile(c: Context, payload: UpdateProfileRequest) {
     const { userId, ...request } = payload;
+
+    if (request.username) {
+      const existing = await UserRepository.getUserByUsername(request.username);
+      if (existing && existing.id !== userId) {
+        throw new HTTPException(409, { message: userErrorMessage.USERNAME_TAKEN, cause: userErrorCode.USERNAME_TAKEN });
+      }
+    }
+
     return await pgsql.$transaction(async (tx: Prisma.TransactionClient) => {
       await UserRepository.updateProfile(userId!, request, tx);
       const userLogs = {
@@ -36,10 +44,16 @@ export class UserService {
           name: request.name,
           bio: request.bio,
           gender: request.gender,
+          ...(request.username ? { username: request.username } : {}),
         },
       };
       await UserRepository.createActivityLog(tx, userLogs);
     });
+  }
+
+  static async checkUsernameAvailability(username: string, currentUserId: string): Promise<{ available: boolean }> {
+    const existing = await UserRepository.getUserByUsername(username);
+    return { available: !existing || existing.id === currentUserId };
   }
 
   static async updateAvatar(c: Context, userId: string, avatar: File) {
