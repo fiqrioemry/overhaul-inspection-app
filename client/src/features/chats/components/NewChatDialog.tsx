@@ -60,7 +60,7 @@ export default function NewChatDialog({ open, onOpenChange }: NewChatDialogProps
   }
 
   function handleCreateGroup() {
-    if (!groupName.trim() || selectedUsers.length === 0) return;
+    if (!groupName.trim() || selectedUsers.length < 2) return;
     createGroup(
       {
         name: groupName.trim(),
@@ -203,10 +203,15 @@ export default function NewChatDialog({ open, onOpenChange }: NewChatDialogProps
 
               {/* Create group button */}
               {mode === "group" && (
-                <Button onClick={handleCreateGroup} disabled={!groupName.trim() || selectedUsers.length === 0 || creatingGroup} className="w-full rounded-xl shrink-0">
-                  {creatingGroup && <Loader2 size={14} className="animate-spin mr-2" />}
-                  Create Group ({selectedUsers.length} members)
-                </Button>
+                <div className="shrink-0 space-y-1.5">
+                  {selectedUsers.length === 1 && (
+                    <p className="text-xs text-destructive text-center">A group chat requires at least 2 members</p>
+                  )}
+                  <Button onClick={handleCreateGroup} disabled={!groupName.trim() || selectedUsers.length < 2 || creatingGroup} className="w-full rounded-xl">
+                    {creatingGroup && <Loader2 size={14} className="animate-spin mr-2" />}
+                    {selectedUsers.length < 2 ? `Select at least 2 members (${selectedUsers.length}/2)` : `Create Group (${selectedUsers.length} members)`}
+                  </Button>
+                </div>
               )}
             </div>
           )}
