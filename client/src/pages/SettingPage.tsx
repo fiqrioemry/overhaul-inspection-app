@@ -1,16 +1,18 @@
 import { Helmet } from "react-helmet-async";
 import { Link, Outlet, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-const tabs = [
-  { value: "account", label: "Account" },
-  { value: "security", label: "Security" },
-  { value: "notifications", label: "Notifications" },
-];
-
 export default function SettingPage() {
+  const { t } = useTranslation(["setting"]);
   const { pathname } = useLocation();
   const currentTab = pathname.split("/").pop() || "account";
+
+  const tabs = [
+    { value: "account", label: t("setting:tabAccount") },
+    { value: "security", label: t("setting:tabSecurity") },
+    { value: "notifications", label: t("setting:tabNotifications") },
+  ];
 
   return (
     <>
@@ -24,8 +26,8 @@ export default function SettingPage() {
         <meta property="og:url" content={`https://pixel.ahmadfiqrioemry.com/settings/${currentTab}`} />
       </Helmet>
       <div>
-        <h1 className="text-2xl font-bold mb-2">Settings</h1>
-        <p className="text-sm text-muted-foreground">This is the settings page. You can put your user settings here.</p>
+        <h1 className="text-2xl font-bold mb-2">{t("setting:pageTitle")}</h1>
+        <p className="text-sm text-muted-foreground">{t("setting:pageSubtitle")}</p>
 
         <Tabs value={currentTab} className="w-full mt-6 gap-6">
           <TabsList className="w-full justify-start border-b rounded-none bg-transparent h-auto p-0">
