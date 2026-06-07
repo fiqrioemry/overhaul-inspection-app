@@ -11,6 +11,9 @@ const postSuccessMessage = {
   BOOKMARK_POST_SUCCESS: "Post bookmarked successfully",
   UNBOOKMARK_POST_SUCCESS: "Post unbookmarked successfully",
   REPORT_POST_SUCCESS: "Post reported successfully",
+  SHARE_POST_SUCCESS: "Post reposted successfully",
+  UNSHARE_POST_SUCCESS: "Repost removed successfully",
+  GET_POST_SHARES_SUCCESS: "Post shares fetched successfully",
 };
 
 const postErrorMessage = {
@@ -23,6 +26,9 @@ const postErrorMessage = {
   ALREADY_UNLIKED_POST: "Post already unliked by the user",
   ALREADY_REPORTED_POST: "You have already reported this post.",
   DESCRIPTION_REQUIRED: "A description is required when reason is OTHER.",
+  CANNOT_REPOST_OWN_POST: "You cannot repost your own post",
+  ALREADY_REPOSTED: "You have already reposted this post",
+  NOT_REPOSTED: "You have not reposted this post",
 };
 
 const postErrorCode = {
@@ -35,6 +41,9 @@ const postErrorCode = {
   ALREADY_UNLIKED_POST: "ALREADY_UNLIKED_POST",
   ALREADY_REPORTED_POST: "ALREADY_REPORTED_POST",
   DESCRIPTION_REQUIRED: "DESCRIPTION_REQUIRED",
+  CANNOT_REPOST_OWN_POST: "CANNOT_REPOST_OWN_POST",
+  ALREADY_REPOSTED: "ALREADY_REPOSTED",
+  NOT_REPOSTED: "NOT_REPOSTED",
 };
 
 const postAction = {
@@ -101,6 +110,18 @@ const postLimit = {
   },
   DELETE_POST: {
     limit: 10,
+    windowSec: 60,
+  },
+  SHARE_POST: {
+    limit: 20,
+    windowSec: 60,
+  },
+  UNSHARE_POST: {
+    limit: 20,
+    windowSec: 60,
+  },
+  GET_POST_SHARES: {
+    limit: 120,
     windowSec: 60,
   },
 };

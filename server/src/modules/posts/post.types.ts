@@ -29,6 +29,7 @@ export type postResponse = {
   isSaved: boolean;
   isReported: boolean;
   isRepost: boolean;
+  isReposted: boolean;
   shareCount: number;
   caption: string | null;
   originalPost: originalPostPreview | null;

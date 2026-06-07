@@ -40,6 +40,9 @@ function mapPostResponse(post: any, userId?: string): postResponse {
     isSaved: post.bookmarks?.length > 0,
     isReported: post.postReports?.length > 0,
     isRepost: post.isRepost,
+    isReposted: post.isRepost
+      ? ((post.originalPost as any)?.reposts?.length > 0)
+      : (post.reposts?.length > 0),
     shareCount: post.shareCount,
     caption: post.caption ?? null,
     originalPost: post.originalPost ?? null,
@@ -253,6 +256,9 @@ export class PostService {
       isSaved: post.bookmarks.length > 0,
       isReported: post.postReports.length > 0,
       isRepost: post.isRepost,
+      isReposted: post.isRepost
+        ? ((post.originalPost as any)?.reposts?.length > 0)
+        : (post.reposts?.length > 0),
       shareCount: post.shareCount,
       caption: post.caption ?? null,
       originalPost: post.originalPost ?? null,
@@ -367,10 +373,14 @@ export class PostService {
         throw new HTTPException(404, { message: postErrorMessage.POST_NOT_FOUND, cause: postErrorCode.POST_NOT_FOUND });
       }
 
-      // Resolve to root original if target is itself a repost
+      // Resolve to root original before any guard so checks always apply to the true owner
       const originalPostId = target.isRepost ? target.originalPostId! : target.id;
+      const original = target.isRepost ? await PostRepository.getPostById(originalPostId) : target;
+      if (!original) {
+        throw new HTTPException(404, { message: postErrorMessage.POST_NOT_FOUND, cause: postErrorCode.POST_NOT_FOUND });
+      }
 
-      if (target.userId === userId) {
+      if (original.userId === userId) {
         throw new HTTPException(400, { message: postErrorMessage.CANNOT_REPOST_OWN_POST, cause: postErrorCode.CANNOT_REPOST_OWN_POST });
       }
 
@@ -379,23 +389,17 @@ export class PostService {
         throw new HTTPException(409, { message: postErrorMessage.ALREADY_REPOSTED, cause: postErrorCode.ALREADY_REPOSTED });
       }
 
-      const original = target.isRepost ? await PostRepository.getPostById(originalPostId) : target;
-      if (!original) {
-        throw new HTTPException(404, { message: postErrorMessage.POST_NOT_FOUND, cause: postErrorCode.POST_NOT_FOUND });
-      }
-
       const repost = await PostRepository.sharePost(tx, userId, originalPostId, original, request.caption);
       await PostRepository.incrementShareCount(tx, originalPostId);
 
-      if (original.userId !== userId) {
-        await NotificationRepository.createNotification(tx, {
-          userId: original.userId,
-          type: NotificationType.REPOST,
-          title: "Your post was reposted",
-          description: "Someone reposted your post",
-          metadata: { postId: originalPostId, repostId: repost.id, repostedBy: userId },
-        });
-      }
+      // original.userId !== userId is guaranteed by the 400 guard above
+      await NotificationRepository.createNotification(tx, {
+        userId: original.userId,
+        type: NotificationType.REPOST,
+        title: "Your post was reposted",
+        description: "Someone reposted your post",
+        metadata: { postId: originalPostId, repostId: repost.id, repostedBy: userId },
+      });
 
       return repost;
     });

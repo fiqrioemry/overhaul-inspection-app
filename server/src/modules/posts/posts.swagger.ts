@@ -36,6 +36,23 @@ export const postSchemas = {
     },
   },
 
+  // ── Original post preview (dipakai di dalam repost) ──────────
+  OriginalPostPreview: {
+    type: "object",
+    nullable: true,
+    description: "Preview post asli. null jika post bukan repost.",
+    properties: {
+      id: { type: "string", example: "cuid_post_original" },
+      title: { type: "string", example: "Original post title" },
+      content: { type: "string", example: "Original post content..." },
+      galleries: {
+        type: "array",
+        items: { $ref: "#/components/schemas/GalleryItem" },
+      },
+      user: { $ref: "#/components/schemas/PostAuthor" },
+    },
+  },
+
   // ── Post list item (dipakai di public, following, by user) ───
   PostItem: {
     type: "object",
@@ -56,6 +73,11 @@ export const postSchemas = {
       isFollowing: { type: "boolean", example: true },
       isSaved: { type: "boolean", example: false },
       isReported: { type: "boolean", example: false },
+      isRepost: { type: "boolean", example: false, description: "true jika post ini adalah hasil repost" },
+      isReposted: { type: "boolean", example: false, description: "true jika user yang sedang login sudah pernah merepost post ini (atau originalnya)" },
+      shareCount: { type: "integer", example: 0, description: "Jumlah user yang sudah merepost post ini" },
+      caption: { type: "string", nullable: true, example: "Check this out!", description: "Komentar singkat dari reposter. null untuk non-repost atau plain repost." },
+      originalPost: { $ref: "#/components/schemas/OriginalPostPreview" },
     },
   },
 
@@ -84,6 +106,22 @@ export const postSchemas = {
       isFollowing: { type: "boolean", example: true },
       isSaved: { type: "boolean", example: false },
       isReported: { type: "boolean", example: false },
+      isRepost: { type: "boolean", example: false },
+      isReposted: { type: "boolean", example: false, description: "true jika user yang sedang login sudah pernah merepost post ini" },
+      shareCount: { type: "integer", example: 0 },
+      caption: { type: "string", nullable: true, example: null },
+      originalPost: { $ref: "#/components/schemas/OriginalPostPreview" },
+    },
+  },
+
+  // ── Share list item (dipakai di GET /posts/:postId/shares) ────
+  ShareListItem: {
+    type: "object",
+    properties: {
+      id: { type: "string", example: "cuid_repost_123", description: "ID post repost (bukan original)" },
+      caption: { type: "string", nullable: true, example: "Check this out!" },
+      createdAt: { type: "string", format: "date-time" },
+      user: { $ref: "#/components/schemas/PostAuthor" },
     },
   },
 
@@ -159,6 +197,19 @@ export const postSchemas = {
         maxLength: 1000,
         example: "This post contains repeated spam links.",
         description: "Wajib diisi jika reason adalah OTHER",
+      },
+    },
+  },
+
+  SharePostRequest: {
+    type: "object",
+    properties: {
+      caption: {
+        type: "string",
+        maxLength: 500,
+        nullable: true,
+        example: "Check this out!",
+        description: "Komentar singkat dari reposter (opsional). Kosongkan untuk plain repost.",
       },
     },
   },
@@ -581,6 +632,128 @@ export const postPaths = {
         401: unauthorizedRef,
         404: { description: "Post tidak ditemukan", content: errorContent },
         409: { description: "Post sudah pernah dilaporkan", content: errorContent },
+        429: tooManyRef,
+      },
+    },
+  },
+
+  // ── POST /v1/posts/:postId/share ─────────────────────────────
+  // ── DELETE /v1/posts/:postId/share ───────────────────────────
+  "/v1/posts/{postId}/share": {
+    post: {
+      tags: ["Posts"],
+      summary: "Repost (share) post",
+      description:
+        "Membuat repost dari sebuah post. `:postId` bisa berupa post biasa atau repost — service selalu menyelesaikan ke root original. " +
+        "Sertakan `caption` untuk quote-repost, atau kosongkan untuk plain repost. " +
+        "Guard: tidak bisa repost post sendiri (400), tidak bisa repost ulang post yang sudah di-repost (409). " +
+        "Menambah `shareCount` pada original post dan mengirim notifikasi `REPOST` ke pemilik original (silent jika diri sendiri).",
+      security: [{ bearerAuth: [] }, { cookieAuth: [] }],
+      parameters: [
+        {
+          name: "postId",
+          in: "path",
+          required: true,
+          description: "ID post yang ingin di-repost (boleh original maupun repost)",
+          schema: { type: "string", example: "cuid_post_123" },
+        },
+      ],
+      requestBody: {
+        required: false,
+        content: {
+          "application/json": { schema: { $ref: "#/components/schemas/SharePostRequest" } },
+        },
+      },
+      responses: {
+        201: {
+          description: "Repost berhasil dibuat",
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {
+                  status: { type: "integer", example: 201 },
+                  message: { type: "string", example: "Post reposted successfully" },
+                  data: {
+                    type: "object",
+                    properties: {
+                      id: { type: "string", example: "cuid_repost_123", description: "ID post repost yang baru dibuat" },
+                      originalPostId: { type: "string", example: "cuid_post_original" },
+                      caption: { type: "string", nullable: true, example: "Check this out!" },
+                      createdAt: { type: "string", format: "date-time" },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        400: { description: "Mencoba repost post sendiri", content: errorContent },
+        401: unauthorizedRef,
+        404: { description: "Post tidak ditemukan", content: errorContent },
+        409: { description: "User sudah pernah merepost post ini", content: errorContent },
+        429: tooManyRef,
+      },
+    },
+
+    delete: {
+      tags: ["Posts"],
+      summary: "Hapus repost (unshare)",
+      description:
+        "Menghapus repost yang dimiliki user untuk post tertentu. `:postId` adalah ID dari **original** post (bukan ID repost). " +
+        "Mengurangi `shareCount` pada original post secara atomik.",
+      security: [{ bearerAuth: [] }, { cookieAuth: [] }],
+      parameters: [
+        {
+          name: "postId",
+          in: "path",
+          required: true,
+          description: "ID original post yang ingin di-unshare",
+          schema: { type: "string", example: "cuid_post_123" },
+        },
+      ],
+      responses: {
+        200: { description: "Repost berhasil dihapus", content: simpleOK("Repost removed successfully") },
+        401: unauthorizedRef,
+        404: { description: "User tidak pernah merepost post ini", content: errorContent },
+        429: tooManyRef,
+      },
+    },
+  },
+
+  // ── GET /v1/posts/:postId/shares ─────────────────────────────
+  "/v1/posts/{postId}/shares": {
+    get: {
+      tags: ["Posts"],
+      summary: "Daftar user yang merepost",
+      description: "Mengembalikan daftar repost dari sebuah post secara terpaginasi, diurutkan dari yang terbaru.",
+      security: [{ bearerAuth: [] }, { cookieAuth: [] }],
+      parameters: [
+        {
+          name: "postId",
+          in: "path",
+          required: true,
+          description: "ID original post",
+          schema: { type: "string", example: "cuid_post_123" },
+        },
+        {
+          name: "page",
+          in: "query",
+          schema: { type: "string", default: "1" },
+        },
+        {
+          name: "limit",
+          in: "query",
+          schema: { type: "string", default: "10" },
+        },
+      ],
+      responses: {
+        200: {
+          description: "Daftar share berhasil diambil",
+          content: paginatedResponse("ShareListItem", "Post shares fetched successfully"),
+        },
+        401: unauthorizedRef,
+        404: { description: "Post tidak ditemukan", content: errorContent },
         429: tooManyRef,
       },
     },

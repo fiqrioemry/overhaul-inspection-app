@@ -3,13 +3,16 @@ import { pgsql as database } from "@/lib/database";
 import { postReportThreshold } from "@/config/constant/post.constant";
 import { CreatePostRequest, GetFollowingPostsRequest, GetPublicPostsRequest, GetSavedPostsRequest, ReportPostRequest, UpdatePostRequest } from "@/modules/posts/post.schema";
 
-const originalPostSelect = {
-  id: true,
-  title: true,
-  content: true,
-  galleries: { select: { id: true, url: true, order: true } },
-  user: { select: { id: true, name: true, username: true, avatar: true } },
-} satisfies Prisma.PostSelect;
+function makeOriginalPostSelect(userId?: string): Prisma.PostSelect {
+  return {
+    id: true,
+    title: true,
+    content: true,
+    galleries: { select: { id: true, url: true, order: true } },
+    user: { select: { id: true, name: true, username: true, avatar: true } },
+    ...(userId ? { reposts: { where: { userId, isRepost: true }, select: { id: true } } } : {}),
+  };
+}
 
 const feedPostSelect = {
   id: true,
@@ -21,7 +24,6 @@ const feedPostSelect = {
   isRepost: true,
   shareCount: true,
   caption: true,
-  originalPost: { select: originalPostSelect },
 } satisfies Prisma.PostSelect;
 
 export class PostRepository {
@@ -53,6 +55,8 @@ export class PostRepository {
         where,
         select: {
           ...feedPostSelect,
+          originalPost: { select: makeOriginalPostSelect(query.userId) },
+          reposts: { where: { userId: query.userId, isRepost: true }, select: { id: true } },
           postReports: {
             where: { userId: query.userId },
             select: { id: true, userId: true },
@@ -122,7 +126,8 @@ export class PostRepository {
         isRepost: true,
         shareCount: true,
         caption: true,
-        originalPost: { select: originalPostSelect },
+        originalPost: { select: makeOriginalPostSelect(userId) },
+        reposts: { where: { userId, isRepost: true }, select: { id: true } },
         postReports: {
           where: { userId },
           select: { id: true },
@@ -191,6 +196,8 @@ export class PostRepository {
         where,
         select: {
           ...feedPostSelect,
+          originalPost: { select: makeOriginalPostSelect(userId) },
+          reposts: { where: { userId, isRepost: true }, select: { id: true } },
           postReports: {
             where: { userId: query.userId },
             select: { id: true, userId: true },
@@ -247,6 +254,8 @@ export class PostRepository {
         where,
         select: {
           ...feedPostSelect,
+          originalPost: { select: makeOriginalPostSelect(query.userId) },
+          reposts: { where: { userId: query.userId, isRepost: true }, select: { id: true } },
           postReports: {
             where: { userId: query.userId },
             select: { id: true, userId: true },
@@ -344,6 +353,8 @@ export class PostRepository {
           post: {
             select: {
               ...feedPostSelect,
+              originalPost: { select: makeOriginalPostSelect(userId) },
+              reposts: { where: { userId, isRepost: true }, select: { id: true } },
               postReports: {
                 where: { userId: query.userId },
                 select: { id: true, userId: true },

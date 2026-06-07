@@ -17,6 +17,8 @@ const chatSuccessMessage = {
   DELETE_CHAT_SUCCESS: "Chat deleted successfully",
   DELETE_MESSAGES_SUCCESS: "Messages deleted successfully",
   COUNT_UNREAD_SUCCESS: "Unread messages count retrieved successfully",
+  ADD_REACTION_SUCCESS: "Reaction added",
+  REMOVE_REACTION_SUCCESS: "Reaction removed",
 };
 
 const chatErrorMessage = {
@@ -36,6 +38,9 @@ const chatErrorMessage = {
   MAX_GROUP_MEMBERS: "Group chat cannot exceed 100 members",
   USER_NOT_FOUND: "One or more users not found",
   LAST_ADMIN: "Cannot leave group as the last admin. Promote another member first",
+  MESSAGE_NOT_IN_CHAT: "Message does not belong to this chat",
+  REACTION_NOT_FOUND: "Reaction not found",
+  INVALID_EMOJI: "Invalid emoji",
 };
 
 const chatErrorCode = {
@@ -55,6 +60,9 @@ const chatErrorCode = {
   MAX_GROUP_MEMBERS: "MAX_GROUP_MEMBERS",
   USER_NOT_FOUND: "USER_NOT_FOUND",
   LAST_ADMIN: "LAST_ADMIN",
+  MESSAGE_NOT_IN_CHAT: "MESSAGE_NOT_IN_CHAT",
+  REACTION_NOT_FOUND: "REACTION_NOT_FOUND",
+  INVALID_EMOJI: "INVALID_EMOJI",
 };
 
 const chatLimit = {
@@ -71,6 +79,8 @@ const chatLimit = {
   PROMOTE_DEMOTE: { limit: 20, windowSec: 60 },
   COUNT_UNREAD: { limit: 30, windowSec: 60 },
   READ_MESSAGES: { limit: 120, windowSec: 60 },
+  ADD_REACTION: { limit: 60, windowSec: 60 },
+  REMOVE_REACTION: { limit: 60, windowSec: 60 },
 };
 
 const chatWsEvent = {
@@ -79,6 +89,7 @@ const chatWsEvent = {
   PARTICIPANT_JOINED: "chat:participant_joined",
   PARTICIPANT_LEFT: "chat:participant_left",
   GROUP_UPDATED: "chat:group_updated",
+  REACTION_UPDATED: "chat:reaction_updated",
 };
 
 export { chatSuccessMessage, chatErrorMessage, chatErrorCode, chatLimit, chatWsEvent };
