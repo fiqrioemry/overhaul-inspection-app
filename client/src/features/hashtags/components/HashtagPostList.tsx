@@ -48,12 +48,8 @@ export default function HashtagPostList({ name }: HashtagPostListProps) {
             Loading more posts...
           </div>
         )}
-        {!isLoading && !hasNextPage && allPosts.length > 0 && (
-          <p className="text-sm text-muted-foreground">You've reached the end</p>
-        )}
-        {!isLoading && allPosts.length === 0 && (
-          <p className="text-sm text-muted-foreground">No posts found for #{name}</p>
-        )}
+        {!isLoading && !hasNextPage && allPosts.length > 0 && <p className="text-sm text-muted-foreground">You've reached the end</p>}
+        {!isLoading && allPosts.length === 0 && <p className="text-sm text-muted-foreground">No posts found for #{name}</p>}
       </div>
     </div>
   );

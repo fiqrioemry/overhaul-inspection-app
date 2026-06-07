@@ -39,6 +39,7 @@ export function useLikePost(postId: string) {
     onSuccess: (res) => {
       toast.success(res.message || "You Liked the post");
       queryClient.invalidateQueries({ queryKey: POST_KEYS.all });
+      queryClient.invalidateQueries({ queryKey: ["hashtags"] });
     },
   });
 }
@@ -49,6 +50,7 @@ export function useUnlikePost(postId: string) {
     onSuccess: (res) => {
       toast.success(res.message || "You Unliked the post");
       queryClient.invalidateQueries({ queryKey: POST_KEYS.all });
+      queryClient.invalidateQueries({ queryKey: ["hashtags"] });
     },
   });
 }
@@ -142,6 +144,7 @@ export function useUnsavePost(postId: string) {
     onSuccess: (res) => {
       toast.success(res.message || "You Unsaved the post");
       queryClient.invalidateQueries({ queryKey: POST_KEYS.all });
+      queryClient.invalidateQueries({ queryKey: ["hashtags"] });
     },
   });
 }
@@ -153,6 +156,7 @@ export function useSavePost(postId: string) {
     onSuccess: (res) => {
       toast.success(res.message || "You Saved the post");
       queryClient.invalidateQueries({ queryKey: POST_KEYS.all });
+      queryClient.invalidateQueries({ queryKey: ["hashtags"] });
     },
   });
 }

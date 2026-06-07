@@ -46,7 +46,7 @@ export default function CommentOptionMenu({ commentId, isEditable }: CommentOpti
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} disabled={deleteComment.isPending} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            <AlertDialogAction variant="destructive" onClick={handleDelete} disabled={deleteComment.isPending}>
               {deleteComment.isPending ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
