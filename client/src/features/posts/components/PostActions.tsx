@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import type { Post } from "@/types/posts.type";
@@ -9,9 +8,10 @@ import { useLikePost, useSavePost, useUnlikePost, useUnsavePost } from "@/featur
 interface PostActionsProps {
   post: Post;
   showCommentCount?: boolean;
+  onCommentClick?: () => void;
 }
 
-export default function PostActions({ post }: PostActionsProps) {
+export default function PostActions({ post, onCommentClick }: PostActionsProps) {
   const [copied, setCopied] = useState(false);
   const savePost = useSavePost(post.id);
   const unsavePost = useUnsavePost(post.id);
@@ -34,6 +34,10 @@ export default function PostActions({ post }: PostActionsProps) {
   const isPending = likePost.isPending || unlikePost.isPending;
 
   const handleComment = () => {
+    if (onCommentClick) {
+      onCommentClick();
+      return;
+    }
     if (!isOpen) openDialog({ isOpen: true, target: post.id });
   };
 
@@ -84,7 +88,7 @@ export default function PostActions({ post }: PostActionsProps) {
 
         {/* Comment */}
         <div className="flex items-center gap-2">
-          <button disabled={isOpen} onClick={handleComment} className="group flex items-center gap-1 transition-transform active:scale-90" aria-label="View comments">
+          <button disabled={!onCommentClick && isOpen} onClick={handleComment} className="group flex items-center gap-1 transition-transform active:scale-90" aria-label="View comments">
             <MessageCircle className="h-6 w-6 text-foreground group-hover:text-muted-foreground transition-colors" />
           </button>
           <span>{post.totalComments ?? 0}</span>

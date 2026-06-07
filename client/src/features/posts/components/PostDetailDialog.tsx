@@ -1,5 +1,5 @@
 // src/features/posts/components/PostDetailDialog.tsx
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import type { Post } from "@/types/posts.type";
 import { formatDistanceToNow } from "date-fns";
 import { usePostStore } from "@/stores/post.store";
@@ -7,15 +7,18 @@ import PostGallery from "@/features/posts/components/PostGallery";
 import PostHeading from "@/features/posts/components/PostHeading";
 import CommentList from "@/features/comments/components/CommentList";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import CreateCommentForm from "@/features/comments/components/CreateCommentForm";
+import CreateCommentForm, { type CreateCommentFormHandle } from "@/features/comments/components/CreateCommentForm";
 import PostActions, { PostActionCounts } from "@/features/posts/components/PostActions";
 
 interface PostDetailDialogProps {
   post: Post;
+  focusComment?: boolean;
+  onFocused?: () => void;
 }
 
-export default function PostDetailDialog({ post }: PostDetailDialogProps) {
+export default function PostDetailDialog({ post, focusComment, onFocused }: PostDetailDialogProps) {
   const { isOpen, target, openDialog, replyTo, onReply } = usePostStore();
+  const commentFormRef = useRef<CreateCommentFormHandle>(null);
 
   // Reset reply state when dialog closes
   const handleOpenChange = (open: boolean) => {
@@ -25,6 +28,10 @@ export default function PostDetailDialog({ post }: PostDetailDialogProps) {
 
   const handleCancelReply = () => {
     onReply?.(null);
+  };
+
+  const handleCommentClick = () => {
+    commentFormRef.current?.focus();
   };
 
   const images = post.galleries ?? [];
@@ -39,6 +46,17 @@ export default function PostDetailDialog({ post }: PostDetailDialogProps) {
       openDialog({ isOpen: false, target: "" });
     };
   }, [openDialog]);
+
+  // Auto-focus textarea when dialog opens with focusComment=true (e.g. from ExplorePostCard)
+  useEffect(() => {
+    if (isOpen && target === post.id && focusComment) {
+      const timer = setTimeout(() => {
+        commentFormRef.current?.focus();
+        onFocused?.();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, target, post.id, focusComment, onFocused]);
 
   return (
     <Dialog open={isOpen && target === post.id} onOpenChange={handleOpenChange}>
@@ -59,14 +77,14 @@ export default function PostDetailDialog({ post }: PostDetailDialogProps) {
 
           {/* Actions */}
           <div className="border-t shrink-0">
-            <PostActions post={post} />
+            <PostActions post={post} onCommentClick={handleCommentClick} />
             <PostActionCounts post={post} />
             {createdAt && <span className="block px-4 pb-1 text-[10px] uppercase tracking-wide text-muted-foreground">{createdAt}</span>}
           </div>
 
           {/* Comment / Reply input */}
           <div className="border-t shrink-0">
-            <CreateCommentForm postId={post.id} parentCommentId={replyTo?.commentId} replyToUsername={replyTo?.username} placeholder="Add a comment..." onCancel={handleCancelReply} />
+            <CreateCommentForm ref={commentFormRef} postId={post.id} parentCommentId={replyTo?.commentId} replyToUsername={replyTo?.username} placeholder="Add a comment..." onCancel={handleCancelReply} />
           </div>
         </div>
       </DialogContent>

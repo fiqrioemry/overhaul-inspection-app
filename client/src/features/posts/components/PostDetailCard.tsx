@@ -1,5 +1,5 @@
 // src/features/posts/components/PostDetailCard.tsx
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { formatDistanceToNow } from "date-fns";
 import type { Post } from "@/types/posts.type";
 import { usePostStore } from "@/stores/post.store";
@@ -7,7 +7,7 @@ import PostActions from "@/features/posts/components/PostActions";
 import PostGallery from "@/features/posts/components/PostGallery";
 import PostHeading from "@/features/posts/components/PostHeading";
 import CommentList from "@/features/comments/components/CommentList";
-import CreateCommentForm from "@/features/comments/components/CreateCommentForm";
+import CreateCommentForm, { type CreateCommentFormHandle } from "@/features/comments/components/CreateCommentForm";
 
 interface PostDetailCardProps {
   post: Post | null;
@@ -15,9 +15,14 @@ interface PostDetailCardProps {
 
 export default function PostDetailCard({ post }: PostDetailCardProps) {
   const { replyTo, onReply } = usePostStore();
+  const commentFormRef = useRef<CreateCommentFormHandle>(null);
 
   const handleCancelReply = () => {
     onReply(null);
+  };
+
+  const handleCommentClick = () => {
+    commentFormRef.current?.focus();
   };
 
   useEffect(() => {
@@ -44,12 +49,12 @@ export default function PostDetailCard({ post }: PostDetailCardProps) {
           <CommentList post={post} />
 
           <div className="border-t shrink-0">
-            <PostActions post={post} />
+            <PostActions post={post} onCommentClick={handleCommentClick} />
             {createdAt && <span className="block px-4 pb-1 text-[10px] uppercase tracking-wide text-muted-foreground">{createdAt}</span>}
           </div>
 
           <div className="border-t shrink-0">
-            <CreateCommentForm postId={post.id} parentCommentId={replyTo?.commentId} replyToUsername={replyTo?.username} placeholder="Add a comment..." onCancel={handleCancelReply} />
+            <CreateCommentForm ref={commentFormRef} postId={post.id} parentCommentId={replyTo?.commentId} replyToUsername={replyTo?.username} placeholder="Add a comment..." onCancel={handleCancelReply} />
           </div>
         </div>
       </div>

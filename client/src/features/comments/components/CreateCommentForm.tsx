@@ -3,9 +3,11 @@
 import { cn } from "@/lib/utils";
 import { Smile, Send, X } from "lucide-react";
 import { useTheme } from "next-themes"; // remove if not using next-themes
-import { useState, useRef, useEffect, useLayoutEffect } from "react";
+import { useState, useRef, useEffect, useLayoutEffect, forwardRef, useImperativeHandle } from "react";
 import { useCreateComment } from "@/features/comments/comments.query";
 import EmojiPicker, { type EmojiClickData, Theme } from "emoji-picker-react";
+
+export type CreateCommentFormHandle = { focus: () => void };
 
 interface CreateCommentFormProps {
   postId: string;
@@ -18,7 +20,10 @@ interface CreateCommentFormProps {
   compact?: boolean;
 }
 
-export default function CreateCommentForm({ postId, parentCommentId, replyToUsername, placeholder = "Add a comment...", autoFocus = false, onSuccess, onCancel, compact = false }: CreateCommentFormProps) {
+const CreateCommentForm = forwardRef<CreateCommentFormHandle, CreateCommentFormProps>(function CreateCommentForm(
+  { postId, parentCommentId, replyToUsername, placeholder = "Add a comment...", autoFocus = false, onSuccess, onCancel, compact = false },
+  ref,
+) {
   const [content, setContent] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -31,6 +36,10 @@ export default function CreateCommentForm({ postId, parentCommentId, replyToUser
   // If you're not using next-themes, replace with:
   // const resolvedTheme = "light";
   const { resolvedTheme } = useTheme();
+
+  useImperativeHandle(ref, () => ({
+    focus: () => textareaRef.current?.focus(),
+  }));
 
   const isReplyMode = !!parentCommentId && !!replyToUsername;
 
@@ -234,4 +243,6 @@ export default function CreateCommentForm({ postId, parentCommentId, replyToUser
       </div>
     </div>
   );
-}
+});
+
+export default CreateCommentForm;

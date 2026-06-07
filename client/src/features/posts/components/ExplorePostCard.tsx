@@ -1,5 +1,6 @@
 // features/feed/components/PostCard.tsx
 
+import { useState } from "react";
 import type { Post } from "@/types/posts.type";
 import { usePostStore } from "@/stores/post.store";
 import { GalleryHorizontalEnd, Heart, MessageCircle } from "lucide-react";
@@ -11,14 +12,21 @@ type PostCardProps = {
 
 export default function ExplorePostCard({ post }: PostCardProps) {
   const { openDialog, isOpen } = usePostStore();
+  const [focusComment, setFocusComment] = useState(false);
 
-  const handleComment = () => {
+  const handleImageClick = () => {
+    openDialog({ isOpen: !isOpen, target: post.id });
+  };
+
+  const handleCommentClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setFocusComment(true);
     openDialog({ isOpen: !isOpen, target: post.id });
   };
 
   return (
     <>
-      <div className="group relative aspect-square cursor-pointer overflow-hidden rounded-sm bg-muted" onClick={() => openDialog({ isOpen: !isOpen, target: post.id })}>
+      <div className="group relative aspect-square cursor-pointer overflow-hidden rounded-sm bg-muted" onClick={handleImageClick}>
         {/* Gambar utama */}
         <img src={post.galleries[0]?.url} alt={post.content} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
 
@@ -44,14 +52,14 @@ export default function ExplorePostCard({ post }: PostCardProps) {
               <span className="text-xs font-medium drop-shadow">{post.totalLikes}</span>
             </button>
 
-            <button onClick={handleComment} className="flex items-center gap-1 text-white transition-transform active:scale-90">
+            <button onClick={handleCommentClick} className="flex items-center gap-1 text-white transition-transform active:scale-90">
               <MessageCircle className="h-5 w-5 drop-shadow" strokeWidth={2} />
               <span className="text-xs font-medium drop-shadow">{post.totalComments}</span>
             </button>
           </div>
         </div>
       </div>
-      <PostDetailDialog post={post} />
+      <PostDetailDialog post={post} focusComment={focusComment} onFocused={() => setFocusComment(false)} />
     </>
   );
 }
