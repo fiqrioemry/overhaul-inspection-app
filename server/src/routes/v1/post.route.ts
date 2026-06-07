@@ -21,5 +21,8 @@ post.delete("/:postId", protect, limitter(postLimit.DELETE_POST), ctrl.deletePos
 post.post("/:postId/save", protect, limitter(postLimit.SAVE_POST), ctrl.savePost);
 post.post("/:postId/unsave", protect, limitter(postLimit.UNSAVE_POST), ctrl.unsavePost);
 post.post("/:postId/report", protect, limitter(postLimit.REPORT_POST), ctrl.reportPost);
+post.post("/:postId/share", protect, limitter(postLimit.SHARE_POST), ctrl.sharePost);
+post.delete("/:postId/share", protect, limitter(postLimit.UNSHARE_POST), ctrl.unsharePost);
+post.get("/:postId/shares", protect, limitter(postLimit.GET_POST_SHARES), ctrl.getPostShares);
 
 export default post;

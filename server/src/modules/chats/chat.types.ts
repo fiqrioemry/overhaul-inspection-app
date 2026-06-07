@@ -22,6 +22,12 @@ export type messageReplyTo = {
   sender: { id: string; name: string; username: string };
 } | null;
 
+export type reactionGroup = {
+  emoji: string;
+  count: number;
+  userIds: string[];
+};
+
 export type messageData = {
   id: string;
   chatId: string;
@@ -38,6 +44,14 @@ export type messageData = {
     avatar: string | null;
   };
   replyTo: messageReplyTo;
+  reactions: reactionGroup[];
+};
+
+export type wsReactionPayload = {
+  event: string;
+  chatId: string;
+  messageId: string;
+  reactions: reactionGroup[];
 };
 
 export type lastMessageData = {
@@ -121,4 +135,9 @@ export type wsGroupUpdatedPayload = {
   name?: string;
   avatar?: string;
   description?: string;
+};
+
+export type reactionToggleResult = {
+  toggled: "added" | "removed";
+  reactions: reactionGroup[];
 };

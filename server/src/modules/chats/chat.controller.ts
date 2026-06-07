@@ -10,6 +10,7 @@ import {
   createGroupChatRequest,
   deleteMessagesRequest,
   createPrivateChatRequest,
+  reactionRequest,
 } from "@/modules/chats/chat.schema";
 import { Context } from "hono";
 import { responseOK } from "@/utils/response";
@@ -139,5 +140,21 @@ export class ChatController {
     const user = c.get("user");
     const response = await ChatService.countUnreadMessages(user.userId);
     return responseOK(c, chatSuccessMessage.COUNT_UNREAD_SUCCESS, response);
+  }
+
+  static async addReaction(c: Context) {
+    const user = c.get("user");
+    const { chatId, messageId } = c.req.param();
+    const request = reactionRequest.parse(await c.req.json());
+    const response = await ChatService.addReaction(user.userId, chatId, messageId, request);
+    return responseOK(c, chatSuccessMessage.ADD_REACTION_SUCCESS, response);
+  }
+
+  static async removeReaction(c: Context) {
+    const user = c.get("user");
+    const { chatId, messageId } = c.req.param();
+    const request = reactionRequest.parse(await c.req.json());
+    const reactions = await ChatService.removeReaction(user.userId, chatId, messageId, request);
+    return responseOK(c, chatSuccessMessage.REMOVE_REACTION_SUCCESS, reactions);
   }
 }

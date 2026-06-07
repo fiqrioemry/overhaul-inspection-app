@@ -69,8 +69,9 @@ model User {
   following    Following[] @relation("UserFollowing")
 
   activities   UserActivityLog[]
-  sentMessages Message[]
-  oauthAccounts OAuthAccount[]
+  sentMessages     Message[]
+  oauthAccounts    OAuthAccount[]
+  messageReactions MessageReaction[]
 
   blockedUsers   UserBlock[] @relation("BlockedBy")
   blockedByUsers UserBlock[] @relation("BlockedUsers")
@@ -153,25 +154,32 @@ model UserActivityLog {
 }
 
 model Post {
-  id        String   @id @default(cuid())
-  userId    String   @map("user_id")
-  title    String 
-  content   String
-  isArchived Boolean  @default(false) @map("is_archived")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime? @map("updated_at")
-  deletedAt DateTime? @map("deleted_at")
+  id             String   @id @default(cuid())
+  userId         String   @map("user_id")
+  title          String
+  content        String
+  isArchived     Boolean  @default(false) @map("is_archived")
+  isRepost       Boolean  @default(false) @map("is_repost")
+  originalPostId String?  @map("original_post_id")
+  shareCount     Int      @default(0)     @map("share_count")
+  caption        String?
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime? @map("updated_at")
+  deletedAt      DateTime? @map("deleted_at")
 
-  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  postReports PostReport[]
-  comments   Comment[]
-  bookmarks  Bookmark[]
-  galleries  PostGallery[]
-  likes      Like[]
-  hashtags   PostHashtag[]
-  mentions   PostMention[]
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  originalPost Post?         @relation("PostReposts", fields: [originalPostId], references: [id], onDelete: Cascade)
+  reposts      Post[]        @relation("PostReposts")
+  postReports  PostReport[]
+  comments     Comment[]
+  bookmarks    Bookmark[]
+  galleries    PostGallery[]
+  likes        Like[]
+  hashtags     PostHashtag[]
+  mentions     PostMention[]
 
   @@index([userId])
+  @@index([originalPostId])
   @@map("posts")
 }
 
@@ -357,9 +365,10 @@ enum NotificationType {
   LIKE
   COMMENT
   FOLLOW
-  REQUEST 
+  REQUEST
   MENTION
   MESSAGE
+  REPOST
 }
 
 enum NotificationChannel {
@@ -415,15 +424,31 @@ model Message {
   replyToId   String?     @map("reply_to_id")
   createdAt   DateTime    @default(now()) @map("created_at")
 
-  chat              Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
-  sender            User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
-  lastMessageInChat Chat?    @relation("LastMessage")
-  replyTo           Message? @relation("MessageReplies", fields: [replyToId], references: [id], onDelete: SetNull)
-  replies           Message[] @relation("MessageReplies")
+  chat              Chat              @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  sender            User              @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  lastMessageInChat Chat?             @relation("LastMessage")
+  replyTo           Message?          @relation("MessageReplies", fields: [replyToId], references: [id], onDelete: SetNull)
+  replies           Message[]         @relation("MessageReplies")
+  reactions         MessageReaction[]
 
   @@index([chatId])
   @@index([senderId])
   @@map("messages")
+}
+
+model MessageReaction {
+  id        String   @id @default(cuid())
+  messageId String   @map("message_id")
+  userId    String   @map("user_id")
+  emoji     String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId, emoji])
+  @@index([messageId])
+  @@map("message_reactions")
 }
 
 enum PostReportReason {

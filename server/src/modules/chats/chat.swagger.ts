@@ -86,6 +86,15 @@ export const chatSchemas = {
           },
         },
       },
+      reactions: {
+        type: "array",
+        items: { $ref: "#/components/schemas/ReactionGroup" },
+        description: "Reaksi yang sudah diberikan pada pesan ini, dikelompokkan per emoji.",
+        example: [
+          { emoji: "❤️", count: 2, userIds: ["cuid_user_123", "cuid_user_456"] },
+          { emoji: "😂", count: 1, userIds: ["cuid_user_789"] },
+        ],
+      },
     },
   },
 
@@ -253,6 +262,33 @@ export const chatSchemas = {
         minItems: 1,
         example: ["cuid_msg_123", "cuid_msg_456"],
         description: "Hanya bisa menghapus pesan milik sendiri.",
+      },
+    },
+  },
+
+  ReactionGroup: {
+    type: "object",
+    description: "Agregasi reaksi untuk satu emoji pada sebuah pesan",
+    properties: {
+      emoji: { type: "string", example: "❤️", description: "Emoji yang digunakan" },
+      count: { type: "integer", example: 3, description: "Jumlah user yang mereaksi dengan emoji ini" },
+      userIds: {
+        type: "array",
+        items: { type: "string" },
+        example: ["cuid_user_123", "cuid_user_456"],
+        description: "Daftar userId yang mereaksi dengan emoji ini",
+      },
+    },
+  },
+
+  ReactionRequest: {
+    type: "object",
+    required: ["emoji"],
+    properties: {
+      emoji: {
+        type: "string",
+        example: "❤️",
+        description: "Emoji yang ingin ditambahkan/dihapus. Harus salah satu dari set yang didukung: ❤️ 😂 😮 😢 😡 👍 👎 🔥 🎉 👀",
       },
     },
   },
@@ -838,6 +874,133 @@ export const chatPaths = {
         401: unauthorizedRef,
         403: { description: "Bukan ADMIN group ini", content: errorContent },
         404: { description: "Chat atau participant tidak ditemukan", content: errorContent },
+        429: tooManyRef,
+      },
+    },
+  },
+
+  // ── POST /v1/chats/:chatId/messages/:messageId/reactions ─────
+  // ── DELETE /v1/chats/:chatId/messages/:messageId/reactions ────
+  "/v1/chats/{chatId}/messages/{messageId}/reactions": {
+    post: {
+      tags: ["Chats"],
+      summary: "Toggle reaksi pada pesan",
+      description:
+        "Menambahkan reaksi emoji pada sebuah pesan. Jika user sudah mereaksi dengan emoji yang sama, reaksi dihapus (toggle off). " +
+        "Emoji yang diizinkan: ❤️ 😂 😮 😢 😡 👍 👎 🔥 🎉 👀. " +
+        "Setelah toggle, event `chat:reaction_updated` di-broadcast via WebSocket ke channel `chat:{chatId}` berisi grouped reactions terbaru. " +
+        "Response menyertakan `toggled: \"added\" | \"removed\"` agar client bisa tahu hasil operasi.",
+      security,
+      parameters: [
+        {
+          name: "chatId",
+          in: "path",
+          required: true,
+          schema: { type: "string", example: "cuid_chat_123" },
+        },
+        {
+          name: "messageId",
+          in: "path",
+          required: true,
+          schema: { type: "string", example: "cuid_msg_123" },
+        },
+      ],
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": { schema: { $ref: "#/components/schemas/ReactionRequest" } },
+        },
+      },
+      responses: {
+        200: {
+          description: "Reaksi berhasil ditambahkan atau dihapus (toggle)",
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {
+                  status: { type: "integer", example: 200 },
+                  message: { type: "string", example: "Reaction added" },
+                  data: {
+                    type: "object",
+                    properties: {
+                      toggled: {
+                        type: "string",
+                        enum: ["added", "removed"],
+                        example: "added",
+                        description: "Hasil operasi toggle: \"added\" jika reaksi baru ditambahkan, \"removed\" jika reaksi yang sama sudah ada dan dihapus.",
+                      },
+                      reactions: {
+                        type: "array",
+                        items: { $ref: "#/components/schemas/ReactionGroup" },
+                        description: "Grouped reactions terbaru untuk pesan ini setelah operasi.",
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        400: { description: "Emoji tidak valid / tidak termasuk dalam set yang diizinkan", content: errorContent },
+        401: unauthorizedRef,
+        403: { description: "User bukan participant chat ini", content: errorContent },
+        404: { description: "Chat atau pesan tidak ditemukan", content: errorContent },
+        429: tooManyRef,
+      },
+    },
+
+    delete: {
+      tags: ["Chats"],
+      summary: "Hapus reaksi dari pesan",
+      description:
+        "Menghapus reaksi emoji yang sudah diberikan user pada sebuah pesan. Berbeda dengan POST (toggle), endpoint ini mengembalikan 404 jika reaksi tidak ditemukan. " +
+        "Setelah penghapusan, event `chat:reaction_updated` di-broadcast ke channel `chat:{chatId}`.",
+      security,
+      parameters: [
+        {
+          name: "chatId",
+          in: "path",
+          required: true,
+          schema: { type: "string", example: "cuid_chat_123" },
+        },
+        {
+          name: "messageId",
+          in: "path",
+          required: true,
+          schema: { type: "string", example: "cuid_msg_123" },
+        },
+      ],
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": { schema: { $ref: "#/components/schemas/ReactionRequest" } },
+        },
+      },
+      responses: {
+        200: {
+          description: "Reaksi berhasil dihapus",
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {
+                  status: { type: "integer", example: 200 },
+                  message: { type: "string", example: "Reaction removed" },
+                  data: {
+                    type: "array",
+                    items: { $ref: "#/components/schemas/ReactionGroup" },
+                    description: "Grouped reactions terbaru untuk pesan ini setelah penghapusan.",
+                  },
+                },
+              },
+            },
+          },
+        },
+        400: { description: "Emoji tidak valid", content: errorContent },
+        401: unauthorizedRef,
+        403: { description: "User bukan participant chat ini", content: errorContent },
+        404: { description: "Chat, pesan, atau reaksi tidak ditemukan", content: errorContent },
         429: tooManyRef,
       },
     },

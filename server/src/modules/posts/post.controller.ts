@@ -2,7 +2,7 @@ import { Context } from "hono";
 import { PostService } from "@/modules/posts/post.service";
 import { responseCreated, responseOK } from "@/utils/response";
 import { postSuccessMessage } from "@/config/constant/post.constant";
-import { createPostRequest, getFollowingPostsRequest, getPublicPostsRequest, getSavedPostsRequest, reportPostRequest, updatePostRequest } from "@/modules/posts/post.schema";
+import { createPostRequest, getFollowingPostsRequest, getPublicPostsRequest, getSavedPostsRequest, reportPostRequest, sharePostRequest, updatePostRequest } from "@/modules/posts/post.schema";
 
 export class PostController {
   static async createPost(c: Context) {
@@ -27,7 +27,7 @@ export class PostController {
       galleries,
     });
 
-    const response = await PostService.createPost(c, user.userId, request);
+    const response = await PostService.createPost(c, user.userId, user.username, request);
     return responseCreated(c, postSuccessMessage.CREATE_POST_SUCCESS, response);
   }
 
@@ -122,5 +122,28 @@ export class PostController {
     const request = reportPostRequest.parse(await c.req.json());
     await PostService.reportPost(c, user.userId, postId, request);
     return responseOK(c, postSuccessMessage.REPORT_POST_SUCCESS);
+  }
+
+  static async sharePost(c: Context) {
+    const user = c.get("user");
+    const postId = c.req.param("postId");
+    const body = await c.req.json().catch(() => ({}));
+    const request = sharePostRequest.parse(body);
+    const response = await PostService.sharePost(user.userId, postId, request);
+    return responseCreated(c, postSuccessMessage.SHARE_POST_SUCCESS, response);
+  }
+
+  static async unsharePost(c: Context) {
+    const user = c.get("user");
+    const postId = c.req.param("postId");
+    await PostService.unsharePost(user.userId, postId);
+    return responseOK(c, postSuccessMessage.UNSHARE_POST_SUCCESS);
+  }
+
+  static async getPostShares(c: Context) {
+    const postId = c.req.param("postId");
+    const { page = "1", limit = "10" } = c.req.query();
+    const response = await PostService.getPostShares(postId, Number(page), Number(limit));
+    return responseOK(c, postSuccessMessage.GET_POST_SHARES_SUCCESS, response.data, response.meta);
   }
 }

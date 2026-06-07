@@ -2,8 +2,38 @@
 
 import { Prisma } from "generated/prisma";
 import { pgsql as database } from "@/lib/database";
-import type { chatDetailData, chatListItem, createChatData, messageData, participantData } from "@/modules/chats/chat.types";
+import type { chatDetailData, chatListItem, createChatData, messageData, participantData, reactionGroup } from "@/modules/chats/chat.types";
 import type { GetChatsRequest, GetMessagesRequest, SendMessageRequest, UpdateGroupRequest } from "@/modules/chats/chat.schema";
+
+function groupReactions(raw: { emoji: string; userId: string }[]): reactionGroup[] {
+  const map = new Map<string, string[]>();
+  for (const r of raw) {
+    if (!map.has(r.emoji)) map.set(r.emoji, []);
+    map.get(r.emoji)!.push(r.userId);
+  }
+  return Array.from(map.entries()).map(([emoji, userIds]) => ({ emoji, count: userIds.length, userIds }));
+}
+
+const messageSelect = {
+  id: true,
+  chatId: true,
+  senderId: true,
+  type: true,
+  text: true,
+  mediaUrl: true,
+  readBy: true,
+  createdAt: true,
+  sender: { select: { id: true, name: true, username: true, avatar: true } },
+  replyTo: {
+    select: {
+      id: true,
+      text: true,
+      type: true,
+      sender: { select: { id: true, name: true, username: true } },
+    },
+  },
+  reactions: { select: { emoji: true, userId: true } },
+} satisfies Prisma.MessageSelect;
 
 const participantSelect = {
   id: true,
@@ -234,7 +264,7 @@ export class ChatRepository {
 
   static async createMessage(tx: Prisma.TransactionClient | null, data: SendMessageRequest): Promise<messageData> {
     const db = tx ?? database;
-    return db.message.create({
+    const raw = await db.message.create({
       data: {
         chatId: data.chatId!,
         senderId: data.senderId!,
@@ -244,26 +274,9 @@ export class ChatRepository {
         replyToId: data.replyToId ?? null,
         readBy: [data.senderId!],
       },
-      select: {
-        id: true,
-        chatId: true,
-        senderId: true,
-        type: true,
-        text: true,
-        mediaUrl: true,
-        readBy: true,
-        createdAt: true,
-        sender: { select: { id: true, name: true, username: true, avatar: true } },
-        replyTo: {
-          select: {
-            id: true,
-            text: true,
-            type: true,
-            sender: { select: { id: true, name: true, username: true } },
-          },
-        },
-      },
-    }) as unknown as Promise<messageData>;
+      select: messageSelect,
+    });
+    return { ...raw, reactions: [] } as unknown as messageData;
   }
 
   static async getMessagesByIds(messageIds: string[], senderId: string): Promise<messageData[]> {
@@ -279,7 +292,7 @@ export class ChatRepository {
   static async getMessages(chatId: string, query: GetMessagesRequest): Promise<{ results: messageData[]; hasMore: boolean }> {
     const limit = Number(query.limit ?? 30);
 
-    const results = (await database.message.findMany({
+    const rawResults = await database.message.findMany({
       where: {
         chatId,
         ...(query.cursor && {
@@ -293,31 +306,18 @@ export class ChatRepository {
           },
         }),
       },
-      select: {
-        id: true,
-        chatId: true,
-        senderId: true,
-        type: true,
-        text: true,
-        mediaUrl: true,
-        readBy: true,
-        createdAt: true,
-        sender: { select: { id: true, name: true, username: true, avatar: true } },
-        replyTo: {
-          select: {
-            id: true,
-            text: true,
-            type: true,
-            sender: { select: { id: true, name: true, username: true } },
-          },
-        },
-      },
+      select: messageSelect,
       orderBy: { createdAt: "desc" },
       take: limit + 1,
-    })) as messageData[];
+    });
 
-    const hasMore = results.length > limit;
-    if (hasMore) results.pop();
+    const hasMore = rawResults.length > limit;
+    if (hasMore) rawResults.pop();
+
+    const results = rawResults.map((msg) => ({
+      ...msg,
+      reactions: groupReactions((msg as any).reactions ?? []),
+    })) as unknown as messageData[];
 
     return { results, hasMore };
   }
@@ -372,5 +372,42 @@ export class ChatRepository {
       AND NOT (${userId} = ANY(m.read_by))
   `;
     return Number(result[0]?.count ?? 0);
+  }
+
+  // ─── Reactions ───────────────────────────────────────────────────────────────
+
+  static async findMessageInChat(messageId: string): Promise<{ id: string; chatId: string } | null> {
+    return database.message.findUnique({
+      where: { id: messageId },
+      select: { id: true, chatId: true },
+    });
+  }
+
+  static async findReaction(messageId: string, userId: string, emoji: string) {
+    return database.messageReaction.findUnique({
+      where: { messageId_userId_emoji: { messageId, userId, emoji } },
+      select: { id: true },
+    });
+  }
+
+  static async addReaction(messageId: string, userId: string, emoji: string) {
+    return database.messageReaction.create({
+      data: { messageId, userId, emoji },
+      select: { id: true },
+    });
+  }
+
+  static async removeReaction(messageId: string, userId: string, emoji: string) {
+    return database.messageReaction.delete({
+      where: { messageId_userId_emoji: { messageId, userId, emoji } },
+    });
+  }
+
+  static async getReactionsByMessageId(messageId: string): Promise<reactionGroup[]> {
+    const rows = await database.messageReaction.findMany({
+      where: { messageId },
+      select: { emoji: true, userId: true },
+    });
+    return groupReactions(rows);
   }
 }

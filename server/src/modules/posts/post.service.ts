@@ -2,20 +2,52 @@ import { Context } from "hono";
 import { pgsql as db } from "@/lib/database";
 import { HTTPException } from "hono/http-exception";
 import { metaResponse } from "@/modules/users/user.types";
+import { FileRepository } from "../files/file.repository";
 import { FileService } from "@/modules/files/file.service";
 import { NotificationType, Prisma } from "generated/prisma";
 import { PostRepository } from "@/modules/posts/post.repository";
 import { UserRepository } from "@/modules/users/user.repository";
-import { postDetailResponse, postResponse, savedPostResponse } from "./post.types";
+import { extractHashtags, extractMentions } from "@/utils/content";
+import { HashtagRepository } from "@/modules/hashtags/hashtag.repository";
 import { NotificationRepository } from "@/modules/notifications/notification.repository";
 import { postAction, postErrorCode, postErrorMessage } from "@/config/constant/post.constant";
-import { CreatePostRequest, GetFollowingPostsRequest, GetPublicPostsRequest, GetSavedPostsRequest, ReportPostRequest, UpdatePostRequest } from "@/modules/posts/post.schema";
-import { FileRepository } from "../files/file.repository";
-import { HashtagRepository } from "@/modules/hashtags/hashtag.repository";
-import { extractHashtags, extractMentions } from "@/utils/content";
+import { postDetailResponse, postResponse, savedPostResponse, shareListResponse } from "./post.types";
+import { CreatePostRequest, GetFollowingPostsRequest, GetPublicPostsRequest, GetSavedPostsRequest, ReportPostRequest, SharePostRequest, UpdatePostRequest } from "@/modules/posts/post.schema";
+
+function buildPagination(page: number, limit: number, totalItems: number) {
+  return { page, limit, totalItems, totalPages: totalItems > 0 ? Math.ceil(totalItems / limit) : 0 };
+}
+
+function mapPostResponse(post: any, userId?: string): postResponse {
+  return {
+    id: post.id,
+    title: post.title,
+    content: post.content,
+    user: {
+      id: post.user.id,
+      name: post.user.name,
+      username: post.user.username,
+      avatar: post.user.avatar,
+    },
+    createdAt: post.createdAt,
+    updatedAt: post.updatedAt,
+    galleries: post.galleries,
+    totalLikes: post._count.likes,
+    totalComments: post._count.comments,
+    isLiked: post.likes.length > 0,
+    isEditable: post.userId === userId,
+    isFollowing: post.user.followers?.some((f: any) => f.followerId === userId) ?? false,
+    isSaved: post.bookmarks?.length > 0,
+    isReported: post.postReports?.length > 0,
+    isRepost: post.isRepost,
+    shareCount: post.shareCount,
+    caption: post.caption ?? null,
+    originalPost: post.originalPost ?? null,
+  };
+}
 
 export class PostService {
-  static async createPost(c: Context, userId: string, request: CreatePostRequest) {
+  static async createPost(c: Context, userId: string, username: string, request: CreatePostRequest) {
     return await db.$transaction(async (tx: Prisma.TransactionClient) => {
       const post = await PostRepository.createPost(tx, userId, request);
 
@@ -52,14 +84,16 @@ export class PostService {
         }
       }
 
-      // sync hashtags
       const tagNames = extractHashtags(request.content);
       if (tagNames.length > 0) {
         const hashtags = await HashtagRepository.upsertHashtags(tx, tagNames);
-        await HashtagRepository.syncPostHashtags(tx, post.id, hashtags.map((h) => h.id));
+        await HashtagRepository.syncPostHashtags(
+          tx,
+          post.id,
+          hashtags.map((h) => h.id),
+        );
       }
 
-      // sync mentions
       const mentionedUsernames = extractMentions(request.content);
       if (mentionedUsernames.length > 0) {
         const mentionedUsers = await Promise.all(mentionedUsernames.map((un) => UserRepository.getUserByUsername(un)));
@@ -75,7 +109,7 @@ export class PostService {
                 userId: validUsers[i].id,
                 type: NotificationType.MENTION,
                 title: "You were mentioned",
-                description: `@${userId} mentioned you in a post`,
+                description: `@${username} mentioned you in a post`,
                 metadata: { postId: post.id, mentionedBy: userId, path: `/p/${post.id}` },
               });
             }
@@ -89,76 +123,22 @@ export class PostService {
 
   static async getPublicPosts(c: Context, query: GetPublicPostsRequest): Promise<{ data: postResponse[]; meta: metaResponse }> {
     const { posts, totalItems } = await PostRepository.getPublicPosts(query);
-    const data = posts.map((post) => ({
-      id: post.id,
-      title: post.title,
-      user: {
-        id: post.user.id,
-        name: post.user.name,
-        username: post.user.username,
-        avatar: post.user.avatar,
-      },
-      content: post.content,
-      createdAt: post.createdAt,
-      updatedAt: post.updatedAt,
-      galleries: post.galleries,
-      totalLikes: post._count.likes,
-      totalComments: post._count.comments,
-      isLiked: post.likes.length > 0,
-      isEditable: post.userId === query.userId,
-      isFollowing: post.user.followers.some((follower) => follower.followerId === query.userId),
-      isSaved: post.bookmarks.length > 0,
-      isReported: post.postReports.length > 0,
-    }));
+    const data = posts.map((post) => mapPostResponse(post, query.userId));
 
-    const meta = {
-      pagination: {
-        page: Number(query.page!),
-        limit: Number(query.limit!),
-        totalItems,
-        totalPages: totalItems > 0 ? Math.ceil(totalItems / Number(query.limit!)) : 0,
-      },
+    return {
+      data,
+      meta: { pagination: buildPagination(Number(query.page!), Number(query.limit!), totalItems) },
     };
-
-    return { data, meta };
   }
 
   static async getFollowingPosts(c: Context, query: GetFollowingPostsRequest): Promise<{ data: postResponse[]; meta: metaResponse }> {
     const { posts, totalItems } = await PostRepository.getFollowingPosts(query);
+    const data = posts.map((post) => mapPostResponse(post, query.userId));
 
-    // transform response
-    const data = posts.map((post) => ({
-      id: post.id,
-      title: post.title,
-      user: {
-        id: post.user.id,
-        name: post.user.name,
-        username: post.user.username,
-        avatar: post.user.avatar,
-      },
-      content: post.content,
-      createdAt: post.createdAt,
-      updatedAt: post.updatedAt,
-      galleries: post.galleries,
-      totalLikes: post._count.likes,
-      totalComments: post._count.comments,
-      isLiked: post.likes.length > 0,
-      isEditable: post.userId === query.userId,
-      isFollowing: post.user.followers.some((follower) => follower.followerId === query.userId),
-      isSaved: post.bookmarks.length > 0,
-      isReported: post.postReports.length > 0,
-    }));
-
-    const meta = {
-      pagination: {
-        page: Number(query.page!),
-        limit: Number(query.limit!),
-        totalItems,
-        totalPages: totalItems > 0 ? Math.ceil(totalItems / Number(query.limit!)) : 0,
-      },
+    return {
+      data,
+      meta: { pagination: buildPagination(Number(query.page!), Number(query.limit!), totalItems) },
     };
-
-    return { data, meta };
   }
 
   static async updatePost(c: Context, userId: string, postId: string, request: UpdatePostRequest) {
@@ -171,12 +151,14 @@ export class PostService {
     return await db.$transaction(async (tx: Prisma.TransactionClient) => {
       await PostRepository.updatePost(tx, postId, request);
 
-      // re-sync hashtags
       const tagNames = extractHashtags(request.content);
       const hashtags = tagNames.length > 0 ? await HashtagRepository.upsertHashtags(tx, tagNames) : [];
-      await HashtagRepository.syncPostHashtags(tx, postId, hashtags.map((h) => h.id));
+      await HashtagRepository.syncPostHashtags(
+        tx,
+        postId,
+        hashtags.map((h) => h.id),
+      );
 
-      // re-sync mentions
       await tx.postMention.deleteMany({ where: { postId } });
       const mentionedUsernames = extractMentions(request.content);
       if (mentionedUsernames.length > 0) {
@@ -201,20 +183,17 @@ export class PostService {
 
   static async likePost(c: Context, userId: string, postId: string) {
     const post = await PostRepository.getPostById(postId);
-
     if (!post) {
       throw new HTTPException(404, { message: postErrorMessage.POST_NOT_FOUND, cause: postErrorCode.POST_NOT_FOUND });
     }
 
     const existingLike = await PostRepository.getLikeByUserId(postId, userId);
-
     if (existingLike) {
       throw new HTTPException(409, { message: postErrorMessage.ALREADY_LIKED_POST, cause: postErrorCode.ALREADY_LIKED_POST });
     }
 
     await db.$transaction(async (tx: Prisma.TransactionClient) => {
       await PostRepository.likePost(userId, postId, tx);
-      // create notification record
       if (post.userId !== userId) {
         await NotificationRepository.createNotification(tx, {
           userId: post.userId,
@@ -229,13 +208,11 @@ export class PostService {
 
   static async unlikePost(c: Context, userId: string, postId: string) {
     const post = await PostRepository.getPostById(postId);
-
     if (!post) {
       throw new HTTPException(404, { message: postErrorMessage.POST_NOT_FOUND, cause: postErrorCode.POST_NOT_FOUND });
     }
 
     const existingLike = await PostRepository.getLikeByUserId(postId, userId);
-
     if (!existingLike) {
       throw new HTTPException(409, { message: postErrorMessage.ALREADY_UNLIKED_POST, cause: postErrorCode.ALREADY_UNLIKED_POST });
     }
@@ -245,7 +222,6 @@ export class PostService {
 
   static async getPostDetailById(c: Context, postId: string, userId?: string): Promise<postDetailResponse> {
     const post = await PostRepository.getPostDetailById(postId, userId!);
-
     if (!post) {
       throw new HTTPException(404, { message: postErrorMessage.POST_NOT_FOUND, cause: postErrorCode.POST_NOT_FOUND });
     }
@@ -273,58 +249,39 @@ export class PostService {
       totalGalleries: post._count.galleries,
       isLiked: post.likes.length > 0,
       isEditable: post.userId === userId,
-      isFollowing: post.user.followers.some((follower) => follower.followerId === userId),
+      isFollowing: post.user.followers.some((f) => f.followerId === userId),
       isSaved: post.bookmarks.length > 0,
       isReported: post.postReports.length > 0,
+      isRepost: post.isRepost,
+      shareCount: post.shareCount,
+      caption: post.caption ?? null,
+      originalPost: post.originalPost ?? null,
     };
   }
 
   static async getPostsByUserId(c: Context, query: GetPublicPostsRequest, userId?: string): Promise<{ data: postResponse[]; meta: metaResponse }> {
     const { posts, totalItems } = await PostRepository.getPostsByUserId(query);
+    const data = posts.map((post) => mapPostResponse(post, userId));
 
-    const data = posts.map((post) => ({
-      id: post.id,
-      title: post.title,
-      content: post.content,
-      user: {
-        id: post.user.id,
-        name: post.user.name,
-        username: post.user.username,
-        avatar: post.user.avatar,
-      },
-      createdAt: post.createdAt,
-      updatedAt: post.updatedAt,
-      galleries: post.galleries,
-      totalLikes: post._count.likes,
-      totalComments: post._count.comments,
-      isLiked: post.likes.length > 0,
-      isEditable: post.userId === userId,
-      isFollowing: post.user.followers.some((follower) => follower.followerId === userId),
-      isSaved: post.bookmarks.length > 0,
-      isReported: post.postReports.length > 0,
-    }));
-
-    const meta = {
-      pagination: {
-        page: Number(query.page!),
-        totalItems,
-        limit: Number(query.limit!),
-        totalPages: totalItems > 0 ? Math.ceil(totalItems / Number(query.limit!)) : 0,
-      },
+    return {
+      data,
+      meta: { pagination: buildPagination(Number(query.page!), Number(query.limit!), totalItems) },
     };
-
-    return { data, meta };
   }
 
   static async deletePost(c: Context, userId: string, postId: string) {
     const post = await PostRepository.getPostById(postId, userId);
-
     if (!post) {
       throw new HTTPException(404, { message: postErrorMessage.POST_NOT_FOUND, cause: postErrorCode.POST_NOT_FOUND });
     }
 
     await db.$transaction(async (tx: Prisma.TransactionClient) => {
       await PostRepository.deletePost(tx, postId);
+
+      // Decrement shareCount on original when a repost is deleted
+      if (post.isRepost && post.originalPostId) {
+        await PostRepository.decrementShareCount(tx, post.originalPostId);
+      }
 
       await FileRepository.markFileRecordsAsUnused(tx, postId);
 
@@ -340,49 +297,30 @@ export class PostService {
     const { bookmarks, totalItems, likedPostIds } = await PostRepository.getSavedPosts(query);
 
     const data = bookmarks.map((bm) => ({
-      id: bm.post.id,
+      ...mapPostResponse(
+        {
+          ...bm.post,
+          likes: likedPostIds.has(bm.post.id) ? [{ id: "liked" }] : [],
+          bookmarks: [{ id: bm.id }],
+        },
+        query.userId,
+      ),
       bookmarkId: bm.id,
-      title: bm.post.title,
-      content: bm.post.content,
-      user: {
-        id: bm.post.user.id,
-        name: bm.post.user.name,
-        username: bm.post.user.username,
-        avatar: bm.post.user.avatar,
-      },
-      createdAt: bm.post.createdAt,
-      updatedAt: bm.post.updatedAt,
-      galleries: bm.post.galleries,
-      totalLikes: bm.post._count.likes,
-      totalComments: bm.post._count.comments,
-      isLiked: likedPostIds.has(bm.post.id),
-      isEditable: bm.post.user.id === query.userId,
-      isFollowing: bm.post.user.followers.some((follower) => follower.followerId === query.userId),
-      isSaved: true,
-      isReported: bm.post.postReports.length > 0,
     }));
 
-    const meta = {
-      pagination: {
-        page: Number(query.page),
-        totalItems,
-        limit: Number(query.limit),
-        totalPages: totalItems > 0 ? Math.ceil(totalItems / Number(query.limit)) : 0,
-      },
+    return {
+      data,
+      meta: { pagination: buildPagination(Number(query.page), Number(query.limit), totalItems) },
     };
-
-    return { data, meta };
   }
 
   static async savePostAsBookmark(c: Context, userId: string, postId: string) {
     const post = await PostRepository.getPostById(postId);
-
     if (!post) {
       throw new HTTPException(404, { message: postErrorMessage.POST_NOT_FOUND, cause: postErrorCode.POST_NOT_FOUND });
     }
 
     const existingBookmark = await PostRepository.getBookmarkByUserId(postId, userId);
-
     if (existingBookmark) {
       throw new HTTPException(409, { message: postErrorMessage.ALREADY_SAVED_POST, cause: postErrorCode.ALREADY_SAVED_POST });
     }
@@ -392,38 +330,100 @@ export class PostService {
 
   static async unsavePostFromBookmark(c: Context, userId: string, postId: string) {
     const post = await PostRepository.getPostById(postId);
-
     if (!post) {
       throw new HTTPException(404, { message: postErrorMessage.POST_NOT_FOUND, cause: postErrorCode.POST_NOT_FOUND });
     }
 
     const existingBookmark = await PostRepository.getBookmarkByUserId(postId, userId);
-
     if (!existingBookmark) {
       throw new HTTPException(409, { message: postErrorMessage.ALREADY_UNSAVED_POST, cause: postErrorCode.ALREADY_UNSAVED_POST });
     }
 
     await PostRepository.unbookmarkPost(userId, postId);
   }
+
   static async reportPost(c: Context, userId: string, postId: string, request: ReportPostRequest) {
     const post = await PostRepository.getPostById(postId);
     if (!post) {
-      throw new HTTPException(404, {
-        message: postErrorMessage.POST_NOT_FOUND,
-        cause: postErrorCode.POST_NOT_FOUND,
-      });
+      throw new HTTPException(404, { message: postErrorMessage.POST_NOT_FOUND, cause: postErrorCode.POST_NOT_FOUND });
     }
 
     const existing = await PostRepository.getReportByUserId(postId, userId);
     if (existing) {
-      throw new HTTPException(409, {
-        message: postErrorMessage.ALREADY_REPORTED_POST,
-        cause: postErrorCode.ALREADY_REPORTED_POST,
-      });
+      throw new HTTPException(409, { message: postErrorMessage.ALREADY_REPORTED_POST, cause: postErrorCode.ALREADY_REPORTED_POST });
     }
 
     await db.$transaction(async (tx: Prisma.TransactionClient) => {
       await PostRepository.createReport(tx, userId, postId, request);
     });
+  }
+
+  // ─── Repost ───────────────────────────────────────────────────────────────────
+
+  static async sharePost(userId: string, postId: string, request: SharePostRequest) {
+    return await db.$transaction(async (tx: Prisma.TransactionClient) => {
+      const target = await PostRepository.getPostById(postId);
+      if (!target) {
+        throw new HTTPException(404, { message: postErrorMessage.POST_NOT_FOUND, cause: postErrorCode.POST_NOT_FOUND });
+      }
+
+      // Resolve to root original if target is itself a repost
+      const originalPostId = target.isRepost ? target.originalPostId! : target.id;
+
+      if (target.userId === userId) {
+        throw new HTTPException(400, { message: postErrorMessage.CANNOT_REPOST_OWN_POST, cause: postErrorCode.CANNOT_REPOST_OWN_POST });
+      }
+
+      const existing = await PostRepository.getRepostByUser(originalPostId, userId);
+      if (existing) {
+        throw new HTTPException(409, { message: postErrorMessage.ALREADY_REPOSTED, cause: postErrorCode.ALREADY_REPOSTED });
+      }
+
+      const original = target.isRepost ? await PostRepository.getPostById(originalPostId) : target;
+      if (!original) {
+        throw new HTTPException(404, { message: postErrorMessage.POST_NOT_FOUND, cause: postErrorCode.POST_NOT_FOUND });
+      }
+
+      const repost = await PostRepository.sharePost(tx, userId, originalPostId, original, request.caption);
+      await PostRepository.incrementShareCount(tx, originalPostId);
+
+      if (original.userId !== userId) {
+        await NotificationRepository.createNotification(tx, {
+          userId: original.userId,
+          type: NotificationType.REPOST,
+          title: "Your post was reposted",
+          description: "Someone reposted your post",
+          metadata: { postId: originalPostId, repostId: repost.id, repostedBy: userId },
+        });
+      }
+
+      return repost;
+    });
+  }
+
+  static async unsharePost(userId: string, postId: string) {
+    const repost = await PostRepository.getRepostByUser(postId, userId);
+    if (!repost) {
+      throw new HTTPException(404, { message: postErrorMessage.NOT_REPOSTED, cause: postErrorCode.NOT_REPOSTED });
+    }
+
+    await db.$transaction(async (tx: Prisma.TransactionClient) => {
+      await PostRepository.deletePost(tx, repost.id);
+      await PostRepository.decrementShareCount(tx, postId);
+    });
+  }
+
+  static async getPostShares(postId: string, page: number, limit: number): Promise<{ data: shareListResponse[]; meta: metaResponse }> {
+    const post = await PostRepository.getPostById(postId);
+    if (!post) {
+      throw new HTTPException(404, { message: postErrorMessage.POST_NOT_FOUND, cause: postErrorCode.POST_NOT_FOUND });
+    }
+
+    const { reposts, totalItems } = await PostRepository.getPostShares(postId, page, limit);
+
+    return {
+      data: reposts,
+      meta: { pagination: buildPagination(page, limit, totalItems) },
+    };
   }
 }

@@ -83,3 +83,9 @@ export const reportPostRequest = z
   });
 
 export type ReportPostRequest = z.infer<typeof reportPostRequest>;
+
+export const sharePostRequest = z.object({
+  caption: z.string().max(500).optional(),
+});
+
+export type SharePostRequest = z.infer<typeof sharePostRequest>;

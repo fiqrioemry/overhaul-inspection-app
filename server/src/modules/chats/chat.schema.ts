@@ -98,3 +98,11 @@ export const deleteMessagesRequest = z.object({
 });
 
 export type DeleteMessagesRequest = z.infer<typeof deleteMessagesRequest>;
+
+export const ALLOWED_EMOJIS = ["❤️", "😂", "😮", "😢", "😡", "👍", "👎", "🔥", "🎉", "👀"];
+
+export const reactionRequest = z.object({
+  emoji: z.string().refine((e) => ALLOWED_EMOJIS.includes(e), "Unsupported emoji"),
+});
+
+export type ReactionRequest = z.infer<typeof reactionRequest>;

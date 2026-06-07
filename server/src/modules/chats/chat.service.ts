@@ -10,6 +10,7 @@ import type {
   CreateGroupChatRequest,
   CreatePrivateChatRequest,
   DeleteMessagesRequest,
+  ReactionRequest,
 } from "@/modules/chats/chat.schema";
 import { Context } from "hono";
 import { pgsql } from "@/lib/database";
@@ -21,7 +22,8 @@ import { createFileData } from "@/modules/files/file.types";
 import { UserRepository } from "@/modules/users/user.repository";
 import { ChatRepository } from "@/modules/chats/chat.repository";
 import { NotificationRepository } from "@/modules/notifications/notification.repository";
-import { chatErrorCode, chatErrorMessage, chatWsEvent } from "@/config/constant/chat.constant";
+import { chatErrorCode, chatErrorMessage, chatSuccessMessage, chatWsEvent } from "@/config/constant/chat.constant";
+import type { reactionToggleResult } from "@/modules/chats/chat.types";
 
 export class ChatService {
   private static async assertParticipant(chatId: string, userId: string) {
@@ -449,5 +451,67 @@ export class ChatService {
   static async countUnreadMessages(userId: string) {
     const count = await ChatRepository.countTotalUnreadMessages(userId);
     return { unreadCount: count };
+  }
+
+  // ─── Reactions ───────────────────────────────────────────────────────────────
+
+  static async addReaction(userId: string, chatId: string, messageId: string, request: ReactionRequest): Promise<reactionToggleResult> {
+    await this.assertParticipant(chatId, userId);
+
+    const message = await ChatRepository.findMessageInChat(messageId);
+    if (!message) {
+      throw new HTTPException(404, { message: chatErrorMessage.MESSAGE_NOT_FOUND, cause: chatErrorCode.MESSAGE_NOT_FOUND });
+    }
+    if (message.chatId !== chatId) {
+      throw new HTTPException(400, { message: chatErrorMessage.MESSAGE_NOT_IN_CHAT, cause: chatErrorCode.MESSAGE_NOT_IN_CHAT });
+    }
+
+    const existing = await ChatRepository.findReaction(messageId, userId, request.emoji);
+    if (existing) {
+      await ChatRepository.removeReaction(messageId, userId, request.emoji);
+    } else {
+      await ChatRepository.addReaction(messageId, userId, request.emoji);
+    }
+
+    const reactions = await ChatRepository.getReactionsByMessageId(messageId);
+
+    eventBus.publish(`chat:${chatId}`, {
+      event: chatWsEvent.REACTION_UPDATED,
+      chatId,
+      messageId,
+      reactions,
+    });
+
+    return { toggled: existing ? "removed" : "added", reactions };
+  }
+
+  static async removeReaction(userId: string, chatId: string, messageId: string, request: ReactionRequest) {
+    await this.assertParticipant(chatId, userId);
+
+    const message = await ChatRepository.findMessageInChat(messageId);
+    if (!message) {
+      throw new HTTPException(404, { message: chatErrorMessage.MESSAGE_NOT_FOUND, cause: chatErrorCode.MESSAGE_NOT_FOUND });
+    }
+    if (message.chatId !== chatId) {
+      throw new HTTPException(400, { message: chatErrorMessage.MESSAGE_NOT_IN_CHAT, cause: chatErrorCode.MESSAGE_NOT_IN_CHAT });
+    }
+
+    const existing = await ChatRepository.findReaction(messageId, userId, request.emoji);
+    if (!existing) {
+      throw new HTTPException(404, { message: chatErrorMessage.REACTION_NOT_FOUND, cause: chatErrorCode.REACTION_NOT_FOUND });
+    }
+
+    await ChatRepository.removeReaction(messageId, userId, request.emoji);
+
+    const reactions = await ChatRepository.getReactionsByMessageId(messageId);
+
+    eventBus.publish(`chat:${chatId}`, {
+      event: chatWsEvent.REACTION_UPDATED,
+      chatId,
+      messageId,
+      reactions,
+    });
+
+    return reactions;
   }
 }

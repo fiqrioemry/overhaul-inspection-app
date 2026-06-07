@@ -29,5 +29,8 @@ chat.delete("/:chatId/leave", protect, limitter(chatLimit.LEAVE_GROUP), ctrl.lea
 chat.patch("/:chatId/members/promote", protect, limitter(chatLimit.PROMOTE_DEMOTE), ctrl.promoteMember);
 chat.patch("/:chatId/members/demote", protect, limitter(chatLimit.PROMOTE_DEMOTE), ctrl.demoteMember);
 
-// endpoints total = 9
+// reactions
+chat.post("/:chatId/messages/:messageId/reactions", protect, limitter(chatLimit.ADD_REACTION), ctrl.addReaction);
+chat.delete("/:chatId/messages/:messageId/reactions", protect, limitter(chatLimit.REMOVE_REACTION), ctrl.removeReaction);
+
 export default chat;
