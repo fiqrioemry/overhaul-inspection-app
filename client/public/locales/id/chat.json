@@ -16,5 +16,8 @@
   "noUsersFound": "Tidak ada pengguna ditemukan",
   "searchUsers": "Cari pengguna...",
   "noMessagesYet": "Belum ada pesan",
-  "typePlaceholder": "Ketik pesan..."
+  "typePlaceholder": "Ketik pesan...",
+
+  "addReaction": "Tambahkan reaksi",
+  "reactions": "reaksi"
 }

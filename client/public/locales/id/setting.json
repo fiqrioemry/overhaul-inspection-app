@@ -99,5 +99,13 @@
   "pageSubtitle": "Ini adalah halaman pengaturan. Kamu dapat mengatur preferensi akun di sini.",
   "tabAccount": "Akun",
   "tabSecurity": "Keamanan",
-  "tabNotifications": "Notifikasi"
+  "tabNotifications": "Notifikasi",
+
+  "profilePageTitle": "Profil - Pixel media sosial",
+  "profilePageDescription": "Lihat profil pengguna tertentu di Pixel media sosial.",
+  "profilePageKeywords": "profil, media sosial, pengguna",
+  "profileNotFound": "Pengguna tidak ditemukan",
+  "profileNotFoundMessage": "Profil yang kamu cari tidak ada.",
+  "profileIsPrivate": "Akun ini bersifat privat",
+  "profileIsPrivateMessage": "Ikuti akun ini untuk melihat postingan mereka."
 }

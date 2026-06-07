@@ -1,9 +1,9 @@
 import qs from "qs";
 import api from "@/lib/axios";
-import type { Post } from "@/types/posts.type";
+import type { Post, ShareListItem } from "@/types/posts.type";
 import { POST_ENDPOINTS } from "@/constants/posts.constant";
 import type { ResponseOK, ResponseSuccess } from "@/types/response.type";
-import type { CreatePostRequest, GetPublicPostsRequest, GetSavedPostsRequest, ReportPostRequest, UpdatePostRequest } from "@/schemas/posts.schema";
+import type { CreatePostRequest, GetPublicPostsRequest, GetSavedPostsRequest, ReportPostRequest, SharePostRequest, UpdatePostRequest } from "@/schemas/posts.schema";
 
 export async function fetchPublicPosts(query: GetPublicPostsRequest) {
   const queryString = qs.stringify(query, { skipNulls: true });
@@ -85,5 +85,21 @@ export async function unsavePost(postId: string): Promise<ResponseOK> {
 
 export async function reportPost(postId: string, payload: ReportPostRequest): Promise<ResponseOK> {
   const res = await api.post(POST_ENDPOINTS.reportPost.replace(":postId", postId), payload);
+  return res.data;
+}
+
+export async function sharePost(postId: string, payload: SharePostRequest): Promise<ResponseSuccess<{ id: string; originalPostId: string; caption: string | null; createdAt: string }>> {
+  const res = await api.post(POST_ENDPOINTS.sharePost.replace(":postId", postId), payload);
+  return res.data;
+}
+
+export async function unsharePost(postId: string): Promise<ResponseOK> {
+  const res = await api.delete(POST_ENDPOINTS.unsharePost.replace(":postId", postId));
+  return res.data;
+}
+
+export async function fetchPostShares(postId: string, params: { page?: number; limit?: number } = {}): Promise<ResponseSuccess<ShareListItem[]>> {
+  const queryString = qs.stringify(params, { skipNulls: true });
+  const res = await api.get(`${POST_ENDPOINTS.getPostShares.replace(":postId", postId)}?${queryString}`);
   return res.data;
 }

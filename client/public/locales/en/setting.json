@@ -99,5 +99,13 @@
   "pageSubtitle": "This is the settings page. You can put your user settings here.",
   "tabAccount": "Account",
   "tabSecurity": "Security",
-  "tabNotifications": "Notifications"
+  "tabNotifications": "Notifications",
+
+  "profilePageTitle": "Profile - Pixel social media",
+  "profilePageDescription": "View the profile of a specific user on Pixel social media.",
+  "profilePageKeywords": "profile, social media, user",
+  "profileNotFound": "User not found",
+  "profileNotFoundMessage": "The profile you're looking for doesn't exist.",
+  "profileIsPrivate": "This account is private",
+  "profileIsPrivateMessage": "Follow this account to see their posts."
 }

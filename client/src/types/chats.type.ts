@@ -30,6 +30,12 @@ export interface LastMessage {
   };
 }
 
+export interface ReactionGroup {
+  emoji: string;
+  count: number;
+  userIds: string[];
+}
+
 export interface ChatMessage {
   id: string;
   chatId: string;
@@ -40,6 +46,7 @@ export interface ChatMessage {
   readBy: string[];
   createdAt: string;
   sender: ChatParticipantUser;
+  reactions: ReactionGroup[];
 }
 
 export interface ChatListItem {
@@ -89,4 +96,11 @@ export interface WsGroupUpdatedPayload {
   name?: string;
   avatar?: string;
   description?: string;
+}
+
+export interface WsReactionPayload {
+  event: string;
+  chatId: string;
+  messageId: string;
+  reactions: ReactionGroup[];
 }

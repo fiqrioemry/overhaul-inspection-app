@@ -50,6 +50,14 @@ export interface PostDetail extends Post {
   comments: PostComment[];
 }
 
+export interface OriginalPost {
+  id: string;
+  title: string;
+  content: string;
+  user: PostUser;
+  galleries: PostGallery[];
+}
+
 export interface Post {
   id: string;
   user: PostUser;
@@ -67,4 +75,15 @@ export interface Post {
   isReported: boolean;
   hashtags: PostHashtag[];
   mentions: PostMention[];
+  isRepost: boolean;
+  shareCount: number;
+  caption: string | null;
+  originalPost: OriginalPost | null;
+}
+
+export interface ShareListItem {
+  id: string;
+  caption: string | null;
+  createdAt: string;
+  user: PostUser;
 }

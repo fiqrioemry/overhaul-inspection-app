@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { CHAT_WS_EVENTS } from "@/constants/chats.constant";
-import type { ChatListItem, ChatMessage, WsNewMessagePayload, WsMessageReadPayload, WsGroupUpdatedPayload } from "@/schemas/chats.schema";
+import type { ChatListItem, ChatMessage, ReactionGroup, WsNewMessagePayload, WsMessageReadPayload, WsGroupUpdatedPayload, WsReactionPayload } from "@/schemas/chats.schema";
 
 interface ChatStore {
   // Active chat
@@ -18,6 +18,7 @@ interface ChatStore {
   optimisticMessages: Record<string, ChatMessage[]>; // chatId -> messages
   addOptimisticMessage: (chatId: string, message: ChatMessage) => void;
   markOptimisticRead: (chatId: string, messageIds: string[], readBy: string) => void;
+  updateOptimisticReactions: (chatId: string, messageId: string, reactions: ReactionGroup[]) => void;
   clearOptimisticMessages: (chatId: string) => void;
 
   // Unread counts (WS updated)
@@ -69,6 +70,11 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       optimisticMessages: { ...get().optimisticMessages, [chatId]: updated },
     });
   },
+  updateOptimisticReactions: (chatId, messageId, reactions) => {
+    const msgs = get().optimisticMessages[chatId] ?? [];
+    const updated = msgs.map((m) => (m.id === messageId ? { ...m, reactions } : m));
+    set({ optimisticMessages: { ...get().optimisticMessages, [chatId]: updated } });
+  },
   clearOptimisticMessages: (chatId) => {
     const next = { ...get().optimisticMessages };
     delete next[chatId];
@@ -98,7 +104,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   setSidebarCollapsed: (v) => set({ isSidebarCollapsed: v }),
 }));
 
-export function handleChatWsEvent(event: string, payload: WsNewMessagePayload | WsMessageReadPayload | WsGroupUpdatedPayload, currentUserId: string) {
+export function handleChatWsEvent(event: string, payload: WsNewMessagePayload | WsMessageReadPayload | WsGroupUpdatedPayload | WsReactionPayload, currentUserId: string) {
   const store = useChatStore.getState();
 
   if (event === CHAT_WS_EVENTS.NEW_MESSAGE) {
@@ -124,5 +130,8 @@ export function handleChatWsEvent(event: string, payload: WsNewMessagePayload | 
   } else if (event === CHAT_WS_EVENTS.MESSAGE_READ) {
     const p = payload as WsMessageReadPayload;
     store.markOptimisticRead(p.chatId, p.messageIds, p.readBy);
+  } else if (event === CHAT_WS_EVENTS.REACTION_UPDATED) {
+    const p = payload as WsReactionPayload;
+    store.updateOptimisticReactions(p.chatId, p.messageId, p.reactions);
   }
 }

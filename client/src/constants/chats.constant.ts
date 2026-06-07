@@ -14,6 +14,8 @@ export const CHAT_ENDPOINTS = {
   promoteMember: "/chats/:chatId/members/promote",
   demoteMember: "/chats/:chatId/members/demote",
   getUnreadMessagesCount: "/chats/unread-count",
+  addReaction: "/chats/:chatId/messages/:messageId/reactions",
+  removeReaction: "/chats/:chatId/messages/:messageId/reactions",
 } as const;
 
 export const CHAT_WS_EVENTS = {
@@ -22,6 +24,7 @@ export const CHAT_WS_EVENTS = {
   GROUP_UPDATED: "group_updated",
   PARTICIPANT_JOINED: "participant_joined",
   PARTICIPANT_LEFT: "participant_left",
+  REACTION_UPDATED: "reaction_updated",
 } as const;
 
 export const CHAT_LIMITS = {

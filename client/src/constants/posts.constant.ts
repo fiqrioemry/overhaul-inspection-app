@@ -11,6 +11,9 @@ export const POST_ENDPOINTS = {
   unlikePost: "/posts/:postId/unlike",
   savePost: "/posts/:postId/save",
   unsavePost: "/posts/:postId/unsave",
+  sharePost: "/posts/:postId/share",
+  unsharePost: "/posts/:postId/share",
+  getPostShares: "/posts/:postId/shares",
 } as const;
 
 export type AspectRatio = "1:1" | "4:5" | "1.91:1" | "16:9";

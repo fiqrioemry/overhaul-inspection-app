@@ -16,5 +16,8 @@
   "noUsersFound": "No users found",
   "searchUsers": "Search users...",
   "noMessagesYet": "No messages yet. Start a conversation!",
-  "typePlaceholder": "Type a message..."
+  "typePlaceholder": "Type a message...",
+
+  "addReaction": "Add reaction",
+  "reactions": "reactions"
 }

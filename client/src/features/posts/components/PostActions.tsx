@@ -2,8 +2,10 @@ import { cn } from "@/lib/utils";
 import { useState } from "react";
 import type { Post } from "@/types/posts.type";
 import { usePostStore } from "@/stores/post.store";
-import { Heart, MessageCircle, Bookmark, Send, Check } from "lucide-react";
+import { Heart, MessageCircle, Bookmark, Send, Check, Repeat2 } from "lucide-react";
 import { useLikePost, useSavePost, useUnlikePost, useUnsavePost } from "@/features/posts/posts.query";
+import SharePostDialog from "@/features/posts/components/SharePostDialog";
+import { useTranslation } from "react-i18next";
 
 interface PostActionsProps {
   post: Post;
@@ -12,7 +14,9 @@ interface PostActionsProps {
 }
 
 export default function PostActions({ post, onCommentClick }: PostActionsProps) {
+  const { t } = useTranslation(["post"]);
   const [copied, setCopied] = useState(false);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const savePost = useSavePost(post.id);
   const unsavePost = useUnsavePost(post.id);
   const likePost = useLikePost(post.id);
@@ -70,6 +74,7 @@ export default function PostActions({ post, onCommentClick }: PostActionsProps) 
   }
 
   return (
+    <>
     <div className="flex items-center justify-between px-4 py-2">
       {/* Left: Like, Comment, Share */}
       <div className="flex items-center gap-3">
@@ -95,19 +100,34 @@ export default function PostActions({ post, onCommentClick }: PostActionsProps) 
         </div>
 
         <div className="flex items-center gap-2">
-          <button onClick={handleShare} className="group flex items-center gap-1 transition-transform active:scale-90" aria-label="Share post">
+          <button onClick={handleShare} className="group flex items-center gap-1 transition-transform active:scale-90" aria-label={t("post:shareLink")}>
             {copied ? <Check className="h-6 w-6 text-green-500 transition-all animate-in zoom-in-50" /> : <Send className="h-6 w-6 text-foreground group-hover:text-muted-foreground transition-colors" />}
           </button>
 
-          {copied && <span className="text-xs text-green-500 animate-in fade-in">Copied</span>}
+          {copied && <span className="text-xs text-green-500 animate-in fade-in">{t("post:copied")}</span>}
+        </div>
+
+        {/* Repost */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShareDialogOpen(true)}
+            className="group flex items-center gap-1 transition-transform active:scale-90"
+            aria-label={post.isRepost ? t("post:unsharePost") : t("post:sharePost")}
+          >
+            <Repeat2 className={cn("h-6 w-6 transition-colors", post.isRepost ? "text-green-500" : "text-foreground group-hover:text-muted-foreground")} />
+          </button>
+          {(post.shareCount ?? 0) > 0 && <span className="text-sm">{post.shareCount}</span>}
         </div>
       </div>
 
       {/* right bookmark */}
-      <button onClick={handleSavePost} className="group transition-transform active:scale-90" aria-label="Bookmark post">
+      <button onClick={handleSavePost} className="group transition-transform active:scale-90" aria-label={t("post:bookmark")}>
         <Bookmark className={cn(post.isSaved ? "fill-blue-500 text-blue-500" : "text-foreground group-hover:text-muted-foreground", "h-6 w-6 transition-colors")} />
       </button>
     </div>
+
+    <SharePostDialog post={post} open={shareDialogOpen} onOpenChange={setShareDialogOpen} />
+    </>
   );
 }
 

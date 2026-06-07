@@ -4,6 +4,10 @@
   "emptyFeedTitle": "Your feed is empty",
   "emptyFeedMessage": "Follow some users to see their posts here.",
   "goToExplore": "Explore Users",
+  "more": "more",
+  "copied": "Copied",
+  "bookmark": "Bookmark post",
+  "shareLink": "Share link",
 
   "commentOptions": "Comment options",
   "deleteComment": "Delete",
@@ -11,5 +15,12 @@
   "deleteCommentDescription": "This action cannot be undone. This will permanently delete your comment.",
   "deleteCommentConfirm": "Delete",
   "deleteCommentPending": "Deleting...",
-  "cancelButton": "Cancel"
+  "cancelButton": "Cancel",
+
+  "sharePost": "Repost",
+  "unsharePost": "Remove repost",
+  "sharePostTitle": "Repost",
+  "sharePostDescription": "Share this post with your followers. Add an optional caption.",
+  "shareCaptionPlaceholder": "Add a caption... (optional)",
+  "repostedBy": "Reposted by"
 }

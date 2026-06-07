@@ -12,6 +12,7 @@ import type {
   DeleteMessagesRequest,
   CreateGroupChatRequest,
   CreatePrivateChatRequest,
+  ReactionRequest,
 } from "@/schemas/chats.schema";
 import type { ResponseSuccess } from "@/types/response.type";
 import { useQuery, useMutation, useInfiniteQuery, useQueryClient, type InfiniteData } from "@tanstack/react-query";
@@ -31,6 +32,8 @@ import {
   promoteMember,
   demoteMember,
   getUnreadMessagesCount,
+  addReaction,
+  removeReaction,
 } from "./chats.api";
 
 export const CHAT_KEYS = {
@@ -227,5 +230,31 @@ export function useUnreadMessagesCount() {
     queryFn: () => getUnreadMessagesCount(),
     select: (data) => data.data.unreadCount,
     staleTime: 1000 * 60, // 1 minute
+  });
+}
+
+export function useAddReaction(chatId: string, messageId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: ReactionRequest) => addReaction(chatId, messageId, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: CHAT_KEYS.messages(chatId) });
+    },
+    onError: (err) => {
+      toast.error(err.message);
+    },
+  });
+}
+
+export function useRemoveReaction(chatId: string, messageId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: ReactionRequest) => removeReaction(chatId, messageId, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: CHAT_KEYS.messages(chatId) });
+    },
+    onError: (err) => {
+      toast.error(err.message);
+    },
   });
 }

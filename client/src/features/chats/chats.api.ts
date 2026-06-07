@@ -14,6 +14,9 @@ import type {
   PromoteMemberRequest,
   ReadMessagesRequest,
   RemoveMemberRequest,
+  ReactionRequest,
+  ReactionToggleResult,
+  ReactionGroup,
   SendMessageRequest,
   UpdateGroupRequest,
 } from "@/schemas/chats.schema";
@@ -105,5 +108,17 @@ export async function demoteMember(chatId: string, payload: PromoteMemberRequest
 
 export async function getUnreadMessagesCount() {
   const res = await api.get(CHAT_ENDPOINTS.getUnreadMessagesCount);
+  return res.data;
+}
+
+export async function addReaction(chatId: string, messageId: string, payload: ReactionRequest): Promise<ResponseSuccess<ReactionToggleResult>> {
+  const url = CHAT_ENDPOINTS.addReaction.replace(":chatId", chatId).replace(":messageId", messageId);
+  const res = await api.post(url, payload);
+  return res.data;
+}
+
+export async function removeReaction(chatId: string, messageId: string, payload: ReactionRequest): Promise<ResponseSuccess<ReactionGroup[]>> {
+  const url = CHAT_ENDPOINTS.removeReaction.replace(":chatId", chatId).replace(":messageId", messageId);
+  const res = await api.delete(url, { data: payload });
   return res.data;
 }

@@ -37,6 +37,12 @@ export interface ReplyToMessage {
   sender: { id: string; name: string; username: string };
 }
 
+export interface ReactionGroup {
+  emoji: string;
+  count: number;
+  userIds: string[];
+}
+
 export interface ChatMessage {
   id: string;
   chatId: string;
@@ -48,6 +54,16 @@ export interface ChatMessage {
   createdAt: string;
   sender: ChatParticipantUser;
   replyTo: ReplyToMessage | null;
+  reactions: ReactionGroup[];
+}
+
+export interface ReactionRequest {
+  emoji: string;
+}
+
+export interface ReactionToggleResult {
+  toggled: "added" | "removed";
+  reactions: ReactionGroup[];
 }
 
 export interface ChatListItem {
@@ -97,6 +113,13 @@ export interface WsGroupUpdatedPayload {
   name?: string;
   avatar?: string;
   description?: string;
+}
+
+export interface WsReactionPayload {
+  event: string;
+  chatId: string;
+  messageId: string;
+  reactions: ReactionGroup[];
 }
 
 // Request types

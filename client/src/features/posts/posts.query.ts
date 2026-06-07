@@ -1,7 +1,7 @@
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
-import type { CreatePostRequest, GetPublicPostsRequest, GetSavedPostsRequest, ReportPostRequest, UpdatePostRequest } from "@/schemas/posts.schema";
-import { fetchPublicPosts, fetchFollowingPosts, fetchPostById, createPost, updatePost, deletePost, likePost, unlikePost, fetchPostsByUserId, fetchSavedPostsByUserId, savePost, unsavePost, reportPost } from "./posts.api";
+import type { CreatePostRequest, GetPublicPostsRequest, GetSavedPostsRequest, ReportPostRequest, SharePostRequest, UpdatePostRequest } from "@/schemas/posts.schema";
+import { fetchPublicPosts, fetchFollowingPosts, fetchPostById, createPost, updatePost, deletePost, likePost, unlikePost, fetchPostsByUserId, fetchSavedPostsByUserId, savePost, unsavePost, reportPost, sharePost, unsharePost, fetchPostShares } from "./posts.api";
 
 export const POST_KEYS = {
   all: ["posts"] as const,
@@ -10,6 +10,7 @@ export const POST_KEYS = {
   detail: (postId: string) => ["posts", "detail", postId] as const,
   byUser: (userId: string, params?: GetPublicPostsRequest) => ["posts", "user", userId, params] as const,
   saved: (userId: string, params?: GetSavedPostsRequest) => ["posts", "saved", userId, params] as const,
+  shares: (postId: string) => ["posts", "shares", postId] as const,
 };
 
 export function usePostById(postId: string) {
@@ -169,5 +170,38 @@ export function useReportPost(postId: string) {
       toast.success(res.message || "You reported the post");
       queryClient.invalidateQueries({ queryKey: POST_KEYS.all });
     },
+  });
+}
+
+export function useSharePost(postId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: SharePostRequest) => sharePost(postId, payload),
+    onSuccess: (res) => {
+      toast.success(res.message || "Post shared successfully");
+      queryClient.invalidateQueries({ queryKey: POST_KEYS.all });
+      queryClient.invalidateQueries({ queryKey: POST_KEYS.shares(postId) });
+    },
+  });
+}
+
+export function useUnsharePost(postId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => unsharePost(postId),
+    onSuccess: (res) => {
+      toast.success(res.message || "Repost removed");
+      queryClient.invalidateQueries({ queryKey: POST_KEYS.all });
+      queryClient.invalidateQueries({ queryKey: POST_KEYS.shares(postId) });
+    },
+  });
+}
+
+export function usePostShares(postId: string, params: { page?: number; limit?: number } = {}) {
+  return useQuery({
+    queryKey: POST_KEYS.shares(postId),
+    queryFn: () => fetchPostShares(postId, params),
+    enabled: !!postId,
+    staleTime: 1000 * 30,
   });
 }

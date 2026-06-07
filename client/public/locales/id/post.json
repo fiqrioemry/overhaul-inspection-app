@@ -4,6 +4,10 @@
   "emptyFeedTitle": "Feed kamu kosong",
   "emptyFeedMessage": "Ikuti beberapa pengguna untuk melihat postingan mereka di sini.",
   "goToExplore": "Jelajahi Pengguna",
+  "more": "lebih",
+  "copied": "Disalin",
+  "bookmark": "Tandai postingan",
+  "shareLink": "Bagikan tautan",
 
   "commentOptions": "Opsi komentar",
   "deleteComment": "Hapus",
@@ -11,5 +15,12 @@
   "deleteCommentDescription": "Tindakan ini tidak dapat dibatalkan. Komentar kamu akan dihapus secara permanen.",
   "deleteCommentConfirm": "Hapus",
   "deleteCommentPending": "Menghapus...",
-  "cancelButton": "Batal"
+  "cancelButton": "Batal",
+
+  "sharePost": "Repost",
+  "unsharePost": "Hapus repost",
+  "sharePostTitle": "Repost",
+  "sharePostDescription": "Bagikan postingan ini ke pengikutmu. Tambahkan keterangan opsional.",
+  "shareCaptionPlaceholder": "Tambahkan keterangan... (opsional)",
+  "repostedBy": "Direpost oleh"
 }
