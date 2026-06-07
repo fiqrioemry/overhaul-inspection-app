@@ -121,7 +121,7 @@ export default function NotificationPage() {
             <p className="text-sm text-muted-foreground">{t("notif:noNotifications")}</p>
           </div>
           {!isRequestTab && notifications.length > 0 && (
-            <Button variant="ghost" size="sm" onClick={toggleSelectMode}   className="text-xs text-muted-foreground hover:text-foreground mt-0.5">
+            <Button variant="ghost" size="sm" onClick={toggleSelectMode} className="text-xs text-muted-foreground hover:text-foreground mt-0.5">
               {isSelectMode ? t("notif:cancel") : t("notif:select")}
             </Button>
           )}
@@ -181,7 +181,7 @@ export default function NotificationPage() {
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>{t("notif:cancel")}</AlertDialogCancel>
-              <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              <AlertDialogAction onClick={confirmDelete} variant="destructive">
                 {t("notif:delete")}
               </AlertDialogAction>
             </AlertDialogFooter>

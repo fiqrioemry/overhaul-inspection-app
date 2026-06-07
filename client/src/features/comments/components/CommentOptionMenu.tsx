@@ -1,6 +1,7 @@
 // src/features/comments/components/CommentOptionMenu.tsx
 import { useState } from "react";
 import { MoreHorizontal, Trash2, Loader2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useDeleteComment } from "@/features/comments/comments.query";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -11,6 +12,7 @@ interface CommentOptionMenuProps {
 }
 
 export default function CommentOptionMenu({ commentId, isEditable }: CommentOptionMenuProps) {
+  const { t } = useTranslation(["post"]);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const deleteComment = useDeleteComment(commentId);
 
@@ -25,14 +27,14 @@ export default function CommentOptionMenu({ commentId, isEditable }: CommentOpti
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <button className="opacity-0 group-hover:opacity-100 p-1 rounded-full hover:bg-muted transition-all" aria-label="Comment options">
+          <button className="opacity-0 group-hover:opacity-100 p-1 rounded-full hover:bg-muted transition-all" aria-label={t("post:commentOptions")}>
             <MoreHorizontal className="h-3.5 w-3.5 text-muted-foreground" />
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-36">
           <DropdownMenuItem className="cursor-pointer text-destructive focus:text-destructive" onClick={() => setShowDeleteDialog(true)}>
             <Trash2 className="h-4 w-4 mr-2" />
-            Delete
+            {t("post:deleteComment")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -41,19 +43,19 @@ export default function CommentOptionMenu({ commentId, isEditable }: CommentOpti
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete comment?</AlertDialogTitle>
-            <AlertDialogDescription>This action cannot be undone. This will permanently delete your comment.</AlertDialogDescription>
+            <AlertDialogTitle>{t("post:deleteCommentTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("post:deleteCommentDescription")}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("post:cancelButton")}</AlertDialogCancel>
             <AlertDialogAction variant="destructive" onClick={handleDelete} disabled={deleteComment.isPending}>
               {deleteComment.isPending ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Deleting...
+                  {t("post:deleteCommentPending")}
                 </>
               ) : (
-                "Delete"
+                t("post:deleteCommentConfirm")
               )}
             </AlertDialogAction>
           </AlertDialogFooter>

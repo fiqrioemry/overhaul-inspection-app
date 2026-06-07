@@ -3,5 +3,13 @@
   "noMorePosts": "No more posts.",
   "emptyFeedTitle": "Your feed is empty",
   "emptyFeedMessage": "Follow some users to see their posts here.",
-  "goToExplore": "Explore Users"
+  "goToExplore": "Explore Users",
+
+  "commentOptions": "Comment options",
+  "deleteComment": "Delete",
+  "deleteCommentTitle": "Delete comment?",
+  "deleteCommentDescription": "This action cannot be undone. This will permanently delete your comment.",
+  "deleteCommentConfirm": "Delete",
+  "deleteCommentPending": "Deleting...",
+  "cancelButton": "Cancel"
 }

@@ -3,5 +3,13 @@
   "noMorePosts": "Tidak ada postingan lagi.",
   "emptyFeedTitle": "Feed kamu kosong",
   "emptyFeedMessage": "Ikuti beberapa pengguna untuk melihat postingan mereka di sini.",
-  "goToExplore": "Jelajahi Pengguna"
+  "goToExplore": "Jelajahi Pengguna",
+
+  "commentOptions": "Opsi komentar",
+  "deleteComment": "Hapus",
+  "deleteCommentTitle": "Hapus komentar?",
+  "deleteCommentDescription": "Tindakan ini tidak dapat dibatalkan. Komentar kamu akan dihapus secara permanen.",
+  "deleteCommentConfirm": "Hapus",
+  "deleteCommentPending": "Menghapus...",
+  "cancelButton": "Batal"
 }
