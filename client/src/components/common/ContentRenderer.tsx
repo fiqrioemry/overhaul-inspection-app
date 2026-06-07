@@ -16,12 +16,7 @@ export default function ContentRenderer({ content, className }: ContentRendererP
       {parts.map((part, i) => {
         if (/^#[a-zA-Z0-9_]+$/.test(part)) {
           return (
-            <Link
-              key={i}
-              to={`/hashtag/${encodeURIComponent(part.slice(1))}`}
-              className="text-primary hover:underline font-medium"
-              onClick={(e) => e.stopPropagation()}
-            >
+            <Link key={i} to={`/hashtag/${encodeURIComponent(part.slice(1))}`} className="text-primary hover:underline font-medium" onClick={(e) => e.stopPropagation()}>
               {part}
             </Link>
           );
@@ -29,12 +24,7 @@ export default function ContentRenderer({ content, className }: ContentRendererP
 
         if (/^@[a-zA-Z0-9_.]+$/.test(part)) {
           return (
-            <Link
-              key={i}
-              to={`/profile/${part.slice(1)}`}
-              className="text-primary hover:underline font-medium"
-              onClick={(e) => e.stopPropagation()}
-            >
+            <Link key={i} to={`/profile/${part.slice(1)}`} className="text-primary hover:underline font-medium" onClick={(e) => e.stopPropagation()}>
               {part}
             </Link>
           );

@@ -7,6 +7,7 @@ import { useRef, useMemo, useCallback } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useComments } from "@/features/comments/comments.query";
 import CommentItem from "@/features/comments/components/CommentItem";
+import ContentRenderer from "@/components/common/ContentRenderer";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export default function CommentList({ post }: { post: Post }) {
@@ -41,7 +42,7 @@ export default function CommentList({ post }: { post: Post }) {
             <div className="flex-1 min-w-0">
               <div className="text-sm">
                 <span className="font-semibold mr-1">{post.user?.username}</span>
-                <p className="text-sm whitespace-pre-wrap break-words">{post.content}</p>
+                <ContentRenderer content={post.content} className="text-sm whitespace-pre-wrap wrap-break-word" />
               </div>
               <div className="mt-0.5 text-xs text-muted-foreground">
                 {createdAt} {post.updatedAt ? "· edited" : ""}
@@ -49,26 +50,21 @@ export default function CommentList({ post }: { post: Post }) {
             </div>
           </div>
         )}
-
         {isLoading && (
           <div className="flex justify-center py-6">
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           </div>
         )}
-
         {allComments.map((comment) => (
           // React.memo on CommentItem is what makes useCallback above worthwhile
           <CommentItem postId={post.id} key={comment?.id} comment={comment!} onReply={handleReply} />
         ))}
-
         {hasNextPage && (
           <button onClick={handleLoadMore} disabled={isFetchingNextPage} className="w-full py-2 text-xs text-muted-foreground hover:text-foreground transition-colors">
             {isFetchingNextPage ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : "Load more comments"}
           </button>
         )}
-
         {!isLoading && allComments.length === 0 && <div className="py-8 text-center text-sm text-muted-foreground">No comments yet. Be the first to comment!</div>}
-
         <div ref={commentsEndRef} />
       </div>
     </ScrollArea>
