@@ -9,6 +9,7 @@
   "viewProfile": "View Profile",
   "markAsRead": "Mark as read",
   "delete": "Delete",
+  "deletePending": "Deleting...",
   "markAllAsRead": "Mark all as read",
   "deleteAll": "Delete all",
   "confirmDeleteTitle": "Are you sure?",

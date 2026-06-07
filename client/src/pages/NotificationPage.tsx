@@ -1,5 +1,5 @@
 import React from "react";
-import { Trash2 } from "lucide-react";
+import { Trash2, Loader2 } from "lucide-react";
 import { Helmet } from "react-helmet-async";
 import { Button } from "@/components/ui/button";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -79,11 +79,11 @@ export default function NotificationPage() {
 
   const confirmDelete = () => {
     const ids = [...pendingDeleteIds];
-    setPendingDeleteIds([]);
     setDeletingIds(new Set(ids));
     deleteNotification(ids, {
       onSettled: () => {
         setDeletingIds(new Set());
+        setPendingDeleteIds([]);
         if (ids.length > 1) {
           setSelectMode(false);
           setSelectedIds(new Set());
@@ -168,10 +168,11 @@ export default function NotificationPage() {
           </>
         )}
 
+        {/* delete notification confirmation */}
         <AlertDialog
           open={isConfirmOpen}
           onOpenChange={(open) => {
-            if (!open) setPendingDeleteIds([]);
+            if (!open && !isDeleting) setPendingDeleteIds([]);
           }}
         >
           <AlertDialogContent className="max-w-sm">
@@ -180,9 +181,16 @@ export default function NotificationPage() {
               <AlertDialogDescription>{confirmDescription}</AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>{t("notif:cancel")}</AlertDialogCancel>
-              <AlertDialogAction onClick={confirmDelete} variant="destructive">
-                {t("notif:delete")}
+              <AlertDialogCancel disabled={isDeleting}>{t("notif:cancel")}</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmDelete} variant="destructive" disabled={isDeleting}>
+                {isDeleting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    {t("notif:deletePending")}
+                  </>
+                ) : (
+                  t("notif:delete")
+                )}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
