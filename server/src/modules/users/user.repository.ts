@@ -79,6 +79,7 @@ export class UserRepository {
         lastLogin: true,
         createdAt: true,
         lastChangePasswordAt: true,
+        passwordHash: true,
         twoFactorEnabled: true,
         twoFactorSecret: true,
         twoFactorBackupCodes: true,
@@ -196,12 +197,10 @@ export class UserRepository {
   static async getPasswordByUserId(userId: string): Promise<string | null> {
     const result = await database.user.findUnique({
       where: { id: userId },
-      select: {
-        passwordHash: true,
-      },
+      select: { passwordHash: true },
     });
-
-    return result?.passwordHash || null;
+    // Use ?? so empty string (OAuth accounts with no password) is preserved, not coerced to null
+    return result?.passwordHash ?? null;
   }
 
   static async updatePassword(userId: string, newPasswordHash: string): Promise<void> {

@@ -48,6 +48,18 @@ export const changePasswordRequest = z
 
 export type ChangePasswordRequest = z.infer<typeof changePasswordRequest>;
 
+export const setPasswordRequest = z
+  .object({
+    newPassword: passwordValidation,
+    confirmPassword: z.string().min(1, "Please confirm your new password"),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  });
+
+export type SetPasswordRequest = z.infer<typeof setPasswordRequest>;
+
 export const loginRequest = z.object({
   email: z.email("Invalid email address"),
   password: z.string().min(1, "password is required"),

@@ -12,6 +12,7 @@ auth.post("/sessions-revoke", protect, ctrl.logoutAll);
 auth.delete("/sessions/:sessionId", protect, ctrl.deleteSession);
 auth.get("/sessions", protect, limitter(authLimit.SESSIONS), ctrl.getSessions);
 auth.patch("/change-password", protect, limitter(authLimit.PASSWORD_CHANGE), ctrl.changePassword);
+auth.post("/set-password", protect, limitter(authLimit.PASSWORD_SET), ctrl.setPassword);
 auth.post("/reset-password", limitter(authLimit.PASSWORD_RESET), ctrl.resetPassword);
 auth.post("/forgot-password", limitter(authLimit.PASSWORD_FORGOT), ctrl.forgotPassword);
 auth.post("/resend-verification-email", limitter(authLimit.RESEND_VERIFICATION_EMAIL), ctrl.resendVerificationEmail);

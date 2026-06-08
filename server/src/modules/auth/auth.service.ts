@@ -18,7 +18,7 @@ import { loginResponse, userResponse, verificationType } from "@/modules/users/u
 import { authErrorCode, authErrorMessage, authLimit } from "@/config/constant/auth.constant";
 import { generateRandomAvatarURL, generateRandomToken, generateRandomUsername } from "@/utils/generator";
 import { NotificationChannel, NotificationStatus, NotificationType, OAuthProvider, Prisma } from "generated/prisma/edge";
-import { ChangePasswordRequest, LoginRequest, RegisterRequest, ResetPasswordRequest } from "@/modules/auth/auth.schema";
+import { ChangePasswordRequest, LoginRequest, RegisterRequest, ResetPasswordRequest, SetPasswordRequest } from "@/modules/auth/auth.schema";
 import { buildTOTPUri, generateBackupCodes, generateTOTPSecret, verifyTOTP } from "@/utils/totp";
 
 const oauthStateKey = (provider: OAuthProviderKey, state: string) => `oauth:state:${provider}:${state}`;
@@ -314,6 +314,7 @@ export class AuthService {
       lastLogin: result.lastLogin,
       joinedAt: result.createdAt,
       lastChangePasswordAt: result.lastChangePasswordAt,
+      hasPassword: result.passwordHash !== "",
       twoFactorEnabled: result.twoFactorEnabled,
     };
   }
@@ -353,12 +354,16 @@ export class AuthService {
     await SessionRepository.deleteSessionBySessionId(sessionId);
   }
 
-  // change password
+  // change password (requires current password — for accounts that already have one)
   static async changePassword(c: Context, userId: string, request: ChangePasswordRequest): Promise<void> {
     const passwordHash = await UserRepository.getPasswordByUserId(userId);
 
-    if (!passwordHash) {
+    if (passwordHash === null) {
       throw new HTTPException(404, { message: authErrorMessage.USER_NOT_FOUND, cause: authErrorCode.USER_NOT_FOUND });
+    }
+
+    if (passwordHash === "") {
+      throw new HTTPException(400, { message: authErrorMessage.NO_PASSWORD_SET, cause: authErrorCode.NO_PASSWORD_SET });
     }
 
     const isValid = await verifyPassword({ password: request.currentPassword, hash: passwordHash });
@@ -375,6 +380,22 @@ export class AuthService {
     await SessionRepository.deleteSessionsByUserId(userId);
 
     deleteCookie(c, redisConfig.TOKEN_PREFIX_DEFAULT);
+  }
+
+  // set password (for OAuth accounts that have no password yet)
+  static async setPassword(c: Context, userId: string, request: SetPasswordRequest): Promise<void> {
+    const passwordHash = await UserRepository.getPasswordByUserId(userId);
+
+    if (passwordHash === null) {
+      throw new HTTPException(404, { message: authErrorMessage.USER_NOT_FOUND, cause: authErrorCode.USER_NOT_FOUND });
+    }
+
+    if (passwordHash !== "") {
+      throw new HTTPException(400, { message: authErrorMessage.PASSWORD_ALREADY_SET, cause: authErrorCode.PASSWORD_ALREADY_SET });
+    }
+
+    const hashedPassword = await hashPassword(request.newPassword);
+    await UserRepository.updatePassword(userId, hashedPassword);
   }
 
   static async forgotPassword(c: Context, email: string): Promise<void> {

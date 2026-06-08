@@ -3,7 +3,7 @@ import { AuthService } from "@/modules/auth/auth.service";
 import { responseCreated, responseOK } from "@/utils/response";
 import { databaseConfig, OAuthProviderKey } from "@/config/env";
 import { authSuccessMessage } from "@/config/constant/auth.constant";
-import { changePasswordRequest, forgotPasswordRequest, loginRequest, registerRequest, resendVerificationEmailRequest, resetPasswordRequest, twoFactorChallengeRequest, twoFactorCodeRequest } from "@/modules/auth/auth.schema";
+import { changePasswordRequest, forgotPasswordRequest, loginRequest, registerRequest, resendVerificationEmailRequest, resetPasswordRequest, setPasswordRequest, twoFactorChallengeRequest, twoFactorCodeRequest } from "@/modules/auth/auth.schema";
 
 export class AuthController {
   static async register(c: Context) {
@@ -66,6 +66,14 @@ export class AuthController {
     const request = changePasswordRequest.parse(await c.req.json());
     await AuthService.changePassword(c, user.userId, request);
     return responseOK(c, authSuccessMessage.CHANGE_PASSWORD_SUCCESS);
+  }
+
+  static async setPassword(c: Context) {
+    console.log("Set password requested");
+    const user = await c.get("user");
+    const request = setPasswordRequest.parse(await c.req.json());
+    await AuthService.setPassword(c, user.userId, request);
+    return responseOK(c, authSuccessMessage.SET_PASSWORD_SUCCESS);
   }
 
   static async resetPassword(c: Context) {

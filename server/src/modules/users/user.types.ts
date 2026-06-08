@@ -61,6 +61,7 @@ type userResponse = {
   lastLogin: Date | null;
   joinedAt: Date;
   lastChangePasswordAt: Date | null;
+  hasPassword: boolean;
 };
 
 type profileResponse = {

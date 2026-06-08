@@ -6,6 +6,7 @@ const authSuccessMessage = {
   GET_SESSIONS_SUCCESS: "Sessions fetched successfully",
   DELETE_SESSION_SUCCESS: "Session deleted successfully",
   CHANGE_PASSWORD_SUCCESS: "Password changed successfully",
+  SET_PASSWORD_SUCCESS: "Password set successfully",
   RESET_PASSWORD_SUCCESS: "Password reset successfully",
   FORGOT_PASSWORD_SUCCESS: "Password reset link sent successfully",
   RESEND_VERIFICATION_EMAIL_SUCCESS: "Verification email resent successfully",
@@ -44,6 +45,8 @@ const authErrorMessage = {
   TWO_FACTOR_SETUP_REQUIRED: "Complete 2FA setup before verifying",
   TWO_FACTOR_CHALLENGE_INVALID: "Invalid or expired 2FA challenge",
   TWO_FACTOR_REQUIRED: "2FA verification required",
+  NO_PASSWORD_SET: "This account has no password. Use set-password instead.",
+  PASSWORD_ALREADY_SET: "A password is already set. Use change-password instead.",
 };
 
 const authErrorCode = {
@@ -73,6 +76,8 @@ const authErrorCode = {
   TWO_FACTOR_SETUP_REQUIRED: "TWO_FACTOR_SETUP_REQUIRED",
   TWO_FACTOR_CHALLENGE_INVALID: "TWO_FACTOR_CHALLENGE_INVALID",
   TWO_FACTOR_REQUIRED: "TWO_FACTOR_REQUIRED",
+  NO_PASSWORD_SET: "NO_PASSWORD_SET",
+  PASSWORD_ALREADY_SET: "PASSWORD_ALREADY_SET",
 };
 
 const authLimit = {
@@ -127,6 +132,10 @@ const authLimit = {
     windowSec: 60,
   },
 
+  PASSWORD_SET: {
+    limit: 5,
+    windowSec: 60,
+  },
   TWO_FACTOR_SETUP: { limit: 5, windowSec: 60 },
   TWO_FACTOR_VERIFY: { limit: 10, windowSec: 60 },
   TWO_FACTOR_DISABLE: { limit: 5, windowSec: 60 },
