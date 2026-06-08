@@ -55,6 +55,9 @@
   "setPasswordDescription": "Akun kamu dibuat dengan OAuth (Google / GitHub). Atur kata sandi agar bisa masuk juga menggunakan email.",
   "setPasswordHint": "Tidak perlu kata sandi saat ini — kamu masuk melalui provider OAuth",
   "setPasswordButton": "Atur Kata Sandi",
+  "changePasswordConfirmTitle": "Ubah kata sandi dan keluar?",
+  "changePasswordConfirmDescription": "Mengubah kata sandi akan mengeluarkan kamu dari semua sesi aktif, termasuk sesi ini. Kamu perlu masuk kembali menggunakan kata sandi baru.",
+  "changePasswordConfirmButton": "Ya, Ubah Kata Sandi",
 
   "sessionsTitle": "Sesi Aktif",
   "sessionsDescription": "Kelola perangkat yang saat ini masuk ke akun kamu",

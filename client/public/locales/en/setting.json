@@ -55,6 +55,9 @@
   "setPasswordDescription": "Your account was created with OAuth (Google / GitHub). Set a password to also sign in with your email.",
   "setPasswordHint": "No current password needed — you signed in via an OAuth provider",
   "setPasswordButton": "Set Password",
+  "changePasswordConfirmTitle": "Change password and sign out?",
+  "changePasswordConfirmDescription": "Changing your password will sign you out of all active sessions, including this one. You will need to sign in again with your new password.",
+  "changePasswordConfirmButton": "Yes, Change Password",
 
   "sessionsTitle": "Active Sessions",
   "sessionsDescription": "Manage devices that are currently logged into your account",
