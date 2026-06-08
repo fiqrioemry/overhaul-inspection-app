@@ -6,7 +6,7 @@ import { useAuthStore } from "@/stores/auth.store";
 import { AUTH_ENDPOINTS } from "@/constants/auth.constant";
 import type { LoginData, UserAccount, TwoFactorSetupData, TwoFactorVerifyData } from "@/types/users.type";
 import type { ResponseOK, ResponseSuccess } from "@/types/response.type";
-import type { ChangePasswordFormValues } from "@/schemas/settings.schema";
+import type { ChangePasswordFormValues, SetPasswordFormValues } from "@/schemas/settings.schema";
 import { OAUTH_ENDPOINTS, type OAuthProviderKey } from "@/constants/auth.constant";
 import type { ForgotPasswordFormValues, LoginFormValues, RegisterFormValues, ResetPasswordRequest, TwoFactorChallengeFormValues } from "@/schemas/auth.schema";
 
@@ -64,6 +64,11 @@ export async function getSessions(): Promise<ResponseSuccess<Session>> {
 
 export async function changePassword(payload: ChangePasswordFormValues): Promise<ResponseOK> {
   const res = await api.patch(AUTH_ENDPOINTS.changePassword, payload);
+  return res.data;
+}
+
+export async function setPassword(payload: SetPasswordFormValues): Promise<ResponseOK> {
+  const res = await api.post(AUTH_ENDPOINTS.setPassword, payload);
   return res.data;
 }
 

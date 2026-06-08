@@ -9,6 +9,7 @@ export const AUTH_ENDPOINTS = {
   resetPassword: "/auth/reset-password",
   forgotPassword: "/auth/forgot-password",
   changePassword: "/auth/change-password",
+  setPassword: "/auth/set-password",
   revokeSessions: "/auth/sessions-revoke",
   resendVerification: "/auth/resend-verification",
   twoFactorSetup: "/auth/2fa/setup",

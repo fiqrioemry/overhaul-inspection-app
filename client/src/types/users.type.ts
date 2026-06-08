@@ -77,6 +77,7 @@ export interface User {
   email: string;
   followStatus: "ACCEPTED" | "PENDING" | "NONE";
   isPublic: boolean;
+  hasPassword: boolean;
   lastLogin: Date;
   createdAt: Date;
   lastChangePasswordAt: Date;
@@ -115,6 +116,7 @@ export interface UserAccount {
   lastChangePasswordAt: Date;
   isPublic: boolean;
   isOwner: boolean;
+  hasPassword: boolean;
   twoFactorEnabled: boolean;
   totalFollowers: number;
   totalFollowings: number;
