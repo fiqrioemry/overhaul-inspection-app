@@ -20,7 +20,7 @@ import { ShieldCheck, Loader2 } from "lucide-react";
 
 export default function LoginForm() {
   const navigate = useNavigate();
-  const { t } = useTranslation(["auth", "common"]);
+  const { t } = useTranslation(["auth", "common", "api"]);
   const redirectTo = new URLSearchParams(window.location.search).get("redirectTo") || "/";
 
   const oauthError = new URLSearchParams(window.location.search).get("error");
@@ -67,25 +67,28 @@ export default function LoginForm() {
         setStep("2fa");
       } else {
         navigate(redirectTo || "/", { replace: true });
-        toast.success(result?.message);
+        toast.success(t("api:LOGIN_SUCCESS"));
       }
     } catch (err) {
       const res = err as ResponseError;
-      setServerError({
-        message: res?.message ?? t("auth:loginFailed"),
-        errors: res?.errors,
-      });
+      const message = res?.code
+        ? t(`api:${res.code}`, { defaultValue: res.message ?? t("auth:loginFailed") })
+        : (res?.message ?? t("auth:loginFailed"));
+      setServerError({ message, errors: res?.errors });
     }
   }
 
   async function onChallengeSubmit(values: TwoFactorChallengeFormValues) {
     try {
-      const result = await challenge2FA({ ...values, challengeToken });
+      await challenge2FA({ ...values, challengeToken });
       navigate(redirectTo || "/", { replace: true });
-      toast.success(result?.message || "Login successful");
+      toast.success(t("api:TWO_FACTOR_CHALLENGE_PASSED"));
     } catch (err) {
       const res = err as ResponseError;
-      setChallengeError("code", { message: res?.message || "Invalid code" });
+      const message = res?.code
+        ? t(`api:${res.code}`, { defaultValue: res?.message })
+        : (res?.message ?? t("api:UNKNOWN_ERROR"));
+      setChallengeError("code", { message });
     }
   }
 

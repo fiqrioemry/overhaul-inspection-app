@@ -19,8 +19,8 @@ export const passwordValidation = z
 
 export const registerSchema = z
   .object({
-    name: z.string().min(3, "Name required min 3 Characters"),
-    email: z.email("Invalid email address"),
+    name: z.string().min(3, "Name must be at least 3 characters"),
+    email: z.string().email("Invalid email address"),
     password: passwordValidation,
     confirmPassword: z.string().min(1, "Password confirmation is required"),
   })
@@ -30,16 +30,16 @@ export const registerSchema = z
   });
 
 export const forgotPasswordSchema = z.object({
-  email: z.string().email("Email tidak valid"),
+  email: z.string().email("Invalid email address"),
 });
 
 export const resetPasswordSchema = z
   .object({
-    password: z.string().min(8, "Password minimal 8 karakter").regex(/[A-Z]/, "Password harus mengandung minimal 1 huruf kapital").regex(/[0-9]/, "Password harus mengandung minimal 1 angka"),
-    confirmPassword: z.string().min(1, "Konfirmasi password wajib diisi"),
+    password: z.string().min(8, "Password must be at least 8 characters").regex(/[A-Z]/, "Password must contain at least 1 uppercase letter").regex(/[0-9]/, "Password must contain at least 1 number"),
+    confirmPassword: z.string().min(1, "Password confirmation is required"),
   })
   .refine((data) => data.password === data.confirmPassword, {
-    message: "Password tidak cocok",
+    message: "Passwords do not match",
     path: ["confirmPassword"],
   });
 

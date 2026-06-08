@@ -17,7 +17,7 @@ import { registerSchema, type RegisterFormValues } from "@/schemas/auth.schema";
 import { Mail, CheckCircle2, ArrowRight } from "lucide-react";
 
 export default function RegisterForm() {
-  const { t } = useTranslation(["auth"]);
+  const { t } = useTranslation(["auth", "api"]);
   const [serverError, setServerError] = useState<ResponseError | null>(null);
   const [registeredEmail, setRegisteredEmail] = useState<string | null>(null);
 
@@ -33,15 +33,15 @@ export default function RegisterForm() {
   async function onSubmit(values: RegisterFormValues) {
     setServerError(null);
     try {
-      const result = await register(values);
-      toast.success(result?.message || t("auth:registerSuccess"));
+      await register(values);
+      toast.success(t("api:REGISTER_SUCCESS"));
       setRegisteredEmail(values.email);
     } catch (err) {
       const res = err as ResponseError;
-      setServerError({
-        message: res?.message ?? t("auth:registerFailed"),
-        errors: res?.errors,
-      });
+      const message = res?.code
+        ? t(`api:${res.code}`, { defaultValue: res.message ?? t("auth:registerFailed") })
+        : (res?.message ?? t("auth:registerFailed"));
+      setServerError({ message, errors: res?.errors });
     }
   }
 
