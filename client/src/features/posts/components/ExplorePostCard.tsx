@@ -14,6 +14,11 @@ export default function ExplorePostCard({ post }: PostCardProps) {
   const { openDialog, isOpen } = usePostStore();
   const [focusComment, setFocusComment] = useState(false);
 
+  // Repost rows have no galleries of their own; images live in originalPost
+  const displayGalleries = post.isRepost && post.originalPost?.galleries?.length
+    ? post.originalPost.galleries
+    : post.galleries;
+
   const handleImageClick = () => {
     openDialog({ isOpen: !isOpen, target: post.id });
   };
@@ -28,10 +33,10 @@ export default function ExplorePostCard({ post }: PostCardProps) {
     <>
       <div className="group relative aspect-square cursor-pointer overflow-hidden rounded-sm bg-muted" onClick={handleImageClick}>
         {/* Gambar utama */}
-        <img src={post.galleries[0]?.url} alt={post.content} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+        <img src={displayGalleries[0]?.url} alt={post.originalPost?.content ?? post.content} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
 
         {/* Multiple images indicator */}
-        {post.galleries.length > 1 && (
+        {displayGalleries.length > 1 && (
           <div className="absolute right-2 top-2 rounded-sm bg-black/60 p-1">
             <GalleryHorizontalEnd size={16} className="text-white" />
           </div>

@@ -16,9 +16,9 @@ interface PostsGridProps {
 function PostsGrid({ userId, saved = false, repostsOnly = false }: PostsGridProps) {
   const { t } = useTranslation(["setting"]);
   const observerRef = useRef<HTMLDivElement>(null);
-
   const userPosts = useInfiniteUserPosts({ userId, limit: 9 });
   const savedPosts = useInfiniteSavedPosts({ userId, limit: 3 }, saved);
+  
 
   const { data, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage } = saved ? savedPosts : userPosts;
 
@@ -40,11 +40,7 @@ function PostsGrid({ userId, saved = false, repostsOnly = false }: PostsGridProp
 
   const rawPosts = data?.pages.flatMap((page) => page.data) ?? [];
 
-  const allPosts = saved
-    ? rawPosts
-    : repostsOnly
-    ? rawPosts.filter((p): p is Post => !!p && p.isRepost)
-    : rawPosts.filter((p): p is Post => !!p && !p.isRepost);
+  const allPosts = saved ? rawPosts : repostsOnly ? rawPosts.filter((p): p is Post => !!p && p.isRepost) : rawPosts.filter((p): p is Post => !!p && !p.isRepost);
 
   const emptyKey = repostsOnly ? "noRepostsYet" : saved ? "noSavedYet" : "noPostsYet";
 
@@ -53,7 +49,7 @@ function PostsGrid({ userId, saved = false, repostsOnly = false }: PostsGridProp
       <div className="grid grid-cols-3 gap-1 md:gap-2">
         {isLoading && <PostGridSkeleton count={9} />}
         {allPosts.map((post) => (
-          <ExplorePostCard key={post.id} post={post} />
+          <ExplorePostCard key={post?.id} post={post!} />
         ))}
         {isFetchingNextPage && <PostGridSkeleton count={9} />}
       </div>

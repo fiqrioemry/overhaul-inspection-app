@@ -10,7 +10,7 @@ function makeOriginalPostSelect(userId?: string): Prisma.PostSelect {
     content: true,
     galleries: { select: { id: true, url: true, order: true } },
     user: { select: { id: true, name: true, username: true, avatar: true } },
-    ...(userId ? { reposts: { where: { userId, isRepost: true }, select: { id: true } } } : {}),
+    ...(userId ? { reposts: { where: { userId, isRepost: true, deletedAt: null }, select: { id: true } } } : {}),
   };
 }
 
@@ -56,7 +56,7 @@ export class PostRepository {
         select: {
           ...feedPostSelect,
           originalPost: { select: makeOriginalPostSelect(query.userId) },
-          reposts: { where: { userId: query.userId, isRepost: true }, select: { id: true } },
+          reposts: { where: { userId: query.userId, isRepost: true, deletedAt: null }, select: { id: true } },
           postReports: {
             where: { userId: query.userId },
             select: { id: true, userId: true },
@@ -127,7 +127,7 @@ export class PostRepository {
         shareCount: true,
         caption: true,
         originalPost: { select: makeOriginalPostSelect(userId) },
-        reposts: { where: { userId, isRepost: true }, select: { id: true } },
+        reposts: { where: { userId, isRepost: true, deletedAt: null }, select: { id: true } },
         postReports: {
           where: { userId },
           select: { id: true },
@@ -197,7 +197,7 @@ export class PostRepository {
         select: {
           ...feedPostSelect,
           originalPost: { select: makeOriginalPostSelect(userId) },
-          reposts: { where: { userId, isRepost: true }, select: { id: true } },
+          reposts: { where: { userId, isRepost: true, deletedAt: null }, select: { id: true } },
           postReports: {
             where: { userId: query.userId },
             select: { id: true, userId: true },
@@ -255,7 +255,7 @@ export class PostRepository {
         select: {
           ...feedPostSelect,
           originalPost: { select: makeOriginalPostSelect(query.userId) },
-          reposts: { where: { userId: query.userId, isRepost: true }, select: { id: true } },
+          reposts: { where: { userId: query.userId, isRepost: true, deletedAt: null }, select: { id: true } },
           postReports: {
             where: { userId: query.userId },
             select: { id: true, userId: true },
@@ -354,7 +354,7 @@ export class PostRepository {
             select: {
               ...feedPostSelect,
               originalPost: { select: makeOriginalPostSelect(userId) },
-              reposts: { where: { userId, isRepost: true }, select: { id: true } },
+              reposts: { where: { userId, isRepost: true, deletedAt: null }, select: { id: true } },
               postReports: {
                 where: { userId: query.userId },
                 select: { id: true, userId: true },
