@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { toast } from "sonner";
+import i18n from "@/i18n";
 import { POST_KEYS } from "@/features/posts/posts.query";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { SearchUsersRequest, UpdateProfileRequest } from "@/schemas/users.schema";
@@ -76,12 +77,23 @@ export function useGetFollowStatus(userId: string) {
   });
 }
 
+const followSuccessKeyMap: Record<string, string> = {
+  "User followed successfully": "FOLLOW_USER_SUCCESS",
+  "Follow request sent": "FOLLOW_REQUEST_SENT",
+};
+
+const unfollowSuccessKeyMap: Record<string, string> = {
+  "User unfollowed successfully": "UNFOLLOW_USER_SUCCESS",
+  "Follow request cancelled": "FOLLOW_REQUEST_CANCELLED",
+};
+
 export function useFollowUser(userId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: () => followUser(userId),
     onSuccess: (res) => {
-      toast.success(res.message);
+      const key = followSuccessKeyMap[res.message] ?? "FOLLOW_USER_SUCCESS";
+      toast.success(i18n.t(`api:${key}`));
       queryClient.invalidateQueries({ queryKey: USER_KEYS.all });
       queryClient.invalidateQueries({ queryKey: POST_KEYS.all });
     },
@@ -93,12 +105,14 @@ export function useUnfollowUser(userId: string) {
   return useMutation({
     mutationFn: () => unfollowUser(userId),
     onSuccess: (res) => {
-      toast.success(res.message);
+      const key = unfollowSuccessKeyMap[res.message] ?? "UNFOLLOW_USER_SUCCESS";
+      toast.success(i18n.t(`api:${key}`));
       queryClient.invalidateQueries({ queryKey: USER_KEYS.all });
       queryClient.invalidateQueries({ queryKey: POST_KEYS.all });
     },
   });
 }
+
 export function useUserProfile(username: string) {
   return useQuery({
     queryKey: USER_KEYS.profile(username),
@@ -113,8 +127,8 @@ export function useUpdateUserProfile() {
 
   return useMutation({
     mutationFn: (payload: UpdateProfileRequest) => updateUserProfile(payload),
-    onSuccess: (res) => {
-      toast.success(res.message || "Profile updated successfully");
+    onSuccess: () => {
+      toast.success(i18n.t("api:UPDATE_PROFILE_SUCCESS"));
       queryClient.invalidateQueries({ queryKey: AUTH_KEYS.me });
       queryClient.invalidateQueries({ queryKey: USER_KEYS.all });
     },
@@ -126,8 +140,8 @@ export function useUpdateAvatar() {
 
   return useMutation({
     mutationFn: (file: File) => updateAvatar(file),
-    onSuccess: (res) => {
-      toast.success(res.message || "Avatar updated successfully");
+    onSuccess: () => {
+      toast.success(i18n.t("api:UPDATE_AVATAR_SUCCESS"));
       queryClient.invalidateQueries({ queryKey: AUTH_KEYS.me });
       queryClient.invalidateQueries({ queryKey: USER_KEYS.all });
     },
@@ -138,8 +152,8 @@ export function useAcceptFollowRequest() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (followerId: string) => acceptFollowRequest(followerId),
-    onSuccess: (res, followerId) => {
-      toast.success(res.message || "Follow request accepted");
+    onSuccess: (_, followerId) => {
+      toast.success(i18n.t("api:FOLLOW_REQUEST_ACCEPTED"));
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
       queryClient.invalidateQueries({ queryKey: ["users", "followRequests"] });
       queryClient.invalidateQueries({ queryKey: ["users", "followStatus", followerId] });
@@ -151,8 +165,8 @@ export function useRejectFollowRequest() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (followerId: string) => rejectFollowRequest(followerId),
-    onSuccess: (res, followerId) => {
-      toast.success(res.message || "Follow request rejected");
+    onSuccess: (_, followerId) => {
+      toast.success(i18n.t("api:FOLLOW_REQUEST_REJECTED"));
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
       queryClient.invalidateQueries({ queryKey: ["users", "followRequests"] });
       queryClient.invalidateQueries({ queryKey: ["users", "followStatus", followerId] });
@@ -172,8 +186,8 @@ export function useBlockUser() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (targetUserId: string) => blockUser(targetUserId),
-    onSuccess: (res) => {
-      toast.success(res.message || "User blocked successfully");
+    onSuccess: () => {
+      toast.success(i18n.t("api:BLOCK_USER_SUCCESS"));
       queryClient.invalidateQueries({ queryKey: USER_KEYS.blocked() });
       queryClient.invalidateQueries({ queryKey: USER_KEYS.all });
       queryClient.invalidateQueries({ queryKey: POST_KEYS.all });
@@ -185,8 +199,8 @@ export function useUnblockUser() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (targetUserId: string) => unblockUser(targetUserId),
-    onSuccess: (res) => {
-      toast.success(res.message || "User unblocked successfully");
+    onSuccess: () => {
+      toast.success(i18n.t("api:UNBLOCK_USER_SUCCESS"));
       queryClient.invalidateQueries({ queryKey: USER_KEYS.blocked() });
       queryClient.invalidateQueries({ queryKey: USER_KEYS.all });
     },
@@ -205,8 +219,8 @@ export function useMuteUser() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ targetUserId, muteType }: { targetUserId: string; muteType?: MuteType }) => muteUser(targetUserId, muteType),
-    onSuccess: (res) => {
-      toast.success(res.message || "User muted successfully");
+    onSuccess: () => {
+      toast.success(i18n.t("api:MUTE_USER_SUCCESS"));
       queryClient.invalidateQueries({ queryKey: USER_KEYS.muted() });
       queryClient.invalidateQueries({ queryKey: POST_KEYS.all });
     },
@@ -217,8 +231,8 @@ export function useUnmuteUser() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (targetUserId: string) => unmuteUser(targetUserId),
-    onSuccess: (res) => {
-      toast.success(res.message || "User unmuted successfully");
+    onSuccess: () => {
+      toast.success(i18n.t("api:UNMUTE_USER_SUCCESS"));
       queryClient.invalidateQueries({ queryKey: USER_KEYS.muted() });
     },
   });

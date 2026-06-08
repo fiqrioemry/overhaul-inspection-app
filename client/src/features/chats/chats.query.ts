@@ -1,4 +1,5 @@
 import { toast } from "sonner";
+import i18n from "@/i18n";
 import type {
   ChatMessage,
   GetChatsRequest,
@@ -79,9 +80,6 @@ export function useCreatePrivateChat() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: CHAT_KEYS.all });
     },
-    onError: (err) => {
-      toast.error(err.message);
-    },
   });
 }
 
@@ -89,12 +87,9 @@ export function useCreateGroupChat() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (payload: CreateGroupChatRequest) => createGroupChat(payload),
-    onSuccess: (res) => {
-      toast.success(res.message || "Grup berhasil dibuat!");
+    onSuccess: () => {
+      toast.success(i18n.t("api:CREATE_GROUP_CHAT_SUCCESS"));
       queryClient.invalidateQueries({ queryKey: CHAT_KEYS.all });
-    },
-    onError: (err) => {
-      toast.error(err.message);
     },
   });
 }
@@ -107,9 +102,6 @@ export function useSendMessage(chatId: string) {
       queryClient.invalidateQueries({ queryKey: CHAT_KEYS.messages(chatId) });
       queryClient.invalidateQueries({ queryKey: CHAT_KEYS.all });
     },
-    onError: (err) => {
-      toast.error(err.message || "Gagal mengirim pesan.");
-    },
   });
 }
 
@@ -118,12 +110,9 @@ export function useDeleteMessages(chatId: string) {
   return useMutation({
     mutationFn: (payload: DeleteMessagesRequest) => deleteMessages(chatId, payload),
     onSuccess: () => {
-      toast.success("Pesan berhasil dihapus.");
+      toast.success(i18n.t("api:DELETE_MESSAGES_SUCCESS"));
       queryClient.invalidateQueries({ queryKey: CHAT_KEYS.messages(chatId) });
       queryClient.invalidateQueries({ queryKey: CHAT_KEYS.all });
-    },
-    onError: (err) => {
-      toast.error(err.message);
     },
   });
 }
@@ -139,18 +128,14 @@ export function useReadMessages(chatId: string) {
   });
 }
 
-// for group management
 export function useUpdateGroup(chatId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (payload: UpdateGroupRequest) => updateGroup(chatId, payload),
-    onSuccess: (res) => {
-      toast.success(res.message || "Grup berhasil diperbarui!");
+    onSuccess: () => {
+      toast.success(i18n.t("api:UPDATE_GROUP_SUCCESS"));
       queryClient.invalidateQueries({ queryKey: CHAT_KEYS.detail(chatId) });
       queryClient.invalidateQueries({ queryKey: CHAT_KEYS.all });
-    },
-    onError: (err) => {
-      toast.error(err.message);
     },
   });
 }
@@ -159,12 +144,9 @@ export function useAddMembers(chatId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (payload: AddMembersRequest) => addMembers(chatId, payload),
-    onSuccess: (res) => {
-      toast.success(res.message || "Anggota berhasil ditambahkan!");
+    onSuccess: () => {
+      toast.success(i18n.t("api:ADD_MEMBERS_SUCCESS"));
       queryClient.invalidateQueries({ queryKey: CHAT_KEYS.detail(chatId) });
-    },
-    onError: (err) => {
-      toast.error(err.message);
     },
   });
 }
@@ -173,12 +155,9 @@ export function useRemoveMember(chatId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (payload: RemoveMemberRequest) => removeMember(chatId, payload),
-    onSuccess: (res) => {
-      toast.success(res.message || "Anggota berhasil dihapus.");
+    onSuccess: () => {
+      toast.success(i18n.t("api:REMOVE_MEMBER_SUCCESS"));
       queryClient.invalidateQueries({ queryKey: CHAT_KEYS.detail(chatId) });
-    },
-    onError: (err) => {
-      toast.error(err.message);
     },
   });
 }
@@ -187,12 +166,9 @@ export function useLeaveGroup(chatId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: () => leaveGroup(chatId),
-    onSuccess: (res) => {
-      toast.success(res.message || "Kamu telah keluar dari grup.");
+    onSuccess: () => {
+      toast.success(i18n.t("api:LEAVE_GROUP_SUCCESS"));
       queryClient.invalidateQueries({ queryKey: CHAT_KEYS.all });
-    },
-    onError: (err) => {
-      toast.error(err.message);
     },
   });
 }
@@ -201,12 +177,9 @@ export function usePromoteMember(chatId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (payload: PromoteMemberRequest) => promoteMember(chatId, payload),
-    onSuccess: (res) => {
-      toast.success(res.message || "Anggota dipromosikan menjadi admin.");
+    onSuccess: () => {
+      toast.success(i18n.t("api:PROMOTE_MEMBER_SUCCESS"));
       queryClient.invalidateQueries({ queryKey: CHAT_KEYS.detail(chatId) });
-    },
-    onError: (err) => {
-      toast.error(err.message);
     },
   });
 }
@@ -215,12 +188,9 @@ export function useDemoteMember(chatId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (payload: PromoteMemberRequest) => demoteMember(chatId, payload),
-    onSuccess: (res) => {
-      toast.success(res.message || "Admin diturunkan menjadi anggota.");
+    onSuccess: () => {
+      toast.success(i18n.t("api:DEMOTE_MEMBER_SUCCESS"));
       queryClient.invalidateQueries({ queryKey: CHAT_KEYS.detail(chatId) });
-    },
-    onError: (err) => {
-      toast.error(err.message);
     },
   });
 }
@@ -230,7 +200,7 @@ export function useUnreadMessagesCount() {
     queryKey: ["chats", "unreadCount"] as const,
     queryFn: () => getUnreadMessagesCount(),
     select: (data) => data.data.unreadCount,
-    staleTime: 1000 * 60, // 1 minute
+    staleTime: 1000 * 60,
   });
 }
 
@@ -239,12 +209,8 @@ export function useAddReaction(chatId: string, messageId: string) {
   return useMutation({
     mutationFn: (payload: ReactionRequest) => addReaction(chatId, messageId, payload),
     onSuccess: (res) => {
-      // Instantly reflect the updated reactions without waiting for cache invalidation
       useChatStore.getState().updateOptimisticReactions(chatId, messageId, res.data.reactions);
       queryClient.invalidateQueries({ queryKey: CHAT_KEYS.messages(chatId) });
-    },
-    onError: (err) => {
-      toast.error(err.message);
     },
   });
 }
@@ -255,9 +221,6 @@ export function useRemoveReaction(chatId: string, messageId: string) {
     mutationFn: (payload: ReactionRequest) => removeReaction(chatId, messageId, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: CHAT_KEYS.messages(chatId) });
-    },
-    onError: (err) => {
-      toast.error(err.message);
     },
   });
 }

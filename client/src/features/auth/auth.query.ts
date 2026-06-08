@@ -1,6 +1,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 // src/features/auth/auth.query.ts
 import { toast } from "sonner";
+import i18n from "@/i18n";
 import { useEffect } from "react";
 import { useAuthStore } from "@/stores/auth.store";
 import type { ResetPasswordRequest } from "@/schemas/auth.schema";
@@ -63,8 +64,8 @@ export function useLogoutAll() {
 export function useChangePassword() {
   return useMutation({
     mutationFn: (payload: ChangePasswordFormValues) => changePassword(payload),
-    onSuccess: (res) => {
-      toast.success(res.message || "Password changed successfully");
+    onSuccess: () => {
+      toast.success(i18n.t("api:CHANGE_PASSWORD_SUCCESS"));
     },
   });
 }
@@ -73,8 +74,8 @@ export function useSetPassword() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (payload: SetPasswordFormValues) => setPassword(payload),
-    onSuccess: (res) => {
-      toast.success(res.message || "Password set successfully");
+    onSuccess: () => {
+      toast.success(i18n.t("api:SET_PASSWORD_SUCCESS"));
       queryClient.invalidateQueries({ queryKey: AUTH_KEYS.me });
     },
   });
@@ -83,9 +84,6 @@ export function useSetPassword() {
 export function useResetPassword(token: string) {
   return useMutation({
     mutationFn: (payload: ResetPasswordRequest) => resetPassword(token, payload),
-    onError: (err) => {
-      toast.error(err.message || "Gagal mereset password, coba lagi.");
-    },
   });
 }
 
@@ -99,8 +97,8 @@ export function useVerify2FA() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (code: string) => verify2FA(code),
-    onSuccess: (res) => {
-      toast.success(res.message || "2FA enabled successfully");
+    onSuccess: () => {
+      toast.success(i18n.t("api:TWO_FACTOR_ENABLED"));
       queryClient.invalidateQueries({ queryKey: AUTH_KEYS.me });
     },
   });
@@ -110,8 +108,8 @@ export function useDisable2FA() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (code: string) => disable2FA(code),
-    onSuccess: (res) => {
-      toast.success(res.message || "2FA disabled successfully");
+    onSuccess: () => {
+      toast.success(i18n.t("api:TWO_FACTOR_DISABLED"));
       queryClient.invalidateQueries({ queryKey: AUTH_KEYS.me });
     },
   });

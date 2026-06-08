@@ -1,4 +1,5 @@
 import { toast } from "sonner";
+import i18n from "@/i18n";
 import type { GetNotificationRequest } from "@/schemas/notification.schema";
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
 import { deleteNotification, fetchNotifications, getNotificationSettings, getUnreadNotificationCount, markAsRead, updateNotificationSettings } from "./notifications.api";
@@ -28,7 +29,7 @@ export function useInfiniteNotifications(query: Omit<GetNotificationRequest, "pa
       return page < totalPages ? page + 1 : undefined;
     },
     initialPageParam: 1,
-    enabled: options?.enabled !== false, // selalu boolean: true atau false
+    enabled: options?.enabled !== false,
     staleTime: 1000 * 30,
   });
 }
@@ -45,8 +46,8 @@ export function useUpdateNotificationSettings() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (payload: { type: string; enabled: boolean }) => updateNotificationSettings(payload),
-    onSuccess: (res) => {
-      toast.success(res.message || "Notification settings updated");
+    onSuccess: () => {
+      toast.success(i18n.t("api:UPDATE_NOTIFICATION_SETTINGS"));
       queryClient.invalidateQueries({ queryKey: NOTIFICATION_KEYS.settings });
     },
   });
@@ -66,8 +67,8 @@ export function useDeleteNotification() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (notificationIds: string[]) => deleteNotification(notificationIds),
-    onSuccess: (res) => {
-      toast.success(res.message || "Notifications deleted");
+    onSuccess: () => {
+      toast.success(i18n.t("api:DELETE_NOTIFICATION"));
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
     },
   });

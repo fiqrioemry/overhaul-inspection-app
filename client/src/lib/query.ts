@@ -1,32 +1,29 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // src/lib/query.ts
 import { toast } from "sonner";
+import i18n from "@/i18n";
 import type { ResponseError } from "@/types/response.type";
 import { QueryClient, QueryCache, MutationCache } from "@tanstack/react-query";
 
-// Global error handler function
+function translateApiError(error: any): string {
+  const responseError = error as ResponseError;
+  const code = responseError.code;
+  if (code) {
+    return i18n.t(`api:${code}`, { defaultValue: responseError.message || i18n.t("api:UNKNOWN_ERROR") });
+  }
+  return responseError.message || i18n.t("api:UNKNOWN_ERROR");
+}
+
 function handleQueryError(error: any) {
   const responseError = error as ResponseError;
-
-  // Don't show toast for auth errors (handled by axios interceptor)
-  if (responseError.status === 401) {
-    return;
-  }
-
-  // Show error toast for other errors
-  toast.error(responseError.message || "An error occurred");
+  if (responseError.status === 401) return;
+  toast.error(translateApiError(error));
 }
 
 function handleMutationError(error: any) {
   const responseError = error as ResponseError;
-
-  // Don't show toast for auth errors
-  if (responseError.status === 401) {
-    return;
-  }
-
-  // Show error toast
-  toast.error(responseError.message || "An error occurred");
+  if (responseError.status === 401) return;
+  toast.error(translateApiError(error));
 }
 
 export const queryClient = new QueryClient({

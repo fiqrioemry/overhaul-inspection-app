@@ -1,4 +1,5 @@
 import { toast } from "sonner";
+import i18n from "@/i18n";
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
 import type { CreatePostRequest, GetPublicPostsRequest, GetSavedPostsRequest, ReportPostRequest, SharePostRequest, UpdatePostRequest } from "@/schemas/posts.schema";
 import { fetchPublicPosts, fetchFollowingPosts, fetchPostById, createPost, updatePost, deletePost, likePost, unlikePost, fetchPostsByUserId, fetchSavedPostsByUserId, savePost, unsavePost, reportPost, sharePost, unsharePost, fetchPostShares } from "./posts.api";
@@ -26,8 +27,8 @@ export function useCreatePost() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (payload: CreatePostRequest) => createPost(payload),
-    onSuccess: (res) => {
-      toast.success(res.message || "Post created successfully!");
+    onSuccess: () => {
+      toast.success(i18n.t("api:CREATE_POST_SUCCESS"));
       queryClient.invalidateQueries({ queryKey: POST_KEYS.all });
     },
   });
@@ -37,19 +38,20 @@ export function useLikePost(postId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: () => likePost(postId),
-    onSuccess: (res) => {
-      toast.success(res.message || "You Liked the post");
+    onSuccess: () => {
+      toast.success(i18n.t("api:LIKE_POST_SUCCESS"));
       queryClient.invalidateQueries({ queryKey: POST_KEYS.all });
       queryClient.invalidateQueries({ queryKey: ["hashtags"] });
     },
   });
 }
+
 export function useUnlikePost(postId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: () => unlikePost(postId),
-    onSuccess: (res) => {
-      toast.success(res.message || "You Unliked the post");
+    onSuccess: () => {
+      toast.success(i18n.t("api:UNLIKE_POST_SUCCESS"));
       queryClient.invalidateQueries({ queryKey: POST_KEYS.all });
       queryClient.invalidateQueries({ queryKey: ["hashtags"] });
     },
@@ -60,8 +62,8 @@ export function useUpdatePost(postId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (payload: UpdatePostRequest) => updatePost(postId, payload),
-    onSuccess: (res) => {
-      toast.success(res.message || "You edited this post");
+    onSuccess: () => {
+      toast.success(i18n.t("api:UPDATE_POST_SUCCESS"));
       queryClient.invalidateQueries({ queryKey: POST_KEYS.detail(postId) });
       queryClient.invalidateQueries({ queryKey: POST_KEYS.all });
     },
@@ -72,8 +74,8 @@ export function useDeletePost(postId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: () => deletePost(postId),
-    onSuccess: (res) => {
-      toast.success(res.message || "You deleted this post");
+    onSuccess: () => {
+      toast.success(i18n.t("api:DELETE_POST_SUCCESS"));
       queryClient.invalidateQueries({ queryKey: POST_KEYS.detail(postId) });
       queryClient.invalidateQueries({ queryKey: POST_KEYS.all });
     },
@@ -142,8 +144,8 @@ export function useUnsavePost(postId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: () => unsavePost(postId),
-    onSuccess: (res) => {
-      toast.success(res.message || "You Unsaved the post");
+    onSuccess: () => {
+      toast.success(i18n.t("api:UNBOOKMARK_POST_SUCCESS"));
       queryClient.invalidateQueries({ queryKey: POST_KEYS.all });
       queryClient.invalidateQueries({ queryKey: ["hashtags"] });
     },
@@ -154,8 +156,8 @@ export function useSavePost(postId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: () => savePost(postId),
-    onSuccess: (res) => {
-      toast.success(res.message || "You Saved the post");
+    onSuccess: () => {
+      toast.success(i18n.t("api:BOOKMARK_POST_SUCCESS"));
       queryClient.invalidateQueries({ queryKey: POST_KEYS.all });
       queryClient.invalidateQueries({ queryKey: ["hashtags"] });
     },
@@ -166,8 +168,8 @@ export function useReportPost(postId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (payload: ReportPostRequest) => reportPost(postId, payload),
-    onSuccess: (res) => {
-      toast.success(res.message || "You reported the post");
+    onSuccess: () => {
+      toast.success(i18n.t("api:REPORT_POST_SUCCESS"));
       queryClient.invalidateQueries({ queryKey: POST_KEYS.all });
     },
   });
@@ -177,8 +179,8 @@ export function useSharePost(postId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (payload: SharePostRequest) => sharePost(postId, payload),
-    onSuccess: (res) => {
-      toast.success(res.message || "Post shared successfully");
+    onSuccess: () => {
+      toast.success(i18n.t("api:SHARE_POST_SUCCESS"));
       queryClient.invalidateQueries({ queryKey: POST_KEYS.all });
       queryClient.invalidateQueries({ queryKey: POST_KEYS.shares(postId) });
     },
@@ -189,8 +191,8 @@ export function useUnsharePost(postId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: () => unsharePost(postId),
-    onSuccess: (res) => {
-      toast.success(res.message || "Repost removed");
+    onSuccess: () => {
+      toast.success(i18n.t("api:UNSHARE_POST_SUCCESS"));
       queryClient.invalidateQueries({ queryKey: POST_KEYS.all });
       queryClient.invalidateQueries({ queryKey: POST_KEYS.shares(postId) });
     },

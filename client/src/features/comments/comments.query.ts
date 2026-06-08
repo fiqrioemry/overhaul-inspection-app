@@ -1,4 +1,5 @@
 import { toast } from "sonner";
+import i18n from "@/i18n";
 import { POST_KEYS } from "@/features/posts/posts.query";
 import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { createComment, deleteComment, editComment, fetchComments, fetchReplies, likeComment, unlikeComment } from "./comments.api";
@@ -45,13 +46,10 @@ export function useLikeComment(commentId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: () => likeComment(commentId),
-    onSuccess: (res) => {
-      toast.success(res.message);
+    onSuccess: () => {
+      toast.success(i18n.t("api:LIKE_COMMENT_SUCCESS"));
       queryClient.invalidateQueries({ queryKey: COMMENT_KEYS.detail(commentId) });
       queryClient.invalidateQueries({ queryKey: COMMENT_KEYS.all });
-    },
-    onError: (err) => {
-      console.log("Error liking comment", err);
     },
   });
 }
@@ -60,13 +58,10 @@ export function useUnlikeComment(commentId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: () => unlikeComment(commentId),
-    onSuccess: (res) => {
-      toast.success(res.message);
+    onSuccess: () => {
+      toast.success(i18n.t("api:UNLIKE_COMMENT_SUCCESS"));
       queryClient.invalidateQueries({ queryKey: COMMENT_KEYS.detail(commentId) });
       queryClient.invalidateQueries({ queryKey: COMMENT_KEYS.all });
-    },
-    onError: (err) => {
-      console.log("Error unliking comment", err);
     },
   });
 }
@@ -75,8 +70,8 @@ export function useCreateComment() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (payload: CreateCommentRequest) => createComment(payload),
-    onSuccess: (res) => {
-      toast.success(res.message);
+    onSuccess: () => {
+      toast.success(i18n.t("api:CREATE_COMMENT_SUCCESS"));
       queryClient.invalidateQueries({ queryKey: COMMENT_KEYS.all });
       queryClient.invalidateQueries({ queryKey: POST_KEYS.all });
     },
@@ -88,6 +83,7 @@ export function useEditComment(commentId: string) {
   return useMutation({
     mutationFn: (payload: EditCommentRequest) => editComment(commentId, payload),
     onSuccess: () => {
+      toast.success(i18n.t("api:UPDATE_COMMENT_SUCCESS"));
       queryClient.invalidateQueries({ queryKey: COMMENT_KEYS.detail(commentId) });
       queryClient.invalidateQueries({ queryKey: COMMENT_KEYS.all });
     },
@@ -98,8 +94,8 @@ export function useDeleteComment(commentId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: () => deleteComment(commentId),
-    onSuccess: (res) => {
-      toast.success(res.message || "Comment deleted successfully");
+    onSuccess: () => {
+      toast.success(i18n.t("api:DELETE_COMMENT_SUCCESS"));
       queryClient.invalidateQueries({ queryKey: COMMENT_KEYS.all });
       queryClient.invalidateQueries({ queryKey: POST_KEYS.all });
     },

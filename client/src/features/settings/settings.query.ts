@@ -1,5 +1,6 @@
 // src/features/settings/settings.queries.ts
 import { toast } from "sonner";
+import i18n from "@/i18n";
 import { AUTH_KEYS } from "@/features/auth/auth.query";
 import { USER_KEYS } from "@/features/users/users.query";
 import { updatePrivacy } from "@/features/users/users.api";
@@ -15,8 +16,8 @@ export function useUpdatePrivacy() {
 
   return useMutation({
     mutationFn: updatePrivacy,
-    onSuccess: (res) => {
-      toast.success(res.message || "Privacy settings updated");
+    onSuccess: () => {
+      toast.success(i18n.t("api:UPDATE_PRIVACY_SUCCESS"));
       queryClient.invalidateQueries({ queryKey: AUTH_KEYS.me });
       queryClient.invalidateQueries({ queryKey: USER_KEYS.all });
     },
@@ -37,8 +38,8 @@ export function useUpdateNotificationSetting() {
   return useMutation({
     mutationFn: updateNotificationSettings,
     onSuccess: () => {
+      toast.success(i18n.t("api:UPDATE_NOTIFICATION_SETTINGS"));
       queryClient.invalidateQueries({ queryKey: SETTINGS_KEYS.notifications });
-      toast.success("Notification settings updated");
     },
   });
 }
