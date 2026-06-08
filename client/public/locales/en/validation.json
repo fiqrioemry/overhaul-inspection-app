@@ -1,0 +1,42 @@
+{
+  "emailInvalid": "Email is not valid",
+  "emailRequired": "Email is required",
+
+  "passwordRequired": "Password is required",
+  "passwordMin": "Password must be at least {{count}} characters",
+  "passwordUppercase": "Password must contain at least one uppercase letter",
+  "passwordSpecialChar": "Password must contain at least one special character",
+  "passwordNumber": "Password must contain at least 1 number",
+  "passwordsDoNotMatch": "Passwords do not match",
+  "newPasswordsDoNotMatch": "New passwords do not match",
+  "confirmPasswordRequired": "Please confirm your new password",
+  "currentPasswordRequired": "Current password is required",
+
+  "nameRequired": "Name is required",
+  "nameMin": "Name must be at least {{count}} characters",
+  "nameMax": "Name must be at most {{count}} characters",
+  "bioMax": "Bio must be at most {{count}} characters",
+
+  "websiteMax": "Website URL must be at most {{count}} characters",
+  "websiteInvalid": "Website must be a valid URL (start with http:// or https://)",
+
+  "usernameMin": "Username must be at least {{count}} characters",
+  "usernameMax": "Username must be at most {{count}} characters",
+  "usernamePattern": "Username can only contain lowercase letters, numbers, dots, and underscores",
+
+  "titleRequired": "Title is required",
+  "contentRequired": "Content is required",
+  "contentMin": "Content must be at least {{count}} characters",
+  "contentMax": "Content must be less than {{count}} characters",
+
+  "imagesMin": "At least one image is required",
+  "imagesMax": "Maximum {{count}} images",
+  "fileSizeMax": "File size must be less than 8MB",
+  "fileTypeInvalid": "Only JPEG, PNG, and WebP are allowed",
+  "reportDescriptionRequired": "Description is required when reason is OTHER",
+
+  "searchRequired": "Search query is required",
+  "codeMin": "Code must be at least {{count}} characters",
+  "codeMax": "Code must be at most {{count}} characters",
+  "totpCodeLength": "TOTP code must be exactly 6 digits"
+}

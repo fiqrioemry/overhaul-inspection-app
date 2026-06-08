@@ -25,7 +25,7 @@ function SetPasswordForm() {
     reset,
     formState: { isDirty, isSubmitting },
   } = useForm<SetPasswordFormValues>({
-    resolver: zodResolver(setPasswordSchema),
+    resolver: zodResolver(setPasswordSchema()),
     defaultValues: { newPassword: "", confirmPassword: "" },
   });
 
@@ -87,7 +87,7 @@ function ChangePasswordForm() {
     reset,
     formState: { isDirty, isSubmitting },
   } = useForm<ChangePasswordFormValues>({
-    resolver: zodResolver(changePasswordSchema),
+    resolver: zodResolver(changePasswordSchema()),
     defaultValues: { currentPassword: "", newPassword: "", confirmPassword: "" },
   });
 

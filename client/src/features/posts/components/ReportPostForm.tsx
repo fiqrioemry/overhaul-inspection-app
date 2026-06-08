@@ -35,7 +35,7 @@ export default function ReportPostForm({ post, onSuccess, onClose, isPendingChan
     handleSubmit,
     formState: { isValid },
   } = useForm<ReportPostRequest>({
-    resolver: zodResolver(reportPostRequest),
+    resolver: zodResolver(reportPostRequest()),
     mode: "onChange",
     defaultValues: {
       reason: undefined,

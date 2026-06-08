@@ -1,9 +1,13 @@
 import { z } from "zod";
+import i18n from "@/i18n";
+
+const t = (key: string, opts?: Record<string, unknown>): string =>
+  opts !== undefined ? i18n.t(`validation:${key}`, opts) : i18n.t(`validation:${key}`);
 
 const searchUsersRequest = z.object({
   userId: z.cuid().optional(),
   targetUserId: z.cuid().optional(),
-  search: z.string().min(1, "Search query is required"),
+  search: z.string().min(1, t("searchRequired")),
   page: z.number().default(1).optional(),
   limit: z.number().default(10).optional(),
   orderBy: z.enum(["createdAt"]).default("createdAt").optional(),
@@ -12,19 +16,19 @@ const searchUsersRequest = z.object({
 export type SearchUsersRequest = z.infer<typeof searchUsersRequest>;
 
 const updateProfileRequest = z.object({
-  name: z.string().min(1, "Name is required"),
-  bio: z.string().max(160, "Bio must be at most 160 characters").optional(),
+  name: z.string().min(1, t("nameRequired")),
+  bio: z.string().max(160, t("bioMax", { count: 160 })).optional(),
   gender: z.enum(["MALE", "FEMALE"]).optional(),
   website: z
     .string()
-    .max(200, "Website URL must be at most 200 characters")
-    .refine((v) => !v || /^https?:\/\/.+/.test(v), { message: "Website must be a valid URL" })
+    .max(200, t("websiteMax", { count: 200 }))
+    .refine((v) => !v || /^https?:\/\/.+/.test(v), { message: t("websiteInvalid") })
     .optional(),
   username: z
     .string()
-    .min(3, "Username must be at least 3 characters")
-    .max(30, "Username must be at most 30 characters")
-    .regex(/^[a-z0-9_.]+$/, "Username can only contain lowercase letters, numbers, dots, and underscores")
+    .min(3, t("usernameMin", { count: 3 }))
+    .max(30, t("usernameMax", { count: 30 }))
+    .regex(/^[a-z0-9_.]+$/, t("usernamePattern"))
     .optional(),
 });
 export type UpdateProfileRequest = z.infer<typeof updateProfileRequest>;

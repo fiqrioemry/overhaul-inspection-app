@@ -36,12 +36,12 @@ export default function TwoFactorSetup() {
   const { mutateAsync: disable, isPending: isDisabling } = useDisable2FA();
 
   const verifyForm = useForm<TwoFactorVerifyFormValues>({
-    resolver: zodResolver(twoFactorVerifySchema),
+    resolver: zodResolver(twoFactorVerifySchema()),
     defaultValues: { code: "" },
   });
 
   const disableForm = useForm<TwoFactorDisableFormValues>({
-    resolver: zodResolver(twoFactorDisableSchema),
+    resolver: zodResolver(twoFactorDisableSchema()),
     defaultValues: { code: "" },
   });
 

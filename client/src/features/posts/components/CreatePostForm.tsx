@@ -30,7 +30,7 @@ export default function CreatePostForm({ onSuccess, onClose, onHasImagesChange, 
   isPendingChange?.(isPending);
 
   const methods = useForm<CreatePostRequest>({
-    resolver: zodResolver(createPostRequest),
+    resolver: zodResolver(createPostRequest()),
     defaultValues: {
       title: "",
       content: "",

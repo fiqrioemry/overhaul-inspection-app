@@ -1,0 +1,42 @@
+{
+  "emailInvalid": "Email tidak valid",
+  "emailRequired": "Email wajib diisi",
+
+  "passwordRequired": "Kata sandi wajib diisi",
+  "passwordMin": "Kata sandi minimal {{count}} karakter",
+  "passwordUppercase": "Kata sandi harus mengandung minimal satu huruf kapital",
+  "passwordSpecialChar": "Kata sandi harus mengandung minimal satu karakter khusus",
+  "passwordNumber": "Kata sandi harus mengandung minimal 1 angka",
+  "passwordsDoNotMatch": "Kata sandi tidak sama",
+  "newPasswordsDoNotMatch": "Kata sandi baru tidak sama",
+  "confirmPasswordRequired": "Harap konfirmasi kata sandi baru kamu",
+  "currentPasswordRequired": "Kata sandi saat ini wajib diisi",
+
+  "nameRequired": "Nama wajib diisi",
+  "nameMin": "Nama minimal {{count}} karakter",
+  "nameMax": "Nama maksimal {{count}} karakter",
+  "bioMax": "Bio maksimal {{count}} karakter",
+
+  "websiteMax": "URL website maksimal {{count}} karakter",
+  "websiteInvalid": "Website harus berupa URL yang valid (diawali dengan http:// atau https://)",
+
+  "usernameMin": "Username minimal {{count}} karakter",
+  "usernameMax": "Username maksimal {{count}} karakter",
+  "usernamePattern": "Username hanya boleh mengandung huruf kecil, angka, titik, dan garis bawah",
+
+  "titleRequired": "Judul wajib diisi",
+  "contentRequired": "Konten wajib diisi",
+  "contentMin": "Konten minimal {{count}} karakter",
+  "contentMax": "Konten maksimal {{count}} karakter",
+
+  "imagesMin": "Minimal satu gambar diperlukan",
+  "imagesMax": "Maksimal {{count}} gambar",
+  "fileSizeMax": "Ukuran file harus kurang dari 8MB",
+  "fileTypeInvalid": "Hanya JPEG, PNG, dan WebP yang diizinkan",
+  "reportDescriptionRequired": "Deskripsi wajib diisi jika alasan adalah LAINNYA",
+
+  "searchRequired": "Kueri pencarian wajib diisi",
+  "codeMin": "Kode minimal {{count}} karakter",
+  "codeMax": "Kode maksimal {{count}} karakter",
+  "totpCodeLength": "Kode TOTP harus tepat 6 digit"
+}

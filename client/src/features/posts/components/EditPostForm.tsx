@@ -27,7 +27,7 @@ export default function EditPostForm({ post, onSuccess, onClose, isPendingChange
     reset,
     formState: { isDirty, isValid },
   } = useForm<UpdatePostRequest>({
-    resolver: zodResolver(updatePostRequest),
+    resolver: zodResolver(updatePostRequest()),
     defaultValues: {
       title: post.title ?? "",
       content: post.content ?? "",

@@ -45,7 +45,7 @@ export default function ProfileForm() {
     watch,
     formState: { isDirty, isSubmitting },
   } = useForm<ProfileFormValues>({
-    resolver: zodResolver(profileFormSchema),
+    resolver: zodResolver(profileFormSchema()),
     defaultValues,
   });
 

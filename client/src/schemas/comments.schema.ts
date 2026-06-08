@@ -1,11 +1,15 @@
 import { z } from "zod";
+import i18n from "@/i18n";
 
-export const createCommentRequest = z.object({
-  userId: z.cuid().optional(),
-  commentId: z.cuid().optional(),
-  postId: z.cuid().optional(),
-  content: z.string().min(1, "Content is required"),
-});
+const t = (key: string): string => i18n.t(`validation:${key}`);
+
+export const createCommentRequest = () =>
+  z.object({
+    userId: z.cuid().optional(),
+    commentId: z.cuid().optional(),
+    postId: z.cuid().optional(),
+    content: z.string().min(1, t("contentRequired")),
+  });
 
 export const getCommentsRequest = z.object({
   userId: z.cuid().optional(),
@@ -17,8 +21,8 @@ export const getCommentsRequest = z.object({
   sortBy: z.enum(["asc", "desc"]).optional(),
 });
 
-export const editCommentRequest = createCommentRequest.partial();
+export const editCommentRequest = () => createCommentRequest().partial();
 
-export type CreateCommentRequest = z.infer<typeof createCommentRequest>;
+export type CreateCommentRequest = z.infer<ReturnType<typeof createCommentRequest>>;
 export type GetCommentsRequest = z.infer<typeof getCommentsRequest>;
-export type EditCommentRequest = z.infer<typeof editCommentRequest>;
+export type EditCommentRequest = z.infer<ReturnType<typeof editCommentRequest>>;

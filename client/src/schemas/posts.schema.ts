@@ -1,12 +1,17 @@
 import { z } from "zod";
+import i18n from "@/i18n";
+
+const t = (key: string, opts?: Record<string, unknown>): string =>
+  opts !== undefined ? i18n.t(`validation:${key}`, opts) : i18n.t(`validation:${key}`);
 
 const MAX_FILE_SIZE = 8 * 1024 * 1024;
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
-export const imageFileSchema = z
-  .instanceof(File)
-  .refine((f) => f.size <= MAX_FILE_SIZE, `File size must be less than ${MAX_FILE_SIZE / (1024 * 1024)}MB`)
-  .refine((f) => ALLOWED_TYPES.includes(f.type), "Only JPEG, PNG, and WebP are allowed");
+export const imageFileSchema = () =>
+  z
+    .instanceof(File)
+    .refine((f) => f.size <= MAX_FILE_SIZE, t("fileSizeMax"))
+    .refine((f) => ALLOWED_TYPES.includes(f.type), t("fileTypeInvalid"));
 
 export const aspectRatioSchema = z.enum(["1:1", "4:5", "1.91:1", "16:9"]);
 
@@ -17,23 +22,25 @@ export const cropDataSchema = z.object({
   cropH: z.number().min(0).max(1),
 });
 
-export const createPostRequest = z.object({
-  title: z.string().min(1, "Title is required"),
-  content: z.string().min(10, "Content is required min 10 characters").max(2000, "Content must be less than 2000 characters"),
-  galleries: z.array(imageFileSchema).min(1, "At least one image is required").max(5, "Maximum 5 images"),
-  aspectRatio: aspectRatioSchema,
-  crops: z.array(cropDataSchema),
-});
+export const createPostRequest = () =>
+  z.object({
+    title: z.string().min(1, t("titleRequired")),
+    content: z.string().min(10, t("contentMin", { count: 10 })).max(2000, t("contentMax", { count: 2000 })),
+    galleries: z.array(imageFileSchema()).min(1, t("imagesMin")).max(5, t("imagesMax", { count: 5 })),
+    aspectRatio: aspectRatioSchema,
+    crops: z.array(cropDataSchema),
+  });
 
-export type CreatePostRequest = z.infer<typeof createPostRequest>;
+export type CreatePostRequest = z.infer<ReturnType<typeof createPostRequest>>;
 export type CropData = z.infer<typeof cropDataSchema>;
 
-export const updatePostRequest = z.object({
-  title: z.string().min(1, "Title is required"),
-  content: z.string().min(10, "Content is required min 10 characters").max(2000, "Content must be less than 5000 characters"),
-});
+export const updatePostRequest = () =>
+  z.object({
+    title: z.string().min(1, t("titleRequired")),
+    content: z.string().min(10, t("contentMin", { count: 10 })).max(2000, t("contentMax", { count: 2000 })),
+  });
 
-export type UpdatePostRequest = z.infer<typeof updatePostRequest>;
+export type UpdatePostRequest = z.infer<ReturnType<typeof updatePostRequest>>;
 
 export const getPublicPostsRequest = z.object({
   userId: z.cuid().optional(),
@@ -67,22 +74,23 @@ export type GetSavedPostsRequest = z.infer<typeof getSavedPostsRequest>;
 
 const PostReportReason = z.enum(["SPAM", "NUDITY", "MISSINFORMATION", "INAPPROPRIATE", "HARASSMENT", "OTHER"]);
 
-export const reportPostRequest = z
-  .object({
-    reason: PostReportReason,
-    description: z.string().max(1000).optional(),
-  })
-  .superRefine((data, ctx) => {
-    if (data.reason === PostReportReason.enum.OTHER && !data.description?.trim()) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["description"],
-        message: "Description is required when reason is OTHER.",
-      });
-    }
-  });
+export const reportPostRequest = () =>
+  z
+    .object({
+      reason: PostReportReason,
+      description: z.string().max(1000).optional(),
+    })
+    .superRefine((data, ctx) => {
+      if (data.reason === PostReportReason.enum.OTHER && !data.description?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["description"],
+          message: t("reportDescriptionRequired"),
+        });
+      }
+    });
 
-export type ReportPostRequest = z.infer<typeof reportPostRequest>;
+export type ReportPostRequest = z.infer<ReturnType<typeof reportPostRequest>>;
 
 export const sharePostRequest = z.object({
   caption: z.string().max(500).optional(),

@@ -26,7 +26,7 @@ export default function RegisterForm() {
     handleSubmit,
     formState: { isSubmitting },
   } = useForm<RegisterFormValues>({
-    resolver: zodResolver(registerSchema),
+    resolver: zodResolver(registerSchema()),
     defaultValues: { name: "", email: "", password: "", confirmPassword: "" },
   });
 

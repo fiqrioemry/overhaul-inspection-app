@@ -41,7 +41,7 @@ export default function LoginForm() {
     handleSubmit,
     formState: { isSubmitting },
   } = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
+    resolver: zodResolver(loginSchema()),
     defaultValues: { email: "", password: "" },
   });
 
@@ -52,7 +52,7 @@ export default function LoginForm() {
     setError: setChallengeError,
     reset: resetChallenge,
   } = useForm<TwoFactorChallengeFormValues>({
-    resolver: zodResolver(twoFactorChallengeSchema),
+    resolver: zodResolver(twoFactorChallengeSchema()),
     defaultValues: { code: "" },
   });
 
