@@ -209,7 +209,9 @@ export function useAddReaction(chatId: string, messageId: string) {
   return useMutation({
     mutationFn: (payload: ReactionRequest) => addReaction(chatId, messageId, payload),
     onSuccess: (res) => {
-      useChatStore.getState().updateOptimisticReactions(chatId, messageId, res.data.reactions);
+      if (res.data) {
+        useChatStore.getState().updateOptimisticReactions(chatId, messageId, res.data.reactions);
+      }
       queryClient.invalidateQueries({ queryKey: CHAT_KEYS.messages(chatId) });
     },
   });
