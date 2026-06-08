@@ -19,6 +19,8 @@
 
   "sharePost": "Repost",
   "unsharePost": "Remove repost",
+  "unsharePostTitle": "Remove repost?",
+  "unsharePostDescription": "This will remove the repost from your profile. The original post will not be deleted.",
   "sharePostTitle": "Repost",
   "sharePostDescription": "Share this post with your followers. Add an optional caption.",
   "shareCaptionPlaceholder": "Add a caption... (optional)",

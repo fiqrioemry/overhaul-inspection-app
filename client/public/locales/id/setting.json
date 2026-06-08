@@ -107,5 +107,14 @@
   "profileNotFound": "Pengguna tidak ditemukan",
   "profileNotFoundMessage": "Profil yang kamu cari tidak ada.",
   "profileIsPrivate": "Akun ini bersifat privat",
-  "profileIsPrivateMessage": "Ikuti akun ini untuk melihat postingan mereka."
+  "profileIsPrivateMessage": "Ikuti akun ini untuk melihat postingan mereka.",
+
+  "tabPosts": "Postingan",
+  "tabReposts": "Repost",
+  "tabSaved": "Tersimpan",
+  "noPostsYet": "Belum ada postingan.",
+  "noRepostsYet": "Belum ada repost.",
+  "noSavedYet": "Belum ada postingan tersimpan.",
+  "loadingMore": "Memuat lebih banyak...",
+  "reachedEnd": "Kamu sudah mencapai akhir"
 }

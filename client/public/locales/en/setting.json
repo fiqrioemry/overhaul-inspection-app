@@ -107,5 +107,14 @@
   "profileNotFound": "User not found",
   "profileNotFoundMessage": "The profile you're looking for doesn't exist.",
   "profileIsPrivate": "This account is private",
-  "profileIsPrivateMessage": "Follow this account to see their posts."
+  "profileIsPrivateMessage": "Follow this account to see their posts.",
+
+  "tabPosts": "Posts",
+  "tabReposts": "Reposts",
+  "tabSaved": "Saved",
+  "noPostsYet": "No posts yet.",
+  "noRepostsYet": "No reposts yet.",
+  "noSavedYet": "No saved posts yet.",
+  "loadingMore": "Loading more...",
+  "reachedEnd": "You've reached the end"
 }

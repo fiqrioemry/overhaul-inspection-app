@@ -28,6 +28,12 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const [isNearBottom, setIsNearBottom] = useState(true);
   const [replyTo, setReplyTo] = useState<ReplyToMessage | null>(null);
+  // Track chatId changes in render phase to reset replyTo without an effect
+  const [activeChatId, setActiveChatId] = useState(chatId);
+  if (activeChatId !== chatId) {
+    setActiveChatId(chatId);
+    setReplyTo(null);
+  }
 
   const { data: chatData } = useChatById(chatId);
   const chat = chatData?.data;
@@ -43,8 +49,14 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
 
   const serverIds = new Set(serverMessages.map((m) => m.id));
   const pendingOptimistic = optimistic.filter((m) => !serverIds.has(m.id));
+  // Apply any optimistic reaction updates (from WS or own mutations) to server messages
+  const optimisticById = new Map(optimistic.map((m) => [m.id, m]));
+  const mergedServer = serverMessages.map((m) => {
+    const opt = optimisticById.get(m.id);
+    return opt?.reactions !== undefined ? { ...m, reactions: opt.reactions } : m;
+  });
 
-  const allMessages = [...pendingOptimistic, ...serverMessages];
+  const allMessages = [...pendingOptimistic, ...mergedServer];
   const sortedMessages = [...allMessages].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
   useEffect(() => {
@@ -64,11 +76,6 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView();
-  }, [chatId]);
-
-  // Clear reply when switching chats
-  useEffect(() => {
-    setReplyTo(null);
   }, [chatId]);
 
   function handleScroll() {
@@ -146,19 +153,7 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
   );
 }
 
-function MessageList({
-  messages,
-  currentUserId,
-  isGroup,
-  chatId,
-  onReply,
-}: {
-  messages: ChatMessage[];
-  currentUserId: string;
-  isGroup: boolean;
-  chatId: string;
-  onReply: (msg: ChatMessage) => void;
-}) {
+function MessageList({ messages, currentUserId, isGroup, chatId, onReply }: { messages: ChatMessage[]; currentUserId: string; isGroup: boolean; chatId: string; onReply: (msg: ChatMessage) => void }) {
   const { t } = useTranslation(["chat"]);
 
   if (messages.length === 0) {
@@ -188,17 +183,7 @@ function MessageList({
     }
 
     elements.push(
-      <MessageBubble
-        key={msg.id}
-        message={msg}
-        isMine={isMine}
-        isGroup={isGroup}
-        showAvatar={!isMine && !isSameAsNext}
-        showSenderName={isGroup && !isMine && !isSameAsPrev}
-        chatId={chatId}
-        currentUserId={currentUserId}
-        onReply={onReply}
-      />,
+      <MessageBubble key={msg.id} message={msg} isMine={isMine} isGroup={isGroup} showAvatar={!isMine && !isSameAsNext} showSenderName={isGroup && !isMine && !isSameAsPrev} chatId={chatId} currentUserId={currentUserId} onReply={onReply} />,
     );
   }
 
@@ -272,38 +257,21 @@ function MessageBubble({
           <MessageContent message={message} isMine={isMine} />
 
           {/* Action buttons shown on hover */}
-          <div
-            className={cn(
-              "absolute -top-3 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity",
-              isMine ? "-left-16" : "-right-16",
-            )}
-          >
+          <div className={cn("absolute -top-3 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity", isMine ? "-left-16" : "-right-16")}>
             {/* Reply button */}
-            <button
-              onClick={() => onReply(message)}
-              className="p-1 rounded-full bg-background border border-border shadow-sm text-muted-foreground hover:text-foreground"
-            >
+            <button onClick={() => onReply(message)} className="p-1 rounded-full bg-background border border-border shadow-sm text-muted-foreground hover:text-foreground">
               <CornerUpLeft size={12} />
             </button>
 
             {/* Emoji reaction picker */}
             <div className="relative">
-              <button
-                onClick={() => setEmojiOpen((v) => !v)}
-                className="p-1 rounded-full bg-background border border-border shadow-sm text-muted-foreground hover:text-foreground"
-                aria-label={t("chat:addReaction")}
-              >
+              <button onClick={() => setEmojiOpen((v) => !v)} className="p-1 rounded-full bg-background border border-border shadow-sm text-muted-foreground hover:text-foreground" aria-label={t("chat:addReaction")}>
                 <SmilePlus size={12} />
               </button>
               {emojiOpen && (
                 <div className={cn("absolute bottom-full mb-1 z-20 flex gap-1 bg-background border border-border rounded-xl shadow-lg p-1.5", isMine ? "right-0" : "left-0")}>
                   {ALLOWED_EMOJIS.map((emoji) => (
-                    <button
-                      key={emoji}
-                      onClick={() => handleReact(emoji)}
-                      className="text-lg hover:scale-125 transition-transform p-0.5 rounded"
-                      aria-label={emoji}
-                    >
+                    <button key={emoji} onClick={() => handleReact(emoji)} className="text-lg hover:scale-125 transition-transform p-0.5 rounded" aria-label={emoji}>
                       {emoji}
                     </button>
                   ))}

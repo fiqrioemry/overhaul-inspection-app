@@ -72,7 +72,10 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   },
   updateOptimisticReactions: (chatId, messageId, reactions) => {
     const msgs = get().optimisticMessages[chatId] ?? [];
-    const updated = msgs.map((m) => (m.id === messageId ? { ...m, reactions } : m));
+    const exists = msgs.some((m) => m.id === messageId);
+    const updated = exists
+      ? msgs.map((m) => (m.id === messageId ? { ...m, reactions } : m))
+      : [...msgs, { id: messageId, reactions } as ChatMessage]; // stub entry for server-confirmed messages
     set({ optimisticMessages: { ...get().optimisticMessages, [chatId]: updated } });
   },
   clearOptimisticMessages: (chatId) => {

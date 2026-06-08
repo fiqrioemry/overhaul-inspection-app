@@ -19,6 +19,8 @@
 
   "sharePost": "Repost",
   "unsharePost": "Hapus repost",
+  "unsharePostTitle": "Hapus repost?",
+  "unsharePostDescription": "Ini akan menghapus repost dari profilmu. Postingan asli tidak akan dihapus.",
   "sharePostTitle": "Repost",
   "sharePostDescription": "Bagikan postingan ini ke pengikutmu. Tambahkan keterangan opsional.",
   "shareCaptionPlaceholder": "Tambahkan keterangan... (opsional)",

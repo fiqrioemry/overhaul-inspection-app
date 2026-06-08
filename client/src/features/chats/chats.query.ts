@@ -16,6 +16,7 @@ import type {
 } from "@/schemas/chats.schema";
 import type { ResponseSuccess } from "@/types/response.type";
 import { useQuery, useMutation, useInfiniteQuery, useQueryClient, type InfiniteData } from "@tanstack/react-query";
+import { useChatStore } from "@/stores/chat.store";
 import {
   fetchMyChats,
   fetchChatById,
@@ -237,7 +238,9 @@ export function useAddReaction(chatId: string, messageId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (payload: ReactionRequest) => addReaction(chatId, messageId, payload),
-    onSuccess: () => {
+    onSuccess: (res) => {
+      // Instantly reflect the updated reactions without waiting for cache invalidation
+      useChatStore.getState().updateOptimisticReactions(chatId, messageId, res.data.reactions);
       queryClient.invalidateQueries({ queryKey: CHAT_KEYS.messages(chatId) });
     },
     onError: (err) => {

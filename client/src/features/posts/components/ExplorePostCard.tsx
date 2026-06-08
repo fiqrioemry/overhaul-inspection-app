@@ -3,7 +3,7 @@
 import { useState } from "react";
 import type { Post } from "@/types/posts.type";
 import { usePostStore } from "@/stores/post.store";
-import { GalleryHorizontalEnd, Heart, MessageCircle } from "lucide-react";
+import { GalleryHorizontalEnd, Heart, MessageCircle, Repeat2 } from "lucide-react";
 import PostDetailDialog from "@/features/posts/components/PostDetailDialog";
 
 type PostCardProps = {
@@ -34,6 +34,13 @@ export default function ExplorePostCard({ post }: PostCardProps) {
         {post.galleries.length > 1 && (
           <div className="absolute right-2 top-2 rounded-sm bg-black/60 p-1">
             <GalleryHorizontalEnd size={16} className="text-white" />
+          </div>
+        )}
+
+        {/* Repost indicator */}
+        {post.isRepost && (
+          <div className="absolute left-2 top-2 rounded-sm bg-black/60 p-1">
+            <Repeat2 size={14} className="text-green-400" />
           </div>
         )}
 

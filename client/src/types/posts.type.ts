@@ -76,6 +76,7 @@ export interface Post {
   hashtags: PostHashtag[];
   mentions: PostMention[];
   isRepost: boolean;
+  isReposted: boolean;
   shareCount: number;
   caption: string | null;
   originalPost: OriginalPost | null;

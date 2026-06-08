@@ -197,10 +197,16 @@ export function useUnsharePost(postId: string) {
   });
 }
 
-export function usePostShares(postId: string, params: { page?: number; limit?: number } = {}) {
-  return useQuery({
+export function useInfinitePostShares(postId: string, params: { limit?: number } = { limit: 10 }) {
+  return useInfiniteQuery({
     queryKey: POST_KEYS.shares(postId),
-    queryFn: () => fetchPostShares(postId, params),
+    queryFn: ({ pageParam = 1 }) => fetchPostShares(postId, { ...params, page: pageParam as number }),
+    getNextPageParam: (lastPage, allPages) => {
+      const currentPage = allPages.length;
+      const totalPages = Math.ceil((lastPage.meta?.pagination?.totalItems ?? 0) / (params.limit ?? 10));
+      return currentPage < totalPages ? currentPage + 1 : undefined;
+    },
+    initialPageParam: 1,
     enabled: !!postId,
     staleTime: 1000 * 30,
   });
