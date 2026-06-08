@@ -36,7 +36,7 @@ export default function SharePostDialog({ post, open, onOpenChange }: SharePostD
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md xl:w-full xl:h-auto xl:max-w-md p-6 flex flex-col gap-4">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Repeat2 className="size-5" />
@@ -58,15 +58,17 @@ export default function SharePostDialog({ post, open, onOpenChange }: SharePostD
         </div>
 
         {/* Caption input */}
-        <Textarea
-          value={caption}
-          onChange={(e) => setCaption(e.target.value)}
-          placeholder={t("post:shareCaptionPlaceholder")}
-          maxLength={500}
-          rows={3}
-          className="resize-none"
-        />
-        <p className="text-xs text-muted-foreground text-right">{caption.length}/500</p>
+        <div className="space-y-1">
+          <Textarea
+            value={caption}
+            onChange={(e) => setCaption(e.target.value)}
+            placeholder={t("post:shareCaptionPlaceholder")}
+            maxLength={500}
+            rows={3}
+            className="resize-none"
+          />
+          <p className="text-xs text-muted-foreground text-right">{caption.length}/500</p>
+        </div>
 
         <div className="flex gap-2 justify-end">
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={sharePost.isPending}>

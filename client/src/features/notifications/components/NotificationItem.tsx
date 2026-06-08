@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import type { Notification, NotificationType } from "@/types/notifications.type";
-import { MessageSquare, Heart, UserPlus, AtSign, Trash2, Loader2 } from "lucide-react";
+import { MessageSquare, Heart, UserPlus, AtSign, Trash2, Loader2, MessageCircle, Repeat2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 const TYPE_CONFIG: Record<NotificationType, { icon: React.ElementType; color: string; bg: string }> = {
@@ -11,8 +11,9 @@ const TYPE_CONFIG: Record<NotificationType, { icon: React.ElementType; color: st
   LIKE: { icon: Heart, color: "text-rose-500", bg: "bg-rose-500/10" },
   FOLLOW: { icon: UserPlus, color: "text-emerald-500", bg: "bg-emerald-500/10" },
   MENTION: { icon: AtSign, color: "text-violet-500", bg: "bg-violet-500/10" },
-  MESSAGE: { icon: Loader2, color: "text-yellow-500", bg: "bg-yellow-500/10" },
+  MESSAGE: { icon: MessageCircle, color: "text-yellow-500", bg: "bg-yellow-500/10" },
   REQUEST: { icon: UserPlus, color: "text-amber-500", bg: "bg-amber-500/10" },
+  REPOST: { icon: Repeat2, color: "text-green-500", bg: "bg-green-500/10" },
 };
 
 function formatRelativeTime(date: Date | string): string {

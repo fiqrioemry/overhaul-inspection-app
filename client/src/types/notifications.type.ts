@@ -9,7 +9,7 @@ export interface Notification {
   updatedAt: Date;
 }
 
-export type NotificationType = "COMMENT" | "LIKE" | "FOLLOW" | "MENTION" | "MESSAGE" | "REQUEST";
+export type NotificationType = "COMMENT" | "LIKE" | "FOLLOW" | "MENTION" | "MESSAGE" | "REQUEST" | "REPOST";
 
 export type NotificationChannel = "IN_APP";
 
