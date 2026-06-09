@@ -61,7 +61,10 @@
 
   "sessionCurrentBadge": "Saat Ini",
   "sessionLastActive": "Terakhir aktif {{time}}",
+  "sessionExpires": "Berakhir {{time}}",
   "sessionLogout": "Keluar",
+  "sessionLogoutPending": "Sedang keluar...",
+  "logoutAllConfirmPending": "Sedang keluar...",
 
   "sessionsTitle": "Sesi Aktif",
   "sessionsDescription": "Kelola perangkat yang saat ini masuk ke akun kamu",

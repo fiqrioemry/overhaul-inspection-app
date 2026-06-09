@@ -372,3 +372,46 @@ const allPosts = data?.pages.flatMap((page) => page.data) ?? [];
 | Hook              | `use{PascalCase}.ts`    | `useDebounce.ts`    |
 | Util              | `format{PascalCase}.ts` | `formatDate.ts`     |
 | Translation file  | `{feature}.json`        | `auth.json`         |
+
+---
+
+## Changelog
+
+**Every code change must be followed by an update to `CHANGELOG.md`.**
+
+### Rules
+
+1. **Always update** — after every task, feature, fix, or refactor, prepend a new entry to the top of `CHANGELOG.md` (right below the opening `# Changelog\n\n---` block).
+2. **Date format** — use `YYYY-MM-DD` (e.g. `2026-06-10`). Never use `DD/MM/YYYY` or other formats.
+3. **Wrap in `git commit -m "..."`** — the entry body must be a valid git commit message wrapped in `git commit -m "..."` so it can be copy-pasted directly into a terminal.
+4. **Conventional commits** — first line follows `type(scope): short description` (max ~72 chars). Types: `feat`, `fix`, `refactor`, `chore`, `docs`, `style`, `test`.
+5. **Bullet points inside the commit message** — details go as `- ` lines inside the quoted string, not outside it.
+6. **No markdown decorations inside the message** — no bold, no `##` headers, no backtick-heavy formatting inside the `git commit -m "..."` block; plain prose and file paths only.
+
+### Format
+
+```
+YYYY-MM-DD
+
+git commit -m "type(scope): short one-line description
+
+- file or module changed: what changed and why
+- another file: what changed"
+
+---
+```
+
+### Example
+
+```
+2026-06-10
+
+git commit -m "feat(settings): add i18n to SessionItem
+
+- en/setting.json + id/setting.json: add sessionCurrentBadge, sessionLastActive
+  (with {{time}} interpolation), sessionLogout keys
+- SessionItem.tsx: add useTranslation(['setting']); replace hardcoded 'Current'
+  badge label, 'Last active ...' text, and 'Log out' button with t() calls"
+
+---
+```

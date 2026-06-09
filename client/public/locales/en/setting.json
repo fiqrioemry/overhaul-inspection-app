@@ -61,7 +61,10 @@
 
   "sessionCurrentBadge": "Current",
   "sessionLastActive": "Last active {{time}}",
+  "sessionExpires": "Expires {{time}}",
   "sessionLogout": "Log out",
+  "sessionLogoutPending": "Logging out...",
+  "logoutAllConfirmPending": "Logging out...",
 
   "sessionsTitle": "Active Sessions",
   "sessionsDescription": "Manage devices that are currently logged into your account",
