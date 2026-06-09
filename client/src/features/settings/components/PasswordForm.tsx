@@ -109,9 +109,7 @@ function ChangePasswordForm() {
     if (isValid) setConfirmOpen(true);
   };
 
-  const lastChanged = user?.lastChangePasswordAt
-    ? formatDistanceToNow(new Date(user.lastChangePasswordAt), { addSuffix: true })
-    : "Never";
+  const lastChanged = user?.lastChangePasswordAt ? formatDistanceToNow(new Date(user.lastChangePasswordAt), { addSuffix: true }) : "Never";
 
   return (
     <>

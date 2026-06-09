@@ -59,6 +59,10 @@
   "changePasswordConfirmDescription": "Mengubah kata sandi akan mengeluarkan kamu dari semua sesi aktif, termasuk sesi ini. Kamu perlu masuk kembali menggunakan kata sandi baru.",
   "changePasswordConfirmButton": "Ya, Ubah Kata Sandi",
 
+  "sessionCurrentBadge": "Saat Ini",
+  "sessionLastActive": "Terakhir aktif {{time}}",
+  "sessionLogout": "Keluar",
+
   "sessionsTitle": "Sesi Aktif",
   "sessionsDescription": "Kelola perangkat yang saat ini masuk ke akun kamu",
   "noActiveSessions": "Tidak ada sesi aktif",

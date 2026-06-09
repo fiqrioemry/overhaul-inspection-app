@@ -2,6 +2,7 @@
 import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "react-i18next";
 import type { SessionWithCurrent } from "@/types/sessions.type";
 import { Laptop, Loader2, LogOut, Phone, Tablet } from "lucide-react";
 
@@ -23,12 +24,12 @@ function renderDeviceIcon(device: string) {
 }
 
 export default function SessionItem({ session, onDelete, isDeleting }: SessionItemProps) {
+  const { t } = useTranslation(["setting"]);
   const lastActive = formatDistanceToNow(new Date(session.loginAt), { addSuffix: true });
 
   return (
     <div className="flex items-start gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors">
       {/* Device Icon */}
-
       <div className="p-2 rounded-lg bg-muted">{renderDeviceIcon(session.deviceInfo.device)}</div>
 
       {/* Session Info */}
@@ -39,11 +40,11 @@ export default function SessionItem({ session, onDelete, isDeleting }: SessionIt
           </p>
           {session.isCurrent && (
             <Badge variant="secondary" className="shrink-0">
-              Current
+              {t("setting:sessionCurrentBadge")}
             </Badge>
           )}
         </div>
-        <p className="text-sm text-muted-foreground">Last active {lastActive}</p>
+        <p className="text-sm text-muted-foreground">{t("setting:sessionLastActive", { time: lastActive })}</p>
         {session.deviceInfo.device && <p className="text-xs text-muted-foreground mt-0.5">{session.deviceInfo.device}</p>}
       </div>
 
@@ -55,7 +56,7 @@ export default function SessionItem({ session, onDelete, isDeleting }: SessionIt
           ) : (
             <>
               <LogOut className="h-4 w-4 mr-2" />
-              Log out
+              {t("setting:sessionLogout")}
             </>
           )}
         </Button>

@@ -59,6 +59,10 @@
   "changePasswordConfirmDescription": "Changing your password will sign you out of all active sessions, including this one. You will need to sign in again with your new password.",
   "changePasswordConfirmButton": "Yes, Change Password",
 
+  "sessionCurrentBadge": "Current",
+  "sessionLastActive": "Last active {{time}}",
+  "sessionLogout": "Log out",
+
   "sessionsTitle": "Active Sessions",
   "sessionsDescription": "Manage devices that are currently logged into your account",
   "noActiveSessions": "No active sessions found",
