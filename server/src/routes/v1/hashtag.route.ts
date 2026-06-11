@@ -6,7 +6,4 @@ import { HashtagController as ctrl } from "@/modules/hashtags/hashtag.controller
 
 const hashtag = new Hono();
 
-hashtag.get("/trending", protect, limitter(hashtagLimit.GET_TRENDING), ctrl.getTrending);
-hashtag.get("/:name/posts", protect, limitter(hashtagLimit.GET_HASHTAG_POSTS), ctrl.getPostsByHashtag);
-
 export default hashtag;
