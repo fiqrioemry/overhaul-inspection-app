@@ -21,7 +21,7 @@ export class AdminService {
       reviewedAt: r.reviewedAt,
       post: r.post,
       reporter: r.user,
-      reviewedBy: r.reviewedBy ?? null,
+      reviewedBy: r.reviewer ?? null,
     }));
 
     return {

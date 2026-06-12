@@ -53,10 +53,11 @@ model User {
   twoFactorSecret     String?  @map("two_factor_secret")
   twoFactorBackupCodes String[] @map("two_factor_backup_codes")
 
-  sessions     Session[]
-  posts        Post[]
-  postReports  PostReport[]
-  notifications Notification[]
+  sessions        Session[]
+  posts           Post[]
+  postReports     PostReport[]     @relation("PostReporter")
+  reviewedReports PostReport[]     @relation("PostReviewer")
+  notifications   Notification[]
   notificationSettings NotificationSetting[]
   comments     Comment[]
   likes        Like[]
@@ -472,8 +473,9 @@ model PostReport {
   actionTaken String?          @map("action_taken")
   createdAt   DateTime         @default(now())
 
-  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post     Post  @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user     User  @relation("PostReporter", fields: [userId], references: [id], onDelete: Cascade)
+  reviewer User? @relation("PostReviewer", fields: [reviewedBy], references: [id], onDelete: SetNull)
 
   @@unique([userId, postId])
   @@index([postId, reason])
