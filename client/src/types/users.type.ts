@@ -75,6 +75,7 @@ export interface User {
   gender: GenderOption | null;
   avatar: string | null;
   email: string;
+  role: "USER" | "ADMIN";
   followStatus: "ACCEPTED" | "PENDING" | "NONE";
   isPublic: boolean;
   hasPassword: boolean;
@@ -109,6 +110,7 @@ export interface UserAccount {
   bio: string | null;
   website: string | null;
   email: string;
+  role: "USER" | "ADMIN";
   lastLogin: Date;
   joinedAt: Date;
   createdAt: Date;
