@@ -1,0 +1,68 @@
+{
+  "sidebarTitle": "Panel Admin",
+  "navDashboard": "Dasbor",
+  "navUsers": "Pengguna",
+  "navReports": "Laporan",
+
+  "dashboardTitle": "Dasbor",
+  "dashboardSubtitle": "Ringkasan platform dan metrik utama",
+
+  "statTotalUsers": "Total Pengguna",
+  "statActiveUsers": "Pengguna Aktif",
+  "statBannedUsers": "Pengguna Dibanned",
+  "statTotalPosts": "Total Postingan",
+  "statTotalReports": "Total Laporan",
+  "statPendingReports": "Laporan Tertunda",
+  "statTotalChats": "Total Chat",
+
+  "usersTitle": "Manajemen Pengguna",
+  "usersSubtitle": "Lihat dan kelola semua pengguna terdaftar",
+  "searchPlaceholder": "Cari berdasarkan nama atau username...",
+  "filterStatus": "Status",
+  "filterRole": "Peran",
+  "filterAll": "Semua",
+
+  "roleUser": "Pengguna",
+  "roleAdmin": "Admin",
+
+  "statusActive": "Aktif",
+  "statusInactive": "Tidak Aktif",
+  "statusBanned": "Dibanned",
+
+  "colUser": "Pengguna",
+  "colRole": "Peran",
+  "colStatus": "Status",
+  "colPosts": "Postingan",
+  "colFollowers": "Pengikut",
+  "colJoined": "Bergabung",
+  "colActions": "Aksi",
+  "colReporter": "Pelapor",
+  "colPost": "Postingan",
+  "colReason": "Alasan",
+  "colDate": "Tanggal",
+  "colDescription": "Deskripsi",
+
+  "actionBan": "Ban",
+  "actionUnban": "Unban",
+  "actionReview": "Tinjau",
+
+  "confirmBanTitle": "Ban pengguna ini?",
+  "confirmBanBody": "Pengguna @{{username}} akan dibanned dan kehilangan akses ke platform.",
+  "confirmUnbanTitle": "Unban pengguna ini?",
+  "confirmUnbanBody": "Pengguna @{{username}} akan mendapatkan kembali akses ke platform.",
+
+  "reportsTitle": "Laporan",
+  "reportsSubtitle": "Tinjau dan moderasi konten yang dilaporkan",
+
+  "reportStatusPending": "Tertunda",
+  "reportStatusReviewed": "Ditinjau",
+  "reportStatusResolved": "Diselesaikan",
+  "reportStatusDismissed": "Diabaikan",
+
+  "reviewReportTitle": "Tinjau Laporan",
+  "reviewAction": "Tindakan",
+  "reviewNote": "Catatan (opsional)",
+  "reviewNotePlaceholder": "Jelaskan tindakan yang diambil...",
+
+  "pageOf": "Halaman {{current}} dari {{total}}"
+}

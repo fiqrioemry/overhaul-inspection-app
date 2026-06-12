@@ -19,12 +19,17 @@ import SettingAccountPage from "@/pages/SettingAccountPage";
 import SettingSecurityPage from "@/pages/SettingSecurityPage";
 import SettingNotificationPage from "@/pages/SettingNotificationPage";
 import HashtagPage from "@/pages/HashtagPage";
+import AdminLayout from "@/components/layout/AdminLayout";
+import AdminDashboardPage from "@/pages/AdminDashboardPage";
+import AdminUsersPage from "@/pages/AdminUsersPage";
+import AdminReportsPage from "@/pages/AdminReportsPage";
 
 import { Toaster } from "sonner";
 import { ScrollToTop } from "./hooks/useScrollToTop";
 import { Routes, Route, Navigate } from "react-router-dom";
 import PublicRoute from "@/features/auth/components/PublicRoute";
 import ProtectedRoute from "@/features/auth/components/ProtectedRoute";
+import AdminRoute from "@/features/auth/components/AdminRoute";
 
 export default function AppRouter() {
   useTheme();
@@ -61,6 +66,14 @@ export default function AppRouter() {
             </Route>
           </Route>
           <Route path="*" element={<NotFoundPage />} />
+        </Route>
+
+        <Route element={<AdminRoute />}>
+          <Route element={<AdminLayout />}>
+            <Route path="/admin" element={<AdminDashboardPage />} />
+            <Route path="/admin/users" element={<AdminUsersPage />} />
+            <Route path="/admin/reports" element={<AdminReportsPage />} />
+          </Route>
         </Route>
       </Routes>
     </>

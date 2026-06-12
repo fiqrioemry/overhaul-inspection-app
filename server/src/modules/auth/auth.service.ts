@@ -311,6 +311,7 @@ export class AuthService {
       username: result.username,
       avatar: result.avatar,
       email: result.email,
+      role: result.role,
       lastLogin: result.lastLogin,
       joinedAt: result.createdAt,
       lastChangePasswordAt: result.lastChangePasswordAt,

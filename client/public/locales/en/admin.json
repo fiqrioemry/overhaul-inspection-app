@@ -1,0 +1,68 @@
+{
+  "sidebarTitle": "Admin Panel",
+  "navDashboard": "Dashboard",
+  "navUsers": "Users",
+  "navReports": "Reports",
+
+  "dashboardTitle": "Dashboard",
+  "dashboardSubtitle": "Platform overview and key metrics",
+
+  "statTotalUsers": "Total Users",
+  "statActiveUsers": "Active Users",
+  "statBannedUsers": "Banned Users",
+  "statTotalPosts": "Total Posts",
+  "statTotalReports": "Total Reports",
+  "statPendingReports": "Pending Reports",
+  "statTotalChats": "Total Chats",
+
+  "usersTitle": "User Management",
+  "usersSubtitle": "View and manage all registered users",
+  "searchPlaceholder": "Search by name or username...",
+  "filterStatus": "Status",
+  "filterRole": "Role",
+  "filterAll": "All",
+
+  "roleUser": "User",
+  "roleAdmin": "Admin",
+
+  "statusActive": "Active",
+  "statusInactive": "Inactive",
+  "statusBanned": "Banned",
+
+  "colUser": "User",
+  "colRole": "Role",
+  "colStatus": "Status",
+  "colPosts": "Posts",
+  "colFollowers": "Followers",
+  "colJoined": "Joined",
+  "colActions": "Actions",
+  "colReporter": "Reporter",
+  "colPost": "Post",
+  "colReason": "Reason",
+  "colDate": "Date",
+  "colDescription": "Description",
+
+  "actionBan": "Ban",
+  "actionUnban": "Unban",
+  "actionReview": "Review",
+
+  "confirmBanTitle": "Ban this user?",
+  "confirmBanBody": "User @{{username}} will be banned and lose access to the platform.",
+  "confirmUnbanTitle": "Unban this user?",
+  "confirmUnbanBody": "User @{{username}} will regain access to the platform.",
+
+  "reportsTitle": "Reports",
+  "reportsSubtitle": "Review and moderate reported content",
+
+  "reportStatusPending": "Pending",
+  "reportStatusReviewed": "Reviewed",
+  "reportStatusResolved": "Resolved",
+  "reportStatusDismissed": "Dismissed",
+
+  "reviewReportTitle": "Review Report",
+  "reviewAction": "Action",
+  "reviewNote": "Note (optional)",
+  "reviewNotePlaceholder": "Describe the action taken...",
+
+  "pageOf": "Page {{current}} of {{total}}"
+}

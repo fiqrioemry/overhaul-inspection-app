@@ -151,5 +151,14 @@
   "FOLLOW_REQUEST_CANCELLED": "Permintaan ikut dibatalkan",
 
   "UPDATE_NOTIFICATION_SETTINGS": "Pengaturan notifikasi diperbarui",
-  "DELETE_NOTIFICATION": "Notifikasi dihapus"
+  "DELETE_NOTIFICATION": "Notifikasi dihapus",
+
+  "GET_REPORTS_SUCCESS": "Laporan berhasil diambil",
+  "UPDATE_REPORT_SUCCESS": "Laporan berhasil diperbarui",
+  "GET_USERS_SUCCESS": "Pengguna berhasil diambil",
+  "UPDATE_USER_STATUS_SUCCESS": "Status pengguna berhasil diperbarui",
+  "GET_STATS_SUCCESS": "Statistik berhasil diambil",
+
+  "REPORT_NOT_FOUND": "Laporan tidak ditemukan",
+  "CANNOT_CHANGE_OWN_STATUS": "Kamu tidak bisa mengubah status akunmu sendiri"
 }

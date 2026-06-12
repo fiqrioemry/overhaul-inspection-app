@@ -151,5 +151,14 @@
   "FOLLOW_REQUEST_CANCELLED": "Follow request cancelled",
 
   "UPDATE_NOTIFICATION_SETTINGS": "Notification settings updated",
-  "DELETE_NOTIFICATION": "Notification deleted"
+  "DELETE_NOTIFICATION": "Notification deleted",
+
+  "GET_REPORTS_SUCCESS": "Reports fetched successfully",
+  "UPDATE_REPORT_SUCCESS": "Report updated successfully",
+  "GET_USERS_SUCCESS": "Users fetched successfully",
+  "UPDATE_USER_STATUS_SUCCESS": "User status updated successfully",
+  "GET_STATS_SUCCESS": "Stats fetched successfully",
+
+  "REPORT_NOT_FOUND": "Report not found",
+  "CANNOT_CHANGE_OWN_STATUS": "You cannot change your own status"
 }

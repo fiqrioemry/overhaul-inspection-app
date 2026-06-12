@@ -58,6 +58,7 @@ type userResponse = {
   name: string;
   username: string;
   avatar: string | null;
+  role: string;
   lastLogin: Date | null;
   joinedAt: Date;
   lastChangePasswordAt: Date | null;

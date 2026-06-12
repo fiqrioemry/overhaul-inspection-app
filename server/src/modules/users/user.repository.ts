@@ -79,6 +79,7 @@ export class UserRepository {
         lastLogin: true,
         createdAt: true,
         lastChangePasswordAt: true,
+        role: true,
         passwordHash: true,
         twoFactorEnabled: true,
         twoFactorSecret: true,
