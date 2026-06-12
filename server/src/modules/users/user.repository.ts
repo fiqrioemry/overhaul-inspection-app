@@ -88,11 +88,7 @@ export class UserRepository {
     });
   }
 
-  static async updateTwoFactor(
-    userId: string,
-    data: { twoFactorEnabled: boolean; twoFactorSecret?: string | null; twoFactorBackupCodes?: string[] },
-    tx: Prisma.TransactionClient | null = null,
-  ) {
+  static async updateTwoFactor(userId: string, data: { twoFactorEnabled: boolean; twoFactorSecret?: string | null; twoFactorBackupCodes?: string[] }, tx: Prisma.TransactionClient | null = null) {
     const db = tx ?? database;
     return db.user.update({ where: { id: userId }, data });
   }
@@ -666,10 +662,7 @@ export class UserRepository {
   }
 
   static async getBlockedAndBlockingIds(userId: string): Promise<string[]> {
-    const [blocked, blocking] = await Promise.all([
-      database.userBlock.findMany({ where: { blockerId: userId }, select: { blockedId: true } }),
-      database.userBlock.findMany({ where: { blockedId: userId }, select: { blockerId: true } }),
-    ]);
+    const [blocked, blocking] = await Promise.all([database.userBlock.findMany({ where: { blockerId: userId }, select: { blockedId: true } }), database.userBlock.findMany({ where: { blockedId: userId }, select: { blockerId: true } })]);
     return [...blocked.map((b) => b.blockedId), ...blocking.map((b) => b.blockerId)];
   }
 

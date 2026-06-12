@@ -134,22 +134,14 @@ export class AuthService {
     if (isEmailExist.twoFactorEnabled) {
       const challengeToken = generateRandomToken();
       const cacheKey = `2fa:challenge:${challengeToken}`;
-      await cache.set(
-        cacheKey,
-        JSON.stringify({ userId: isEmailExist.id, userAgent: c.req.header("user-agent") || "unknown" }),
-        authLimit.TWO_FACTOR_CHALLENGE_TTL,
-      );
+      await cache.set(cacheKey, JSON.stringify({ userId: isEmailExist.id, userAgent: c.req.header("user-agent") || "unknown" }), authLimit.TWO_FACTOR_CHALLENGE_TTL);
       return { requiresTwoFactor: true, challengeToken };
     }
 
     return this._createSession(c, isEmailExist);
   }
 
-  private static async _createSession(
-    c: Context,
-    user: { id: string; name: string; username: string; avatar: string | null; email: string },
-    userAgent?: string,
-  ): Promise<loginResponse> {
+  private static async _createSession(c: Context, user: { id: string; name: string; username: string; avatar: string | null; email: string }, userAgent?: string): Promise<loginResponse> {
     const randomToken = generateRandomToken();
     const hashedToken = await hashToken(randomToken);
     const agent = userAgent ?? c.req.header("user-agent") ?? "unknown";
