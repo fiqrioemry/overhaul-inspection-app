@@ -5,6 +5,7 @@ import type { Post } from "@/types/posts.type";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/stores/auth.store";
 import { usePostStore } from "@/stores/post.store";
+import { useTranslation } from "react-i18next";
 import EditPostDialog from "@/features/posts/components/EditPostDialog";
 import ReportPostDialog from "@/features/posts/components/ReportPostDialog";
 import { useFollowUser, useUnfollowUser } from "@/features/users/users.query";
@@ -18,6 +19,7 @@ interface PostOptionMenuProps {
 export default function PostOptionMenu({ post }: PostOptionMenuProps) {
   const navigate = useNavigate();
   const { user } = useAuthStore();
+  const { t } = useTranslation(["post"]);
   const savePost = useSavePost(post.id);
   const unsavePost = useUnsavePost(post.id);
   const unfollow = useUnfollowUser(post.user.id);
@@ -61,7 +63,7 @@ export default function PostOptionMenu({ post }: PostOptionMenuProps) {
 
       {!isOwnPost && (
         <Button variant="outline" size="sm" onClick={followUser}>
-          {post.isFollowing ? "Unfollow" : "Follow"}
+          {post.isFollowing ? t("post:unfollowUser") : t("post:followUser")}
         </Button>
       )}
 
@@ -79,18 +81,18 @@ export default function PostOptionMenu({ post }: PostOptionMenuProps) {
               navigate(`/p/${post.id}`);
             }}
           >
-            Go to post
+            {t("post:goToPost")}
           </DropdownMenuItem>
 
           <DropdownMenuSeparator />
 
           <DropdownMenuItem className={`cursor-pointer ${post.isSaved ? "text-destructive" : "text-blue-500"}`} onClick={handleSavePost}>
-            {post.isSaved ? "Unsave" : "Save"}
+            {post.isSaved ? t("post:unsavePost") : t("post:savePost")}
           </DropdownMenuItem>
 
           {!isOwnPost && (
             <DropdownMenuItem className={`cursor-pointer ${post.isFollowing ? "text-destructive" : "text-blue-500"}`} onClick={followUser}>
-              {post.isFollowing ? "Unfollow" : "Follow"}
+              {post.isFollowing ? t("post:unfollowUser") : t("post:followUser")}
             </DropdownMenuItem>
           )}
 
@@ -99,15 +101,15 @@ export default function PostOptionMenu({ post }: PostOptionMenuProps) {
           {isOwnPost ? (
             <>
               <DropdownMenuItem className="cursor-pointer text-blue-500" onClick={handleEditPost}>
-                Edit post
+                {t("post:editPost")}
               </DropdownMenuItem>
               <DropdownMenuItem className="cursor-pointer text-destructive focus:text-destructive" onClick={handleDeletePost}>
-                Delete post
+                {t("post:deletePost")}
               </DropdownMenuItem>
             </>
           ) : (
             <DropdownMenuItem className={post.isReported ? "text-green-500 " : "cursor-pointer text-destructive focus:text-destructive"} onClick={handleReportPost}>
-              {post.isReported ? "Report submitted" : "Report post"}
+              {post.isReported ? t("post:reportSubmitted") : t("post:reportPostOption")}
             </DropdownMenuItem>
           )}
         </DropdownMenuContent>

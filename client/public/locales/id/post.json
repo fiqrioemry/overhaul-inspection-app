@@ -24,5 +24,32 @@
   "sharePostTitle": "Repost",
   "sharePostDescription": "Bagikan postingan ini ke pengikutmu. Tambahkan keterangan opsional.",
   "shareCaptionPlaceholder": "Tambahkan keterangan... (opsional)",
-  "repostedBy": "Direpost oleh"
+  "repostedBy": "Direpost oleh",
+
+  "reportPost": "Laporkan Postingan",
+  "reportPostDescription": "Bantu kami memahami masalah dengan postingan ini. Laporan kamu bersifat anonim.",
+  "reportReasonLabel": "Alasan",
+  "reportReasonPlaceholder": "Pilih alasan...",
+  "reportReasonDescription": "Pilih alasan yang paling sesuai dengan masalah.",
+  "reportDescriptionLabel": "Deskripsi",
+  "reportDescriptionPlaceholder": "Jelaskan masalah secara detail...",
+  "reportCancel": "Batal",
+  "reportSubmit": "Kirim Laporan",
+  "reportSubmitting": "Mengirim...",
+  "reportReasonSpam": "Spam",
+  "reportReasonNudity": "Konten Dewasa",
+  "reportReasonHarassment": "Pelecehan",
+  "reportReasonViolence": "Kekerasan",
+  "reportReasonMisinformation": "Misinformasi",
+  "reportReasonOther": "Lainnya",
+
+  "goToPost": "Lihat postingan",
+  "savePost": "Simpan",
+  "unsavePost": "Hapus simpanan",
+  "followUser": "Ikuti",
+  "unfollowUser": "Berhenti ikuti",
+  "editPost": "Edit postingan",
+  "deletePost": "Hapus postingan",
+  "reportSubmitted": "Laporan terkirim",
+  "reportPostOption": "Laporkan postingan"
 }

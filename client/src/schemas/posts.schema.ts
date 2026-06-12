@@ -72,7 +72,7 @@ export const getSavedPostsRequest = z.object({
 
 export type GetSavedPostsRequest = z.infer<typeof getSavedPostsRequest>;
 
-const PostReportReason = z.enum(["SPAM", "NUDITY", "MISSINFORMATION", "INAPPROPRIATE", "HARASSMENT", "OTHER"]);
+const PostReportReason = z.enum(["SPAM", "NUDITY", "VIOLENCE", "MISSINFORMATION", "HARASSMENT", "OTHER"]);
 
 export const reportPostRequest = () =>
   z

@@ -3,12 +3,14 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import type { Post } from "@/types/posts.type";
 import { usePostStore } from "@/stores/post.store";
+import { useTranslation } from "react-i18next";
 import { Dialog as DialogPrimitive } from "radix-ui";
 import ReportPostForm from "@/features/posts/components/ReportPostForm";
 import { Dialog, DialogPortal, DialogOverlay, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 export default function ReportPostDialog({ post }: { post: Post }) {
   const [isPending, setIsPending] = useState(false);
+  const { t } = useTranslation(["post"]);
   const { isReportOpen, reportTarget, openReportDialog } = usePostStore();
 
   function handleOpenChange(next: boolean) {
@@ -36,7 +38,7 @@ export default function ReportPostDialog({ post }: { post: Post }) {
             "rounded-t-2xl",
             "h-auto max-h-[90dvh]",
 
-            // sm+: floating card centered — tidak ada lg:inset-8 yang bisa ganggu
+            // sm+: floating card centered
             "sm:inset-auto sm:left-1/2 sm:top-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2",
             "sm:rounded-xl sm:ring-1 sm:ring-foreground/10",
             "sm:w-full sm:max-w-md sm:h-auto sm:max-h-[90dvh]",
@@ -57,8 +59,8 @@ export default function ReportPostDialog({ post }: { post: Post }) {
 
           <div className="px-6 pt-4 pb-2 shrink-0">
             <DialogHeader>
-              <DialogTitle className="text-base font-semibold">Report Post</DialogTitle>
-              <DialogDescription className="text-sm text-muted-foreground">Help us understand what's wrong with this post. Your report is anonymous.</DialogDescription>
+              <DialogTitle className="text-base font-semibold">{t("post:reportPost")}</DialogTitle>
+              <DialogDescription className="text-sm text-muted-foreground">{t("post:reportPostDescription")}</DialogDescription>
             </DialogHeader>
           </div>
 

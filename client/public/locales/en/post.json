@@ -24,5 +24,32 @@
   "sharePostTitle": "Repost",
   "sharePostDescription": "Share this post with your followers. Add an optional caption.",
   "shareCaptionPlaceholder": "Add a caption... (optional)",
-  "repostedBy": "Reposted by"
+  "repostedBy": "Reposted by",
+
+  "reportPost": "Report Post",
+  "reportPostDescription": "Help us understand what's wrong with this post. Your report is anonymous.",
+  "reportReasonLabel": "Reason",
+  "reportReasonPlaceholder": "Select a reason...",
+  "reportReasonDescription": "Choose the reason that best describes the issue.",
+  "reportDescriptionLabel": "Description",
+  "reportDescriptionPlaceholder": "Please describe the issue in detail...",
+  "reportCancel": "Cancel",
+  "reportSubmit": "Submit Report",
+  "reportSubmitting": "Submitting...",
+  "reportReasonSpam": "Spam",
+  "reportReasonNudity": "Nudity",
+  "reportReasonHarassment": "Harassment",
+  "reportReasonViolence": "Violence",
+  "reportReasonMisinformation": "Misinformation",
+  "reportReasonOther": "Other",
+
+  "goToPost": "Go to post",
+  "savePost": "Save",
+  "unsavePost": "Unsave",
+  "followUser": "Follow",
+  "unfollowUser": "Unfollow",
+  "editPost": "Edit post",
+  "deletePost": "Delete post",
+  "reportSubmitted": "Report submitted",
+  "reportPostOption": "Report post"
 }
