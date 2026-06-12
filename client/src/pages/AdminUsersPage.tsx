@@ -20,6 +20,12 @@ const STATUS_COLORS: Record<UserStatus, string> = {
   BANNED: "bg-red-100 text-red-700 hover:bg-red-100",
 };
 
+const STATUS_LABEL_KEYS: Record<UserStatus, string> = {
+  ACTIVE: "statusActive",
+  INACTIVE: "statusInactive",
+  BANNED: "statusBanned",
+};
+
 export default function AdminUsersPage() {
   const { t } = useTranslation(["admin", "common"]);
   const [search, setSearch] = useState("");
@@ -153,7 +159,7 @@ export default function AdminUsersPage() {
                       </td>
                       <td className="px-4 py-3">
                         <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[u.status as UserStatus]}`}>
-                          {t(`admin:status${u.status.charAt(0) + u.status.slice(1).toLowerCase()}` as any)}
+                          {t(`admin:${STATUS_LABEL_KEYS[u.status]}`)}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-right tabular-nums">{u.totalPosts}</td>
@@ -194,7 +200,7 @@ export default function AdminUsersPage() {
 
       {/* Confirm dialog */}
       <Dialog open={!!confirmUser} onOpenChange={(open) => !open && setConfirmUser(null)}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="xl:w-full xl:h-auto xl:max-w-sm p-6 flex flex-col gap-4">
           <DialogHeader>
             <DialogTitle>
               {confirmUser?.nextStatus === "BANNED" ? t("admin:confirmBanTitle") : t("admin:confirmUnbanTitle")}
