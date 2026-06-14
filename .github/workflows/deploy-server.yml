@@ -24,21 +24,21 @@ jobs:
         run: |
           INIT_FLAG=$(ssh -p ${{ secrets.VPS_PORT }} -i ~/.ssh/id_ed25519 \
             ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} \
-            "[ -f /home/project/social_media/server/.deployed ] && echo 'exists' || echo 'missing'")
+            "[ -f /home/project/overhaul/server/.deployed ] && echo 'exists' || echo 'missing'")
           echo "flag=$INIT_FLAG" >> $GITHUB_OUTPUT
 
       - name: Pull latest code
         run: |
           ssh -p ${{ secrets.VPS_PORT }} -i ~/.ssh/id_ed25519 \
             ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} \
-            "cd /home/project/social_media/server && git pull origin main --force"
+            "cd /home/project/overhaul/server && git pull origin main --force"
 
       - name: First time init
         if: steps.check_init.outputs.flag == 'missing'
         run: |
           ssh -p ${{ secrets.VPS_PORT }} -i ~/.ssh/id_ed25519 \
             ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
-            cd /home/project/social_media/server
+            cd /home/project/overhaul/server
             make prod-init
             touch .deployed
           EOF
@@ -48,6 +48,6 @@ jobs:
         run: |
           ssh -p ${{ secrets.VPS_PORT }} -i ~/.ssh/id_ed25519 \
             ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
-            cd /home/project/social_media/server
+            cd /home/project/overhaul/server
             make prod-update
           EOF

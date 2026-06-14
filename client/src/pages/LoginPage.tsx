@@ -1,28 +1,24 @@
-import LoginForm from "@/features/auth/components/LoginForm";
-import { useLanguage } from "@/hooks/useLanguage";
-import { useTranslation } from "react-i18next";
 import { Helmet } from "react-helmet-async";
+import { useTranslation } from "react-i18next";
+import { useLanguage } from "@/hooks/useLanguage";
+import LoginForm from "@/features/auth/components/LoginForm";
 
 export default function LoginPage() {
   const { t } = useTranslation(["auth"]);
   const { isEnglish, toggleLanguage } = useLanguage();
 
-  const brandFeatures = [
-    t("auth:loginBrandFeature1"),
-    t("auth:loginBrandFeature2"),
-    t("auth:loginBrandFeature3"),
-  ];
+  const brandFeatures = [t("auth:loginBrandFeature1"), t("auth:loginBrandFeature2"), t("auth:loginBrandFeature3")];
 
   return (
     <>
       <Helmet>
-        <title>Login - Pixel social media</title>
+        <title>Overhaul Progress - Login</title>
         <meta name="description" content="Login to access your dashboard and manage your account." />
         <meta name="keywords" content="login, authentication, dashboard" />
-        <meta property="og:title" content="Login - Pixel social media" />
+        <meta property="og:title" content="Login - Overhaul Progress" />
         <meta property="og:description" content="Login to access your dashboard and manage your account." />
         <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://pixel.ahmadfiqrioemry/login" />
+        <meta property="og:url" content="https://overhaul.fiqrioemry/login" />
       </Helmet>
 
       <div className="min-h-screen flex">
@@ -37,17 +33,13 @@ export default function LoginPage() {
           />
 
           <span className="relative font-bold text-2xl tracking-tight text-primary-foreground">
-            Pixel<span className="opacity-50">.</span>
+            Overhaul<span className="opacity-50">.</span>
           </span>
 
           <div className="relative space-y-8">
             <div className="space-y-3">
-              <h2 className="text-[2.6rem] font-bold leading-[1.15] text-primary-foreground whitespace-pre-line">
-                {t("auth:loginBrandHeadline")}
-              </h2>
-              <p className="text-primary-foreground/60 text-base leading-relaxed max-w-xs">
-                {t("auth:loginBrandTagline")}
-              </p>
+              <h2 className="text-[2.6rem] font-bold leading-[1.15] text-primary-foreground whitespace-pre-line">{t("auth:loginBrandHeadline")}</h2>
+              <p className="text-primary-foreground/60 text-base leading-relaxed max-w-xs">{t("auth:loginBrandTagline")}</p>
             </div>
 
             <ul className="space-y-3">
@@ -68,15 +60,13 @@ export default function LoginPage() {
           {/* Top bar */}
           <div className="flex items-center justify-between px-6 py-5">
             <span className="lg:hidden font-bold text-xl tracking-tight text-foreground">
-              Pixel<span className="text-primary">.</span>
+              Overhaul<span className="text-primary">.</span>
             </span>
             <div className="ml-auto flex items-center gap-0.5 bg-muted rounded-lg p-0.5">
               <button
                 type="button"
                 onClick={() => !isEnglish && toggleLanguage()}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
-                  isEnglish ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
-                }`}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all ${isEnglish ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
               >
                 <span>🇺🇸</span>
                 <span>EN</span>
@@ -84,9 +74,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => isEnglish && toggleLanguage()}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
-                  !isEnglish ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
-                }`}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all ${!isEnglish ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
               >
                 <span>🇮🇩</span>
                 <span>ID</span>

@@ -1,10 +1,7 @@
-import { OAuthProvider } from "generated/prisma";
+import { OAuthProvider, RoleEnum } from "generated/prisma";
 
 type verificationType = "EMAIL_VERIFICATION" | "PASSWORD_RESET";
 type userStatus = "ACTIVE" | "INACTIVE" | "BANNED";
-
-// Represents the current relationship state from viewer's perspective
-type FollowStatus = "NONE" | "PENDING" | "ACCEPTED";
 
 type createVerificationData = {
   userId: string;
@@ -16,17 +13,15 @@ type createVerificationData = {
 type userSearchResponse = {
   id: string;
   name: string;
-  username: string;
+  role: string;
   avatar: string | null;
-  followStatus: FollowStatus;
-  canFollow: boolean;
 };
 
 type userCredential = {
   id: string;
   email: string;
   name: string;
-  username: string;
+  role: RoleEnum;
   avatar: string | null;
   passwordHash: string | null;
   status: userStatus;
@@ -46,7 +41,7 @@ type loginResponse = {
   user: {
     id: string;
     name: string;
-    username: string;
+    role: string;
     avatar: string | null;
     email: string;
   };
@@ -56,7 +51,6 @@ type userResponse = {
   id: string;
   email: string;
   name: string;
-  username: string;
   avatar: string | null;
   role: string;
   lastLogin: Date | null;
@@ -69,33 +63,10 @@ type profileResponse = {
   id: string;
   email: string;
   name: string;
-  username: string;
   avatar: string | null;
-  bio: string | null;
-  website: string | null;
+  role: string;
   lastLogin: Date | null;
   joinedAt: Date;
-  isPublic: boolean;
-  isOwner?: boolean;
-  totalFollowers: number;
-  totalFollowings: number;
-  totalPosts: number;
-  followStatus: FollowStatus;
-};
-
-type blockResponse = {
-  id: string;
-  blockedId: string;
-  createdAt: Date;
-  user: { id: string; name: string; username: string; avatar: string | null };
-};
-
-type muteResponse = {
-  id: string;
-  mutedId: string;
-  muteType: string;
-  createdAt: Date;
-  user: { id: string; name: string; username: string; avatar: string | null };
 };
 
 type createUserData = {
@@ -109,29 +80,8 @@ type createUserData = {
 type searchResponse = {
   id: string;
   name: string;
-  username: string;
+  role: string;
   avatar: string | null;
-  followers?: { id: string }[];
-};
-
-type followingResponse = {
-  id: string;
-  name: string;
-  username: string;
-  avatar?: string | null;
-  followStatus: FollowStatus;
-};
-
-// For GET /follow/requests — incoming pending requests
-type followRequestResponse = {
-  id: string; // Following record id
-  follower: {
-    id: string;
-    name: string;
-    username: string;
-    avatar: string | null;
-  };
-  createdAt: Date;
 };
 
 type paginationMeta = {
@@ -170,20 +120,15 @@ export type UpsertOAuthAccountData = {
 };
 
 export {
-  FollowStatus,
   metaResponse,
   paginationMeta,
   filterMeta,
-  followingResponse,
-  followRequestResponse,
   userSearchResponse,
   verificationType,
   searchResponse,
   loginResponse,
   createUserData,
   profileResponse,
-  blockResponse,
-  muteResponse,
   userCredential,
   createVerificationData,
   userVerificationData,

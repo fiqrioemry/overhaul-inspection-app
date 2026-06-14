@@ -3,15 +3,9 @@ import { AuthService } from "@/modules/auth/auth.service";
 import { responseCreated, responseOK } from "@/utils/response";
 import { databaseConfig, OAuthProviderKey } from "@/config/env";
 import { authSuccessMessage } from "@/config/constant/auth.constant";
-import { changePasswordRequest, forgotPasswordRequest, loginRequest, registerRequest, resendVerificationEmailRequest, resetPasswordRequest, setPasswordRequest, twoFactorChallengeRequest, twoFactorCodeRequest } from "@/modules/auth/auth.schema";
+import { changePasswordRequest, forgotPasswordRequest, loginRequest, resendVerificationEmailRequest, resetPasswordRequest, setPasswordRequest, twoFactorChallengeRequest, twoFactorCodeRequest } from "@/modules/auth/auth.schema";
 
 export class AuthController {
-  static async register(c: Context) {
-    const request = registerRequest.parse(await c.req.json());
-    const response = await AuthService.createUser(c, request);
-    return responseCreated(c, authSuccessMessage.REGISTER_SUCCESS, response.data.email);
-  }
-
   static async verifyEmail(c: Context) {
     console.log("Email verification requested with query:", c.req.query());
     const token = c.req.query("token") || "";

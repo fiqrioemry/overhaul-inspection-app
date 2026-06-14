@@ -1,13 +1,8 @@
 import { Hono } from "hono";
 import { swaggerConfig } from "@/lib/swagger";
 import { authSchemas, authPaths } from "@/modules/auth/auth.swagger";
-import { postPaths, postSchemas } from "@/modules/posts/posts.swagger";
 import { userPaths, userSchemas } from "@/modules/users/user.swagger";
 import { notificationPaths, notificationSchemas } from "@/modules/notifications/notification.swagger";
-import { commentPaths, commentSchemas } from "@/modules/comments/comment.swagger";
-import { chatPaths, chatSchemas } from "@/modules/chats/chat.swagger";
-import { adminPaths, adminSchemas } from "@/modules/admin/admin.swagger";
-import { hashtagPaths, hashtagSchemas } from "@/modules/hashtags/hashtag.swagger";
 
 const docs = new Hono();
 
@@ -19,24 +14,14 @@ const spec = {
     schemas: {
       ...swaggerConfig.components.schemas,
       ...authSchemas,
-      ...postSchemas,
       ...userSchemas,
-      ...commentSchemas,
-      ...chatSchemas,
       ...notificationSchemas,
-      ...adminSchemas,
-      ...hashtagSchemas,
     },
   },
   paths: {
     ...authPaths,
-    ...postPaths,
     ...userPaths,
-    ...commentPaths,
-    ...chatPaths,
     ...notificationPaths,
-    ...adminPaths,
-    ...hashtagPaths,
   },
 };
 

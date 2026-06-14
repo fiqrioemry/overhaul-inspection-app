@@ -32,7 +32,6 @@ up:
 down:
 	docker-compose -f docker-compose.dev.yml down
 
- 
 # Pertama kali deploy (dari nol)
 prod-init:
 	docker compose --env-file=.env.production down

@@ -1,49 +1,24 @@
 import { pgsql } from "@/lib/database";
-import { RoleEnum, StatusEnum, GenderEnum } from "../generated/prisma";
+import { RoleEnum, StatusEnum } from "../generated/prisma";
 import { hashPassword } from "../src/utils/hash"; // no alias, relative path
 
 const PASSWORD = "Password123@";
 
 const users = [
   {
-    email: "farhan.ramadhan@gmail.com",
-    name: "Farhan Ramadhan",
-    username: "farhanrama",
-    bio: "Software engineer by day, coffee addict by night ☕",
-    gender: GenderEnum.MALE,
-    isPublic: true,
+    email: "ahmadfiqrioemry@gmail.com",
+    name: "Ahmad Fiqri Oemry",
+    role: RoleEnum.INSPECTOR,
   },
   {
-    email: "siti.nuraini@gmail.com",
-    name: "Siti Nuraini",
-    username: "sitinuraini",
-    bio: "UI/UX designer. Making the web a prettier place 🎨",
-    gender: GenderEnum.FEMALE,
-    isPublic: true,
+    email: "brianadiguna@gmail.com",
+    name: "Brian Adiguna",
+    role: RoleEnum.INSPECTOR,
   },
   {
-    email: "budi.santoso@gmail.com",
-    name: "Budi Santoso",
-    username: "budisantoso",
-    bio: "Fullstack dev | Open source enthusiast 🚀",
-    gender: GenderEnum.MALE,
-    isPublic: false,
-  },
-  {
-    email: "dewi.kartika@gmail.com",
-    name: "Dewi Kartika",
-    username: "dewikartika",
-    bio: "Content creator & digital marketer 📱",
-    gender: GenderEnum.FEMALE,
-    isPublic: true,
-  },
-  {
-    email: "rizky.pratama@gmail.com",
-    name: "Rizky Pratama",
-    username: "rizkypratama",
-    bio: "Mobile dev | Flutter & React Native | Jakarta 🇮🇩",
-    gender: GenderEnum.MALE,
-    isPublic: true,
+    email: "rominuzulian@gmail.com",
+    name: "Romi Nuzulian",
+    role: RoleEnum.USER,
   },
 ];
 
@@ -59,10 +34,6 @@ async function main() {
       create: {
         email: userData.email,
         name: userData.name,
-        username: userData.username,
-        bio: userData.bio,
-        gender: userData.gender,
-        isPublic: userData.isPublic,
         passwordHash,
         role: RoleEnum.USER,
         status: StatusEnum.ACTIVE,

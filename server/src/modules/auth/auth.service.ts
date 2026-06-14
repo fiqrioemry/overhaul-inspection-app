@@ -12,87 +12,18 @@ import { UserRepository } from "@/modules/users/user.repository";
 import { sessionResponse } from "@/modules/sessions/sessions.types";
 import { hashPassword, hashToken, verifyPassword } from "@/utils/hash";
 import { SessionRepository } from "@/modules/sessions/sessions.repository";
-import { mailConfig, redisConfig, databaseConfig, OAuthProviderKey, getOAuthProvider } from "@/config/env";
 import { NotificationRepository } from "@/modules/notifications/notification.repository";
 import { loginResponse, userResponse, verificationType } from "@/modules/users/user.types";
 import { authErrorCode, authErrorMessage, authLimit } from "@/config/constant/auth.constant";
-import { generateRandomAvatarURL, generateRandomToken, generateRandomUsername } from "@/utils/generator";
-import { NotificationChannel, NotificationStatus, NotificationType, OAuthProvider, Prisma } from "generated/prisma/edge";
-import { ChangePasswordRequest, LoginRequest, RegisterRequest, ResetPasswordRequest, SetPasswordRequest } from "@/modules/auth/auth.schema";
 import { buildTOTPUri, generateBackupCodes, generateTOTPSecret, verifyTOTP } from "@/utils/totp";
+import { generateRandomAvatarURL, generateRandomToken, generateRandomUsername } from "@/utils/generator";
+import { mailConfig, redisConfig, databaseConfig, OAuthProviderKey, getOAuthProvider } from "@/config/env";
+import { NotificationChannel, NotificationStatus, NotificationType, OAuthProvider, Prisma } from "generated/prisma/edge";
+import { ChangePasswordRequest, LoginRequest, ResetPasswordRequest, SetPasswordRequest } from "@/modules/auth/auth.schema";
 
 const oauthStateKey = (provider: OAuthProviderKey, state: string) => `oauth:state:${provider}:${state}`;
 
 export class AuthService {
-  static async createUser(c: Context, request: RegisterRequest): Promise<{ data: { email: string } }> {
-    // cek if email exist
-    const isEmailExist = await UserRepository.findByEmail(request.email);
-
-    if (isEmailExist) {
-      throw new HTTPException(400, { message: authErrorMessage.EMAIL_EXISTS, cause: authErrorCode.EMAIL_EXISTS });
-    }
-
-    // hash password
-    const hashedPassword = await hashPassword(request.password);
-    const username = generateRandomUsername(request.name);
-
-    // assign user data payload
-    const userData = {
-      email: request.email,
-      passwordHash: hashedPassword,
-      name: request.name,
-      avatar: generateRandomAvatarURL(username),
-      username: username,
-    };
-
-    const randomToken = await db.$transaction(async (tx: Prisma.TransactionClient) => {
-      const newUser = await UserRepository.create(tx, userData);
-
-      if (!newUser) {
-        throw new HTTPException(500, { message: authErrorMessage.USER_CREATION_FAILED, cause: authErrorCode.USER_CREATION_FAILED });
-      }
-
-      // generate verification
-      const randomToken = generateRandomToken();
-      const hashedToken = await hashToken(randomToken);
-
-      // create verification data
-      const userVerificationData = {
-        userId: newUser.id,
-        token: hashedToken,
-        type: "EMAIL_VERIFICATION" as verificationType,
-        expiresAt: new Date(Date.now() + authLimit.VERIFY_EMAIL_EXP),
-      };
-
-      await UserRepository.createUserVerification(tx, userVerificationData);
-
-      const payload = Object.values(NotificationType).map((type) => ({
-        userId: newUser.id,
-        type,
-        channel: NotificationChannel.IN_APP,
-        status: NotificationStatus.ENABLED,
-        createdAt: new Date(),
-      }));
-
-      await NotificationRepository.createNotificationSettings(tx, payload);
-
-      return randomToken;
-    });
-
-    // config email data
-    const mailSetup = {
-      to: request.email,
-      subject: mailConfig.EMAIL_VERIFICATION_SUBJECT,
-      url: `${databaseConfig.CLIENT_URL}/verify-email?token=${randomToken}`,
-    };
-
-    // send email synchronously
-    sendVerificationLink(mailSetup);
-
-    return { data: { email: request.email } };
-  }
-
-  // 2. verify email
   static async verifyEmail(c: Context, token: string) {
     if (!token) {
       throw new HTTPException(400, { message: authErrorMessage.TOKEN_REQUIRED, cause: authErrorCode.TOKEN_REQUIRED });
@@ -141,7 +72,7 @@ export class AuthService {
     return this._createSession(c, isEmailExist);
   }
 
-  private static async _createSession(c: Context, user: { id: string; name: string; username: string; avatar: string | null; email: string }, userAgent?: string): Promise<loginResponse> {
+  private static async _createSession(c: Context, user: { id: string; name: string; role: string; avatar: string | null; email: string }, userAgent?: string): Promise<loginResponse> {
     const randomToken = generateRandomToken();
     const hashedToken = await hashToken(randomToken);
     const agent = userAgent ?? c.req.header("user-agent") ?? "unknown";
@@ -167,11 +98,9 @@ export class AuthService {
     return {
       token: sessionToken,
       expiredAt: sessionPayload.expiresAt,
-      user: { id: user.id, name: user.name, username: user.username, avatar: user.avatar, email: user.email },
+      user: { id: user.id, name: user.name, role: user.role, avatar: user.avatar, email: user.email },
     };
   }
-
-  // ── 2FA ───────────────────────────────────────────────────────────────────
 
   static async setup2FA(userId: string): Promise<{ otpauthUrl: string; secret: string }> {
     const user = await UserRepository.findByIdWithTwoFactor(userId);
@@ -255,7 +184,7 @@ export class AuthService {
 
     await cache.del(cacheKey);
 
-    return this._createSession(c, { id: user.id, name: user.name, username: user.username, avatar: user.avatar, email: user.email }, userAgent);
+    return this._createSession(c, { id: user.id, name: user.name, role: user.role, avatar: user.avatar, email: user.email }, userAgent);
   }
 
   static async resendVerificationEmail(c: Context, email: string) {
@@ -300,10 +229,9 @@ export class AuthService {
     return {
       id: result.id,
       name: result.name,
-      username: result.username,
+      role: result.role,
       avatar: result.avatar,
       email: result.email,
-      role: result.role,
       lastLogin: result.lastLogin,
       joinedAt: result.createdAt,
       lastChangePasswordAt: result.lastChangePasswordAt,
@@ -347,7 +275,6 @@ export class AuthService {
     await SessionRepository.deleteSessionBySessionId(sessionId);
   }
 
-  // change password (requires current password — for accounts that already have one)
   static async changePassword(c: Context, userId: string, request: ChangePasswordRequest): Promise<void> {
     const passwordHash = await UserRepository.getPasswordByUserId(userId);
 
@@ -375,7 +302,6 @@ export class AuthService {
     deleteCookie(c, redisConfig.TOKEN_PREFIX_DEFAULT);
   }
 
-  // set password (for OAuth accounts that have no password yet)
   static async setPassword(c: Context, userId: string, request: SetPasswordRequest): Promise<void> {
     const passwordHash = await UserRepository.getPasswordByUserId(userId);
 
@@ -588,7 +514,7 @@ export class AuthService {
       user: {
         id: user?.id!,
         name: user?.name!,
-        username: user?.username!,
+        role: user?.role!,
         avatar: user?.avatar!,
         email: user?.email!,
       },

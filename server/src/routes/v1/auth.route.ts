@@ -6,7 +6,6 @@ import { AuthController as ctrl } from "@/modules/auth/auth.controller";
 
 const auth = new Hono();
 auth.post("/login", limitter(authLimit.LOGIN), ctrl.login);
-auth.post("/register", limitter(authLimit.REGISTER), ctrl.register);
 auth.post("/logout", protect, ctrl.logout);
 auth.post("/sessions-revoke", protect, ctrl.logoutAll);
 auth.delete("/sessions/:sessionId", protect, ctrl.deleteSession);
@@ -28,4 +27,3 @@ auth.get("/:provider/callback", ctrl.oauthCallback);
 // total endpoints: 12
 
 export default auth;
- 

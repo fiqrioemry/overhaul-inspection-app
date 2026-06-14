@@ -3,8 +3,7 @@
 import { z } from "zod";
 import i18n from "@/i18n";
 
-const t = (key: string, opts?: Record<string, unknown>): string =>
-  opts !== undefined ? i18n.t(`validation:${key}`, opts) : i18n.t(`validation:${key}`);
+const t = (key: string, opts?: Record<string, unknown>): string => (opts !== undefined ? i18n.t(`validation:${key}`, opts) : i18n.t(`validation:${key}`));
 
 export const passwordValidation = () =>
   z
@@ -18,19 +17,6 @@ export const loginSchema = () =>
     email: z.string().email(t("emailInvalid")),
     password: z.string().min(1, t("passwordRequired")),
   });
-
-export const registerSchema = () =>
-  z
-    .object({
-      name: z.string().min(3, t("nameMin", { count: 3 })),
-      email: z.string().email(t("emailInvalid")),
-      password: passwordValidation(),
-      confirmPassword: z.string().min(1, t("confirmPasswordRequired")),
-    })
-    .refine((data) => data.password === data.confirmPassword, {
-      message: t("passwordsDoNotMatch"),
-      path: ["confirmPassword"],
-    });
 
 export const forgotPasswordSchema = () =>
   z.object({
@@ -54,7 +40,10 @@ export const resetPasswordSchema = () =>
 
 export const twoFactorChallengeSchema = () =>
   z.object({
-    code: z.string().min(6, t("codeMin", { count: 6 })).max(8, t("codeMax", { count: 8 })),
+    code: z
+      .string()
+      .min(6, t("codeMin", { count: 6 }))
+      .max(8, t("codeMax", { count: 8 })),
   });
 
 export const twoFactorVerifySchema = () =>
@@ -64,11 +53,13 @@ export const twoFactorVerifySchema = () =>
 
 export const twoFactorDisableSchema = () =>
   z.object({
-    code: z.string().min(6, t("codeMin", { count: 6 })).max(8, t("codeMax", { count: 8 })),
+    code: z
+      .string()
+      .min(6, t("codeMin", { count: 6 }))
+      .max(8, t("codeMax", { count: 8 })),
   });
 
 export type LoginFormValues = z.infer<ReturnType<typeof loginSchema>>;
-export type RegisterFormValues = z.infer<ReturnType<typeof registerSchema>>;
 export type ForgotPasswordFormValues = z.infer<ReturnType<typeof forgotPasswordSchema>>;
 export type ResetPasswordFormValues = z.infer<ReturnType<typeof resetPasswordSchema>>;
 export type TwoFactorChallengeFormValues = z.infer<ReturnType<typeof twoFactorChallengeSchema>>;

@@ -1,9 +1,4 @@
-// src/features/settings/settings.types.ts
-import type { NotificationSetting } from "@/types/notifications.type";
-
-export interface UpdatePrivacyRequest {
-  isPublic: boolean;
-}
+// src/types/sessions.type.ts
 
 export interface Session {
   id: string;
@@ -20,15 +15,4 @@ export interface SessionWithCurrent extends Session {
     os: string;
     device: string;
   };
-}
-
-export interface NotificationSettingsResponse {
-  settings: NotificationSetting[];
-}
-
-export interface UpdateNotificationSettingsRequest {
-  notificationId?: string;
-  type?: string;
-  status?: "ENABLED" | "DISABLED";
-  enabled?: boolean;
 }

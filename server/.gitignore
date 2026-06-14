@@ -5,6 +5,7 @@ node_modules/
 .env
 .env.development
 .env.production
+.env.*
 bun.lock
 /prisma/@/generated/prisma
  
@@ -13,5 +14,4 @@ deployed
 
 CHANGELOG.md
 CLAUDE.md
-features.md
-todo.md
+PRD.md

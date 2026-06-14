@@ -1,10 +1,4 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
-
+ 
 generator client {
   provider = "prisma-client-js"
   output = "../generated/prisma"
@@ -17,6 +11,7 @@ datasource db {
 enum RoleEnum {
   USER
   ADMIN
+  INSPECTOR
 }
 
 enum StatusEnum {
@@ -24,23 +19,16 @@ enum StatusEnum {
   INACTIVE
   BANNED
 }
-enum GenderEnum {
-  MALE
-  FEMALE
-}
+
 
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
   passwordHash String?   @map("password_hash")
   name         String
-  username     String   @unique
   avatar       String?
-  bio          String?
   status StatusEnum @default(ACTIVE)
-  gender GenderEnum?  @map("gender")
   role         RoleEnum @default(USER)
-  isPublic     Boolean  @default(true) @map("is_public")
   verifiedAt  DateTime? @map("verified_at")
   lastLogin    DateTime? @map("last_login")
   lastChangePasswordAt DateTime? @map("last_change_password_at")
@@ -48,64 +36,23 @@ model User {
   updatedAt    DateTime  @updatedAt @map("updated_at")
   deletedAt    DateTime? @map("deleted_at")
 
-  website             String?
   twoFactorEnabled    Boolean  @default(false) @map("two_factor_enabled")
   twoFactorSecret     String?  @map("two_factor_secret")
   twoFactorBackupCodes String[] @map("two_factor_backup_codes")
 
   sessions        Session[]
-  posts           Post[]
-  postReports     PostReport[]     @relation("PostReporter")
-  reviewedReports PostReport[]     @relation("PostReviewer")
   notifications   Notification[]
   notificationSettings NotificationSetting[]
-  comments     Comment[]
-  likes        Like[]
-  chatParticipants ChatParticipant[]
-  bookmarks     Bookmark[]
-  createdChats Chat[] @relation("ChatCreator")
-
   verifications UserVerification[]
-  followers    Following[] @relation("UserFollowers")
-  following    Following[] @relation("UserFollowing")
 
   activities   UserActivityLog[]
-  sentMessages     Message[]
   oauthAccounts    OAuthAccount[]
-  messageReactions MessageReaction[]
-
-  blockedUsers   UserBlock[] @relation("BlockedBy")
-  blockedByUsers UserBlock[] @relation("BlockedUsers")
-  mutedUsers     UserMute[]  @relation("MutedBy")
-  mutedByUsers   UserMute[]  @relation("MutedUsers")
-  mentions       PostMention[]
 
   @@map("users")
 }
 
-enum FollowStatus {
-  NONE      
-  PENDING    
-  ACCEPTED   
-}
-
-model Following {
-  id          String       @id @default(cuid())
-  followerId  String       @map("follower_id")
-  followingId String       @map("following_id")
-  status      FollowStatus @default(ACCEPTED) @map("status")  // public = langsung ACCEPTED
-  acceptedAt  DateTime?    @map("accepted_at")  // null jika masih PENDING
-  createdAt   DateTime     @default(now()) @map("created_at")
-
-  follower    User @relation("UserFollowing", fields: [followerId], references: [id], onDelete: Cascade)
-  following   User @relation("UserFollowers", fields: [followingId], references: [id], onDelete: Cascade)
-
-  @@unique([followerId, followingId])
-  @@index([followerId])
-  @@index([followingId])
-  @@index([followingId, status]) // ← penting untuk query "pending requests"
-  @@map("followings")
-}
+ 
+ 
 
 enum VerificationType {
   EMAIL_VERIFICATION
@@ -154,38 +101,7 @@ model UserActivityLog {
   @@map("user_activity_logs")
 }
 
-model Post {
-  id             String   @id @default(cuid())
-  userId         String   @map("user_id")
-  title          String
-  content        String
-  isArchived     Boolean  @default(false) @map("is_archived")
-  isRepost       Boolean  @default(false) @map("is_repost")
-  originalPostId String?  @map("original_post_id")
-  shareCount     Int      @default(0)     @map("share_count")
-  caption        String?
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime? @map("updated_at")
-  deletedAt      DateTime? @map("deleted_at")
-
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  originalPost Post?         @relation("PostReposts", fields: [originalPostId], references: [id], onDelete: Cascade)
-  reposts      Post[]        @relation("PostReposts")
-  postReports  PostReport[]
-  comments     Comment[]
-  bookmarks    Bookmark[]
-  galleries    PostGallery[]
-  likes        Like[]
-  hashtags     PostHashtag[]
-  mentions     PostMention[]
-
-  @@index([userId])
-  @@index([originalPostId])
-  @@map("posts")
-}
-
  
-
 enum OAuthProvider {
   GOOGLE
   GITHUB
@@ -209,23 +125,7 @@ model OAuthAccount {
   @@index([userId])
   @@map("oauth_accounts")
 }
-model Bookmark {
-  id        String   @id @default(cuid())
-  userId    String   @map("user_id")
-  postId    String   @map("post_id")
-  createdAt DateTime @default(now()) @map("created_at")
-
-  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  post      Post @relation(fields: [postId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, postId])
-  @@index([userId])
-  @@index([postId])
-
-  @@map("bookmarks")
-}
-
-
+ 
  
 model FileStorage {
   id        String   @id @default(cuid())
@@ -242,138 +142,15 @@ model FileStorage {
   @@map("file_storages")
 }
 
-model PostGallery {
-  id        String   @id @default(cuid())
-  postId    String   @map("post_id")
-  url       String
-  order    Int
-  createdAt DateTime @default(now()) @map("created_at")
-
-  post      Post @relation(fields: [postId], references: [id], onDelete: Cascade)
-
-  @@index([postId])
-  @@map("post_galleries")
-}
-
-model Like {
-  id        String   @id @default(cuid())
-  userId    String   @map("user_id")
-  postId    String?  @map("post_id")
-  commentId String?  @map("comment_id")
-  createdAt DateTime @default(now()) @map("created_at")
-
-  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  post      Post? @relation(fields: [postId], references: [id], onDelete: Cascade)
-  comment   Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, postId])
-  @@unique([userId, commentId])
-  @@index([userId])
-  @@index([postId])
-  @@index([commentId])
-
-  @@map("likes")
-}
-
-
-
-
-model Comment {
-  id        String   @id @default(cuid())
-  parentId  String?  @map("parent_id")
-  postId    String   @map("post_id")
-  userId    String   @map("user_id")
-  content   String
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  likes     Like[]
-  mentions  PostMention[]
-
-  parent    Comment?  @relation("CommentChildren", fields: [parentId], references: [id])
-  children  Comment[] @relation("CommentChildren")
-
-  @@index([postId])
-  @@index([userId])
-  @@index([parentId])
-
-  @@map("comments")
-}
-
-enum ChatType {
-  PRIVATE
-  GROUP
-}
-model Chat {
-  id            String   @id @default(cuid())
-  type          ChatType @default(PRIVATE)
-  name          String?
-  avatar        String?
-  description   String?
-  createdById   String?  @map("created_by_id")
-
-  lastMessageId String?  @unique @map("last_message_id")
-
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
-  deletedAt     DateTime? @map("deleted_at") 
-
-  createdBy     User? @relation("ChatCreator", fields: [createdById], references: [id])
-
-  participants  ChatParticipant[]  
-  messages      Message[]
-
-  lastMessage   Message? @relation("LastMessage", fields: [lastMessageId], references: [id], onDelete: SetNull)
-
-  @@index([type])
-  @@index([updatedAt])
-  @@map("chats")
-}
-
-
-enum ParticipantRole {
-  MEMBER
-  ADMIN
-}
-model ChatParticipant {
-  id        String   @id @default(cuid())
-  chatId    String   @map("chat_id")
-  userId    String   @map("user_id")
-  role      ParticipantRole @default(MEMBER)
-  joinedAt  DateTime @default(now()) @map("joined_at")
-
-  chat      Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
-  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([chatId, userId])
-  @@index([chatId])
-  @@index([userId])
-
-  @@map("chat_participants")
-}
-
-
-enum MessageType {
-  text
-  image
-  file
-  audio
-  video
-}
+ 
 enum NotificationType {
-  LIKE
-  COMMENT
-  FOLLOW
-  REQUEST
-  MENTION
-  MESSAGE
-  REPOST
+  INSPECTION_ASSIGNED
+  INSPECTION_REMINDER
 }
 
 enum NotificationChannel {
   IN_APP
+  EMAIL
 }
 
 enum NotificationStatus {
@@ -414,137 +191,4 @@ model Notification {
   @@map("notifications")
 }
 
-model Message {
-  id          String      @id @default(cuid())
-  chatId      String      @map("chat_id")
-  senderId    String      @map("sender_id")
-  type        MessageType @default(text)
-  text        String
-  mediaUrl    String?     @map("media_url")
-  readBy      String[]    @map("read_by")
-  replyToId   String?     @map("reply_to_id")
-  createdAt   DateTime    @default(now()) @map("created_at")
-
-  chat              Chat              @relation(fields: [chatId], references: [id], onDelete: Cascade)
-  sender            User              @relation(fields: [senderId], references: [id], onDelete: Cascade)
-  lastMessageInChat Chat?             @relation("LastMessage")
-  replyTo           Message?          @relation("MessageReplies", fields: [replyToId], references: [id], onDelete: SetNull)
-  replies           Message[]         @relation("MessageReplies")
-  reactions         MessageReaction[]
-
-  @@index([chatId])
-  @@index([senderId])
-  @@map("messages")
-}
-
-model MessageReaction {
-  id        String   @id @default(cuid())
-  messageId String   @map("message_id")
-  userId    String   @map("user_id")
-  emoji     String
-  createdAt DateTime @default(now()) @map("created_at")
-
-  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([messageId, userId, emoji])
-  @@index([messageId])
-  @@map("message_reactions")
-}
-
-enum PostReportReason {
-  SPAM
-  HARASSMENT
-  NUDITY
-  VIOLENCE
-  MISSINFORMATION
-  OTHER
-}
-
-model PostReport {
-  id          String           @id @default(cuid())
-  postId      String
-  userId      String
-  reason      PostReportReason
-  description String?
-  status      String           @default("PENDING")
-  reviewedBy  String?          @map("reviewed_by")
-  reviewedAt  DateTime?        @map("reviewed_at")
-  actionTaken String?          @map("action_taken")
-  createdAt   DateTime         @default(now())
-
-  post     Post  @relation(fields: [postId], references: [id], onDelete: Cascade)
-  user     User  @relation("PostReporter", fields: [userId], references: [id], onDelete: Cascade)
-  reviewer User? @relation("PostReviewer", fields: [reviewedBy], references: [id], onDelete: SetNull)
-
-  @@unique([userId, postId])
-  @@index([postId, reason])
-  @@index([status])
-  @@map("post_reports")
-}
-
-model UserBlock {
-  id        String   @id @default(cuid())
-  blockerId String   @map("blocker_id")
-  blockedId String   @map("blocked_id")
-  createdAt DateTime @default(now()) @map("created_at")
-
-  blocker User @relation("BlockedBy", fields: [blockerId], references: [id], onDelete: Cascade)
-  blocked User @relation("BlockedUsers", fields: [blockedId], references: [id], onDelete: Cascade)
-
-  @@unique([blockerId, blockedId])
-  @@index([blockerId])
-  @@map("user_blocks")
-}
-
-model UserMute {
-  id        String   @id @default(cuid())
-  muterId   String   @map("muter_id")
-  mutedId   String   @map("muted_id")
-  muteType  String   @default("all")
-  createdAt DateTime @default(now()) @map("created_at")
-
-  muter User @relation("MutedBy", fields: [muterId], references: [id], onDelete: Cascade)
-  muted User @relation("MutedUsers", fields: [mutedId], references: [id], onDelete: Cascade)
-
-  @@unique([muterId, mutedId])
-  @@index([muterId])
-  @@map("user_mutes")
-}
-
-model Hashtag {
-  id        String   @id @default(cuid())
-  name      String   @unique
-  createdAt DateTime @default(now()) @map("created_at")
-
-  posts PostHashtag[]
-
-  @@map("hashtags")
-}
-
-model PostHashtag {
-  postId    String @map("post_id")
-  hashtagId String @map("hashtag_id")
-
-  post    Post    @relation(fields: [postId], references: [id], onDelete: Cascade)
-  hashtag Hashtag @relation(fields: [hashtagId], references: [id], onDelete: Cascade)
-
-  @@id([postId, hashtagId])
-  @@map("post_hashtags")
-}
-
-model PostMention {
-  id        String   @id @default(cuid())
-  postId    String?  @map("post_id")
-  commentId String?  @map("comment_id")
-  userId    String   @map("user_id")
-  createdAt DateTime @default(now()) @map("created_at")
-
-  post    Post?    @relation(fields: [postId], references: [id], onDelete: Cascade)
-  comment Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
-  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([postId])
-  @@map("post_mentions")
-}
+ 

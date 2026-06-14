@@ -97,11 +97,6 @@ const authLimit = {
     windowSec: 60, // Per 60 secs hit 100 times
   },
 
-  REGISTER: {
-    limit: 10, // limit each IP to 10 registration requests per windowSec
-    windowSec: 60, // 60 seconds in seconds
-  },
-
   PASSWORD_CHANGE: {
     limit: 5, // limit each user to 5 password change requests per windowSec
     windowSec: 60, // 60 seconds in seconds
@@ -142,7 +137,7 @@ const authLimit = {
   TWO_FACTOR_CHALLENGE: { limit: 10, windowSec: 60 },
 
   TWO_FACTOR_CHALLENGE_TTL: 5 * 60, // 5 minutes in seconds
-  TWO_FACTOR_SETUP_TTL: 10 * 60,   // 10 minutes in seconds
+  TWO_FACTOR_SETUP_TTL: 10 * 60, // 10 minutes in seconds
 };
 
 export { authSuccessMessage, authErrorMessage, authErrorCode, authLimit };
