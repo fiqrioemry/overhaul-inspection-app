@@ -3,16 +3,7 @@ import { AuthService } from "@/modules/auth/auth.service";
 import { responseCreated, responseOK } from "@/utils/response";
 import { databaseConfig, OAuthProviderKey } from "@/config/env";
 import { authSuccessMessage } from "@/config/constant/auth.constant";
-import {
-  changePasswordRequest,
-  forgotPasswordRequest,
-  loginRequest,
-  resendVerificationEmailRequest,
-  resetPasswordRequest,
-  setPasswordRequest,
-  twoFactorChallengeRequest,
-  twoFactorCodeRequest,
-} from "@/modules/auth/auth.schema";
+import { changePasswordRequest, forgotPasswordRequest, loginRequest, resendVerificationEmailRequest, resetPasswordRequest, setPasswordRequest, twoFactorChallengeRequest, twoFactorCodeRequest } from "@/modules/auth/auth.schema";
 
 export class AuthController {
   static async verifyEmail(c: Context) {

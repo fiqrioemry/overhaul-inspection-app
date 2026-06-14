@@ -35,13 +35,19 @@ enum OAuthProvider {
 enum NotificationType {
   INSPECTION_ASSIGNED
   INSPECTION_REMINDER
-  INSPECTION_REQUEST_SUBMITTED
-  INSPECTION_REQUEST_REVIEWED
-  FINDING_CREATED
-  FINDING_STATUS_CHANGED
-  TEST_COMPLETED
-  DAILY_REPORT_CREATED
+  INSPECTION_REVIEW_REQUESTED
+  INSPECTION_REVIEWED
   TANK_CREATED
+  PROCESS_STATUS_UPDATED
+  FINDING_CREATED
+  FINDING_STATUS_UPDATED
+  DAILY_REPORT_CREATED
+  TEST_RESULT_UPDATED
+  RADIOGRAPHY_RESULT_UPDATED
+  FILE_UPLOADED
+  USER_CREATED
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
 }
 
 enum NotificationChannel {
@@ -58,6 +64,117 @@ enum CompanyType {
   OWNER
   INSPECTOR_COMPANY
   CONTRACTOR
+}
+
+// ─── Master Data Status / Document ───────────────────────────────────────────
+
+enum MasterDataStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+enum DocumentType {
+  STANDARD
+  PROCEDURE
+  SPECIFICATION
+  WPS
+  ITP
+  PROJECT_PROCEDURE
+}
+
+enum AcceptanceType {
+  PASS_FAIL
+  NUMERIC_MIN
+  NUMERIC_MAX
+  NUMERIC_RANGE
+  TEXT
+  DEPENDENCY
+}
+
+enum CriteriaSeverity {
+  CRITICAL
+  MAJOR
+  MINOR
+  OBSERVATION
+}
+
+// ─── Domain Enums ────────────────────────────────────────────────────────────
+
+enum ProcessType {
+  WORK
+  INSPECTION
+  TEST
+  NDT
+  COATING
+  COMMISSIONING
+  MATERIAL_INSPECTION
+}
+
+enum ProcessResultEnum {
+  PASSED
+  FAILED
+  PENDING
+  NOT_APPLICABLE
+}
+
+enum ProcessStatusEnum {
+  LOCKED
+  NOT_STARTED
+  WAITING_REVIEW
+  REVIEWED
+  IN_PROGRESS
+  COMPLETED
+  REJECTED
+  NOT_APPLICABLE
+}
+
+enum ChecklistStatusEnum {
+  NOT_CHECKED
+  PASSED
+  FAILED
+  NOT_APPLICABLE
+}
+
+enum FindingStatusEnum {
+  OPEN
+  IN_REPAIR
+  REPAIRED
+  VERIFIED
+  CLOSED
+  REJECTED
+}
+
+enum SeverityEnum {
+  LOW
+  MINOR
+  MAJOR
+  CRITICAL
+}
+
+enum InspectionRequestStatusEnum {
+  DRAFT
+  SUBMITTED
+  REVIEWED
+  RETURNED
+  CANCELLED
+}
+
+enum DailyActivityTypeEnum {
+  MONITORING
+  INSPECTION
+  FINDING
+  REPAIR
+  TEST_ACTIVITY
+  INFORMATION
+}
+
+enum RadiographyJointResultEnum {
+  PENDING
+  ACCEPTED
+  REPAIR
+  RESHOOT
+  REJECTED
 }
 
 // ─── Auth Models ─────────────────────────────────────────────────────────────
@@ -87,6 +204,16 @@ model User {
   verifications        UserVerification[]
   activities           UserActivityLog[]
   oauthAccounts        OAuthAccount[]
+
+  createdTanks         Tank[]              @relation("TankCreatedBy")
+  reviewedRequests     InspectionRequest[] @relation("InspectionRequestReviewedBy")
+  requestedReviews     InspectionRequest[] @relation("InspectionRequestRequestedBy")
+  createdFindings      Finding[]           @relation("FindingCreatedBy")
+  closedFindings       Finding[]           @relation("FindingClosedBy")
+  checkedChecklists    ChecklistResult[]   @relation("ChecklistCheckedBy")
+  createdTestRecords   TestRecord[]        @relation("TestRecordCreatedBy")
+  createdRadiography   RadiographyTest[]   @relation("RadiographyCreatedBy")
+  dailyReports         DailyReport[]       @relation("DailyReportInspector")
 
   @@index([email])
   @@index([role])
@@ -212,53 +339,6 @@ model Notification {
   @@map("notifications")
 }
 
-enum MasterDataStatus {
-  DRAFT
-  ACTIVE
-  ARCHIVED
-}
-
-enum DocumentType {
-  STANDARD
-  PROCEDURE
-  SPECIFICATION
-  WPS
-  ITP
-  PROJECT_PROCEDURE
-}
-
-enum AcceptanceType {
-  PASS_FAIL
-  NUMERIC_MIN
-  NUMERIC_MAX
-  NUMERIC_RANGE
-  TEXT
-  DEPENDENCY
-}
-
-enum CriteriaSeverity {
-  CRITICAL
-  MAJOR
-  MINOR
-  OBSERVATION
-}
-
-enum ProcessType {
-  WORK
-  INSPECTION
-  TEST
-  NDT
-  COATING
-  COMMISSIONING
-}
-
-enum ProcessResultEnum {
-  PASSED
-  FAILED
-  PENDING
-  NOT_APPLICABLE
-}
-
 // ─── Company ──────────────────────────────────────────────────────────────────
 
 model Company {
@@ -273,6 +353,9 @@ model Company {
   createdAt DateTime    @default(now()) @map("created_at")
   updatedAt DateTime    @updatedAt @map("updated_at")
   deletedAt DateTime?   @map("deleted_at")
+
+  contractorTanks Tank[] @relation("TankContractor")
+  inspectionTanks Tank[] @relation("TankInspectionCompany")
 
   @@index([type])
   @@index([isActive])
@@ -324,8 +407,10 @@ model AcceptanceCriteria {
   updatedAt      DateTime         @updatedAt @map("updated_at")
   deletedAt      DateTime?        @map("deleted_at")
 
-  criteriaRefs    CriteriaReference[]
-  processCriteria ProcessCriteriaTemplate[]
+  criteriaRefs     CriteriaReference[]
+  processCriteria  ProcessCriteriaTemplate[]
+  checklistResults ChecklistResult[]
+  findings         Finding[]
 
   @@index([code])
   @@index([acceptanceType])
@@ -366,8 +451,9 @@ model ProcessTemplate {
   deletedAt         DateTime?   @map("deleted_at")
 
   processCriteria ProcessCriteriaTemplate[]
-  dependants      ProcessDependency[]       @relation("DependantProcess")
-  dependencies    ProcessDependency[]       @relation("RequiredProcess")
+  dependants      ProcessDependency[]        @relation("DependantProcess")
+  dependencies    ProcessDependency[]        @relation("RequiredProcess")
+  tankProcesses   TankProcess[]
 
   @@index([type])
   @@index([sequenceOrder])
@@ -412,4 +498,259 @@ model ProcessDependency {
   @@index([processTemplateId])
   @@index([requiredProcessTemplateId])
   @@map("process_dependencies")
+}
+
+// ─── Tank Domain ──────────────────────────────────────────────────────────────
+
+model Tank {
+  id                  String     @id @default(cuid())
+  tankNo              String     @unique @map("tank_no")
+  tankName            String?    @map("tank_name")
+  diameterMm          Float?     @map("diameter_mm")
+  heightMm            Float?     @map("height_mm")
+  shellCourseCount    Int?       @map("shell_course_count")
+  bottomPlateDimension String?   @map("bottom_plate_dimension")
+  hasSteamCoil        Boolean    @default(false) @map("has_steam_coil")
+  contractorCompanyId String?    @map("contractor_company_id")
+  inspectionCompanyId String?    @map("inspection_company_id")
+  startDate           DateTime?  @map("start_date") @db.Date
+  estimatedFinishDate DateTime?  @map("estimated_finish_date") @db.Date
+  actualFinishDate    DateTime?  @map("actual_finish_date") @db.Date
+  status              StatusEnum @default(ACTIVE)
+  createdBy           String?    @map("created_by")
+  createdAt           DateTime   @default(now()) @map("created_at")
+  updatedAt           DateTime   @updatedAt @map("updated_at")
+  deletedAt           DateTime?  @map("deleted_at")
+
+  contractorCompany Company?   @relation("TankContractor", fields: [contractorCompanyId], references: [id])
+  inspectionCompany Company?   @relation("TankInspectionCompany", fields: [inspectionCompanyId], references: [id])
+  createdByUser     User?      @relation("TankCreatedBy", fields: [createdBy], references: [id])
+
+  shellCourses TankShellCourse[]
+  processes    TankProcess[]
+  findings     Finding[]
+  dailyReports DailyReport[]
+
+  @@index([status])
+  @@index([deletedAt])
+  @@map("tanks")
+}
+
+model TankShellCourse {
+  id             String   @id @default(cuid())
+  tankId         String   @map("tank_id")
+  courseNo       Int      @map("course_no")
+  thicknessMm    Float?   @map("thickness_mm")
+  plateDimension String?  @map("plate_dimension")
+  remarks        String?
+
+  tank Tank @relation(fields: [tankId], references: [id], onDelete: Cascade)
+
+  @@unique([tankId, courseNo])
+  @@index([tankId])
+  @@map("tank_shell_courses")
+}
+
+model TankProcess {
+  id                String            @id @default(cuid())
+  tankId            String            @map("tank_id")
+  processTemplateId String            @map("process_template_id")
+  name              String
+  type              ProcessType
+  sequenceOrder     Int               @map("sequence_order")
+  status            ProcessStatusEnum @default(LOCKED)
+  result            ProcessResultEnum @default(PENDING)
+  plannedStartDate  DateTime?         @map("planned_start_date") @db.Date
+  actualStartDate   DateTime?         @map("actual_start_date") @db.Date
+  actualFinishDate  DateTime?         @map("actual_finish_date") @db.Date
+  remarks           String?
+  createdAt         DateTime          @default(now()) @map("created_at")
+  updatedAt         DateTime          @updatedAt @map("updated_at")
+
+  tank            Tank            @relation(fields: [tankId], references: [id], onDelete: Cascade)
+  processTemplate ProcessTemplate @relation(fields: [processTemplateId], references: [id], onDelete: Restrict)
+
+  checklistResults   ChecklistResult[]
+  findings           Finding[]
+  inspectionRequests InspectionRequest[]
+  testRecords        TestRecord[]
+  radiographyTests   RadiographyTest[]
+  dailyReports       DailyReport[]
+
+  @@unique([tankId, processTemplateId])
+  @@index([tankId])
+  @@index([status])
+  @@index([result])
+  @@map("tank_processes")
+}
+
+model ChecklistResult {
+  id            String              @id @default(cuid())
+  tankProcessId String              @map("tank_process_id")
+  criteriaId    String              @map("criteria_id")
+  status        ChecklistStatusEnum @default(NOT_CHECKED)
+  actualValue   Float?              @map("actual_value")
+  actualText    String?             @map("actual_text")
+  remarks       String?
+  checkedBy     String?             @map("checked_by")
+  checkedAt     DateTime?           @map("checked_at")
+  createdAt     DateTime            @default(now()) @map("created_at")
+  updatedAt     DateTime            @updatedAt @map("updated_at")
+
+  tankProcess   TankProcess        @relation(fields: [tankProcessId], references: [id], onDelete: Cascade)
+  criteria      AcceptanceCriteria @relation(fields: [criteriaId], references: [id], onDelete: Restrict)
+  checkedByUser User?              @relation("ChecklistCheckedBy", fields: [checkedBy], references: [id])
+
+  @@unique([tankProcessId, criteriaId])
+  @@index([tankProcessId])
+  @@index([criteriaId])
+  @@index([status])
+  @@map("checklist_results")
+}
+
+model Finding {
+  id             String            @id @default(cuid())
+  tankId         String            @map("tank_id")
+  tankProcessId  String            @map("tank_process_id")
+  criteriaId     String?           @map("criteria_id")
+  findingNo      String            @unique @map("finding_no")
+  title          String
+  description    String?
+  locationDetail String?           @map("location_detail")
+  status         FindingStatusEnum @default(OPEN)
+  severity       SeverityEnum      @default(MAJOR)
+  isBlocking     Boolean           @default(true) @map("is_blocking")
+  createdBy      String?           @map("created_by")
+  closedBy       String?           @map("closed_by")
+  closedAt       DateTime?         @map("closed_at")
+  createdAt      DateTime          @default(now()) @map("created_at")
+  updatedAt      DateTime          @updatedAt @map("updated_at")
+  deletedAt      DateTime?         @map("deleted_at")
+
+  tank          Tank                @relation(fields: [tankId], references: [id], onDelete: Cascade)
+  tankProcess   TankProcess         @relation(fields: [tankProcessId], references: [id], onDelete: Cascade)
+  criteria      AcceptanceCriteria? @relation(fields: [criteriaId], references: [id], onDelete: SetNull)
+  createdByUser User?               @relation("FindingCreatedBy", fields: [createdBy], references: [id])
+  closedByUser  User?               @relation("FindingClosedBy", fields: [closedBy], references: [id])
+
+  @@index([tankId])
+  @@index([tankProcessId])
+  @@index([status])
+  @@index([deletedAt])
+  @@map("findings")
+}
+
+model InspectionRequest {
+  id            String                      @id @default(cuid())
+  tankProcessId String                      @map("tank_process_id")
+  requestNo     String                      @unique @map("request_no")
+  requestedBy   String?                     @map("requested_by")
+  reviewedBy    String?                     @map("reviewed_by")
+  status        InspectionRequestStatusEnum @default(DRAFT)
+  notes         String?
+  reviewNotes   String?                     @map("review_notes")
+  requestedAt   DateTime?                   @map("requested_at")
+  reviewedAt    DateTime?                   @map("reviewed_at")
+  createdAt     DateTime                    @default(now()) @map("created_at")
+  updatedAt     DateTime                    @updatedAt @map("updated_at")
+
+  tankProcess     TankProcess @relation(fields: [tankProcessId], references: [id], onDelete: Cascade)
+  requestedByUser User?       @relation("InspectionRequestRequestedBy", fields: [requestedBy], references: [id])
+  reviewedByUser  User?       @relation("InspectionRequestReviewedBy", fields: [reviewedBy], references: [id])
+
+  @@index([tankProcessId])
+  @@index([status])
+  @@map("inspection_requests")
+}
+
+model TestRecord {
+  id            String            @id @default(cuid())
+  tankProcessId String            @map("tank_process_id")
+  testDate      DateTime?         @map("test_date") @db.Date
+  testPressure  Float?            @map("test_pressure")
+  pressureUnit  String?           @map("pressure_unit")
+  holdingTime   String?           @map("holding_time")
+  testMedium    String?           @map("test_medium")
+  leakIndication Boolean?         @map("leak_indication")
+  result        ProcessResultEnum @default(PENDING)
+  remarks       String?
+  createdBy     String?           @map("created_by")
+  createdAt     DateTime          @default(now()) @map("created_at")
+  updatedAt     DateTime          @updatedAt @map("updated_at")
+
+  tankProcess   TankProcess @relation(fields: [tankProcessId], references: [id], onDelete: Cascade)
+  createdByUser User?       @relation("TestRecordCreatedBy", fields: [createdBy], references: [id])
+
+  @@index([tankProcessId])
+  @@index([result])
+  @@map("test_records")
+}
+
+model RadiographyTest {
+  id            String            @id @default(cuid())
+  tankProcessId String            @map("tank_process_id")
+  testDate      DateTime?         @map("test_date") @db.Date
+  area          String?
+  totalJoint    Int               @default(0) @map("total_joint")
+  totalShot     Int               @default(0) @map("total_shot")
+  totalAccepted Int               @default(0) @map("total_accepted")
+  totalRepair   Int               @default(0) @map("total_repair")
+  totalReshoot  Int               @default(0) @map("total_reshoot")
+  result        ProcessResultEnum @default(PENDING)
+  remarks       String?
+  createdBy     String?           @map("created_by")
+  createdAt     DateTime          @default(now()) @map("created_at")
+  updatedAt     DateTime          @updatedAt @map("updated_at")
+
+  tankProcess  TankProcess              @relation(fields: [tankProcessId], references: [id], onDelete: Cascade)
+  createdByUser User?                   @relation("RadiographyCreatedBy", fields: [createdBy], references: [id])
+  jointResults RadiographyJointResult[]
+
+  @@index([tankProcessId])
+  @@index([result])
+  @@map("radiography_tests")
+}
+
+model RadiographyJointResult {
+  id                String                    @id @default(cuid())
+  radiographyTestId String                    @map("radiography_test_id")
+  jointNo           String                    @map("joint_no")
+  location          String?
+  weldType          String?                   @map("weld_type")
+  welderNo          String?                   @map("welder_no")
+  filmNo            String?                   @map("film_no")
+  result            RadiographyJointResultEnum @default(PENDING)
+  defectType        String?                   @map("defect_type")
+  repairStatus      String?                   @map("repair_status")
+  remarks           String?
+  createdAt         DateTime                  @default(now()) @map("created_at")
+  updatedAt         DateTime                  @updatedAt @map("updated_at")
+
+  radiographyTest RadiographyTest @relation(fields: [radiographyTestId], references: [id], onDelete: Cascade)
+
+  @@index([radiographyTestId])
+  @@map("radiography_joint_results")
+}
+
+model DailyReport {
+  id             String                @id @default(cuid())
+  tankId         String                @map("tank_id")
+  tankProcessId  String?               @map("tank_process_id")
+  reportDate     DateTime              @map("report_date") @db.Date
+  activityType   DailyActivityTypeEnum @map("activity_type")
+  description    String
+  inspectorId    String?               @map("inspector_id")
+  pertaminaPicId String?               @map("pertamina_pic_id")
+  createdAt      DateTime              @default(now()) @map("created_at")
+  updatedAt      DateTime              @updatedAt @map("updated_at")
+  deletedAt      DateTime?             @map("deleted_at")
+
+  tank        Tank         @relation(fields: [tankId], references: [id], onDelete: Cascade)
+  tankProcess TankProcess? @relation(fields: [tankProcessId], references: [id], onDelete: SetNull)
+  inspector   User?        @relation("DailyReportInspector", fields: [inspectorId], references: [id])
+
+  @@index([tankId])
+  @@index([tankProcessId])
+  @@index([reportDate])
+  @@map("daily_reports")
 }

@@ -11,6 +11,8 @@ import {
   CriteriaSeverity,
   ProcessType,
   ProcessResultEnum,
+  ProcessStatusEnum,
+  ChecklistStatusEnum,
 } from "../generated/prisma";
 import { hashPassword } from "../src/utils/hash";
 
@@ -407,6 +409,106 @@ async function main() {
     }
     console.log(`  ✅ ${processCode} depends on: [${requiredCodes.join(", ")}]`);
   }
+
+  // ── Batch 3: Tank TK-170 ─────────────────────────────────────────────────────
+  console.log("\n🛢️  Seeding tank TK-170...");
+
+  const inspectorUser = await prisma.user.findFirst({ where: { role: RoleEnum.INSPECTOR, deletedAt: null } });
+  const contractorCo = await prisma.company.findFirst({ where: { name: "PT Jasa Karya Teknik", deletedAt: null } });
+  const inspectionCo = await prisma.company.findFirst({ where: { name: "PT Biro Klasifikasi Indonesia", deletedAt: null } });
+
+  let tank = await prisma.tank.findFirst({ where: { tankNo: "TK-170", deletedAt: null } });
+
+  if (!tank) {
+    tank = await prisma.tank.create({
+      data: {
+        tankNo: "TK-170",
+        tankName: "Tangki Timbun TK-170",
+        diameterMm: 36631,
+        heightMm: 12778,
+        shellCourseCount: 6,
+        hasSteamCoil: true,
+        contractorCompanyId: contractorCo?.id,
+        inspectionCompanyId: inspectionCo?.id,
+        startDate: new Date("2026-06-01"),
+        estimatedFinishDate: new Date("2026-09-30"),
+        createdBy: inspectorUser?.id,
+      },
+    });
+    console.log(`  ✅ Tank created: ${tank.tankNo} (id: ${tank.id})`);
+  } else {
+    console.log(`  ℹ️  Tank already exists: ${tank.tankNo}`);
+  }
+
+  // Shell courses
+  const shellCourses = [
+    { courseNo: 1, thicknessMm: 24, plateDimension: "2000x8000 mm" },
+    { courseNo: 2, thicknessMm: 21, plateDimension: "2000x8000 mm" },
+    { courseNo: 3, thicknessMm: 19, plateDimension: "2000x8000 mm" },
+    { courseNo: 4, thicknessMm: 14, plateDimension: "2000x8000 mm" },
+    { courseNo: 5, thicknessMm: 13, plateDimension: "2000x8000 mm" },
+    { courseNo: 6, thicknessMm: 10, plateDimension: "2000x8000 mm" },
+  ];
+
+  for (const sc of shellCourses) {
+    const existing = await prisma.tankShellCourse.findUnique({
+      where: { tankId_courseNo: { tankId: tank.id, courseNo: sc.courseNo } },
+    });
+    if (!existing) {
+      await prisma.tankShellCourse.create({ data: { tankId: tank.id, ...sc } });
+    }
+  }
+  console.log(`  ✅ Shell courses: ${shellCourses.length} courses seeded`);
+
+  // Generate TankProcess records from active templates
+  const activeTemplates = await prisma.processTemplate.findMany({
+    where: { isActive: true, deletedAt: null },
+    orderBy: { sequenceOrder: "asc" },
+    include: { processCriteria: true },
+  });
+
+  const applicableTemplates = activeTemplates.filter((t) => {
+    if (!t.applicabilityRule) return true;
+    if (t.applicabilityRule === "STEAM_COIL") return tank!.hasSteamCoil;
+    return true;
+  });
+
+  console.log(`  ℹ️  Applicable process templates: ${applicableTemplates.length}`);
+
+  for (let i = 0; i < applicableTemplates.length; i++) {
+    const template = applicableTemplates[i];
+    const existing = await prisma.tankProcess.findUnique({
+      where: { tankId_processTemplateId: { tankId: tank.id, processTemplateId: template.id } },
+    });
+
+    let tankProcess = existing;
+    if (!existing) {
+      tankProcess = await prisma.tankProcess.create({
+        data: {
+          tankId: tank.id,
+          processTemplateId: template.id,
+          name: template.name,
+          type: template.type,
+          sequenceOrder: template.sequenceOrder,
+          status: i === 0 ? ProcessStatusEnum.NOT_STARTED : ProcessStatusEnum.LOCKED,
+        },
+      });
+
+      // Generate checklist results
+      if (template.processCriteria.length > 0) {
+        await prisma.checklistResult.createMany({
+          data: template.processCriteria.map((pc) => ({
+            tankProcessId: tankProcess!.id,
+            criteriaId: pc.criteriaId,
+            status: ChecklistStatusEnum.NOT_CHECKED,
+          })),
+          skipDuplicates: true,
+        });
+      }
+    }
+  }
+
+  console.log(`  ✅ Tank processes and checklists generated for TK-170`);
 
   console.log("\n✨ Seeding complete.");
   console.log(`\n📌 Default password for all users: ${DEFAULT_PASSWORD}`);
