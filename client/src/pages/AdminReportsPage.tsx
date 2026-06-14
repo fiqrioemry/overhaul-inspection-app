@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Helmet } from "react-helmet-async";
@@ -10,7 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 const STATUS_COLORS: Record<ReportStatus, string> = {
@@ -72,7 +73,13 @@ export default function AdminReportsPage() {
 
         {/* Filter */}
         <div className="mb-4 flex gap-3">
-          <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v as ReportStatus | "ALL"); setPage(1); }}>
+          <Select
+            value={statusFilter}
+            onValueChange={(v) => {
+              setStatusFilter(v as ReportStatus | "ALL");
+              setPage(1);
+            }}
+          >
             <SelectTrigger className="w-40">
               <SelectValue placeholder={t("admin:filterStatus")} />
             </SelectTrigger>
@@ -104,7 +111,9 @@ export default function AdminReportsPage() {
                 ? Array.from({ length: 8 }).map((_, i) => (
                     <tr key={i}>
                       {Array.from({ length: 6 }).map((__, j) => (
-                        <td key={j} className="px-4 py-3"><Skeleton className="h-5 w-24" /></td>
+                        <td key={j} className="px-4 py-3">
+                          <Skeleton className="h-5 w-24" />
+                        </td>
                       ))}
                     </tr>
                   ))
@@ -114,29 +123,21 @@ export default function AdminReportsPage() {
                         <span className="font-medium">@{r.reporter.username}</span>
                       </td>
                       <td className="px-4 py-3">
-                        <span className="max-w-32 truncate text-muted-foreground">
-                          {r.post.title || r.post.id.slice(0, 8)}
-                        </span>
+                        <span className="max-w-32 truncate text-muted-foreground">{r.post.title || r.post.id.slice(0, 8)}</span>
                       </td>
                       <td className="px-4 py-3">
-                        <Badge variant="outline" className="text-xs">{r.reason}</Badge>
+                        <Badge variant="outline" className="text-xs">
+                          {r.reason}
+                        </Badge>
                       </td>
                       <td className="px-4 py-3">
                         <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[r.status as ReportStatus]}`}>
                           {t(`admin:reportStatus${r.status.charAt(0) + r.status.slice(1).toLowerCase()}` as any)}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-xs text-muted-foreground">
-                        {formatDistanceToNow(new Date(r.createdAt), { addSuffix: true })}
-                      </td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground">{formatDistanceToNow(new Date(r.createdAt), { addSuffix: true })}</td>
                       <td className="px-4 py-3">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-7 text-xs"
-                          disabled={r.status !== "PENDING"}
-                          onClick={() => openDialog(r)}
-                        >
+                        <Button size="sm" variant="outline" className="h-7 text-xs" disabled={r.status !== "PENDING"} onClick={() => openDialog(r)}>
                           {t("admin:actionReview")}
                         </Button>
                       </td>
@@ -171,10 +172,16 @@ export default function AdminReportsPage() {
             <div className="space-y-4">
               {/* Report details */}
               <div className="rounded-lg border bg-muted/30 p-3 text-sm space-y-1">
-                <p><span className="text-muted-foreground">{t("admin:colReporter")}:</span> @{selected.reporter.username}</p>
-                <p><span className="text-muted-foreground">{t("admin:colReason")}:</span> {selected.reason}</p>
+                <p>
+                  <span className="text-muted-foreground">{t("admin:colReporter")}:</span> @{selected.reporter.username}
+                </p>
+                <p>
+                  <span className="text-muted-foreground">{t("admin:colReason")}:</span> {selected.reason}
+                </p>
                 {selected.description && (
-                  <p><span className="text-muted-foreground">{t("admin:colDescription")}:</span> {selected.description}</p>
+                  <p>
+                    <span className="text-muted-foreground">{t("admin:colDescription")}:</span> {selected.description}
+                  </p>
                 )}
               </div>
 
@@ -198,19 +205,18 @@ export default function AdminReportsPage() {
               {/* Note */}
               <div className="space-y-2">
                 <Label>{t("admin:reviewNote")}</Label>
-                <Textarea
-                  placeholder={t("admin:reviewNotePlaceholder")}
-                  value={actionNote}
-                  onChange={(e) => setActionNote(e.target.value)}
-                  rows={3}
-                />
+                <Textarea placeholder={t("admin:reviewNotePlaceholder")} value={actionNote} onChange={(e) => setActionNote(e.target.value)} rows={3} />
               </div>
             </div>
           )}
 
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setSelected(null)}>{t("common:cancel")}</Button>
-            <Button onClick={handleSubmit} disabled={isPending}>{t("common:confirm")}</Button>
+            <Button variant="outline" onClick={() => setSelected(null)}>
+              {t("common:cancel")}
+            </Button>
+            <Button onClick={handleSubmit} disabled={isPending}>
+              {t("common:confirm")}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
