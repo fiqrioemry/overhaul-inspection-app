@@ -12,16 +12,8 @@ const api = axios.create({
 
 const SKIP_REDIRECT_URLS = ["/auth/me", "/auth/login", "/auth/logout"];
 
-// Request interceptor (optional - untuk future use)
 api.interceptors.request.use(
-  (config) => {
-    // case kalau app pakai token-based auth
-    // const token = localStorage.getItem("token");
-    // if (token) {
-    //   config.headers.Authorization = `Bearer ${token}`;
-    // }
-    return config;
-  },
+  (config) => config,
   (error) => Promise.reject(error),
 );
 
@@ -34,9 +26,8 @@ api.interceptors.response.use(
     const is401 = status === 401;
     const shouldSkip = SKIP_REDIRECT_URLS.some((path) => url.includes(path));
 
-    // Handle 401 Unauthorized - redirect to login (existing feature)
     if (is401 && !shouldSkip) {
-      useAuthStore.getState().clearUser();
+      useAuthStore.getState().clearAuth();
       window.location.href = "/login";
     }
 

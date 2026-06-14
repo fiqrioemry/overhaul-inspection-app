@@ -4,19 +4,17 @@ import { toast } from "sonner";
 import i18n from "@/i18n";
 import { useEffect } from "react";
 import { useAuthStore } from "@/stores/auth.store";
-import type { ResetPasswordRequest } from "@/schemas/auth.schema";
-import type { ChangePasswordFormValues, SetPasswordFormValues } from "@/schemas/settings.schema";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchMe, getSessions, deleteSession, logoutAll, changePassword, setPassword, resetPassword, setup2FA, verify2FA, disable2FA } from "./auth.api";
+import { fetchMe, logout, forgotPassword, resetPassword, verifyEmail } from "./auth.api";
+import type { ForgotPasswordFormValues, ResetPasswordFormValues } from "@/schemas/auth.schema";
 
 export const AUTH_KEYS = {
   me: ["auth", "me"] as const,
-  sessions: ["auth", "sessions"] as const,
 };
 
 export function useMe() {
-  const setUser = useAuthStore((s) => s.setUser);
-  const clearUser = useAuthStore((s) => s.clearUser);
+  const setAuth = useAuthStore((s) => s.setAuth);
+  const clearAuth = useAuthStore((s) => s.clearAuth);
 
   const query = useQuery({
     queryKey: AUTH_KEYS.me,
@@ -26,91 +24,42 @@ export function useMe() {
   });
 
   useEffect(() => {
-    if (query.isSuccess && query.data) setUser(query.data);
-    if (query.isError) clearUser();
+    if (query.isSuccess && query.data) setAuth(query.data);
+    if (query.isError) clearAuth();
   }, [query.isSuccess, query.isError, query.data]);
 
   return query;
 }
 
-export function useSessions() {
-  return useQuery({
-    queryKey: AUTH_KEYS.sessions,
-    queryFn: getSessions,
-    staleTime: 1000 * 60 * 2,
-  });
-}
-
-export function useDeleteSession() {
+export function useLogout() {
   const queryClient = useQueryClient();
+  const clearAuth = useAuthStore((s) => s.clearAuth);
   return useMutation({
-    mutationFn: (sessionId: string) => deleteSession(sessionId),
+    mutationFn: logout,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: AUTH_KEYS.sessions });
-    },
-  });
-}
-
-export function useLogoutAll() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: logoutAll,
-    onSuccess: () => {
+      clearAuth();
       queryClient.clear();
     },
   });
 }
 
-export function useChangePassword() {
+export function useForgotPassword() {
   return useMutation({
-    mutationFn: (payload: ChangePasswordFormValues) => changePassword(payload),
-    onSuccess: () => {
-      toast.success(i18n.t("api:CHANGE_PASSWORD_SUCCESS"));
-    },
-  });
-}
-
-export function useSetPassword() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (payload: SetPasswordFormValues) => setPassword(payload),
-    onSuccess: () => {
-      toast.success(i18n.t("api:SET_PASSWORD_SUCCESS"));
-      queryClient.invalidateQueries({ queryKey: AUTH_KEYS.me });
-    },
+    mutationFn: (data: ForgotPasswordFormValues) => forgotPassword(data),
   });
 }
 
 export function useResetPassword(token: string) {
   return useMutation({
-    mutationFn: (payload: ResetPasswordRequest) => resetPassword(token, payload),
-  });
-}
-
-export function useSetup2FA() {
-  return useMutation({
-    mutationFn: setup2FA,
-  });
-}
-
-export function useVerify2FA() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (code: string) => verify2FA(code),
+    mutationFn: (data: ResetPasswordFormValues) => resetPassword(token, data),
     onSuccess: () => {
-      toast.success(i18n.t("api:TWO_FACTOR_ENABLED"));
-      queryClient.invalidateQueries({ queryKey: AUTH_KEYS.me });
+      toast.success(i18n.t("api:RESET_PASSWORD_SUCCESS"));
     },
   });
 }
 
-export function useDisable2FA() {
-  const queryClient = useQueryClient();
+export function useVerifyEmail() {
   return useMutation({
-    mutationFn: (code: string) => disable2FA(code),
-    onSuccess: () => {
-      toast.success(i18n.t("api:TWO_FACTOR_DISABLED"));
-      queryClient.invalidateQueries({ queryKey: AUTH_KEYS.me });
-    },
+    mutationFn: (token: string) => verifyEmail(token),
   });
 }

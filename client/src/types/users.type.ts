@@ -1,21 +1,23 @@
 // src/types/users.type.ts
 
-export interface Profile {
+export type RoleEnum = "USER" | "INSPECTOR" | "ADMIN" | "SUPER_ADMIN";
+export type StatusEnum = "ACTIVE" | "INACTIVE" | "BANNED";
+
+export interface AuthUser {
   id: string;
   name: string;
-  role: "USER" | "ADMIN" | "SUPER_ADMIN" | "INSPECTOR";
   email: string;
-  lastLogin: Date;
-  joinedAt: Date;
+  role: RoleEnum;
+  status: StatusEnum;
+  avatar: string | null;
+  verifiedAt: string | null;
+  createdAt: string;
+  lastLogin: string | null;
 }
 
-export interface TwoFactorSetupData {
-  otpauthUrl: string;
-  secret: string;
-}
-
-export interface TwoFactorVerifyData {
-  backupCodes: string[];
+export interface MeResponse {
+  user: AuthUser;
+  permissions: string[];
 }
 
 export interface User {
@@ -23,21 +25,10 @@ export interface User {
   name: string;
   avatar: string | null;
   email: string;
-  role: "USER" | "ADMIN" | "SUPER_ADMIN" | "INSPECTOR";
-  lastLogin: Date;
-  createdAt: Date;
-  lastChangePasswordAt: Date;
+  role: RoleEnum;
+  status: StatusEnum;
+  verifiedAt: string | null;
+  lastLogin: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
-
-export interface LoginSuccess {
-  token: string;
-  expiredAt: Date;
-  user: User;
-}
-
-export interface TwoFactorLoginChallenge {
-  requiresTwoFactor: true;
-  challengeToken: string;
-}
-
-export type LoginData = LoginSuccess | TwoFactorLoginChallenge;

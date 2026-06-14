@@ -1,24 +1,18 @@
 export interface Meta {
-  pagination?: PaginationMeta;
-  filter?: FilterMeta;
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
 }
+
+export interface PaginatedResponse<T> {
+  items: T[];
+  meta: Meta;
+}
+
 export interface Pagination {
   page: number;
   limit: number;
-}
-
-export interface PaginationMeta {
-  page: number;
-  limit: number;
-  totalItems: number;
-  totalPages: number;
-  nextCursor?: string;
-  hasMore: boolean;
-}
-
-export interface FilterMeta {
-  orderBy: string;
-  sortBy: "asc" | "desc";
-  search?: string;
-  tags?: string[];
 }

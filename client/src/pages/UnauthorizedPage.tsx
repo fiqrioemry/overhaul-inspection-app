@@ -1,20 +1,20 @@
 import { Link, useNavigate } from "react-router-dom";
-import { FileQuestion } from "lucide-react";
+import { ShieldOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ROUTES } from "@/constants/route.constant";
 
-export default function NotFoundPage() {
+export default function UnauthorizedPage() {
   const navigate = useNavigate();
 
   return (
-    <div className="flex h-full min-h-screen flex-col items-center justify-center gap-6 text-center p-6">
-      <div className="flex size-20 items-center justify-center rounded-full bg-muted">
-        <FileQuestion className="size-10 text-muted-foreground" />
+    <div className="flex h-full min-h-[60vh] flex-col items-center justify-center gap-6 text-center p-6">
+      <div className="flex size-20 items-center justify-center rounded-full bg-destructive/10">
+        <ShieldOff className="size-10 text-destructive" />
       </div>
       <div className="space-y-2">
-        <h1 className="text-3xl font-bold">Page not found</h1>
+        <h1 className="text-3xl font-bold">Access Denied</h1>
         <p className="text-muted-foreground max-w-sm">
-          The page you're looking for doesn't exist or has been moved.
+          You don't have permission to view this page. Contact your administrator if you think this is a mistake.
         </p>
       </div>
       <div className="flex gap-3">

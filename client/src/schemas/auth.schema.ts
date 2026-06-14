@@ -38,35 +38,6 @@ export const resetPasswordSchema = () =>
       path: ["confirmPassword"],
     });
 
-export const twoFactorChallengeSchema = () =>
-  z.object({
-    code: z
-      .string()
-      .min(6, t("codeMin", { count: 6 }))
-      .max(8, t("codeMax", { count: 8 })),
-  });
-
-export const twoFactorVerifySchema = () =>
-  z.object({
-    code: z.string().length(6, t("totpCodeLength")),
-  });
-
-export const twoFactorDisableSchema = () =>
-  z.object({
-    code: z
-      .string()
-      .min(6, t("codeMin", { count: 6 }))
-      .max(8, t("codeMax", { count: 8 })),
-  });
-
 export type LoginFormValues = z.infer<ReturnType<typeof loginSchema>>;
 export type ForgotPasswordFormValues = z.infer<ReturnType<typeof forgotPasswordSchema>>;
 export type ResetPasswordFormValues = z.infer<ReturnType<typeof resetPasswordSchema>>;
-export type TwoFactorChallengeFormValues = z.infer<ReturnType<typeof twoFactorChallengeSchema>>;
-export type TwoFactorVerifyFormValues = z.infer<ReturnType<typeof twoFactorVerifySchema>>;
-export type TwoFactorDisableFormValues = z.infer<ReturnType<typeof twoFactorDisableSchema>>;
-
-export interface ResetPasswordRequest {
-  password: string;
-  confirmPassword: string;
-}

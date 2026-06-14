@@ -1,11 +1,14 @@
 {
-  "home": "Home",
-  "explore": "Explore",
-  "messages": "Messages",
+  "dashboard": "Dashboard",
+  "tanks": "Tanks",
+  "findings": "Findings",
+  "dailyReports": "Daily Reports",
+  "inspectionRequests": "Inspection Requests",
   "notifications": "Notifications",
-  "create": "Create",
-  "suggestions": "Suggestions for you",
-  "noSuggestions": "No suggestions at the moment. Explore users on the",
-  "explorePage": "Explore",
-  "madeWithLove": "Made With ❤️"
+  "users": "User Management",
+  "masterData": "Master Data",
+  "processTemplates": "Process Templates",
+  "acceptanceCriteria": "Acceptance Criteria",
+  "referenceDocuments": "Reference Documents",
+  "companies": "Companies"
 }

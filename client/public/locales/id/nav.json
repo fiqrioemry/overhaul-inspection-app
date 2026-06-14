@@ -1,11 +1,14 @@
 {
-  "home": "Beranda",
-  "explore": "Jelajahi",
-  "messages": "Pesan",
+  "dashboard": "Dashboard",
+  "tanks": "Tangki",
+  "findings": "Temuan",
+  "dailyReports": "Laporan Harian",
+  "inspectionRequests": "Permintaan Inspeksi",
   "notifications": "Notifikasi",
-  "create": "Buat",
-  "suggestions": "Saran buat kamu",
-  "noSuggestions": "Tidak ada saran saat ini. Jelajahi pengguna di halaman",
-  "explorePage": "Jelajahi",
-  "madeWithLove": "Dibuat dengan ❤️"
+  "users": "Manajemen Pengguna",
+  "masterData": "Data Master",
+  "processTemplates": "Template Proses",
+  "acceptanceCriteria": "Kriteria Penerimaan",
+  "referenceDocuments": "Dokumen Referensi",
+  "companies": "Perusahaan"
 }
