@@ -212,6 +212,53 @@ model Notification {
   @@map("notifications")
 }
 
+enum MasterDataStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+enum DocumentType {
+  STANDARD
+  PROCEDURE
+  SPECIFICATION
+  WPS
+  ITP
+  PROJECT_PROCEDURE
+}
+
+enum AcceptanceType {
+  PASS_FAIL
+  NUMERIC_MIN
+  NUMERIC_MAX
+  NUMERIC_RANGE
+  TEXT
+  DEPENDENCY
+}
+
+enum CriteriaSeverity {
+  CRITICAL
+  MAJOR
+  MINOR
+  OBSERVATION
+}
+
+enum ProcessType {
+  WORK
+  INSPECTION
+  TEST
+  NDT
+  COATING
+  COMMISSIONING
+}
+
+enum ProcessResultEnum {
+  PASSED
+  FAILED
+  PENDING
+  NOT_APPLICABLE
+}
+
 // ─── Company ──────────────────────────────────────────────────────────────────
 
 model Company {
@@ -222,11 +269,147 @@ model Company {
   phone     String?
   email     String?
   logoUrl   String?     @map("logo_url")
+  isActive  Boolean     @default(true) @map("is_active")
   createdAt DateTime    @default(now()) @map("created_at")
   updatedAt DateTime    @updatedAt @map("updated_at")
   deletedAt DateTime?   @map("deleted_at")
 
   @@index([type])
+  @@index([isActive])
   @@index([deletedAt])
   @@map("companies")
+}
+
+// ─── Master Data ──────────────────────────────────────────────────────────────
+
+model ReferenceDocument {
+  id           String           @id @default(cuid())
+  code         String           @unique
+  title        String
+  documentType DocumentType     @map("document_type")
+  revision     String?
+  issuer       String?
+  fileUrl      String?          @map("file_url")
+  status       MasterDataStatus @default(DRAFT)
+  createdAt    DateTime         @default(now()) @map("created_at")
+  updatedAt    DateTime         @updatedAt @map("updated_at")
+  deletedAt    DateTime?        @map("deleted_at")
+
+  criteriaRefs CriteriaReference[]
+
+  @@index([code])
+  @@index([documentType])
+  @@index([status])
+  @@index([deletedAt])
+  @@map("reference_documents")
+}
+
+model AcceptanceCriteria {
+  id             String           @id @default(cuid())
+  code           String           @unique
+  name           String
+  description    String?
+  acceptanceType AcceptanceType   @map("acceptance_type")
+  operator       String?
+  minValue       Float?           @map("min_value")
+  maxValue       Float?           @map("max_value")
+  unit           String?
+  acceptanceText String?          @map("acceptance_text")
+  method         String?
+  tools          String?
+  isRequired     Boolean          @default(true) @map("is_required")
+  severity       CriteriaSeverity @default(MAJOR)
+  status         MasterDataStatus @default(DRAFT)
+  createdAt      DateTime         @default(now()) @map("created_at")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
+  deletedAt      DateTime?        @map("deleted_at")
+
+  criteriaRefs    CriteriaReference[]
+  processCriteria ProcessCriteriaTemplate[]
+
+  @@index([code])
+  @@index([acceptanceType])
+  @@index([status])
+  @@index([deletedAt])
+  @@map("acceptance_criteria")
+}
+
+model CriteriaReference {
+  id                  String             @id @default(cuid())
+  criteriaId          String             @map("criteria_id")
+  referenceDocumentId String             @map("reference_document_id")
+  clause              String?
+  page                String?
+  notes               String?
+  createdAt           DateTime           @default(now()) @map("created_at")
+
+  criteria          AcceptanceCriteria @relation(fields: [criteriaId], references: [id], onDelete: Cascade)
+  referenceDocument ReferenceDocument  @relation(fields: [referenceDocumentId], references: [id], onDelete: Restrict)
+
+  @@unique([criteriaId, referenceDocumentId])
+  @@index([criteriaId])
+  @@index([referenceDocumentId])
+  @@map("criteria_references")
+}
+
+model ProcessTemplate {
+  id                String      @id @default(cuid())
+  code              String      @unique
+  name              String
+  type              ProcessType
+  sequenceOrder     Int         @map("sequence_order")
+  isOptional        Boolean     @default(false) @map("is_optional")
+  applicabilityRule String?     @map("applicability_rule")
+  isActive          Boolean     @default(true) @map("is_active")
+  createdAt         DateTime    @default(now()) @map("created_at")
+  updatedAt         DateTime    @updatedAt @map("updated_at")
+  deletedAt         DateTime?   @map("deleted_at")
+
+  processCriteria ProcessCriteriaTemplate[]
+  dependants      ProcessDependency[]       @relation("DependantProcess")
+  dependencies    ProcessDependency[]       @relation("RequiredProcess")
+
+  @@index([type])
+  @@index([sequenceOrder])
+  @@index([isActive])
+  @@index([deletedAt])
+  @@map("process_templates")
+}
+
+model ProcessCriteriaTemplate {
+  id                String    @id @default(cuid())
+  processTemplateId String    @map("process_template_id")
+  criteriaId        String    @map("criteria_id")
+  sequenceOrder     Int       @default(0) @map("sequence_order")
+  isRequired        Boolean   @default(true) @map("is_required")
+  applicabilityRule String?   @map("applicability_rule")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  processTemplate ProcessTemplate    @relation(fields: [processTemplateId], references: [id], onDelete: Cascade)
+  criteria        AcceptanceCriteria @relation(fields: [criteriaId], references: [id], onDelete: Restrict)
+
+  @@unique([processTemplateId, criteriaId])
+  @@index([processTemplateId])
+  @@index([criteriaId])
+  @@map("process_criteria_templates")
+}
+
+model ProcessDependency {
+  id                        String            @id @default(cuid())
+  processTemplateId         String            @map("process_template_id")
+  requiredProcessTemplateId String            @map("required_process_template_id")
+  requiredResult            ProcessResultEnum @default(PASSED) @map("required_result")
+  isRequired                Boolean           @default(true) @map("is_required")
+  applicabilityRule         String?           @map("applicability_rule")
+  createdAt                 DateTime          @default(now()) @map("created_at")
+  updatedAt                 DateTime          @updatedAt @map("updated_at")
+
+  processTemplate         ProcessTemplate @relation("DependantProcess", fields: [processTemplateId], references: [id], onDelete: Cascade)
+  requiredProcessTemplate ProcessTemplate @relation("RequiredProcess", fields: [requiredProcessTemplateId], references: [id], onDelete: Restrict)
+
+  @@unique([processTemplateId, requiredProcessTemplateId])
+  @@index([processTemplateId])
+  @@index([requiredProcessTemplateId])
+  @@map("process_dependencies")
 }
