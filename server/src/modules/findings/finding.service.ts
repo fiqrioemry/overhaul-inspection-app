@@ -1,0 +1,185 @@
+import { HTTPException } from "hono/http-exception";
+import { pgsql } from "@/lib/database";
+import { FindingStatusEnum } from "generated/prisma";
+import { FileRepository } from "@/modules/files/file.repository";
+import { NotificationService } from "@/modules/notifications/notification.service";
+import { FindingRepository } from "./finding.repository";
+import { CreateFindingRequest, ListFindingsQuery, UpdateFindingRequest, UpdateFindingStatusRequest } from "./finding.schema";
+
+function padSeq(n: number): string {
+  return String(n + 1).padStart(4, "0");
+}
+
+const ALLOWED_STATUS_TRANSITIONS: Partial<Record<FindingStatusEnum, FindingStatusEnum[]>> = {
+  [FindingStatusEnum.OPEN]: [FindingStatusEnum.IN_REPAIR, FindingStatusEnum.REJECTED],
+  [FindingStatusEnum.IN_REPAIR]: [FindingStatusEnum.REPAIRED],
+  [FindingStatusEnum.REPAIRED]: [FindingStatusEnum.VERIFIED, FindingStatusEnum.IN_REPAIR],
+  [FindingStatusEnum.VERIFIED]: [FindingStatusEnum.CLOSED, FindingStatusEnum.REPAIRED],
+  [FindingStatusEnum.CLOSED]: [],
+  [FindingStatusEnum.REJECTED]: [],
+};
+
+export class FindingService {
+  static async createFinding(data: CreateFindingRequest, userId: string) {
+    const tank = await pgsql.tank.findFirst({ where: { id: data.tankId, deletedAt: null } });
+    if (!tank) {
+      throw new HTTPException(404, { message: "Tank not found", cause: "TANK_NOT_FOUND" });
+    }
+
+    const tankProcess = await pgsql.tankProcess.findUnique({ where: { id: data.tankProcessId } });
+    if (!tankProcess) {
+      throw new HTTPException(404, { message: "Tank process not found", cause: "PROCESS_NOT_FOUND" });
+    }
+
+    const count = await FindingRepository.countByTankNo(tank.tankNo);
+    const findingNo = `FND-${tank.tankNo}-${padSeq(count)}`;
+
+    const finding = await pgsql.$transaction(async (tx) => {
+      const created = await tx.finding.create({
+        data: {
+          tankId: data.tankId,
+          tankProcessId: data.tankProcessId,
+          criteriaId: data.criteriaId,
+          findingNo,
+          title: data.title,
+          description: data.description,
+          locationDetail: data.locationDetail,
+          severity: data.severity,
+          isBlocking: data.isBlocking,
+          createdBy: userId,
+        },
+      });
+
+      if (data.fileIds && data.fileIds.length > 0) {
+        await FileRepository.linkFiles(tx, data.fileIds, created.id, "FINDING");
+      }
+
+      return created;
+    });
+
+    const admins = await pgsql.user.findMany({
+      where: { role: { in: ["ADMIN", "USER"] }, status: "ACTIVE", deletedAt: null },
+      select: { id: true },
+    });
+
+    for (const admin of admins) {
+      await NotificationService.createNotificationForUser({
+        userId: admin.id,
+        title: "New Finding Created",
+        description: `Finding ${findingNo}: "${data.title}" reported on ${tank.tankNo}.`,
+        type: "FINDING_CREATED",
+        metadata: {
+          targetType: "FINDING",
+          targetId: finding.id,
+          tankId: data.tankId,
+          tankNo: tank.tankNo,
+        },
+      });
+    }
+
+    return FindingRepository.findById(finding.id);
+  }
+
+  static async listFindings(query: ListFindingsQuery) {
+    const { findings, total } = await FindingRepository.findMany(query);
+    return {
+      data: findings,
+      meta: {
+        page: query.page,
+        limit: query.limit,
+        total,
+        totalPages: total > 0 ? Math.ceil(total / query.limit) : 0,
+      },
+    };
+  }
+
+  static async getFindingById(id: string) {
+    const finding = await FindingRepository.findById(id);
+    if (!finding) {
+      throw new HTTPException(404, { message: "Finding not found", cause: "FINDING_NOT_FOUND" });
+    }
+    const attachments = await FileRepository.getFileRecordsByTargetId(id, "FINDING");
+    return { ...finding, attachments };
+  }
+
+  static async updateFinding(id: string, data: UpdateFindingRequest) {
+    const finding = await FindingRepository.findById(id);
+    if (!finding) {
+      throw new HTTPException(404, { message: "Finding not found", cause: "FINDING_NOT_FOUND" });
+    }
+    if (finding.status === FindingStatusEnum.CLOSED || finding.status === FindingStatusEnum.REJECTED) {
+      throw new HTTPException(422, { message: "Cannot update a closed or rejected finding", cause: "FINDING_TERMINAL" });
+    }
+
+    await pgsql.$transaction(async (tx) => {
+      await tx.finding.update({
+        where: { id },
+        data: {
+          title: data.title,
+          description: data.description,
+          locationDetail: data.locationDetail,
+          severity: data.severity,
+          isBlocking: data.isBlocking,
+        },
+      });
+
+      if (data.fileIds && data.fileIds.length > 0) {
+        await FileRepository.linkFiles(tx, data.fileIds, id, "FINDING");
+      }
+    });
+
+    return FindingRepository.findById(id);
+  }
+
+  static async updateFindingStatus(id: string, data: UpdateFindingStatusRequest, userId: string) {
+    const finding = await FindingRepository.findById(id);
+    if (!finding) {
+      throw new HTTPException(404, { message: "Finding not found", cause: "FINDING_NOT_FOUND" });
+    }
+
+    const allowed = ALLOWED_STATUS_TRANSITIONS[finding.status] ?? [];
+    if (!allowed.includes(data.status)) {
+      throw new HTTPException(422, {
+        message: `Cannot transition finding from ${finding.status} to ${data.status}`,
+        cause: "INVALID_STATUS_TRANSITION",
+      });
+    }
+
+    const isClosing = data.status === FindingStatusEnum.CLOSED;
+    await FindingRepository.update(id, {
+      status: data.status,
+      ...(isClosing && { closedBy: userId, closedAt: new Date() }),
+    });
+
+    if (finding.createdBy && finding.createdBy !== userId) {
+      await NotificationService.createNotificationForUser({
+        userId: finding.createdBy,
+        title: "Finding Status Updated",
+        description: `Finding ${finding.findingNo} status changed to ${data.status}.`,
+        type: "FINDING_STATUS_UPDATED",
+        metadata: {
+          targetType: "FINDING",
+          targetId: id,
+          tankId: finding.tankId,
+          tankNo: finding.tank.tankNo,
+        },
+      });
+    }
+
+    return FindingRepository.findById(id);
+  }
+
+  static async deleteFinding(id: string) {
+    const finding = await FindingRepository.findById(id);
+    if (!finding) {
+      throw new HTTPException(404, { message: "Finding not found", cause: "FINDING_NOT_FOUND" });
+    }
+    if (finding.status !== FindingStatusEnum.CLOSED && finding.status !== FindingStatusEnum.REJECTED) {
+      throw new HTTPException(422, {
+        message: "Only CLOSED or REJECTED findings can be deleted",
+        cause: "FINDING_NOT_TERMINAL",
+      });
+    }
+    await FindingRepository.softDelete(id);
+  }
+}

@@ -9,3 +9,5 @@
 - endpoint get users must return which role can grant or revoke permission to, for example super_admin can revoke or grant permission to user, admin, inspector but cannot revoke to super_admin. the rest please add by your self.
 
 - endpoint get users also must return permissions list of each user, also the access level to update (make it easier for frontend managing UI/UX).
+
+- check all controller for every modules. update the response message using constant variable to make easier frontend implementing i8next / multi language

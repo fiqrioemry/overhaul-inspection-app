@@ -134,6 +134,27 @@ export class FileRepository {
     );
   }
 
+  static async linkFiles(
+    tx: Prisma.TransactionClient | null,
+    fileIds: string[],
+    targetId: string,
+    module: string,
+  ): Promise<void> {
+    if (!fileIds || fileIds.length === 0) return;
+    const db = tx ?? database;
+    await db.fileStorage.updateMany({
+      where: { id: { in: fileIds } },
+      data: { isUsed: true, targetId, module },
+    });
+  }
+
+  static async getFileRecordsByTargetId(targetId: string, module: string): Promise<fileResponse[]> {
+    return database.fileStorage.findMany({
+      where: { targetId, module, isUsed: true },
+      select: { id: true, url: true, createdAt: true, path: true, isUsed: true, module: true },
+    });
+  }
+
   static async getFileRecordByTargetId(targetId: string, module: string): Promise<fileResponse | null> {
     const result = await database.fileStorage.findFirst({
       where: { targetId, module },
