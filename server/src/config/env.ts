@@ -3,29 +3,37 @@ import { GoogleOAuthProvider, GitHubOAuthProvider, IOAuthProvider } from "@/util
 export type OAuthProviderKey = "google" | "github";
 
 const mailConfig = {
-  SMTP_USER: process.env.SMTP_USER || "user@example.com",
-  SMTP_PASS: process.env.SMTP_PASS || "password",
+  SMTP_HOST: process.env.SMTP_HOST || "smtp.example.com",
+  SMTP_PORT: process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT) : 587,
+  SMTP_USER: process.env.SMTP_USER || "",
+  SMTP_PASS: process.env.SMTP_PASS || "",
+  SMTP_FROM: process.env.SMTP_FROM || "Tank Progress <noreply@example.com>",
   EMAIL_VERIFICATION_SUBJECT: "Verify your email address",
   PASSWORD_RESET_SUBJECT: "Reset your password",
 };
 
 const databaseConfig = {
-  PORT: process.env.PORT,
-  MODE: process.env.MODE || "development",
+  PORT: process.env.PORT || "5001",
+  MODE: process.env.NODE_ENV || "development",
   HOST: process.env.HOSTNAME || "localhost",
-  SERVER_URL: process.env.SERVER_URL || `http://${process.env.HOSTNAME || "localhost"}:${process.env.PORT}`,
+  SERVER_URL: process.env.SERVER_URL || `http://localhost:${process.env.PORT || 5001}`,
   CLIENT_URL: process.env.CLIENT_URL || "http://localhost:5173",
-  CACHING_MAX_AGE: process.env.CACHING_MAX_AGE ? parseInt(process.env.CACHING_MAX_AGE) : 84600,
-  SESSION_SECRET: process.env.SESSION_SECRET || "your-session-secret",
-  DB_URL: process.env.DATABASE_URL || "mysql://root:password@localhost:3306/database_name?connection_limit=10&timezone=UTC",
-  DB_CONNECTION_LIMIT: process.env.DB_CONNECTION_LIMIT ? parseInt(process.env.DB_CONNECTION_LIMIT) : 10,
-  DB_TIMEZONE: process.env.DB_TIMEZONE || "+00:00",
+  CACHING_MAX_AGE: process.env.CACHING_MAX_AGE ? parseInt(process.env.CACHING_MAX_AGE) : 86400,
+  SESSION_SECRET: process.env.SESSION_SECRET || "change_me_in_production",
+  DB_URL: process.env.DATABASE_URL || "",
 };
 
 const oauthProviders: Record<OAuthProviderKey, IOAuthProvider> = {
-  google: new GoogleOAuthProvider(process.env.GOOGLE_CLIENT_ID!, process.env.GOOGLE_CLIENT_SECRET!, process.env.GOOGLE_REDIRECT_URI ?? "http://localhost:5000/v1/auth/google/callback"),
-
-  github: new GitHubOAuthProvider(process.env.GITHUB_CLIENT_ID!, process.env.GITHUB_CLIENT_SECRET!, process.env.GITHUB_REDIRECT_URI ?? "http://localhost:5000/v1/auth/github/callback"),
+  google: new GoogleOAuthProvider(
+    process.env.GOOGLE_CLIENT_ID!,
+    process.env.GOOGLE_CLIENT_SECRET!,
+    process.env.GOOGLE_REDIRECT_URI ?? "http://localhost:5001/api/v1/auth/google/callback",
+  ),
+  github: new GitHubOAuthProvider(
+    process.env.GITHUB_CLIENT_ID!,
+    process.env.GITHUB_CLIENT_SECRET!,
+    process.env.GITHUB_REDIRECT_URI ?? "http://localhost:5001/api/v1/auth/github/callback",
+  ),
 };
 
 export function getOAuthProvider(key: OAuthProviderKey): IOAuthProvider {
@@ -35,23 +43,29 @@ export function getOAuthProvider(key: OAuthProviderKey): IOAuthProvider {
 }
 
 const minioConfig = {
-  HOST: process.env.MINIO_HOST || "minio_storage",
+  HOST: process.env.MINIO_HOST || "localhost",
   PORT: process.env.MINIO_PORT ? parseInt(process.env.MINIO_PORT) : 9000,
   USE_SSL: process.env.MINIO_SSL === "true",
-  ACCESS_KEY: process.env.MINIO_ACCESS_KEY || "minio_access_key",
-  SECRET_KEY: process.env.MINIO_SECRET_KEY || "minio_secret_key",
-  BUCKET: process.env.MINIO_BUCKET || "my-bucket",
+  ACCESS_KEY: process.env.MINIO_ACCESS_KEY || "minioadmin",
+  SECRET_KEY: process.env.MINIO_SECRET_KEY || "minioadmin",
+  BUCKET: process.env.MINIO_BUCKET || "tank-progress",
   ENDPOINT: process.env.MINIO_ENDPOINT || "http://localhost:9000",
+  PUBLIC_URL: process.env.MINIO_PUBLIC_URL || "http://localhost:9000/tank-progress",
 };
 
-const REDIS_KEY_PREFIX = "social-media:";
+const REDIS_KEY_PREFIX = "tank-progress:";
 
 const redisConfig = {
   TOKEN_PREFIX_DEFAULT: "sid-token",
-  SESSION_EXP_IN: process.env.SESSION_EXPIRES_IN ? parseInt(process.env.SESSION_EXPIRES_IN) : 3600, // default 1 hour
+  SESSION_EXP_IN: process.env.SESSION_EXPIRES_IN ? parseInt(process.env.SESSION_EXPIRES_IN) : 604800,
   REDIS_URL: process.env.REDIS_URL!,
   REDIS_KEY_LIMITER: `${REDIS_KEY_PREFIX}limiter:`,
   REDIS_REGISTER: `${REDIS_KEY_PREFIX}verify:`,
 };
 
-export { mailConfig, databaseConfig, minioConfig, redisConfig, oauthProviders };
+const appConfig = {
+  UPLOAD_MAX_SIZE_MB: process.env.UPLOAD_MAX_SIZE_MB ? parseInt(process.env.UPLOAD_MAX_SIZE_MB) : 20,
+  ORPHAN_FILE_TTL_MINUTES: process.env.ORPHAN_FILE_TTL_MINUTES ? parseInt(process.env.ORPHAN_FILE_TTL_MINUTES) : 60,
+};
+
+export { mailConfig, databaseConfig, minioConfig, redisConfig, oauthProviders, appConfig };

@@ -18,9 +18,10 @@ export interface NotificationSetting {
 }
 
 export interface NotificationMetadata {
-  postId?: string;
-  userId?: string;
-  path?: string;
-  likerId?: string;
-  commentId?: string;
+  targetType?: string;
+  targetId?: string;
+  tankId?: string;
+  tankNo?: string;
+  processName?: string;
+  findingNo?: string;
 }

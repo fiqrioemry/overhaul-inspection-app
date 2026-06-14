@@ -4,6 +4,7 @@ import { cache } from "@/utils/cache";
 import { pgsql } from "@/lib/database";
 import { pgsql as db } from "@/lib/database";
 import { generateSessionToken } from "@/utils/jwt";
+import { RoleEnum } from "generated/prisma";
 import { HTTPException } from "hono/http-exception";
 import { sendVerificationLink } from "@/utils/mailer";
 import { deleteCookie, setCookie } from "hono/cookie";
@@ -16,7 +17,8 @@ import { NotificationRepository } from "@/modules/notifications/notification.rep
 import { loginResponse, userResponse, verificationType } from "@/modules/users/user.types";
 import { authErrorCode, authErrorMessage, authLimit } from "@/config/constant/auth.constant";
 import { buildTOTPUri, generateBackupCodes, generateTOTPSecret, verifyTOTP } from "@/utils/totp";
-import { generateRandomAvatarURL, generateRandomToken, generateRandomUsername } from "@/utils/generator";
+import { generateRandomAvatarURL, generateRandomToken } from "@/utils/generator";
+import { getPermissionsForRole } from "@/config/constant/permission.constant";
 import { mailConfig, redisConfig, databaseConfig, OAuthProviderKey, getOAuthProvider } from "@/config/env";
 import { NotificationChannel, NotificationStatus, NotificationType, OAuthProvider, Prisma } from "generated/prisma/edge";
 import { ChangePasswordRequest, LoginRequest, ResetPasswordRequest, SetPasswordRequest } from "@/modules/auth/auth.schema";
@@ -36,7 +38,7 @@ export class AuthService {
       throw new HTTPException(400, { message: authErrorMessage.INVALID_TOKEN, cause: authErrorCode.INVALID_TOKEN });
     }
 
-    db.$transaction(async (tx: Prisma.TransactionClient) => {
+    await db.$transaction(async (tx: Prisma.TransactionClient) => {
       await UserRepository.updateUserVerification(tx, isValid.id, new Date());
       await UserRepository.updateUserActive(tx, { userId: isValid.userId, status: "ACTIVE" });
     });
@@ -45,7 +47,7 @@ export class AuthService {
   static async login(c: Context, request: LoginRequest): Promise<loginResponse | { requiresTwoFactor: true; challengeToken: string }> {
     const isEmailExist = await UserRepository.findByEmail(request.email);
 
-    if (!isEmailExist || isEmailExist?.passwordHash === "") {
+    if (!isEmailExist || !isEmailExist.passwordHash) {
       throw new HTTPException(400, { message: authErrorMessage.INVALID_CREDENTIALS, cause: authErrorCode.INVALID_CREDENTIALS });
     }
 
@@ -57,7 +59,7 @@ export class AuthService {
       throw new HTTPException(403, { message: authErrorMessage.ACCOUNT_BANNED, cause: authErrorCode.ACCOUNT_BANNED });
     }
 
-    const isValid = await verifyPassword({ password: request.password, hash: isEmailExist?.passwordHash! });
+    const isValid = await verifyPassword({ password: request.password, hash: isEmailExist.passwordHash });
     if (!isValid) {
       throw new HTTPException(400, { message: authErrorMessage.INVALID_CREDENTIALS, cause: authErrorCode.INVALID_CREDENTIALS });
     }
@@ -102,6 +104,20 @@ export class AuthService {
     };
   }
 
+  static async refreshToken(c: Context, sessionId: string, userId: string): Promise<{ token: string; expiredAt: Date }> {
+    const newExpiry = new Date(Date.now() + authLimit.SESSION_TOKEN_EXP);
+
+    await db.session.update({
+      where: { id: sessionId },
+      data: { expiresAt: newExpiry },
+    });
+
+    const sessionToken = await generateSessionToken({ sub: userId, sid: sessionId });
+    setCookie(c, redisConfig.TOKEN_PREFIX_DEFAULT, sessionToken);
+
+    return { token: sessionToken, expiredAt: newExpiry };
+  }
+
   static async setup2FA(userId: string): Promise<{ otpauthUrl: string; secret: string }> {
     const user = await UserRepository.findByIdWithTwoFactor(userId);
     if (!user) throw new HTTPException(404, { message: authErrorMessage.USER_NOT_FOUND, cause: authErrorCode.USER_NOT_FOUND });
@@ -110,7 +126,7 @@ export class AuthService {
     const secret = generateTOTPSecret();
     await cache.set(`2fa:setup:${userId}`, secret, authLimit.TWO_FACTOR_SETUP_TTL);
 
-    return { otpauthUrl: buildTOTPUri(secret, user.email, "SocialApp"), secret };
+    return { otpauthUrl: buildTOTPUri(secret, user.email, "TankMonitor"), secret };
   }
 
   static async verify2FA(userId: string, code: string): Promise<{ backupCodes: string[] }> {
@@ -190,7 +206,6 @@ export class AuthService {
   static async resendVerificationEmail(c: Context, email: string) {
     const user = await UserRepository.findByEmail(email);
     if (!user) {
-      // return 200 even if the email is not found to prevent email enumeration
       return;
     }
 
@@ -219,24 +234,28 @@ export class AuthService {
     sendVerificationLink(mailSetup);
   }
 
-  static async getMe(c: Context, userId: string): Promise<userResponse & { twoFactorEnabled: boolean }> {
+  static async getMe(c: Context, userId: string) {
     const result = await UserRepository.findByIdWithTwoFactor(userId);
 
     if (!result) {
       throw new HTTPException(404, { message: authErrorMessage.USER_NOT_FOUND, cause: authErrorCode.USER_NOT_FOUND });
     }
 
+    const user = c.get("user");
+    const permissions = user?.permissions ?? getPermissionsForRole(result.role as RoleEnum);
+
     return {
-      id: result.id,
-      name: result.name,
-      role: result.role,
-      avatar: result.avatar,
-      email: result.email,
-      lastLogin: result.lastLogin,
-      joinedAt: result.createdAt,
-      lastChangePasswordAt: result.lastChangePasswordAt,
-      hasPassword: result.passwordHash !== "",
-      twoFactorEnabled: result.twoFactorEnabled,
+      user: {
+        id: result.id,
+        email: result.email,
+        name: result.name,
+        role: result.role,
+        status: result.status,
+        avatar: result.avatar,
+        verifiedAt: result.verifiedAt,
+        lastLogin: result.lastLogin,
+      },
+      permissions,
     };
   }
 
@@ -253,16 +272,13 @@ export class AuthService {
   static async getSessions(c: Context, userId: string): Promise<sessionResponse[]> {
     const result = await SessionRepository.findSessionsByUserId(userId);
 
-    const response = result.map((session: any) => {
-      return {
-        id: session.id,
-        userId: session.userId,
-        userAgent: session.userAgent,
-        expiresAt: session.expiresAt,
-        loginAt: session.createdAt,
-      };
-    });
-    return response;
+    return result.map((session: any) => ({
+      id: session.id,
+      userId: session.userId,
+      userAgent: session.userAgent,
+      expiresAt: session.expiresAt,
+      loginAt: session.createdAt,
+    }));
   }
 
   static async deleteSession(c: Context, sessionId: string): Promise<void> {
@@ -282,7 +298,7 @@ export class AuthService {
       throw new HTTPException(404, { message: authErrorMessage.USER_NOT_FOUND, cause: authErrorCode.USER_NOT_FOUND });
     }
 
-    if (passwordHash === "") {
+    if (!passwordHash) {
       throw new HTTPException(400, { message: authErrorMessage.NO_PASSWORD_SET, cause: authErrorCode.NO_PASSWORD_SET });
     }
 
@@ -295,10 +311,7 @@ export class AuthService {
     const hashedPassword = await hashPassword(request.newPassword);
 
     await UserRepository.updatePassword(userId, hashedPassword);
-
-    // invalidate all sessions
     await SessionRepository.deleteSessionsByUserId(userId);
-
     deleteCookie(c, redisConfig.TOKEN_PREFIX_DEFAULT);
   }
 
@@ -309,7 +322,7 @@ export class AuthService {
       throw new HTTPException(404, { message: authErrorMessage.USER_NOT_FOUND, cause: authErrorCode.USER_NOT_FOUND });
     }
 
-    if (passwordHash !== "") {
+    if (passwordHash) {
       throw new HTTPException(400, { message: authErrorMessage.PASSWORD_ALREADY_SET, cause: authErrorCode.PASSWORD_ALREADY_SET });
     }
 
@@ -320,7 +333,6 @@ export class AuthService {
   static async forgotPassword(c: Context, email: string): Promise<void> {
     const user = await UserRepository.findByEmail(email);
     if (!user) {
-      // return 200 even if the email is not found to prevent email enumeration
       return;
     }
 
@@ -366,21 +378,14 @@ export class AuthService {
   static async getOAuthURL(c: Context, providerKey: OAuthProviderKey): Promise<string> {
     const provider = getOAuthProvider(providerKey);
 
-    // Random state untuk CSRF protection
     const state = generateRandomToken();
 
-    // Simpan state di Redis, TTL 10 menit
-    await cache.set(
-      oauthStateKey(providerKey, state),
-      "1",
-      authLimit.OAUTH_STATE_TTL, // tambahkan: OAUTH_STATE_TTL: 10 * 60
-    );
+    await cache.set(oauthStateKey(providerKey, state), "1", authLimit.OAUTH_STATE_TTL);
 
     return provider.getAuthURL(state);
   }
 
   static async handleOAuthCallback(c: Context, providerKey: OAuthProviderKey, code: string, state: string): Promise<loginResponse> {
-    // 1. Validasi state (anti-CSRF)
     const stateKey = oauthStateKey(providerKey, state);
     const isValidState = await cache.get(stateKey);
 
@@ -391,7 +396,6 @@ export class AuthService {
       });
     }
 
-    // One-time use — hapus setelah dipakai
     await cache.del(stateKey);
 
     const oauthProvider = getOAuthProvider(providerKey);
@@ -420,51 +424,22 @@ export class AuthService {
 
     const provider = OAuthProvider[providerEnumKey];
 
-    // 3. Resolve user: cari by oauthAccount → fallback email → register baru
     let user = await UserRepository.findByOAuthProvider(provider, oauthUser.providerAccountId);
 
     if (!user) {
       const existingUser = await UserRepository.findByEmail(oauthUser.email);
 
       if (existingUser) {
-        // Email sudah terdaftar (akun biasa) → link OAuth account ke user ini
         user = existingUser;
       } else {
-        // Belum terdaftar sama sekali → register otomatis
-        const username = generateRandomUsername(oauthUser.name);
-        user = await pgsql.$transaction(async (tx) => {
-          const newUser = await UserRepository.createOAuthUser(tx, {
-            email: oauthUser.email,
-            name: oauthUser.name,
-            username,
-            avatar: oauthUser.avatar || generateRandomAvatarURL(username),
-          });
-
-          // Default notification settings — sama seperti register biasa
-          const notifPayload = Object.values(NotificationType).map((type) => ({
-            userId: newUser.id,
-            type,
-            channel: NotificationChannel.IN_APP,
-            status: NotificationStatus.ENABLED,
-            createdAt: new Date(),
-          }));
-          await NotificationRepository.createNotificationSettings(tx, notifPayload);
-
-          await UserRepository.createActivityLog(tx, {
-            userId: newUser.id,
-            action: userAction.LOGIN,
-            metadata: { provider: providerKey, firstLogin: true },
-          });
-
-          return {
-            ...newUser,
-            passwordHash: null,
-          };
+        // OAuth auto-registration is disabled for this internal app
+        throw new HTTPException(403, {
+          message: "Registration is not allowed. Please contact your administrator.",
+          cause: authErrorCode.FORBIDDEN,
         });
       }
     }
 
-    // 4. Cek status akun
     if (user?.status === "BANNED") {
       throw new HTTPException(403, {
         message: authErrorMessage.ACCOUNT_BANNED,
@@ -472,7 +447,6 @@ export class AuthService {
       });
     }
 
-    // 5. Simpan / update OAuthAccount (refresh token setiap login)
     await UserRepository.upsertOAuthAccount(null, {
       userId: user?.id!,
       provider,
@@ -482,42 +456,12 @@ export class AuthService {
       expiresAt: tokens.expiresAt,
     });
 
-    // 6. Buat session — identik dengan login biasa
-    const randomToken = generateRandomToken();
-    const hashedToken = await hashToken(randomToken);
-
-    const sessionPayload = {
-      id: cuid(),
-      userId: user?.id!,
-      token: hashedToken,
-      userAgent: c.req.header("user-agent") || "unknown",
-      expiresAt: new Date(Date.now() + authLimit.SESSION_TOKEN_EXP),
-    };
-
-    const newSession = await pgsql.$transaction(async (tx) => {
-      await UserRepository.updateLastLogin(tx, user!.id, new Date());
-      const session = await SessionRepository.createSession(tx, sessionPayload);
-      await UserRepository.createActivityLog(tx, {
-        userId: user?.id!,
-        action: userAction.LOGIN,
-        metadata: { userAgent: sessionPayload.userAgent, provider: providerKey },
-      });
-      return session;
+    return this._createSession(c, {
+      id: user?.id!,
+      name: user?.name!,
+      role: user?.role!,
+      avatar: user?.avatar!,
+      email: user?.email!,
     });
-
-    const sessionToken = await generateSessionToken({ sub: user?.id!, sid: newSession.id });
-    setCookie(c, redisConfig.TOKEN_PREFIX_DEFAULT, sessionToken);
-
-    return {
-      token: sessionToken,
-      expiredAt: sessionPayload.expiresAt,
-      user: {
-        id: user?.id!,
-        name: user?.name!,
-        role: user?.role!,
-        avatar: user?.avatar!,
-        email: user?.email!,
-      },
-    };
   }
 }

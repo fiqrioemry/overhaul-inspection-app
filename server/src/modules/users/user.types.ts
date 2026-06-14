@@ -1,4 +1,4 @@
-import { OAuthProvider, RoleEnum } from "generated/prisma";
+import { OAuthProvider, RoleEnum, StatusEnum } from "generated/prisma";
 
 type verificationType = "EMAIL_VERIFICATION" | "PASSWORD_RESET";
 type userStatus = "ACTIVE" | "INACTIVE" | "BANNED";
@@ -8,13 +8,6 @@ type createVerificationData = {
   token: string;
   type: verificationType;
   expiresAt: Date;
-};
-
-type userSearchResponse = {
-  id: string;
-  name: string;
-  role: string;
-  avatar: string | null;
 };
 
 type userCredential = {
@@ -53,41 +46,25 @@ type userResponse = {
   name: string;
   avatar: string | null;
   role: string;
+  status: string;
+  verifiedAt: Date | null;
   lastLogin: Date | null;
-  joinedAt: Date;
-  lastChangePasswordAt: Date | null;
-  hasPassword: boolean;
-};
-
-type profileResponse = {
-  id: string;
-  email: string;
-  name: string;
-  avatar: string | null;
-  role: string;
-  lastLogin: Date | null;
-  joinedAt: Date;
+  createdAt: Date;
 };
 
 type createUserData = {
   email: string;
-  passwordHash: string;
+  passwordHash?: string;
   name: string;
-  username: string;
-  avatar: string;
-};
-
-type searchResponse = {
-  id: string;
-  name: string;
-  role: string;
-  avatar: string | null;
+  role: RoleEnum;
+  status: StatusEnum;
+  isVerified: boolean;
 };
 
 type paginationMeta = {
   page: number;
   limit: number;
-  totalItems: number;
+  total: number;
   totalPages: number;
 };
 
@@ -103,13 +80,6 @@ type metaResponse = {
   filter?: filterMeta;
 };
 
-export type CreateOAuthUserData = {
-  email: string;
-  name: string;
-  username: string;
-  avatar: string;
-};
-
 export type UpsertOAuthAccountData = {
   userId: string;
   provider: OAuthProvider;
@@ -123,12 +93,9 @@ export {
   metaResponse,
   paginationMeta,
   filterMeta,
-  userSearchResponse,
   verificationType,
-  searchResponse,
   loginResponse,
   createUserData,
-  profileResponse,
   userCredential,
   createVerificationData,
   userVerificationData,

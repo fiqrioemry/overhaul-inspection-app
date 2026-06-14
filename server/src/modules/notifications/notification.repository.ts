@@ -1,7 +1,7 @@
 import { Prisma } from "generated/prisma/edge";
 import { pgsql as database } from "@/lib/database";
 import { NotificationChannel, NotificationStatus, NotificationType } from "generated/prisma";
-import { DeleteNotificationRequest, GetNotificationRequest, UpdateNotificationSettingRequest } from "@/modules/notifications/notification.schema";
+import { CreateNotificationRequest, GetNotificationRequest, UpdateNotificationSettingRequest } from "@/modules/notifications/notification.schema";
 
 export class NotificationRepository {
   static async countUnreadNotifications(userId: string) {
@@ -13,16 +13,16 @@ export class NotificationRepository {
       },
     });
   }
+
   static async getNotificationsByUserId(query: GetNotificationRequest) {
     const { userId, type, sortBy, orderBy, search, page = 1, limit = 10 } = query;
-    let where: any = {
-      userId: userId!,
-      description: { contains: search, mode: "insensitive" } as const,
-    };
 
-    if (type) {
-      where = { ...where, type };
-    }
+    const where: Prisma.NotificationWhereInput = {
+      userId: userId!,
+      deletedAt: null,
+      ...(search && { description: { contains: search, mode: "insensitive" } }),
+      ...(type && { type }),
+    };
 
     const [notifications, totalItems] = await Promise.all([
       database.notification.findMany({
@@ -36,9 +36,7 @@ export class NotificationRepository {
           readAt: true,
           createdAt: true,
         },
-        orderBy: {
-          [orderBy!]: sortBy!,
-        },
+        orderBy: { [orderBy!]: sortBy! },
         skip: (Number(page) - 1) * Number(limit),
         take: Number(limit),
       }),
@@ -47,20 +45,40 @@ export class NotificationRepository {
 
     return { notifications, totalItems };
   }
-  static async createNotification(tx: Prisma.TransactionClient, data: { userId: string; title: string; description: string; type: NotificationType; metadata: Record<string, any> }) {
-    const db = tx ?? database;
-    await db.notification.create({
-      data,
+
+  static async findById(id: string, userId: string) {
+    return await database.notification.findFirst({
+      where: { id, userId, deletedAt: null },
+      select: { id: true, userId: true, readAt: true },
     });
   }
 
-  static async markAsRead(userId: string, notificationIds: string[], readAt: Date) {
-    await database.notification.updateMany({
-      where: {
-        id: { in: notificationIds },
-        userId,
-      },
+  static async createNotification(
+    tx: Prisma.TransactionClient | null,
+    data: CreateNotificationRequest,
+  ) {
+    const db = tx ?? database;
+    return await db.notification.create({ data });
+  }
+
+  static async markAsRead(notificationId: string, userId: string, readAt: Date) {
+    await database.notification.update({
+      where: { id: notificationId, userId },
       data: { readAt },
+    });
+  }
+
+  static async markAllAsRead(userId: string, readAt: Date) {
+    await database.notification.updateMany({
+      where: { userId, readAt: null, deletedAt: null },
+      data: { readAt },
+    });
+  }
+
+  static async softDelete(id: string, userId: string) {
+    await database.notification.update({
+      where: { id, userId },
+      data: { deletedAt: new Date() },
     });
   }
 
@@ -92,14 +110,10 @@ export class NotificationRepository {
     });
   }
 
-  static async getNotificationByType(userId: string, type: NotificationType) {
+  static async getNotificationSettingByTypeAndChannel(userId: string, type: NotificationType, channel: NotificationChannel) {
     return await database.notificationSetting.findFirst({
-      where: { userId, type },
-      select: {
-        id: true,
-        userId: true,
-        status: true,
-      },
+      where: { userId, type, channel },
+      select: { id: true, userId: true, status: true },
     });
   }
 
@@ -108,13 +122,6 @@ export class NotificationRepository {
     await db.notificationSetting.update({
       where: { id: payload.notificationId },
       data: { status: payload.status },
-    });
-  }
-
-  static async deleteNotification(tx: Prisma.TransactionClient, payload: DeleteNotificationRequest) {
-    const db = tx ?? database;
-    await db.notification.deleteMany({
-      where: { userId: payload.userId, id: { in: payload.notificationIds } },
     });
   }
 }

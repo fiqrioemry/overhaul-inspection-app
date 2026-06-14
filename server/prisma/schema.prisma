@@ -1,17 +1,19 @@
- 
 generator client {
   provider = "prisma-client-js"
-  output = "../generated/prisma"
+  output   = "../generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
 }
 
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
 enum RoleEnum {
   USER
-  ADMIN
   INSPECTOR
+  ADMIN
+  SUPER_ADMIN
 }
 
 enum StatusEnum {
@@ -20,58 +22,77 @@ enum StatusEnum {
   BANNED
 }
 
-
-model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  passwordHash String?   @map("password_hash")
-  name         String
-  avatar       String?
-  status StatusEnum @default(ACTIVE)
-  role         RoleEnum @default(USER)
-  verifiedAt  DateTime? @map("verified_at")
-  lastLogin    DateTime? @map("last_login")
-  lastChangePasswordAt DateTime? @map("last_change_password_at")
-  createdAt    DateTime  @default(now()) @map("created_at")
-  updatedAt    DateTime  @updatedAt @map("updated_at")
-  deletedAt    DateTime? @map("deleted_at")
-
-  twoFactorEnabled    Boolean  @default(false) @map("two_factor_enabled")
-  twoFactorSecret     String?  @map("two_factor_secret")
-  twoFactorBackupCodes String[] @map("two_factor_backup_codes")
-
-  sessions        Session[]
-  notifications   Notification[]
-  notificationSettings NotificationSetting[]
-  verifications UserVerification[]
-
-  activities   UserActivityLog[]
-  oauthAccounts    OAuthAccount[]
-
-  @@map("users")
-}
-
- 
- 
-
 enum VerificationType {
   EMAIL_VERIFICATION
   PASSWORD_RESET
 }
 
-model UserVerification {
-  id        String   @id @default(cuid())
-  userId    String   @map("user_id")
-  token     String   @unique
-  usedAt   DateTime? @map("used_at")
-  createdAt DateTime @default(now()) @map("created_at")
-  expiresAt DateTime @map("expires_at")
-  type     VerificationType   @map("type")
+enum OAuthProvider {
+  GOOGLE
+  GITHUB
+}
 
-  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+enum NotificationType {
+  INSPECTION_ASSIGNED
+  INSPECTION_REMINDER
+  INSPECTION_REQUEST_SUBMITTED
+  INSPECTION_REQUEST_REVIEWED
+  FINDING_CREATED
+  FINDING_STATUS_CHANGED
+  TEST_COMPLETED
+  DAILY_REPORT_CREATED
+  TANK_CREATED
+}
 
-  @@index([userId])
-  @@map("user_verifications")
+enum NotificationChannel {
+  IN_APP
+  EMAIL
+}
+
+enum NotificationStatus {
+  ENABLED
+  DISABLED
+}
+
+enum CompanyType {
+  OWNER
+  INSPECTOR_COMPANY
+  CONTRACTOR
+}
+
+// ─── Auth Models ─────────────────────────────────────────────────────────────
+
+model User {
+  id                   String     @id @default(cuid())
+  email                String     @unique
+  passwordHash         String?    @map("password_hash")
+  name                 String
+  avatar               String?
+  status               StatusEnum @default(ACTIVE)
+  role                 RoleEnum   @default(USER)
+  verifiedAt           DateTime?  @map("verified_at")
+  lastLogin            DateTime?  @map("last_login")
+  lastChangePasswordAt DateTime?  @map("last_change_password_at")
+  createdAt            DateTime   @default(now()) @map("created_at")
+  updatedAt            DateTime   @updatedAt @map("updated_at")
+  deletedAt            DateTime?  @map("deleted_at")
+
+  twoFactorEnabled     Boolean  @default(false) @map("two_factor_enabled")
+  twoFactorSecret      String?  @map("two_factor_secret")
+  twoFactorBackupCodes String[] @map("two_factor_backup_codes")
+
+  sessions             Session[]
+  notifications        Notification[]
+  notificationSettings NotificationSetting[]
+  verifications        UserVerification[]
+  activities           UserActivityLog[]
+  oauthAccounts        OAuthAccount[]
+
+  @@index([email])
+  @@index([role])
+  @@index([status])
+  @@index([deletedAt])
+  @@map("users")
 }
 
 model Session {
@@ -80,12 +101,27 @@ model Session {
   token     String   @unique
   userAgent String?  @map("user_agent")
   createdAt DateTime @default(now()) @map("created_at")
-  expiresAt DateTime @map("expires_at") 
+  expiresAt DateTime @map("expires_at")
 
-  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@map("sessions")
+}
+
+model UserVerification {
+  id        String           @id @default(cuid())
+  userId    String           @map("user_id")
+  token     String           @unique
+  usedAt    DateTime?        @map("used_at")
+  createdAt DateTime         @default(now()) @map("created_at")
+  expiresAt DateTime         @map("expires_at")
+  type      VerificationType @map("type")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("user_verifications")
 }
 
 model UserActivityLog {
@@ -95,17 +131,10 @@ model UserActivityLog {
   metadata  Json?
   createdAt DateTime @default(now()) @map("created_at")
 
-  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@map("user_activity_logs")
-}
-
- 
-enum OAuthProvider {
-  GOOGLE
-  GITHUB
-
 }
 
 model OAuthAccount {
@@ -125,48 +154,39 @@ model OAuthAccount {
   @@index([userId])
   @@map("oauth_accounts")
 }
- 
- 
+
+// ─── File Storage ─────────────────────────────────────────────────────────────
+
 model FileStorage {
   id        String   @id @default(cuid())
   targetId  String?  @map("target_id")
   url       String
   module    String
-  size     Int
-  meta     Json?
-  path     String
-  isUsed   Boolean  @default(false) @map("is_used")
+  mimeType  String?  @map("mime_type")
+  size      Int
+  meta      Json?
+  path      String
+  isUsed    Boolean  @default(false) @map("is_used")
   createdAt DateTime @default(now()) @map("created_at")
   createdBy String?  @map("created_by")
 
+  @@index([targetId, module])
+  @@index([isUsed, createdAt])
   @@map("file_storages")
 }
 
- 
-enum NotificationType {
-  INSPECTION_ASSIGNED
-  INSPECTION_REMINDER
-}
+// ─── Notifications ────────────────────────────────────────────────────────────
 
-enum NotificationChannel {
-  IN_APP
-  EMAIL
-}
-
-enum NotificationStatus {
-  ENABLED
-  DISABLED
-}
 model NotificationSetting {
-  id        String   @id @default(cuid())
-  userId    String   @map("user_id")
+  id        String              @id @default(cuid())
+  userId    String              @map("user_id")
   type      NotificationType
   channel   NotificationChannel @default(IN_APP)
-  status    NotificationStatus @default(ENABLED)
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  status    NotificationStatus  @default(ENABLED)
+  createdAt DateTime            @default(now()) @map("created_at")
+  updatedAt DateTime            @updatedAt @map("updated_at")
 
-  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, type, channel])
   @@index([userId])
@@ -174,21 +194,39 @@ model NotificationSetting {
 }
 
 model Notification {
-  id String @id @default(cuid())
-  userId String @map("user_id")
-  title String
+  id          String           @id @default(cuid())
+  userId      String           @map("user_id")
+  title       String
   description String?
-  type NotificationType
-  metadata  Json?  // cover title, description, targetId (postId, commentId, userId, messageId), etc.
-  readAt    DateTime? @map("read_at")
-  createdAt DateTime  @default(now()) @map("created_at")
-  deletedAt DateTime? @map("deleted_at")
+  type        NotificationType
+  metadata    Json?
+  readAt      DateTime?        @map("read_at")
+  createdAt   DateTime         @default(now()) @map("created_at")
+  deletedAt   DateTime?        @map("deleted_at")
 
-  User User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([userId, type])
+  @@index([userId, readAt])
   @@map("notifications")
 }
 
- 
+// ─── Company ──────────────────────────────────────────────────────────────────
+
+model Company {
+  id        String      @id @default(cuid())
+  name      String
+  type      CompanyType
+  address   String?
+  phone     String?
+  email     String?
+  logoUrl   String?     @map("logo_url")
+  createdAt DateTime    @default(now()) @map("created_at")
+  updatedAt DateTime    @updatedAt @map("updated_at")
+  deletedAt DateTime?   @map("deleted_at")
+
+  @@index([type])
+  @@index([deletedAt])
+  @@map("companies")
+}

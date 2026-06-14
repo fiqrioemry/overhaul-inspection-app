@@ -14,8 +14,8 @@ export class SessionRepository {
         createdAt: true,
         user: {
           select: {
-            username: true,
             email: true,
+            name: true,
             role: true,
             status: true,
           },
@@ -26,7 +26,6 @@ export class SessionRepository {
 
   static async createSession(tx: Prisma.TransactionClient | null, sessions: createSessionData): Promise<{ id: string }> {
     const db = tx ?? database;
-    // create session in the database
     const session = await db.session.create({
       data: {
         id: sessions.id,
@@ -51,8 +50,8 @@ export class SessionRepository {
         expiresAt: true,
         user: {
           select: {
-            username: true,
             email: true,
+            name: true,
             role: true,
             status: true,
           },
@@ -70,14 +69,6 @@ export class SessionRepository {
         userAgent: true,
         expiresAt: true,
         createdAt: true,
-        user: {
-          select: {
-            username: true,
-            email: true,
-            role: true,
-            status: true,
-          },
-        },
       },
     });
   }
@@ -97,9 +88,7 @@ export class SessionRepository {
   static async getSessionById(sessionId: string): Promise<{ id: string } | null> {
     return await database.session.findUnique({
       where: { id: sessionId },
-      select: {
-        id: true,
-      },
+      select: { id: true },
     });
   }
 }

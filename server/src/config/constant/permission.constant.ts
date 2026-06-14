@@ -1,0 +1,143 @@
+import { RoleEnum } from "generated/prisma";
+
+export const PERMISSIONS = {
+  DASHBOARD_READ: "dashboard.read",
+
+  USER_CREATE: "user.create",
+  USER_READ: "user.read",
+  USER_UPDATE: "user.update",
+  USER_DELETE: "user.delete",
+
+  TANK_CREATE: "tank.create",
+  TANK_READ: "tank.read",
+  TANK_UPDATE: "tank.update",
+
+  PROCESS_READ: "process.read",
+  PROCESS_UPDATE: "process.update",
+
+  DAILY_REPORT_CREATE: "daily_report.create",
+  DAILY_REPORT_READ: "daily_report.read",
+  DAILY_REPORT_UPDATE: "daily_report.update",
+  DAILY_REPORT_PRINT: "daily_report.print",
+
+  FINDING_CREATE: "finding.create",
+  FINDING_READ: "finding.read",
+  FINDING_UPDATE: "finding.update",
+  FINDING_CLOSE: "finding.close",
+
+  CHECKLIST_READ: "checklist.read",
+  CHECKLIST_UPDATE: "checklist.update",
+
+  INSPECTION_REQUEST_CREATE: "inspection_request.create",
+  INSPECTION_REQUEST_READ: "inspection_request.read",
+  INSPECTION_REQUEST_REVIEW: "inspection_request.review",
+  INSPECTION_REQUEST_UPDATE: "inspection_request.update",
+
+  TEST_RECORD_CREATE: "test_record.create",
+  TEST_RECORD_READ: "test_record.read",
+  TEST_RECORD_UPDATE: "test_record.update",
+
+  RADIOGRAPHY_CREATE: "radiography.create",
+  RADIOGRAPHY_READ: "radiography.read",
+  RADIOGRAPHY_UPDATE: "radiography.update",
+
+  FILE_UPLOAD: "file.upload",
+  FILE_READ: "file.read",
+
+  MASTER_PROCESS_CREATE: "master_process.create",
+  MASTER_PROCESS_READ: "master_process.read",
+  MASTER_PROCESS_UPDATE: "master_process.update",
+
+  ACCEPTANCE_CRITERIA_CREATE: "acceptance_criteria.create",
+  ACCEPTANCE_CRITERIA_READ: "acceptance_criteria.read",
+  ACCEPTANCE_CRITERIA_UPDATE: "acceptance_criteria.update",
+
+  REFERENCE_DOCUMENT_CREATE: "reference_document.create",
+  REFERENCE_DOCUMENT_READ: "reference_document.read",
+  REFERENCE_DOCUMENT_UPDATE: "reference_document.update",
+
+  COMPANY_CREATE: "company.create",
+  COMPANY_READ: "company.read",
+  COMPANY_UPDATE: "company.update",
+
+  NOTIFICATION_CREATE: "notification.create",
+  NOTIFICATION_READ: "notification.read",
+  NOTIFICATION_UPDATE: "notification.update",
+} as const;
+
+export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
+
+const USER_PERMISSIONS: Permission[] = [
+  PERMISSIONS.DASHBOARD_READ,
+  PERMISSIONS.USER_READ,
+  PERMISSIONS.TANK_READ,
+  PERMISSIONS.PROCESS_READ,
+  PERMISSIONS.CHECKLIST_READ,
+  PERMISSIONS.FINDING_READ,
+  PERMISSIONS.DAILY_REPORT_READ,
+  PERMISSIONS.INSPECTION_REQUEST_READ,
+  PERMISSIONS.INSPECTION_REQUEST_REVIEW,
+  PERMISSIONS.TEST_RECORD_READ,
+  PERMISSIONS.RADIOGRAPHY_READ,
+  PERMISSIONS.MASTER_PROCESS_READ,
+  PERMISSIONS.ACCEPTANCE_CRITERIA_READ,
+  PERMISSIONS.REFERENCE_DOCUMENT_READ,
+  PERMISSIONS.COMPANY_READ,
+  PERMISSIONS.FILE_READ,
+  PERMISSIONS.NOTIFICATION_READ,
+  PERMISSIONS.NOTIFICATION_UPDATE,
+];
+
+const INSPECTOR_PERMISSIONS: Permission[] = [
+  ...USER_PERMISSIONS,
+  PERMISSIONS.FILE_UPLOAD,
+  PERMISSIONS.TANK_CREATE,
+  PERMISSIONS.TANK_UPDATE,
+  PERMISSIONS.PROCESS_UPDATE,
+  PERMISSIONS.CHECKLIST_UPDATE,
+  PERMISSIONS.FINDING_CREATE,
+  PERMISSIONS.FINDING_UPDATE,
+  PERMISSIONS.DAILY_REPORT_CREATE,
+  PERMISSIONS.DAILY_REPORT_UPDATE,
+  PERMISSIONS.DAILY_REPORT_PRINT,
+  PERMISSIONS.INSPECTION_REQUEST_CREATE,
+  PERMISSIONS.INSPECTION_REQUEST_UPDATE,
+  PERMISSIONS.TEST_RECORD_CREATE,
+  PERMISSIONS.TEST_RECORD_UPDATE,
+  PERMISSIONS.RADIOGRAPHY_CREATE,
+  PERMISSIONS.RADIOGRAPHY_UPDATE,
+];
+
+const ADMIN_PERMISSIONS: Permission[] = [
+  ...INSPECTOR_PERMISSIONS,
+  PERMISSIONS.USER_CREATE,
+  PERMISSIONS.USER_UPDATE,
+  PERMISSIONS.USER_DELETE,
+  PERMISSIONS.FINDING_CLOSE,
+  PERMISSIONS.MASTER_PROCESS_CREATE,
+  PERMISSIONS.MASTER_PROCESS_UPDATE,
+  PERMISSIONS.ACCEPTANCE_CRITERIA_CREATE,
+  PERMISSIONS.ACCEPTANCE_CRITERIA_UPDATE,
+  PERMISSIONS.REFERENCE_DOCUMENT_CREATE,
+  PERMISSIONS.REFERENCE_DOCUMENT_UPDATE,
+  PERMISSIONS.COMPANY_CREATE,
+  PERMISSIONS.COMPANY_UPDATE,
+  PERMISSIONS.NOTIFICATION_CREATE,
+];
+
+export const ROLE_PERMISSIONS: Record<RoleEnum, Permission[] | ["*"]> = {
+  [RoleEnum.USER]: USER_PERMISSIONS,
+  [RoleEnum.INSPECTOR]: INSPECTOR_PERMISSIONS,
+  [RoleEnum.ADMIN]: ADMIN_PERMISSIONS,
+  [RoleEnum.SUPER_ADMIN]: ["*"],
+};
+
+export function getPermissionsForRole(role: RoleEnum): Permission[] | ["*"] {
+  return ROLE_PERMISSIONS[role] ?? [];
+}
+
+export function hasPermission(role: RoleEnum, permission: Permission): boolean {
+  const perms = getPermissionsForRole(role);
+  if (perms[0] === "*") return true;
+  return (perms as Permission[]).includes(permission);
+}

@@ -1,11 +1,11 @@
-// src/modules/files/file.service.ts
 import { Context } from "hono";
 import { pgsql } from "@/lib/database";
 import { Prisma } from "generated/prisma";
+import { HTTPException } from "hono/http-exception";
 import { minioConfig } from "@/config/env";
 import { minioClient, BUCKET } from "@/lib/minio";
 import { generateRandomFilename } from "@/utils/generator";
-import { createFileData } from "@/modules/files/file.types";
+import { createFileData, fileResponse } from "@/modules/files/file.types";
 import { FileRepository } from "@/modules/files/file.repository";
 import { processFile, processImage, type AspectRatio, type CropRect } from "@/utils/file-processing";
 
@@ -13,16 +13,17 @@ export class FileService {
   static async generateFileRecord(file: File, module: string, aspectRatio: AspectRatio = "1:1", cropRect?: CropRect): Promise<createFileData> {
     let fileProcessed: Buffer;
     let randomFileName: string;
-    let fileType: string;
+    let mimeType: string;
 
     if (file.type.startsWith("image/")) {
       fileProcessed = await processImage(file, aspectRatio, cropRect);
       randomFileName = generateRandomFilename(file.name, "webp");
-      fileType = "webp";
+      mimeType = "image/webp";
     } else {
-      fileType = file.type.split("/")[1];
-      fileProcessed = await processFile(file, fileType);
-      randomFileName = generateRandomFilename(file.name, fileType);
+      const ext = file.name.split(".").pop() ?? file.type.split("/")[1];
+      fileProcessed = await processFile(file, ext);
+      randomFileName = generateRandomFilename(file.name, ext);
+      mimeType = file.type;
     }
 
     const storageKey = `${module}/${randomFileName}`;
@@ -33,19 +34,56 @@ export class FileService {
       isUsed: false,
       size: fileProcessed.length,
       path: storageKey,
-      metadata: { originalName: file.name, mimeType: fileType },
+      mimeType,
+      metadata: { originalName: file.name, mimeType },
       module,
       imageBuffer: fileProcessed,
     };
   }
 
   static async uploadFileToStorage(c: Context, fileRecord: createFileData) {
-    await minioClient.putObject(BUCKET, fileRecord.path!, fileRecord.imageBuffer!, fileRecord.size!, { "Content-Type": `image/${fileRecord.metadata?.mimeType}` });
+    await minioClient.putObject(
+      BUCKET,
+      fileRecord.path!,
+      fileRecord.imageBuffer!,
+      fileRecord.size!,
+      { "Content-Type": fileRecord.mimeType ?? "application/octet-stream" },
+    );
+  }
+
+  static async uploadSingleFile(c: Context, userId: string, file: File, module: string): Promise<fileResponse> {
+    const fileRecord = await this.generateFileRecord(file, module);
+
+    return await pgsql.$transaction(async (tx: Prisma.TransactionClient) => {
+      await this.uploadFileToStorage(c, fileRecord);
+      fileRecord.createdBy = userId;
+      return await FileRepository.createFileRecordWithTx(tx, fileRecord);
+    });
+  }
+
+  static async uploadMultipleFiles(c: Context, userId: string, files: File[], module: string): Promise<fileResponse[]> {
+    const fileRecords = await Promise.all(files.map((f) => this.generateFileRecord(f, module)));
+
+    return await pgsql.$transaction(async (tx: Prisma.TransactionClient) => {
+      await Promise.all(fileRecords.map((fr) => this.uploadFileToStorage(c, fr)));
+      fileRecords.forEach((fr) => (fr.createdBy = userId));
+      return await FileRepository.createMultipleFileRecordWithTx(tx, fileRecords);
+    });
+  }
+
+  static async getFileById(fileId: string): Promise<fileResponse> {
+    const fileRecord = await FileRepository.getFileRecordById(fileId);
+    if (!fileRecord) {
+      throw new HTTPException(404, { message: "File not found", cause: "FILE_NOT_FOUND" });
+    }
+    return fileRecord;
   }
 
   static async deleteFile(c: Context, fileId: string) {
     const fileRecord = await FileRepository.getFileRecordById(fileId);
-    if (!fileRecord) throw new Error("File not found");
+    if (!fileRecord) {
+      throw new HTTPException(404, { message: "File not found", cause: "FILE_NOT_FOUND" });
+    }
     await minioClient.removeObject(BUCKET, fileRecord.path);
     await FileRepository.deleteFileRecord(fileId);
   }

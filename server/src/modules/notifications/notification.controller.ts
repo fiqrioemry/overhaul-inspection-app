@@ -2,49 +2,53 @@ import { Context } from "hono";
 import { responseOK } from "@/utils/response";
 import { NotificationService } from "@/modules/notifications/notification.service";
 import { notificationSuccessMessage } from "@/config/constant/notification.constant";
-import { deleteNotificationRequest, getNotificationRequest, updateNotificationRequest, updateNotificationSettingRequest } from "@/modules/notifications/notification.schema";
+import { getNotificationRequest, updateNotificationSettingRequest } from "@/modules/notifications/notification.schema";
 
 export class NotificationController {
-  static async getUnreadNotificationCount(c: Context) {
+  static async getUnreadCount(c: Context) {
     const user = c.get("user");
-    const response = await NotificationService.getUnreadNotificationCount(c, user?.userId!);
-    return responseOK(c, notificationSuccessMessage.GET_UNREAD_NOTIFICATION_COUNT, { unreadCount: response });
+    const response = await NotificationService.getUnreadNotificationCount(c, user.userId);
+    return responseOK(c, "Unread count retrieved successfully", { unreadCount: response });
   }
 
-  static async getUserNotifications(c: Context) {
+  static async getNotifications(c: Context) {
     const user = c.get("user");
     const query = getNotificationRequest.parse(c.req.query());
-    query.userId = user?.userId;
-    const response = await NotificationService.getNotificationByUserId(c, query);
+    query.userId = user.userId;
+    const response = await NotificationService.getNotifications(c, query);
     return responseOK(c, notificationSuccessMessage.GET_NOTIFICATIONS, response.data, response.meta);
   }
 
   static async markAsRead(c: Context) {
     const user = c.get("user");
-    const request = updateNotificationRequest.parse(await c.req.json());
-    request.userId = user?.userId;
-    await NotificationService.markAsRead(c, request);
+    const notificationId = c.req.param("id");
+    await NotificationService.markAsRead(c, notificationId, user.userId);
     return responseOK(c, notificationSuccessMessage.MARK_AS_READ);
+  }
+
+  static async markAllAsRead(c: Context) {
+    const user = c.get("user");
+    await NotificationService.markAllAsRead(c, user.userId);
+    return responseOK(c, "All notifications marked as read");
   }
 
   static async deleteNotification(c: Context) {
     const user = c.get("user");
-    const payload = deleteNotificationRequest.parse(await c.req.json());
-    payload.userId = user?.userId;
-    await NotificationService.deleteNotification(c, payload);
+    const notificationId = c.req.param("id");
+    await NotificationService.deleteNotification(c, notificationId, user.userId);
     return responseOK(c, notificationSuccessMessage.DELETE_NOTIFICATION);
   }
 
   static async getNotificationSettings(c: Context) {
     const user = c.get("user");
-    const response = await NotificationService.getNotificationSettings(c, user?.userId!);
+    const response = await NotificationService.getNotificationSettings(c, user.userId);
     return responseOK(c, notificationSuccessMessage.GET_NOTIFICATION_SETTINGS, response);
   }
 
   static async updateNotificationSettings(c: Context) {
     const user = c.get("user");
     const request = updateNotificationSettingRequest.parse(await c.req.json());
-    request.userId = user?.userId;
+    request.userId = user.userId;
     await NotificationService.updateNotificationSettings(c, request);
     return responseOK(c, notificationSuccessMessage.UPDATE_NOTIFICATION_SETTINGS);
   }

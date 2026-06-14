@@ -1,7 +1,7 @@
 import { pgsql as database } from "@/lib/database";
 import { Prisma, OAuthProvider } from "generated/prisma/edge";
-import { CreateUserActivityLogRequest, UpdateProfileRequest } from "@/modules/users/user.schema";
-import { createUserData, verificationType, createVerificationData, updateUserActiveData, UpsertOAuthAccountData, CreateOAuthUserData, userCredential } from "@/modules/users/user.types";
+import { CreateUserActivityLogRequest, ListUsersQuery } from "@/modules/users/user.schema";
+import { createUserData, verificationType, createVerificationData, updateUserActiveData, UpsertOAuthAccountData, userCredential } from "@/modules/users/user.types";
 
 export class UserRepository {
   static async findByEmail(email: string) {
@@ -24,45 +24,42 @@ export class UserRepository {
   static async create(tx: Prisma.TransactionClient | null, user: createUserData) {
     const db = tx ?? database;
 
-    const result = await db.user.create({
+    return await db.user.create({
       data: {
         email: user.email,
-        passwordHash: user.passwordHash,
+        passwordHash: user.passwordHash ?? null,
         name: user.name,
-        username: user.username,
-        avatar: user.avatar,
-        status: "INACTIVE",
+        role: user.role,
+        status: user.status,
+        verifiedAt: user.isVerified ? new Date() : null,
       },
       select: {
         id: true,
         email: true,
         name: true,
         role: true,
-        avatar: true,
-        bio: true,
         status: true,
-        lastLogin: true,
-        createdAt: true,
+        avatar: true,
         verifiedAt: true,
-        lastChangePasswordAt: true,
+        createdAt: true,
       },
     });
-
-    return result;
   }
 
   static async findById(id: string) {
     return await database.user.findUnique({
-      where: { id },
+      where: { id, deletedAt: null },
       select: {
         id: true,
         email: true,
         name: true,
         role: true,
+        status: true,
         avatar: true,
+        verifiedAt: true,
         lastLogin: true,
         createdAt: true,
-        lastChangePasswordAt: true,
+        updatedAt: true,
       },
     });
   }
@@ -75,7 +72,9 @@ export class UserRepository {
         email: true,
         name: true,
         role: true,
+        status: true,
         avatar: true,
+        verifiedAt: true,
         lastLogin: true,
         createdAt: true,
         lastChangePasswordAt: true,
@@ -87,12 +86,83 @@ export class UserRepository {
     });
   }
 
+  static async findMany(query: ListUsersQuery) {
+    const { page, limit, search, role, status, orderBy, sortBy } = query;
+
+    const where: Prisma.UserWhereInput = {
+      deletedAt: null,
+      ...(search && {
+        OR: [
+          { name: { contains: search, mode: "insensitive" } },
+          { email: { contains: search, mode: "insensitive" } },
+        ],
+      }),
+      ...(role && { role }),
+      ...(status && { status }),
+    };
+
+    const [users, total] = await Promise.all([
+      database.user.findMany({
+        where,
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+          status: true,
+          avatar: true,
+          verifiedAt: true,
+          lastLogin: true,
+          createdAt: true,
+        },
+        orderBy: { [orderBy]: sortBy },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      database.user.count({ where }),
+    ]);
+
+    return { users, total };
+  }
+
+  static async update(id: string, data: { name?: string; avatar?: string }) {
+    return await database.user.update({
+      where: { id, deletedAt: null },
+      data,
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        status: true,
+        avatar: true,
+        verifiedAt: true,
+        updatedAt: true,
+      },
+    });
+  }
+
+  static async updateStatus(id: string, status: string) {
+    return await database.user.update({
+      where: { id, deletedAt: null },
+      data: { status: status as any },
+      select: { id: true, status: true },
+    });
+  }
+
+  static async softDelete(id: string) {
+    return await database.user.update({
+      where: { id, deletedAt: null },
+      data: { deletedAt: new Date() },
+    });
+  }
+
   static async updateTwoFactor(userId: string, data: { twoFactorEnabled: boolean; twoFactorSecret?: string | null; twoFactorBackupCodes?: string[] }, tx: Prisma.TransactionClient | null = null) {
     const db = tx ?? database;
     return db.user.update({ where: { id: userId }, data });
   }
 
-  static async createUserVerification(tx: Prisma.TransactionClient | null, verificationData: createVerificationData): Promise<void> {
+  static async createUserVerification(tx: Prisma.TransactionClient | typeof database | null, verificationData: createVerificationData): Promise<void> {
     const db = tx ?? database;
 
     await db.userVerification.create({
@@ -123,9 +193,7 @@ export class UserRepository {
 
     await db.userVerification.update({
       where: { id: verificationId },
-      data: {
-        usedAt,
-      },
+      data: { usedAt },
     });
   }
 
@@ -145,19 +213,11 @@ export class UserRepository {
     });
   }
 
-  static async deleteSessionBySessionId(tx: Prisma.TransactionClient | null, sessionId: string): Promise<void> {
-    const db = tx ?? database;
-    await db.session.delete({
-      where: { id: sessionId },
-    });
-  }
-
   static async getPasswordByUserId(userId: string): Promise<string | null> {
     const result = await database.user.findUnique({
       where: { id: userId },
       select: { passwordHash: true },
     });
-    // Use ?? so empty string (OAuth accounts with no password) is preserved, not coerced to null
     return result?.passwordHash ?? null;
   }
 
@@ -176,14 +236,11 @@ export class UserRepository {
     });
   }
 
-  static async updateProfile(userId: string, request: UpdateProfileRequest, tx: Prisma.TransactionClient | null = null): Promise<void> {
+  static async updateProfile(userId: string, request: { name?: string }, tx: Prisma.TransactionClient | null = null): Promise<void> {
     const db = tx ?? database;
     await db.user.update({
       where: { id: userId },
-      data: {
-        name: request.name,
-        role: request.role,
-      },
+      data: { name: request.name },
     });
   }
 
@@ -220,32 +277,6 @@ export class UserRepository {
     });
 
     return oauth?.user ?? null;
-  }
-
-  static async createOAuthUser(tx: Prisma.TransactionClient | null, data: CreateOAuthUserData) {
-    const db = tx ?? database;
-    return await db.user.create({
-      data: {
-        email: data.email,
-        passwordHash: "",
-        name: data.name,
-        avatar: data.avatar,
-        status: "ACTIVE",
-        verifiedAt: new Date(), // email sudah terverifikasi oleh provider
-      },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-        avatar: true,
-        status: true,
-        lastLogin: true,
-        createdAt: true,
-        verifiedAt: true,
-        lastChangePasswordAt: true,
-      },
-    });
   }
 
   static async upsertOAuthAccount(tx: Prisma.TransactionClient | null, data: UpsertOAuthAccountData): Promise<void> {

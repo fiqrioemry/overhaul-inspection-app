@@ -2,6 +2,7 @@ type fileMetadata = {
   originalName: string;
   mimeType: string;
 };
+
 type createFileData = {
   targetId?: string;
   module?: string;
@@ -9,6 +10,7 @@ type createFileData = {
   size?: number;
   url?: string;
   path?: string;
+  mimeType?: string;
   createdBy?: string;
   metadata?: fileMetadata;
   imageBuffer?: Buffer;

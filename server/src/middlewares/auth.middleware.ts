@@ -1,8 +1,10 @@
 import { Context } from "hono";
 import { getCookie } from "hono/cookie";
 import { redisConfig } from "@/config/env";
+import { RoleEnum } from "generated/prisma";
 import { verifySessionToken } from "@/utils/jwt";
 import { HTTPException } from "hono/http-exception";
+import { getPermissionsForRole } from "@/config/constant/permission.constant";
 import { SessionRepository } from "@/modules/sessions/sessions.repository";
 import { authErrorCode, authErrorMessage } from "@/config/constant/auth.constant";
 
@@ -22,6 +24,7 @@ export async function protect(c: Context, next: () => Promise<void>) {
   }
 
   const session = await sessionRepo.findSessionWithUser(payload.sid);
+
   if (!session || session.expiresAt < new Date()) {
     throw new HTTPException(401, {
       message: authErrorMessage.SESSION_REVOKED,
@@ -29,37 +32,30 @@ export async function protect(c: Context, next: () => Promise<void>) {
     });
   }
 
-  if (!session || session.user.status === "BANNED") {
+  if (session.user.status === "BANNED") {
     throw new HTTPException(403, {
       message: authErrorMessage.ACCOUNT_BANNED,
       cause: authErrorMessage.ACCOUNT_BANNED,
     });
   }
+
+  if (session.user.status === "INACTIVE") {
+    throw new HTTPException(403, {
+      message: authErrorMessage.EMAIL_NOT_VERIFIED,
+      cause: authErrorMessage.EMAIL_NOT_VERIFIED,
+    });
+  }
+
+  const permissions = getPermissionsForRole(session.user.role as RoleEnum);
+
   c.set("user", {
     ssid: session.id,
-    username: session.user.username,
     userId: session.userId,
     role: session.user.role,
+    status: session.user.status,
     expiresAt: session.expiresAt,
+    permissions,
   });
 
   await next();
-}
-
-export function permissions(requiredPermissions: string[]) {
-  return async (c: Context, next: () => Promise<void>) => {
-    const user = await c.get("user");
-
-    const userPermissions: string[] = user.permissions || [];
-    const hasPermissions = requiredPermissions.every((perm) => userPermissions.includes(perm));
-
-    if (!hasPermissions) {
-      throw new HTTPException(403, {
-        message: authErrorMessage.FORBIDDEN,
-        cause: { code: authErrorCode.FORBIDDEN },
-      });
-    }
-
-    await next();
-  };
 }
