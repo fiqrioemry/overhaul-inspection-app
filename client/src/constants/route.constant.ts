@@ -20,6 +20,7 @@ export const ROUTES = {
 
   MASTER_DATA: "/master-data",
   MASTER_PROCESS: "/master-data/processes",
+  PROCESS_TEMPLATE_DETAIL: "/master-data/processes/:id",
   MASTER_CRITERIA: "/master-data/criteria",
   MASTER_REFERENCE_DOCS: "/master-data/reference-documents",
   MASTER_COMPANIES: "/master-data/companies",

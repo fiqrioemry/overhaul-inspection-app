@@ -1,15 +1,76 @@
+// src/features/users/users.api.ts
 import api from "@/lib/axios";
-import type { User } from "@/types/users.type";
-import { USERS_ENDPOINTS } from "@/constants/users.constant";
-import type { ResponseSuccess } from "@/types/response.type";
-import type { SearchUsersRequest } from "@/schemas/users.schema";
+import type { PaginatedResponse } from "@/types/pagination.type";
+import type { ResponseSuccess, ResponseOK } from "@/types/response.type";
+import type { RoleEnum, StatusEnum } from "@/types/users.type";
 
-export async function getUsers(query: SearchUsersRequest): Promise<ResponseSuccess<User[]>> {
-  const res = await api.get(USERS_ENDPOINTS.getUsers + "?search=" + query.search);
+export interface UserListItem {
+  id: string;
+  name: string;
+  email: string;
+  role: RoleEnum;
+  status: StatusEnum;
+  avatar: string | null;
+  verifiedAt: string | null;
+  createdAt: string;
+  lastLogin: string | null;
+}
+
+export type UserDetail = UserListItem;
+
+export interface ListUsersParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  role?: string;
+  status?: string;
+}
+
+export interface CreateUserPayload {
+  name: string;
+  email: string;
+  role: RoleEnum;
+  status: StatusEnum;
+  password?: string;
+  isVerified?: boolean;
+}
+
+export interface UpdateUserPayload {
+  name?: string;
+  email?: string;
+  role?: RoleEnum;
+}
+
+export interface UpdateUserStatusPayload {
+  status: StatusEnum;
+}
+
+export async function listUsers(params: ListUsersParams): Promise<PaginatedResponse<UserListItem>> {
+  const res = await api.get<ResponseSuccess<PaginatedResponse<UserListItem>>>("/users", { params });
+  return res.data.data!;
+}
+
+export async function getUserById(id: string): Promise<UserDetail> {
+  const res = await api.get<ResponseSuccess<UserDetail>>(`/users/${id}`);
+  return res.data.data!;
+}
+
+export async function createUser(data: CreateUserPayload): Promise<UserDetail> {
+  const res = await api.post<ResponseSuccess<UserDetail>>("/users", data);
+  return res.data.data!;
+}
+
+export async function updateUser(id: string, data: UpdateUserPayload): Promise<UserDetail> {
+  const res = await api.patch<ResponseSuccess<UserDetail>>(`/users/${id}`, data);
+  return res.data.data!;
+}
+
+export async function updateUserStatus(id: string, data: UpdateUserStatusPayload): Promise<ResponseOK> {
+  const res = await api.patch<ResponseOK>(`/users/${id}/status`, data);
   return res.data;
 }
 
-export async function createUser(payload: Partial<User>): Promise<ResponseSuccess<User>> {
-  const res = await api.post(USERS_ENDPOINTS.createUser, payload);
+export async function deleteUser(id: string): Promise<ResponseOK> {
+  const res = await api.delete<ResponseOK>(`/users/${id}`);
   return res.data;
 }

@@ -22,6 +22,11 @@ import UnauthorizedPage from "@/pages/UnauthorizedPage";
 import DashboardPage from "@/pages/DashboardPage";
 import UserManagementPage from "@/pages/UserManagementPage";
 import NotificationPage from "@/pages/NotificationPage";
+import CompaniesPage from "@/pages/CompaniesPage";
+import ReferenceDocumentsPage from "@/pages/ReferenceDocumentsPage";
+import AcceptanceCriteriaPage from "@/pages/AcceptanceCriteriaPage";
+import ProcessTemplatesPage from "@/pages/ProcessTemplatesPage";
+import ProcessTemplateDetailPage from "@/pages/ProcessTemplateDetailPage";
 
 export default function AppRouter() {
   useTheme();
@@ -59,6 +64,27 @@ export default function AppRouter() {
             {/* User management */}
             <Route element={<PermissionRoute permission={PERMISSIONS.USER_READ} />}>
               <Route path={ROUTES.USERS} element={<UserManagementPage />} />
+            </Route>
+
+            {/* Companies */}
+            <Route element={<PermissionRoute permission={PERMISSIONS.COMPANY_READ} />}>
+              <Route path={ROUTES.MASTER_COMPANIES} element={<CompaniesPage />} />
+            </Route>
+
+            {/* Reference Documents */}
+            <Route element={<PermissionRoute permission={PERMISSIONS.REFERENCE_DOCUMENT_READ} />}>
+              <Route path={ROUTES.MASTER_REFERENCE_DOCS} element={<ReferenceDocumentsPage />} />
+            </Route>
+
+            {/* Acceptance Criteria */}
+            <Route element={<PermissionRoute permission={PERMISSIONS.ACCEPTANCE_CRITERIA_READ} />}>
+              <Route path={ROUTES.MASTER_CRITERIA} element={<AcceptanceCriteriaPage />} />
+            </Route>
+
+            {/* Process Templates */}
+            <Route element={<PermissionRoute permission={PERMISSIONS.MASTER_PROCESS_READ} />}>
+              <Route path={ROUTES.MASTER_PROCESS} element={<ProcessTemplatesPage />} />
+              <Route path={ROUTES.PROCESS_TEMPLATE_DETAIL} element={<ProcessTemplateDetailPage />} />
             </Route>
 
             {/* Catch-all inside layout → 404 */}
