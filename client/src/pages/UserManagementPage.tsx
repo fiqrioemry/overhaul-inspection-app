@@ -78,7 +78,10 @@ export default function UserManagementPage() {
         <Input
           placeholder="Search users..."
           value={search}
-          onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(1);
+          }}
           className="max-w-xs"
         />
       </div>
@@ -88,7 +91,7 @@ export default function UserManagementPage() {
 
       {!isLoading && !isError && (
         <>
-          {data && data.items.length === 0 ? (
+          {!data?.items?.length ? (
             <EmptyState title="No users found" description="Create a user to get started." icon={Users} />
           ) : (
             <div className="rounded-lg border overflow-hidden">
@@ -105,24 +108,20 @@ export default function UserManagementPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y">
-                  {data?.items.map((user) => (
+                  {data.items.map((user) => (
                     <tr key={user.id} className="hover:bg-muted/20">
                       <td className="px-4 py-3 font-medium">{user.name}</td>
                       <td className="px-4 py-3 text-muted-foreground">{user.email}</td>
                       <td className="px-4 py-3">
-                        <Badge variant="outline" className="text-xs">{ROLE_LABEL[user.role] ?? user.role}</Badge>
+                        <Badge variant="outline" className="text-xs">
+                          {ROLE_LABEL[user.role] ?? user.role}
+                        </Badge>
                       </td>
-                      <td className="px-4 py-3"><StatusBadge status={user.status} /></td>
                       <td className="px-4 py-3">
-                        {user.verifiedAt ? (
-                          <span className="text-xs text-green-600 dark:text-green-400">Verified</span>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">Unverified</span>
-                        )}
+                        <StatusBadge status={user.status} />
                       </td>
-                      <td className="px-4 py-3 text-muted-foreground text-xs">
-                        {user.lastLogin ? format(new Date(user.lastLogin), "dd MMM yyyy HH:mm") : "Never"}
-                      </td>
+                      <td className="px-4 py-3">{user.verifiedAt ? <span className="text-xs text-green-600 dark:text-green-400">Verified</span> : <span className="text-xs text-muted-foreground">Unverified</span>}</td>
+                      <td className="px-4 py-3 text-muted-foreground text-xs">{user.lastLogin ? format(new Date(user.lastLogin), "dd MMM yyyy HH:mm") : "Never"}</td>
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-end gap-2">
                           <PermissionGate permission={PERMISSIONS.USER_UPDATE}>
@@ -149,9 +148,7 @@ export default function UserManagementPage() {
             </div>
           )}
 
-          {data?.meta && data.meta.totalPages > 1 && (
-            <Pagination meta={data.meta} onPageChange={setPage} />
-          )}
+          {data?.meta && data.meta.totalPages > 1 && <Pagination meta={data.meta} onPageChange={setPage} />}
         </>
       )}
 
@@ -160,7 +157,9 @@ export default function UserManagementPage() {
 
       <ConfirmDialog
         open={Boolean(deleteTarget)}
-        onOpenChange={(open) => { if (!open) setDeleteTarget(undefined); }}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(undefined);
+        }}
         title="Delete User"
         description={`Delete user "${deleteTarget?.name}"? This action cannot be undone.`}
         confirmLabel="Delete"

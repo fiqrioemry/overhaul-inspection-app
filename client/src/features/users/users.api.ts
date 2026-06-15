@@ -1,7 +1,7 @@
 // src/features/users/users.api.ts
 import api from "@/lib/axios";
 import type { PaginatedResponse } from "@/types/pagination.type";
-import type { ResponseSuccess, ResponseOK } from "@/types/response.type";
+import type { ResponseSuccess, ResponseList, ResponseOK } from "@/types/response.type";
 import type { RoleEnum, StatusEnum } from "@/types/users.type";
 
 export interface UserListItem {
@@ -46,8 +46,8 @@ export interface UpdateUserStatusPayload {
 }
 
 export async function listUsers(params: ListUsersParams): Promise<PaginatedResponse<UserListItem>> {
-  const res = await api.get<ResponseSuccess<PaginatedResponse<UserListItem>>>("/users", { params });
-  return res.data.data!;
+  const res = await api.get<ResponseList<UserListItem>>("/users", { params });
+  return { items: res.data.data, meta: res.data.meta };
 }
 
 export async function getUserById(id: string): Promise<UserDetail> {

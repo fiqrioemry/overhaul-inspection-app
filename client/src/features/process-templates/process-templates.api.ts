@@ -1,7 +1,7 @@
 // src/features/process-templates/process-templates.api.ts
 import api from "@/lib/axios";
 import type { PaginatedResponse } from "@/types/pagination.type";
-import type { ResponseSuccess, ResponseOK } from "@/types/response.type";
+import type { ResponseSuccess, ResponseList, ResponseOK } from "@/types/response.type";
 
 export interface ProcessTemplate {
   id: string;
@@ -73,13 +73,13 @@ export interface AddDependencyPayload {
 }
 
 export async function listProcessTemplates(params: ListProcessTemplatesParams): Promise<PaginatedResponse<ProcessTemplate>> {
-  const res = await api.get<ResponseSuccess<PaginatedResponse<ProcessTemplate>>>("/process-templates", { params });
-  return res.data.data!;
+  const res = await api.get<ResponseList<ProcessTemplate>>("/process-templates", { params });
+  return { items: res.data.data, meta: res.data.meta };
 }
 
 export async function getAllProcessTemplates(): Promise<ProcessTemplate[]> {
-  const res = await api.get<ResponseSuccess<ProcessTemplate[]>>("/process-templates", { params: { limit: 1000 } });
-  return res.data.data! as unknown as ProcessTemplate[];
+  const res = await api.get<ResponseList<ProcessTemplate>>("/process-templates", { params: { limit: 1000 } });
+  return res.data.data;
 }
 
 export async function getProcessTemplateById(id: string): Promise<ProcessTemplate> {

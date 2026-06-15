@@ -1,7 +1,7 @@
 // src/features/companies/companies.api.ts
 import api from "@/lib/axios";
 import type { PaginatedResponse } from "@/types/pagination.type";
-import type { ResponseSuccess, ResponseOK } from "@/types/response.type";
+import type { ResponseSuccess, ResponseList, ResponseOK } from "@/types/response.type";
 
 export interface Company {
   id: string;
@@ -32,8 +32,8 @@ export interface UpdateCompanyPayload {
 }
 
 export async function listCompanies(params: ListCompaniesParams): Promise<PaginatedResponse<Company>> {
-  const res = await api.get<ResponseSuccess<PaginatedResponse<Company>>>("/companies", { params });
-  return res.data.data!;
+  const res = await api.get<ResponseList<Company>>("/companies", { params });
+  return { items: res.data.data, meta: res.data.meta };
 }
 
 export async function createCompany(data: CreateCompanyPayload): Promise<Company> {

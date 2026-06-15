@@ -1,7 +1,7 @@
 // src/features/reference-documents/reference-documents.api.ts
 import api from "@/lib/axios";
 import type { PaginatedResponse } from "@/types/pagination.type";
-import type { ResponseSuccess, ResponseOK } from "@/types/response.type";
+import type { ResponseSuccess, ResponseList, ResponseOK } from "@/types/response.type";
 
 export interface ReferenceDocument {
   id: string;
@@ -41,13 +41,13 @@ export interface UpdateReferenceDocumentPayload {
 }
 
 export async function listReferenceDocuments(params: ListReferenceDocumentsParams): Promise<PaginatedResponse<ReferenceDocument>> {
-  const res = await api.get<ResponseSuccess<PaginatedResponse<ReferenceDocument>>>("/reference-documents", { params });
-  return res.data.data!;
+  const res = await api.get<ResponseList<ReferenceDocument>>("/reference-documents", { params });
+  return { items: res.data.data, meta: res.data.meta };
 }
 
 export async function getAllReferenceDocuments(): Promise<ReferenceDocument[]> {
-  const res = await api.get<ResponseSuccess<ReferenceDocument[]>>("/reference-documents", { params: { limit: 1000 } });
-  return res.data.data! as unknown as ReferenceDocument[];
+  const res = await api.get<ResponseList<ReferenceDocument>>("/reference-documents", { params: { limit: 1000 } });
+  return res.data.data;
 }
 
 export async function createReferenceDocument(data: CreateReferenceDocumentPayload): Promise<ReferenceDocument> {

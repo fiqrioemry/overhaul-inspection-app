@@ -1,7 +1,7 @@
 // src/features/acceptance-criteria/acceptance-criteria.api.ts
 import api from "@/lib/axios";
 import type { PaginatedResponse } from "@/types/pagination.type";
-import type { ResponseSuccess, ResponseOK } from "@/types/response.type";
+import type { ResponseSuccess, ResponseList, ResponseOK } from "@/types/response.type";
 
 export interface CriteriaReference {
   id: string;
@@ -65,8 +65,8 @@ export interface AddCriteriaReferencePayload {
 }
 
 export async function listAcceptanceCriteria(params: ListAcceptanceCriteriaParams): Promise<PaginatedResponse<AcceptanceCriteria>> {
-  const res = await api.get<ResponseSuccess<PaginatedResponse<AcceptanceCriteria>>>("/acceptance-criteria", { params });
-  return res.data.data!;
+  const res = await api.get<ResponseList<AcceptanceCriteria>>("/acceptance-criteria", { params });
+  return { items: res.data.data, meta: res.data.meta };
 }
 
 export async function getAcceptanceCriteriaById(id: string): Promise<AcceptanceCriteria> {
