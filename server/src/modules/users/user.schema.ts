@@ -18,7 +18,7 @@ export type CreateUserRequest = z.infer<typeof createUserRequest>;
 
 export const updateUserRequest = z.object({
   name: z.string().min(1).max(100).optional(),
-  avatar: z.string().url().optional(),
+  role: z.enum(RoleEnum).optional(),
 });
 export type UpdateUserRequest = z.infer<typeof updateUserRequest>;
 

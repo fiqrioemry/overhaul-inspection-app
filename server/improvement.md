@@ -11,3 +11,13 @@
 - endpoint get users also must return permissions list of each user, also the access level to update (make it easier for frontend managing UI/UX).
 
 - check all controller for every modules. update the response message using constant variable to make easier frontend implementing i8next / multi language
+
+- frontend @UserManagementPage.tsx user that granted permissions access to delete another user must not able to delete himself or another user with the same role (for example SUPER_ADMIN cannot delete SUPER_ADMIN)
+
+
+FRONTEND.
+1. Halaman /users change status,UI UX component dialog diadjust menjadi lebih kecil, karena hanya untuk update status 
+2. Halaman /users edit User, UI UX component dialog diadjust menjadi lebih kecil.
+
+BACKEND
+1. user.patch("/:id", protect, requirePermission(PERMISSIONS.USER_UPDATE), ctrl.updateUser) pada @user.route.ts endpoint untuk update users patch /users seharusnya field avatar url diganti menjadi upload file dan belum support untuk update role. sesuaikan juga pada /client untuk support file upload avatar bukan berupa url

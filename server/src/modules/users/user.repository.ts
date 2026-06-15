@@ -1,5 +1,5 @@
 import { pgsql as database } from "@/lib/database";
-import { Prisma, OAuthProvider } from "generated/prisma/edge";
+import { Prisma, OAuthProvider, RoleEnum } from "generated/prisma/edge";
 import { CreateUserActivityLogRequest, ListUsersQuery } from "@/modules/users/user.schema";
 import { createUserData, verificationType, createVerificationData, updateUserActiveData, UpsertOAuthAccountData, userCredential } from "@/modules/users/user.types";
 
@@ -122,7 +122,7 @@ export class UserRepository {
     return { users, total };
   }
 
-  static async update(id: string, data: { name?: string; avatar?: string }) {
+  static async update(id: string, data: { name?: string; role?: RoleEnum; avatar?: string }) {
     return await database.user.update({
       where: { id, deletedAt: null },
       data,

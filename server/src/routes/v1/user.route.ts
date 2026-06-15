@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { protect } from "@/middlewares/auth.middleware";
-import { singleFile } from "@/middlewares/file.middleware";
+import { singleFile, optionalFile } from "@/middlewares/file.middleware";
 import { userLimit } from "@/config/constant/user.constant";
 import { fileLimit } from "@/config/constant/file.constant";
 import { limitter } from "@/middlewares/limitter.middleware";
@@ -14,7 +14,7 @@ const user = new Hono();
 user.post("/", protect, requirePermission(PERMISSIONS.USER_CREATE), ctrl.createUser);
 user.get("/", protect, requirePermission(PERMISSIONS.USER_READ), limitter(userLimit.GET_USERS), ctrl.listUsers);
 user.get("/:id", protect, requirePermission(PERMISSIONS.USER_READ), ctrl.getUserById);
-user.patch("/:id", protect, requirePermission(PERMISSIONS.USER_UPDATE), ctrl.updateUser);
+user.patch("/:id", protect, requirePermission(PERMISSIONS.USER_UPDATE), optionalFile(fileLimit.AVATAR_OPTIONS, "avatar"), ctrl.updateUser);
 user.patch("/:id/status", protect, requirePermission(PERMISSIONS.USER_UPDATE), ctrl.updateUserStatus);
 user.patch("/:id/password", protect, requirePermission(PERMISSIONS.USER_UPDATE), ctrl.updateUserPassword);
 user.delete("/:id", protect, requirePermission(PERMISSIONS.USER_DELETE), ctrl.deleteUser);

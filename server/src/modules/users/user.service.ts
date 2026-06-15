@@ -87,12 +87,29 @@ export class UserService {
     return user;
   }
 
-  static async updateUser(id: string, request: UpdateUserRequest) {
+  static async updateUser(c: Context, id: string, request: UpdateUserRequest, avatarFile?: File) {
     const user = await UserRepository.findById(id);
     if (!user) {
       throw new HTTPException(404, { message: "User not found", cause: "USER_NOT_FOUND" });
     }
-    return await UserRepository.update(id, { name: request.name, avatar: request.avatar });
+
+    return await pgsql.$transaction(async (tx: Prisma.TransactionClient) => {
+      let avatarUrl: string | undefined;
+
+      if (avatarFile) {
+        const existingFile = await FileService.getFileRecordByTargetId(id, "USER_AVATAR");
+        if (existingFile) {
+          await FileRepository.markFilesAsUnused(tx, [existingFile.id]);
+        }
+        const fileDataRecord = await FileService.generateFileRecord(avatarFile, "USER_AVATAR");
+        await FileService.uploadFileToStorage(c, fileDataRecord);
+        fileDataRecord.isUsed = true;
+        await FileService.saveRecordToDatabase(fileDataRecord, tx);
+        avatarUrl = fileDataRecord.url!;
+      }
+
+      return await UserRepository.update(id, { name: request.name, role: request.role, avatar: avatarUrl });
+    });
   }
 
   static async updateUserStatus(id: string, request: UpdateUserStatusRequest) {

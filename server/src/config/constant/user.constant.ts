@@ -1,5 +1,11 @@
 const userSuccessMessage = {
+  CREATE_USER_SUCCESS: "User created successfully",
   GET_USERS_SUCCESS: "Users fetched successfully",
+  GET_USER_SUCCESS: "User retrieved successfully",
+  UPDATE_USER_SUCCESS: "User updated successfully",
+  UPDATE_USER_STATUS_SUCCESS: "User status updated successfully",
+  UPDATE_USER_PASSWORD_SUCCESS: "User password updated successfully",
+  DELETE_USER_SUCCESS: "User deleted successfully",
   UPDATE_AVATAR_SUCCESS: "User avatar updated successfully",
   UPDATE_PROFILE_SUCCESS: "User profile updated successfully",
 };

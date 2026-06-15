@@ -49,6 +49,37 @@ export function singleFile(options: FileValidationOptions, name: string) {
   };
 }
 
+export function optionalFile(options: FileValidationOptions, name: string) {
+  const { maxSize = 5 * 1024 * 1024, allowedTypes, field } = options;
+
+  return async (c: Context, next: () => Promise<void>) => {
+    const body = await c.req.parseBody({ all: true });
+    const file = field ? body[field] : Object.values(body).find((v) => v instanceof File);
+
+    if (!file || !(file instanceof File) || file.size === 0) {
+      await next();
+      return;
+    }
+
+    if (file.size > maxSize) {
+      throw new HTTPException(413, {
+        message: fileErrorMessage.FILE_TOO_LARGE,
+        cause: fileErrorCode.FILE_TOO_LARGE,
+      });
+    }
+
+    if (!allowedTypes.includes(file.type)) {
+      throw new HTTPException(415, {
+        message: fileErrorMessage.FILE_TYPE_NOT_ALLOWED,
+        cause: fileErrorCode.FILE_TYPE_NOT_ALLOWED,
+      });
+    }
+
+    c.set(name, file);
+    await next();
+  };
+}
+
 export function multipleFile(options: FileValidationOptions, name: string = "files") {
   const { maxSize = 5 * 1024 * 1024, allowedTypes, field } = options;
 
