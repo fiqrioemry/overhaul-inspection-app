@@ -6,6 +6,7 @@ import { NotificationController as ctrl } from "@/modules/notifications/notifica
 
 const notif = new Hono();
 
+notif.get("/unread-count", protect, requirePermission(PERMISSIONS.NOTIFICATION_READ), ctrl.getUnreadCount);
 notif.get("/", protect, requirePermission(PERMISSIONS.NOTIFICATION_READ), ctrl.getNotifications);
 notif.patch("/read-all", protect, requirePermission(PERMISSIONS.NOTIFICATION_UPDATE), ctrl.markAllAsRead);
 notif.patch("/:id/read", protect, requirePermission(PERMISSIONS.NOTIFICATION_UPDATE), ctrl.markAsRead);

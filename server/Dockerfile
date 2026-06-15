@@ -9,4 +9,4 @@ RUN bunx prisma generate --schema=prisma/schema.prisma
 # Tambahkan ini
 RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
-CMD bunx prisma migrate deploy --schema=prisma/schema.prisma && bun src/index.ts
+CMD bunx prisma migrate deploy --schema=prisma/schema.prisma && bun run prisma/seed.ts && bun src/index.ts
