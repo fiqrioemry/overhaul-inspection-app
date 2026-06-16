@@ -16,7 +16,7 @@ export class DailyReportService {
     }
 
     if (data.tankProcessId) {
-      const tankProcess = await pgsql.tankProcess.findFirst({ where: { id: data.tankProcessId, deletedAt: null } });
+      const tankProcess = await pgsql.tankProcess.findUnique({ where: { id: data.tankProcessId } });
       if (!tankProcess) {
         throw new HTTPException(404, { message: "Tank process not found", cause: "PROCESS_NOT_FOUND" });
       }

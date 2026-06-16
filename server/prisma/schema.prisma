@@ -131,8 +131,11 @@ enum ProcessStatusEnum {
 enum ChecklistStatusEnum {
   NOT_CHECKED
   PASSED
-  FAILED
-  NOT_APPLICABLE
+}
+
+enum ChecklistSourceEnum {
+  TEMPLATE
+  CUSTOM
 }
 
 enum FindingStatusEnum {
@@ -584,26 +587,35 @@ model TankProcess {
 }
 
 model ChecklistResult {
-  id            String              @id @default(cuid())
-  tankProcessId String              @map("tank_process_id")
-  criteriaId    String              @map("criteria_id")
-  status        ChecklistStatusEnum @default(NOT_CHECKED)
-  actualValue   Float?              @map("actual_value")
-  actualText    String?             @map("actual_text")
-  remarks       String?
-  checkedBy     String?             @map("checked_by")
-  checkedAt     DateTime?           @map("checked_at")
-  createdAt     DateTime            @default(now()) @map("created_at")
-  updatedAt     DateTime            @updatedAt @map("updated_at")
+  id                   String              @id @default(cuid())
+  tankProcessId        String              @map("tank_process_id")
+  criteriaId           String?             @map("criteria_id")
+  source               ChecklistSourceEnum @default(TEMPLATE) @map("source")
+  status               ChecklistStatusEnum @default(NOT_CHECKED)
+  // custom checklist fields (used when source = CUSTOM)
+  customName           String?             @map("custom_name")
+  customDescription    String?             @map("custom_description")
+  customAcceptanceText String?             @map("custom_acceptance_text")
+  customMethod         String?             @map("custom_method")
+  customReferenceText  String?             @map("custom_reference_text")
+  sequenceOrder        Int                 @default(0) @map("sequence_order")
+  isRequired           Boolean             @default(true) @map("is_required")
+  remarks              String?
+  checkedBy            String?             @map("checked_by")
+  checkedAt            DateTime?           @map("checked_at")
+  createdAt            DateTime            @default(now()) @map("created_at")
+  updatedAt            DateTime            @updatedAt @map("updated_at")
 
-  tankProcess   TankProcess        @relation(fields: [tankProcessId], references: [id], onDelete: Cascade)
-  criteria      AcceptanceCriteria @relation(fields: [criteriaId], references: [id], onDelete: Restrict)
-  checkedByUser User?              @relation("ChecklistCheckedBy", fields: [checkedBy], references: [id])
+  tankProcess   TankProcess         @relation(fields: [tankProcessId], references: [id], onDelete: Cascade)
+  criteria      AcceptanceCriteria? @relation(fields: [criteriaId], references: [id], onDelete: SetNull)
+  checkedByUser User?               @relation("ChecklistCheckedBy", fields: [checkedBy], references: [id])
 
+  // criteriaId is nullable for CUSTOM; NULL values are distinct in PostgreSQL UNIQUE so multiple custom items per process are allowed
   @@unique([tankProcessId, criteriaId])
   @@index([tankProcessId])
   @@index([criteriaId])
   @@index([status])
+  @@index([source])
   @@map("checklist_results")
 }
 

@@ -1,7 +1,8 @@
 import { HTTPException } from "hono/http-exception";
 import { pgsql } from "@/lib/database";
-import { ProcessStatusEnum, FindingStatusEnum } from "generated/prisma";
+import { ProcessStatusEnum, FindingStatusEnum, ChecklistStatusEnum, ChecklistSourceEnum } from "generated/prisma";
 import { TankProcessRepository } from "./tank-process.repository";
+import { ChecklistResultRepository } from "@/modules/checklist-results/checklist-result.repository";
 import { UpdateProcessStatusRequest } from "./tank-process.schema";
 
 const ALLOWED_STATUS_TRANSITIONS: Partial<Record<ProcessStatusEnum, ProcessStatusEnum[]>> = {
@@ -12,6 +13,37 @@ const ALLOWED_STATUS_TRANSITIONS: Partial<Record<ProcessStatusEnum, ProcessStatu
   [ProcessStatusEnum.COMPLETED]: [],
   [ProcessStatusEnum.LOCKED]: [],
 };
+
+// Findings with these statuses + isBlocking=true block review/completion
+const BLOCKING_FINDING_STATUSES = [
+  FindingStatusEnum.OPEN,
+  FindingStatusEnum.IN_REPAIR,
+  FindingStatusEnum.REPAIRED,
+];
+
+async function countBlockingFindings(tankProcessId: string) {
+  return pgsql.finding.count({
+    where: {
+      tankProcessId,
+      isBlocking: true,
+      status: { in: BLOCKING_FINDING_STATUSES },
+      deletedAt: null,
+    },
+  });
+}
+
+async function countUncheckedRequired(tankProcessId: string) {
+  return pgsql.checklistResult.count({
+    where: {
+      tankProcessId,
+      status: ChecklistStatusEnum.NOT_CHECKED,
+      OR: [
+        { source: ChecklistSourceEnum.TEMPLATE, criteria: { isRequired: true } },
+        { source: ChecklistSourceEnum.CUSTOM, isRequired: true },
+      ],
+    },
+  });
+}
 
 export class TankProcessService {
   static async getProcessById(id: string) {
@@ -47,14 +79,38 @@ export class TankProcessService {
       });
     }
 
+    // Guards for WAITING_REVIEW: all required checklists passed + no blocking findings
     if (data.status === ProcessStatusEnum.WAITING_REVIEW) {
-      const openFindingsCount = await pgsql.finding.count({
-        where: { tankProcessId: id, status: FindingStatusEnum.OPEN, deletedAt: null },
-      });
-      if (openFindingsCount > 0) {
+      const unchecked = await countUncheckedRequired(id);
+      if (unchecked > 0) {
         throw new HTTPException(422, {
-          message: `Cannot submit for review: ${openFindingsCount} finding(s) are still OPEN. Close or repair them first.`,
-          cause: "OPEN_FINDINGS_EXIST",
+          message: `Cannot submit for review: ${unchecked} required checklist item(s) are still NOT_CHECKED.`,
+          cause: "UNCHECKED_REQUIRED_CHECKLISTS",
+        });
+      }
+      const blocking = await countBlockingFindings(id);
+      if (blocking > 0) {
+        throw new HTTPException(422, {
+          message: `Cannot submit for review: ${blocking} blocking finding(s) are unresolved (OPEN, IN_REPAIR, or REPAIRED).`,
+          cause: "BLOCKING_FINDINGS_EXIST",
+        });
+      }
+    }
+
+    // Guards for COMPLETED: re-validate checklists + blocking findings
+    if (data.status === ProcessStatusEnum.COMPLETED) {
+      const unchecked = await countUncheckedRequired(id);
+      if (unchecked > 0) {
+        throw new HTTPException(422, {
+          message: `Cannot complete process: ${unchecked} required checklist item(s) are still NOT_CHECKED.`,
+          cause: "UNCHECKED_REQUIRED_CHECKLISTS",
+        });
+      }
+      const blocking = await countBlockingFindings(id);
+      if (blocking > 0) {
+        throw new HTTPException(422, {
+          message: `Cannot complete process: ${blocking} blocking finding(s) are unresolved.`,
+          cause: "BLOCKING_FINDINGS_EXIST",
         });
       }
     }
