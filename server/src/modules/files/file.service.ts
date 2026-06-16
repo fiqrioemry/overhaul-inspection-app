@@ -7,16 +7,42 @@ import { minioClient, BUCKET } from "@/lib/minio";
 import { generateRandomFilename } from "@/utils/generator";
 import { createFileData, fileResponse } from "@/modules/files/file.types";
 import { FileRepository } from "@/modules/files/file.repository";
-import { processFile, processImage, type AspectRatio, type CropRect } from "@/utils/file-processing";
+import { processFile, processImage, processInspectionAttachment, type AspectRatio, type CropRect } from "@/utils/file-processing";
+import type { ImageProcessMode } from "@/modules/files/file.types";
+
+const INSPECTION_ATTACHMENT_MODULES = new Set(["DAILY_REPORT", "FINDING", "TEST_RECORD", "RADIOGRAPHY_TEST"]);
 
 export class FileService {
-  static async generateFileRecord(file: File, module: string, aspectRatio: AspectRatio = "1:1", cropRect?: CropRect): Promise<createFileData> {
+  static async generateFileRecord(
+    file: File,
+    module: string,
+    aspectRatio: AspectRatio = "1:1",
+    cropRect?: CropRect,
+  ): Promise<createFileData> {
+    const imageProcessMode: ImageProcessMode = INSPECTION_ATTACHMENT_MODULES.has(module) ? "inspection_attachment" : "avatar";
     let fileProcessed: Buffer;
     let randomFileName: string;
     let mimeType: string;
+    let metadata: createFileData["metadata"];
 
     if (file.type.startsWith("image/")) {
-      fileProcessed = await processImage(file, aspectRatio, cropRect);
+      if (imageProcessMode === "inspection_attachment") {
+        fileProcessed = await processInspectionAttachment(file);
+        metadata = {
+          originalName: file.name,
+          mimeType: "image/webp",
+          originalMimeType: file.type,
+          processedMimeType: "image/webp",
+          processMode: "inspection_attachment",
+          resizeMode: "inside",
+          maxWidth: 1920,
+          maxHeight: 1920,
+          cropped: false,
+        };
+      } else {
+        fileProcessed = await processImage(file, aspectRatio, cropRect);
+        metadata = { originalName: file.name, mimeType: "image/webp" };
+      }
       randomFileName = generateRandomFilename(file.name, "webp");
       mimeType = "image/webp";
     } else {
@@ -24,6 +50,7 @@ export class FileService {
       fileProcessed = await processFile(file, ext);
       randomFileName = generateRandomFilename(file.name, ext);
       mimeType = file.type;
+      metadata = { originalName: file.name, mimeType: file.type };
     }
 
     const storageKey = `${module}/${randomFileName}`;
@@ -35,7 +62,7 @@ export class FileService {
       size: fileProcessed.length,
       path: storageKey,
       mimeType,
-      metadata: { originalName: file.name, mimeType },
+      metadata,
       module,
       imageBuffer: fileProcessed,
     };

@@ -5,14 +5,12 @@ import { TankProcessRepository } from "./tank-process.repository";
 import { UpdateProcessResultRequest, UpdateProcessStatusRequest } from "./tank-process.schema";
 
 const ALLOWED_STATUS_TRANSITIONS: Partial<Record<ProcessStatusEnum, ProcessStatusEnum[]>> = {
-  [ProcessStatusEnum.NOT_STARTED]: [ProcessStatusEnum.IN_PROGRESS, ProcessStatusEnum.NOT_APPLICABLE],
+  [ProcessStatusEnum.NOT_STARTED]: [ProcessStatusEnum.IN_PROGRESS],
   [ProcessStatusEnum.IN_PROGRESS]: [ProcessStatusEnum.WAITING_REVIEW, ProcessStatusEnum.NOT_STARTED],
   [ProcessStatusEnum.WAITING_REVIEW]: [ProcessStatusEnum.REVIEWED, ProcessStatusEnum.IN_PROGRESS],
   [ProcessStatusEnum.REVIEWED]: [ProcessStatusEnum.IN_PROGRESS, ProcessStatusEnum.COMPLETED],
   [ProcessStatusEnum.COMPLETED]: [],
   [ProcessStatusEnum.LOCKED]: [],
-  [ProcessStatusEnum.REJECTED]: [],
-  [ProcessStatusEnum.NOT_APPLICABLE]: [],
 };
 
 export class TankProcessService {
@@ -75,11 +73,7 @@ export class TankProcessService {
       throw new HTTPException(404, { message: "Process not found", cause: "PROCESS_NOT_FOUND" });
     }
 
-    if (
-      process.status !== ProcessStatusEnum.REVIEWED &&
-      process.status !== ProcessStatusEnum.IN_PROGRESS &&
-      process.status !== ProcessStatusEnum.WAITING_REVIEW
-    ) {
+    if (process.status !== ProcessStatusEnum.REVIEWED && process.status !== ProcessStatusEnum.IN_PROGRESS && process.status !== ProcessStatusEnum.WAITING_REVIEW) {
       throw new HTTPException(422, {
         message: "Result can only be set when process is in progress or reviewed",
         cause: "INVALID_PROCESS_STATE",

@@ -9,14 +9,7 @@ import { FileController as ctrl } from "@/modules/files/file.controller";
 
 const files = new Hono();
 
-files.post(
-  "/upload",
-  protect,
-  requirePermission(PERMISSIONS.FILE_UPLOAD),
-  limitter(fileLimit.SINGLE_FILE),
-  singleFile(fileLimit.FILE_OPTIONS, "file"),
-  ctrl.upload,
-);
+files.post("/upload", protect, requirePermission(PERMISSIONS.FILE_UPLOAD), limitter(fileLimit.SINGLE_FILE), singleFile(fileLimit.FILE_OPTIONS, "file"), ctrl.upload);
 
 files.get("/:id", protect, requirePermission(PERMISSIONS.FILE_READ), ctrl.getById);
 files.delete("/:id", protect, requirePermission(PERMISSIONS.FILE_UPLOAD), ctrl.delete);

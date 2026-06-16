@@ -55,6 +55,16 @@ export async function processImage(file: File, aspectRatio: AspectRatio = "1:1",
   return processed;
 }
 
+export async function processInspectionAttachment(file: File): Promise<Buffer> {
+  const arrayBuffer = await file.arrayBuffer();
+  const inputBuffer = Buffer.from(arrayBuffer);
+  return await sharp(inputBuffer)
+    .rotate()
+    .resize({ width: 1920, height: 1920, fit: "inside", withoutEnlargement: true })
+    .webp({ quality: 85 })
+    .toBuffer();
+}
+
 export async function processFile(file: File, _type: string): Promise<Buffer> {
   const arrayBuffer = await file.arrayBuffer();
   return Buffer.from(arrayBuffer);

@@ -24,7 +24,7 @@ const fileErrorCode = {
 const fileLimit = {
   UNUSED_AVATAR_EXP: 1 * 60 * 60, // 24 hours in seconds
   SINGLE_FILE: {
-    limit: 5, // limit each IP to 5 login requests per windowSec
+    limit: 60, // limit each IP to 5 login requests per windowSec
     windowSec: 60, // 60 seconds in seconds
   },
 

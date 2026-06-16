@@ -1,15 +1,31 @@
 import { HTTPException } from "hono/http-exception";
 import { FileRepository } from "@/modules/files/file.repository";
 import { pgsql } from "@/lib/database";
+import { ProcessStatusEnum } from "generated/prisma";
 import { DailyReportRepository } from "./daily-report.repository";
 import { CreateDailyReportRequest, ListDailyReportsQuery, UpdateDailyReportRequest } from "./daily-report.schema";
 import type { DailyReportListItem, DailyReportListResult } from "./daily-report.types";
+
+const DAILY_REPORT_BLOCKED_STATUSES: ProcessStatusEnum[] = [ProcessStatusEnum.NOT_STARTED, ProcessStatusEnum.COMPLETED];
 
 export class DailyReportService {
   static async createReport(data: CreateDailyReportRequest, userId: string) {
     const tank = await pgsql.tank.findFirst({ where: { id: data.tankId, deletedAt: null } });
     if (!tank) {
       throw new HTTPException(404, { message: "Tank not found", cause: "TANK_NOT_FOUND" });
+    }
+
+    if (data.tankProcessId) {
+      const tankProcess = await pgsql.tankProcess.findFirst({ where: { id: data.tankProcessId, deletedAt: null } });
+      if (!tankProcess) {
+        throw new HTTPException(404, { message: "Tank process not found", cause: "PROCESS_NOT_FOUND" });
+      }
+      if (DAILY_REPORT_BLOCKED_STATUSES.includes(tankProcess.status as ProcessStatusEnum)) {
+        throw new HTTPException(422, {
+          message: `Cannot add daily report when process is ${tankProcess.status}`,
+          cause: "INVALID_PROCESS_STATUS_FOR_DAILY_REPORT",
+        });
+      }
     }
 
     const report = await pgsql.$transaction(async (tx) => {

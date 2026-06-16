@@ -1,6 +1,15 @@
+export type ImageProcessMode = "avatar" | "inspection_attachment";
+
 type fileMetadata = {
   originalName: string;
   mimeType: string;
+  originalMimeType?: string;
+  processedMimeType?: string;
+  processMode?: ImageProcessMode;
+  resizeMode?: "cover" | "inside";
+  maxWidth?: number;
+  maxHeight?: number;
+  cropped?: boolean;
 };
 
 type createFileData = {
