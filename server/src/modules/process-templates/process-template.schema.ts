@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ProcessType, ProcessResultEnum } from "generated/prisma";
+import { ProcessType, ProcessStatusEnum } from "generated/prisma";
 
 export const createProcessTemplateRequest = z.object({
   code: z.string().min(1).max(50),
@@ -49,13 +49,13 @@ export const updateProcessCriteriaRequest = z.object({
 
 export const addProcessDependencyRequest = z.object({
   requiredProcessTemplateId: z.string().min(1),
-  requiredResult: z.nativeEnum(ProcessResultEnum).default(ProcessResultEnum.PASSED),
+  requiredStatus: z.nativeEnum(ProcessStatusEnum).default(ProcessStatusEnum.COMPLETED),
   isRequired: z.boolean().default(true),
   applicabilityRule: z.string().max(200).optional(),
 });
 
 export const updateProcessDependencyRequest = z.object({
-  requiredResult: z.nativeEnum(ProcessResultEnum).optional(),
+  requiredStatus: z.nativeEnum(ProcessStatusEnum).optional(),
   isRequired: z.boolean().optional(),
   applicabilityRule: z.string().max(200).optional(),
 });

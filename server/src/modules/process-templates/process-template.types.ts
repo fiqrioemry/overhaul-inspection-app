@@ -36,7 +36,7 @@ export interface ProcessDependencyItem {
   id: string;
   processTemplateId: string;
   requiredProcessTemplateId: string;
-  requiredResult: string;
+  requiredStatus: string;
   isRequired: boolean;
   applicabilityRule: string | null;
   createdAt: Date;

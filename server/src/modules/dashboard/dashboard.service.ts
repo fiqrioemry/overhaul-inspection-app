@@ -55,7 +55,6 @@ export class DashboardService {
             type: true,
             sequenceOrder: true,
             status: true,
-            result: true,
           },
         },
         _count: { select: { findings: true } },

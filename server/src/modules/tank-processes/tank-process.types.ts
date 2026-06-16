@@ -6,7 +6,6 @@ export interface TankProcessDetail {
   type: string;
   sequenceOrder: number;
   status: string;
-  result: string | null;
   plannedStartDate: Date | null;
   actualStartDate: Date | null;
   actualFinishDate: Date | null;

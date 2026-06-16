@@ -3,7 +3,7 @@ import { responseOK } from "@/utils/response";
 import { EligibilityService } from "@/services/eligibility.service";
 import { ChecklistResultService } from "@/modules/checklist-results/checklist-result.service";
 import { TankProcessService } from "./tank-process.service";
-import { updateProcessStatusRequest, updateProcessResultRequest } from "./tank-process.schema";
+import { updateProcessStatusRequest } from "./tank-process.schema";
 import { tankProcessSuccessMessage } from "@/config/constant/tank-process.constant";
 
 export class TankProcessController {
@@ -19,14 +19,6 @@ export class TankProcessController {
     const data = updateProcessStatusRequest.parse(body);
     const updated = await TankProcessService.updateStatus(id, data);
     return responseOK(c, tankProcessSuccessMessage.UPDATE_PROCESS_STATUS, updated);
-  }
-
-  static async updateResult(c: Context) {
-    const id = c.req.param("id");
-    const body = await c.req.json();
-    const data = updateProcessResultRequest.parse(body);
-    const updated = await TankProcessService.updateResult(id, data);
-    return responseOK(c, tankProcessSuccessMessage.UPDATE_PROCESS_RESULT, updated);
   }
 
   static async getEligibility(c: Context) {

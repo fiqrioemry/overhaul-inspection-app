@@ -1,9 +1,8 @@
 import { HTTPException } from "hono/http-exception";
 import { pgsql } from "@/lib/database";
-import { ProcessResultEnum, ProcessStatusEnum } from "generated/prisma";
+import { ProcessResultEnum } from "generated/prisma";
 import { FileRepository } from "@/modules/files/file.repository";
 import { NotificationService } from "@/modules/notifications/notification.service";
-import { TankProcessRepository } from "@/modules/tank-processes/tank-process.repository";
 import { TestRecordRepository } from "./test-record.repository";
 import { CompleteTestRecordRequest, CreateTestRecordRequest, UpdateTestRecordRequest } from "./test-record.schema";
 import type { TestRecordListItem, TestRecordDetail } from "./test-record.types";
@@ -139,19 +138,6 @@ export class TestRecordService {
         where: { id },
         data: { result, remarks: data.remarks },
       });
-
-      await tx.tankProcess.update({
-        where: { id: record.tankProcessId },
-        data: {
-          status: ProcessStatusEnum.COMPLETED,
-          result,
-          actualFinishDate: data.actualFinishDate ? new Date(data.actualFinishDate) : undefined,
-        },
-      });
-
-      if (result === ProcessResultEnum.PASSED) {
-        await TankProcessRepository.unlockEligibleProcesses(tx, record.tankProcess.tankId, record.tankProcess.processTemplateId);
-      }
     });
 
     const admins = await pgsql.user.findMany({

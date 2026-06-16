@@ -11,6 +11,12 @@ export class AcceptanceCriteriaService {
     if (existing) {
       throw new HTTPException(409, { message: "Acceptance criteria with this code already exists", cause: "CRITERIA_CODE_EXISTS" });
     }
+    for (const refId of request.referenceDocumentIds) {
+      const refDoc = await ReferenceDocumentRepository.findById(refId);
+      if (!refDoc) {
+        throw new HTTPException(404, { message: `Reference document not found: ${refId}`, cause: "REF_DOC_NOT_FOUND" });
+      }
+    }
     return AcceptanceCriteriaRepository.create(request);
   }
 
@@ -36,6 +42,7 @@ export class AcceptanceCriteriaService {
       status: c.status,
       createdAt: c.createdAt,
       updatedAt: c.updatedAt,
+      criteriaRefs: c.criteriaRefs,
     }));
 
     return {

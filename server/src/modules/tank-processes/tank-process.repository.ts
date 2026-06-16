@@ -1,5 +1,5 @@
 import { pgsql } from "@/lib/database";
-import { Prisma, ProcessStatusEnum, ProcessResultEnum } from "generated/prisma";
+import { Prisma, ProcessStatusEnum } from "generated/prisma";
 
 export class TankProcessRepository {
   static async findById(id: string) {
@@ -60,7 +60,7 @@ export class TankProcessRepository {
   static async findDependantTemplates(requiredProcessTemplateId: string) {
     return pgsql.processDependency.findMany({
       where: { requiredProcessTemplateId },
-      select: { processTemplateId: true, requiredResult: true },
+      select: { processTemplateId: true, requiredStatus: true },
     });
   }
 
@@ -85,7 +85,7 @@ export class TankProcessRepository {
         const requiredProcess = await tx.tankProcess.findUnique({
           where: { tankId_processTemplateId: { tankId, processTemplateId: d.requiredProcessTemplateId } },
         });
-        if (!requiredProcess || requiredProcess.result !== d.requiredResult) {
+        if (!requiredProcess || requiredProcess.status !== d.requiredStatus) {
           allMet = false;
           break;
         }

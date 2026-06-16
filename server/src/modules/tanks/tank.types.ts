@@ -60,7 +60,6 @@ export interface TankProcessSummaryItem {
   type: string;
   sequenceOrder: number;
   status: string;
-  result: string | null;
   processTemplate: { code: string; isOptional: boolean; applicabilityRule: string | null } | null;
   _count: { checklistResults: number; findings: number };
 }

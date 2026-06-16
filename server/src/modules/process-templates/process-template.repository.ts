@@ -41,7 +41,7 @@ const dependencySelect = {
   id: true,
   processTemplateId: true,
   requiredProcessTemplateId: true,
-  requiredResult: true,
+  requiredStatus: true,
   isRequired: true,
   applicabilityRule: true,
   createdAt: true,
@@ -200,7 +200,7 @@ export class ProcessTemplateRepository {
       data: {
         processTemplateId,
         requiredProcessTemplateId: data.requiredProcessTemplateId,
-        requiredResult: data.requiredResult,
+        requiredStatus: data.requiredStatus,
         isRequired: data.isRequired,
         applicabilityRule: data.applicabilityRule ?? null,
       },
@@ -234,7 +234,7 @@ export class ProcessTemplateRepository {
     return database.processDependency.update({
       where: { id },
       data: {
-        ...(data.requiredResult !== undefined && { requiredResult: data.requiredResult }),
+        ...(data.requiredStatus !== undefined && { requiredStatus: data.requiredStatus }),
         ...(data.isRequired !== undefined && { isRequired: data.isRequired }),
         ...(data.applicabilityRule !== undefined && { applicabilityRule: data.applicabilityRule }),
       },

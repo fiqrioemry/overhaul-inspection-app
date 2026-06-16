@@ -1,9 +1,8 @@
 import { HTTPException } from "hono/http-exception";
 import { pgsql } from "@/lib/database";
-import { ProcessResultEnum, ProcessStatusEnum, RadiographyJointResultEnum } from "generated/prisma";
+import { RadiographyJointResultEnum } from "generated/prisma";
 import { FileRepository } from "@/modules/files/file.repository";
 import { NotificationService } from "@/modules/notifications/notification.service";
-import { TankProcessRepository } from "@/modules/tank-processes/tank-process.repository";
 import { RadiographyRepository } from "./radiography.repository";
 import {
   AddJointResultRequest,
@@ -117,20 +116,6 @@ export class RadiographyService {
           remarks: data.remarks,
         },
       });
-
-      if (data.result && data.result !== ProcessResultEnum.PENDING) {
-        const process = await tx.tankProcess.findUnique({ where: { id: test.tankProcessId } });
-        if (process && process.status !== ProcessStatusEnum.COMPLETED) {
-          await tx.tankProcess.update({
-            where: { id: test.tankProcessId },
-            data: { status: ProcessStatusEnum.COMPLETED, result: data.result },
-          });
-
-          if (data.result === ProcessResultEnum.PASSED) {
-            await TankProcessRepository.unlockEligibleProcesses(tx, process.tankId, process.processTemplateId);
-          }
-        }
-      }
 
       if (data.fileIds && data.fileIds.length > 0) {
         await FileRepository.linkFiles(tx, data.fileIds, id, "RADIOGRAPHY_TEST");

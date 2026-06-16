@@ -58,9 +58,15 @@ export class TankService {
         isApplicable(t.applicabilityRule, data.hasSteamCoil),
       );
 
-      for (let i = 0; i < applicableTemplates.length; i++) {
-        const template = applicableTemplates[i];
-        const isFirst = i === 0;
+      const requiredDepTemplateIds = new Set(
+        (await tx.processDependency.findMany({
+          where: { isRequired: true },
+          select: { processTemplateId: true },
+        })).map((d) => d.processTemplateId),
+      );
+
+      for (const template of applicableTemplates) {
+        const hasRequiredDeps = requiredDepTemplateIds.has(template.id);
 
         const tankProcess = await tx.tankProcess.create({
           data: {
@@ -69,7 +75,7 @@ export class TankService {
             name: template.name,
             type: template.type,
             sequenceOrder: template.sequenceOrder,
-            status: isFirst ? ProcessStatusEnum.NOT_STARTED : ProcessStatusEnum.LOCKED,
+            status: hasRequiredDeps ? ProcessStatusEnum.LOCKED : ProcessStatusEnum.NOT_STARTED,
           },
         });
 

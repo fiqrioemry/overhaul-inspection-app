@@ -16,8 +16,8 @@ export interface FindingDetail {
 
 export interface DependencyDetail {
   processName: string;
-  requiredResult: string;
-  actualResult: string;
+  requiredStatus: string;
+  actualStatus: string;
 }
 
 export interface EligibilityResult {
@@ -101,7 +101,7 @@ export class EligibilityService {
       reasons.push(`${blockingFindings.length} blocking finding(s) still open`);
     }
 
-    // 3. Dependency check
+    // 3. Dependency check (now based on process status, not result)
     const dependencyDetails: DependencyDetail[] = [];
     for (const dep of processDeps) {
       const dependedProcess = await pgsql.tankProcess.findUnique({
@@ -111,18 +111,18 @@ export class EligibilityService {
             processTemplateId: dep.requiredProcessTemplateId,
           },
         },
-        select: { result: true },
+        select: { status: true },
       });
 
-      const actualResult = dependedProcess?.result ?? "NOT_FOUND";
+      const actualStatus = dependedProcess?.status ?? "NOT_FOUND";
       dependencyDetails.push({
         processName: dep.requiredProcessTemplate.name,
-        requiredResult: dep.requiredResult,
-        actualResult,
+        requiredStatus: dep.requiredStatus,
+        actualStatus,
       });
 
-      if (actualResult !== dep.requiredResult) {
-        reasons.push(`Dependency "${dep.requiredProcessTemplate.name}" not ${dep.requiredResult}`);
+      if (actualStatus !== dep.requiredStatus) {
+        reasons.push(`Dependency "${dep.requiredProcessTemplate.name}" not ${dep.requiredStatus}`);
       }
     }
 

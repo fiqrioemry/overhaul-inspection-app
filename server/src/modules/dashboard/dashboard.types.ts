@@ -11,7 +11,6 @@ export interface TankProgressProcess {
   type: string;
   sequenceOrder: number;
   status: string;
-  result: string | null;
 }
 
 export interface TankProgressItem {

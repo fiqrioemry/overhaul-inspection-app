@@ -16,6 +16,7 @@ export const createAcceptanceCriteriaRequest = z.object({
   isRequired: z.boolean().default(true),
   severity: z.nativeEnum(CriteriaSeverity).default(CriteriaSeverity.MAJOR),
   status: z.nativeEnum(MasterDataStatus).default(MasterDataStatus.DRAFT),
+  referenceDocumentIds: z.array(z.string().min(1)).min(1, "At least one reference document is required"),
 });
 
 export const updateAcceptanceCriteriaRequest = z.object({

@@ -10,7 +10,6 @@ import {
   AcceptanceType,
   CriteriaSeverity,
   ProcessType,
-  ProcessResultEnum,
   ProcessStatusEnum,
   ChecklistStatusEnum,
 } from "../generated/prisma";
@@ -402,7 +401,7 @@ async function main() {
           data: {
             processTemplateId: processId,
             requiredProcessTemplateId: requiredId,
-            requiredResult: ProcessResultEnum.PASSED,
+            requiredStatus: ProcessStatusEnum.COMPLETED,
           },
         });
       }
@@ -475,8 +474,13 @@ async function main() {
 
   console.log(`  ℹ️  Applicable process templates: ${applicableTemplates.length}`);
 
-  for (let i = 0; i < applicableTemplates.length; i++) {
-    const template = applicableTemplates[i];
+  const requiredDepIds = new Set(
+    (await prisma.processDependency.findMany({ where: { isRequired: true }, select: { processTemplateId: true } })).map(
+      (d) => d.processTemplateId,
+    ),
+  );
+
+  for (const template of applicableTemplates) {
     const existing = await prisma.tankProcess.findUnique({
       where: { tankId_processTemplateId: { tankId: tank.id, processTemplateId: template.id } },
     });
@@ -490,7 +494,7 @@ async function main() {
           name: template.name,
           type: template.type,
           sequenceOrder: template.sequenceOrder,
-          status: i === 0 ? ProcessStatusEnum.NOT_STARTED : ProcessStatusEnum.LOCKED,
+          status: requiredDepIds.has(template.id) ? ProcessStatusEnum.LOCKED : ProcessStatusEnum.NOT_STARTED,
         },
       });
 

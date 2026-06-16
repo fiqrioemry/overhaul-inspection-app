@@ -25,6 +25,7 @@ export interface AcceptanceCriteriaItem {
   status: string;
   createdAt: Date;
   updatedAt: Date;
+  criteriaRefs: Array<{ id: string; referenceDocument: { id: string; code: string; title: string } }>;
 }
 
 export interface CriteriaReferenceItem {

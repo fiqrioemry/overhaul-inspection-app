@@ -486,7 +486,7 @@ model ProcessDependency {
   id                        String            @id @default(cuid())
   processTemplateId         String            @map("process_template_id")
   requiredProcessTemplateId String            @map("required_process_template_id")
-  requiredResult            ProcessResultEnum @default(PASSED) @map("required_result")
+  requiredStatus            ProcessStatusEnum @default(COMPLETED) @map("required_status")
   isRequired                Boolean           @default(true) @map("is_required")
   applicabilityRule         String?           @map("applicability_rule")
   createdAt                 DateTime          @default(now()) @map("created_at")
@@ -560,7 +560,6 @@ model TankProcess {
   type              ProcessType
   sequenceOrder     Int               @map("sequence_order")
   status            ProcessStatusEnum @default(LOCKED)
-  result            ProcessResultEnum @default(PENDING)
   plannedStartDate  DateTime?         @map("planned_start_date") @db.Date
   actualStartDate   DateTime?         @map("actual_start_date") @db.Date
   actualFinishDate  DateTime?         @map("actual_finish_date") @db.Date
@@ -581,7 +580,6 @@ model TankProcess {
   @@unique([tankId, processTemplateId])
   @@index([tankId])
   @@index([status])
-  @@index([result])
   @@map("tank_processes")
 }
 

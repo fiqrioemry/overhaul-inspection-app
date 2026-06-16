@@ -1,8 +1,8 @@
 import { HTTPException } from "hono/http-exception";
 import { pgsql } from "@/lib/database";
-import { ProcessStatusEnum, ProcessResultEnum, FindingStatusEnum } from "generated/prisma";
+import { ProcessStatusEnum, FindingStatusEnum } from "generated/prisma";
 import { TankProcessRepository } from "./tank-process.repository";
-import { UpdateProcessResultRequest, UpdateProcessStatusRequest } from "./tank-process.schema";
+import { UpdateProcessStatusRequest } from "./tank-process.schema";
 
 const ALLOWED_STATUS_TRANSITIONS: Partial<Record<ProcessStatusEnum, ProcessStatusEnum[]>> = {
   [ProcessStatusEnum.NOT_STARTED]: [ProcessStatusEnum.IN_PROGRESS],
@@ -59,44 +59,22 @@ export class TankProcessService {
       }
     }
 
-    return TankProcessRepository.updateStatus(id, {
-      status: data.status,
-      ...(data.plannedStartDate && { plannedStartDate: new Date(data.plannedStartDate) }),
-      ...(data.actualStartDate && { actualStartDate: new Date(data.actualStartDate) }),
-      ...(data.remarks && { remarks: data.remarks }),
-    });
-  }
-
-  static async updateResult(id: string, data: UpdateProcessResultRequest) {
-    const process = await TankProcessRepository.findById(id);
-    if (!process) {
-      throw new HTTPException(404, { message: "Process not found", cause: "PROCESS_NOT_FOUND" });
-    }
-
-    if (process.status !== ProcessStatusEnum.REVIEWED && process.status !== ProcessStatusEnum.IN_PROGRESS && process.status !== ProcessStatusEnum.WAITING_REVIEW) {
-      throw new HTTPException(422, {
-        message: "Result can only be set when process is in progress or reviewed",
-        cause: "INVALID_PROCESS_STATE",
+    return pgsql.$transaction(async (tx) => {
+      const updated = await tx.tankProcess.update({
+        where: { id },
+        data: {
+          status: data.status,
+          ...(data.plannedStartDate && { plannedStartDate: new Date(data.plannedStartDate) }),
+          ...(data.actualStartDate && { actualStartDate: new Date(data.actualStartDate) }),
+          ...(data.remarks && { remarks: data.remarks }),
+        },
       });
-    }
 
-    const updateData = {
-      result: data.result,
-      status: ProcessStatusEnum.COMPLETED,
-      ...(data.actualFinishDate && { actualFinishDate: new Date(data.actualFinishDate) }),
-      ...(data.remarks && { remarks: data.remarks }),
-    };
-
-    const updated = await pgsql.$transaction(async (tx) => {
-      const result = await tx.tankProcess.update({ where: { id }, data: updateData });
-
-      if (data.result === ProcessResultEnum.PASSED) {
+      if (data.status === ProcessStatusEnum.COMPLETED) {
         await TankProcessRepository.unlockEligibleProcesses(tx, process.tankId, process.processTemplateId);
       }
 
-      return result;
+      return updated;
     });
-
-    return updated;
   }
 }

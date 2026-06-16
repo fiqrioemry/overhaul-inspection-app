@@ -53,6 +53,9 @@ export class AcceptanceCriteriaRepository {
         isRequired: data.isRequired,
         severity: data.severity,
         status: data.status,
+        criteriaRefs: {
+          create: data.referenceDocumentIds.map((id) => ({ referenceDocumentId: id })),
+        },
       },
       select: criteriaSelect,
     });
@@ -94,7 +97,12 @@ export class AcceptanceCriteriaRepository {
     const [criteria, total] = await Promise.all([
       database.acceptanceCriteria.findMany({
         where,
-        select: criteriaSelect,
+        select: {
+          ...criteriaSelect,
+          criteriaRefs: {
+            select: { id: true, referenceDocument: { select: { id: true, code: true, title: true } } },
+          },
+        },
         orderBy: { [orderBy]: sortBy },
         skip: (page - 1) * limit,
         take: limit,
