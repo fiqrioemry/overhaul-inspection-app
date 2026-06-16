@@ -17,6 +17,7 @@ export const ROUTES = {
 
   FINDINGS: "/findings",
   DAILY_REPORTS: "/daily-reports",
+  DAILY_REPORT_DETAIL: "/daily-reports/:id",
   TEST_RECORDS: "/test-records",
   RADIOGRAPHY: "/radiography",
 

@@ -66,7 +66,7 @@ export default function TestRecordFormDialog({ open, onOpenChange, tankProcessId
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="xl:h-auto! xl:w-120!">
+      <DialogContent className="xl:h-160 xl:w-120!">
         <div className="p-4">
           <DialogHeader>
             <DialogTitle>Add Test Record</DialogTitle>

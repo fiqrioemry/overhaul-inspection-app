@@ -39,8 +39,8 @@ export function useCreateDailyReport() {
       qc.invalidateQueries({ queryKey: DAILY_REPORT_KEYS.all });
       toast.success("Daily report created successfully");
     },
-    onError: () => {
-      toast.error("Failed to create daily report");
+    onError: (err: { message: string }) => {
+      toast.error(err.message || "Failed to create daily report");
     },
   });
 }
@@ -54,8 +54,8 @@ export function useUpdateDailyReport() {
       qc.invalidateQueries({ queryKey: DAILY_REPORT_KEYS.detail(id) });
       toast.success("Daily report updated successfully");
     },
-    onError: () => {
-      toast.error("Failed to update daily report");
+    onError: (err: { message: string }) => {
+      toast.error(err.message || "Failed to update daily report");
     },
   });
 }

@@ -25,10 +25,7 @@ const STATUS_OPTIONS: { label: string; value: string }[] = [
   { label: "All Status", value: "ALL" },
   { label: "Open", value: "OPEN" },
   { label: "In Repair", value: "IN_REPAIR" },
-  { label: "Repaired", value: "REPAIRED" },
-  { label: "Verified", value: "VERIFIED" },
-  { label: "Closed", value: "CLOSED" },
-  { label: "Rejected", value: "REJECTED" },
+  { label: "Closed", value: "CLOSE" },
 ];
 
 export default function FindingListPage() {
@@ -61,7 +58,7 @@ export default function FindingListPage() {
       )
     : (data?.items ?? []);
 
-  const closeableIds = filtered.filter((f) => f.status !== "CLOSED" && f.status !== "REJECTED").map((f) => f.id);
+  const closeableIds = filtered.filter((f) => f.status !== "CLOSE").map((f) => f.id);
   const allCloseableSelected = closeableIds.length > 0 && closeableIds.every((id) => selectedIds.has(id));
   const someSelected = selectedIds.size > 0;
 
@@ -181,7 +178,7 @@ export default function FindingListPage() {
                 </thead>
                 <tbody className="divide-y">
                   {filtered.map((finding) => {
-                    const isTerminal = finding.status === "CLOSED" || finding.status === "REJECTED";
+                    const isTerminal = finding.status === "CLOSE";
                     const isSelected = selectedIds.has(finding.id);
                     return (
                       <tr key={finding.id} className={`hover:bg-muted/20 ${isSelected ? "bg-muted/30" : ""}`}>

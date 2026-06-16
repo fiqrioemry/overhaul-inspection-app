@@ -91,7 +91,7 @@ export default function InspectionRequestDetailPage() {
         <InfoRow label="Submitted By" value={req.submittedBy?.name} />
         <InfoRow
           label="Submitted At"
-          value={format(new Date(req.submittedAt), "dd MMM yyyy HH:mm")}
+          value={req.submittedAt ? format(new Date(req.submittedAt), "dd MMM yyyy HH:mm") : "—"}
         />
         {req.reviewedAt && (
           <>

@@ -1,6 +1,7 @@
 // src/pages/DailyReportListPage.tsx
 import { useState } from "react";
-import { FileText, Pencil, Trash2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { FileText, Pencil, Trash2, Eye } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import PageHeader from "@/components/common/PageHeader";
@@ -14,11 +15,13 @@ import DailyReportFormDialog, { ACTIVITY_OPTIONS, ACTIVITY_LABEL } from "@/featu
 import { useDailyReports, useDeleteDailyReport } from "@/features/daily-reports/daily-reports.query";
 import { format } from "date-fns";
 import { PERMISSIONS } from "@/constants/permission.constant";
+import { ROUTES } from "@/constants/route.constant";
 import type { DailyActivityType, DailyReportSummary } from "@/features/daily-reports/daily-reports.api";
 
 const ACTIVITY_FILTER_OPTIONS = [{ label: "All Types", value: "ALL" }, ...ACTIVITY_OPTIONS];
 
 export default function DailyReportListPage() {
+  const navigate = useNavigate();
   const [page, setPage] = useState(1);
   const [activityType, setActivityType] = useState<string>("ALL");
   const [editReport, setEditReport] = useState<DailyReportSummary | null>(null);
@@ -93,6 +96,14 @@ export default function DailyReportListPage() {
                       <td className="px-4 py-3 text-xs text-muted-foreground">{report.inspector?.name ?? "—"}</td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1 justify-end">
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            onClick={() => navigate(ROUTES.DAILY_REPORT_DETAIL.replace(":id", report.id))}
+                            title="View Detail"
+                          >
+                            <Eye className="h-3.5 w-3.5 text-muted-foreground" />
+                          </Button>
                           <PermissionGate permission={PERMISSIONS.DAILY_REPORT_UPDATE}>
                             <Button variant="ghost" size="icon-sm" onClick={() => setEditReport(report)} title="Edit">
                               <Pencil className="h-3.5 w-3.5 text-muted-foreground" />

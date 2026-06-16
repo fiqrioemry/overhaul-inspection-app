@@ -1,7 +1,7 @@
 // src/pages/TankProcessDetailPage.tsx
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Send, Plus, AlertTriangle, Pencil, ArrowRightLeft, Trash2, CheckCheck } from "lucide-react";
+import { ArrowLeft, Send, Plus, AlertTriangle, Pencil, ArrowRightLeft, Trash2, CheckCheck, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -103,7 +103,7 @@ export default function TankProcessDetailPage() {
   const bulkClose = useBulkCloseFindings();
 
   const findingList = findingsData?.items ?? [];
-  const closeableFindingIds = findingList.filter((f) => f.status !== "CLOSED" && f.status !== "REJECTED").map((f) => f.id);
+  const closeableFindingIds = findingList.filter((f) => f.status !== "CLOSE").map((f) => f.id);
   const allCloseableSelected = closeableFindingIds.length > 0 && closeableFindingIds.every((id) => selectedFindingIds.has(id));
 
   function toggleFindingSelectAll() {
@@ -229,8 +229,8 @@ export default function TankProcessDetailPage() {
             <InfoRow label="Sequence" value={process.sequenceOrder} />
             <InfoRow label="Optional" value={process.processTemplate.isOptional ? "Yes" : "No"} />
             <InfoRow label="Status" value={<ProcessStatusBadge status={process.status} />} />
-            <InfoRow label="Started At" value={process.actualStartDate ? format(new Date(process.actualStartDate), "dd MMM yyyy HH:mm") : null} />
-            <InfoRow label="Completed At" value={process.actualFinishDate ? format(new Date(process.actualFinishDate), "dd MMM yyyy HH:mm") : null} />
+            <InfoRow label="Started At" value={process.startDate ? format(new Date(process.startDate), "dd MMM yyyy HH:mm") : null} />
+            <InfoRow label="Completed At" value={process.finishDate ? format(new Date(process.finishDate), "dd MMM yyyy HH:mm") : null} />
             {process.remarks && <InfoRow label="Remarks" value={process.remarks} />}
           </div>
         </TabsContent>
@@ -285,7 +285,7 @@ export default function TankProcessDetailPage() {
                   </thead>
                   <tbody className="divide-y">
                     {findingList.map((f) => {
-                      const isTerminal = f.status === "CLOSED" || f.status === "REJECTED";
+                      const isTerminal = f.status === "CLOSE";
                       const isSelected = selectedFindingIds.has(f.id);
                       return (
                         <tr key={f.id} className={`hover:bg-muted/20 ${isSelected ? "bg-muted/30" : ""}`}>
@@ -365,16 +365,24 @@ export default function TankProcessDetailPage() {
                         </Badge>
                         {report.inspector && <span className="text-xs text-muted-foreground">{report.inspector.name}</span>}
                       </div>
-                      <PermissionGate permission={PERMISSIONS.DAILY_REPORT_UPDATE}>
-                        <div className="flex items-center gap-1 shrink-0">
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          onClick={() => navigate(ROUTES.DAILY_REPORT_DETAIL.replace(":id", report.id))}
+                          title="View Detail"
+                        >
+                          <Eye className="h-3.5 w-3.5 text-muted-foreground" />
+                        </Button>
+                        <PermissionGate permission={PERMISSIONS.DAILY_REPORT_UPDATE}>
                           <Button variant="ghost" size="icon-sm" onClick={() => setEditDailyReport(report)} title="Edit">
                             <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
                           </Button>
                           <Button variant="ghost" size="icon-sm" onClick={() => setDeleteDailyReportTarget(report)} title="Delete" disabled={deleteDailyReport.isPending}>
                             <Trash2 className="h-3.5 w-3.5 text-destructive" />
                           </Button>
-                        </div>
-                      </PermissionGate>
+                        </PermissionGate>
+                      </div>
                     </div>
                     <p className="mt-2 text-sm whitespace-pre-wrap">{report.description ?? "—"}</p>
                   </div>

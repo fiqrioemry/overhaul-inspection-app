@@ -1,5 +1,5 @@
 // src/features/findings/components/FindingStatusDialog.tsx
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -9,15 +9,12 @@ import { useUpdateFindingStatus } from "../findings.query";
 import { FindingStatusBadge } from "./FindingStatusBadge";
 import type { FindingSummary, FindingStatus } from "../findings.api";
 
-const ALL_STATUSES: FindingStatus[] = ["OPEN", "IN_REPAIR", "REPAIRED", "VERIFIED", "CLOSED", "REJECTED"];
+const ALL_STATUSES: FindingStatus[] = ["OPEN", "IN_REPAIR", "CLOSE"];
 
 const STATUS_LABELS: Record<FindingStatus, string> = {
   OPEN: "Open",
   IN_REPAIR: "In Repair",
-  REPAIRED: "Repaired",
-  VERIFIED: "Verified",
-  CLOSED: "Closed",
-  REJECTED: "Rejected",
+  CLOSE: "Closed",
 };
 
 interface FindingStatusDialogProps {
@@ -29,32 +26,28 @@ interface FindingStatusDialogProps {
 export default function FindingStatusDialog({ open, onOpenChange, finding }: FindingStatusDialogProps) {
   const updateStatus = useUpdateFindingStatus();
   const options = ALL_STATUSES.filter((s) => s !== finding.status);
-  const [selectedStatus, setSelectedStatus] = useState<FindingStatus>(options[0]!);
+
+  // Nullable: null means "no explicit selection yet" — falls back to options[0]
+  const [selectedStatus, setSelectedStatus] = useState<FindingStatus | null>(null);
   const [remarks, setRemarks] = useState("");
 
-  useEffect(() => {
-    if (open) {
-      const opts = ALL_STATUSES.filter((s) => s !== finding.status);
-      setSelectedStatus(opts[0]!);
+  // Derive effective selection — reset to first valid option if the stored one is no longer in options
+  const effectiveStatus = selectedStatus && options.includes(selectedStatus) ? selectedStatus : options[0]!;
+
+  function handleOpenChange(next: boolean) {
+    if (!next) {
+      setSelectedStatus(null);
       setRemarks("");
     }
-  }, [open, finding.status]);
+    onOpenChange(next);
+  }
 
   function handleSubmit() {
-    if (!selectedStatus) return;
-    updateStatus.mutate(
-      { id: finding.id, data: { status: selectedStatus, remarks: remarks || undefined } },
-      {
-        onSuccess: () => {
-          onOpenChange(false);
-          setRemarks("");
-        },
-      },
-    );
+    updateStatus.mutate({ id: finding.id, data: { status: effectiveStatus, remarks: remarks || undefined } }, { onSuccess: () => handleOpenChange(false) });
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="xl:h-auto! xl:w-110!">
         <div className="p-4 space-y-4">
           <DialogHeader>
@@ -68,7 +61,7 @@ export default function FindingStatusDialog({ open, onOpenChange, finding }: Fin
 
           <div className="space-y-1.5">
             <Label>New Status</Label>
-            <Select value={selectedStatus} onValueChange={(v) => setSelectedStatus(v as FindingStatus)}>
+            <Select value={effectiveStatus} onValueChange={(v) => setSelectedStatus(v as FindingStatus)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -90,7 +83,7 @@ export default function FindingStatusDialog({ open, onOpenChange, finding }: Fin
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
               Cancel
             </Button>
             <Button onClick={handleSubmit} disabled={updateStatus.isPending}>

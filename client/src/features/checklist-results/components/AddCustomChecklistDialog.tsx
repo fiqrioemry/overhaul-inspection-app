@@ -1,5 +1,6 @@
 // src/features/checklist-results/components/AddCustomChecklistDialog.tsx
 import { useForm } from "react-hook-form";
+import type { Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -31,7 +32,7 @@ export default function AddCustomChecklistDialog({ open, onOpenChange, processId
   const mutation = useAddCustomChecklist(processId);
 
   const form = useForm<FormValues>({
-    resolver: zodResolver(schema),
+    resolver: zodResolver(schema) as Resolver<FormValues>,
     defaultValues: {
       name: "",
       description: "",
@@ -64,14 +65,20 @@ export default function AddCustomChecklistDialog({ open, onOpenChange, processId
   }
 
   return (
-    <Dialog open={open} onOpenChange={(o) => { if (!o) form.reset(); onOpenChange(o); }}>
-      <DialogContent className="xl:h-auto! xl:w-130!">
+    <Dialog
+      open={open}
+      onOpenChange={(o) => {
+        if (!o) form.reset();
+        onOpenChange(o);
+      }}
+    >
+      <DialogContent className="xl:h-135 xl:w-130! overflow-y-scroll">
         <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4 p-4">
           <DialogHeader>
             <DialogTitle className="text-sm font-semibold">Add Custom Checklist Item</DialogTitle>
           </DialogHeader>
 
-          <ShortTextField control={form.control} name="name" label="Parameter Name" placeholder="e.g. Visual weld inspection" required />
+          <ShortTextField control={form.control} name="name" label="Parameter Name" placeholder="e.g. Visual weld inspection" />
           <LongTextField control={form.control} name="description" label="Description (optional)" placeholder="Describe what to check..." rows={2} />
           <ShortTextField control={form.control} name="acceptanceText" label="Acceptance Criteria (optional)" placeholder="e.g. No visible cracks or porosity" />
           <ShortTextField control={form.control} name="method" label="Method (optional)" placeholder="e.g. Visual, UT, MT" />
@@ -80,7 +87,15 @@ export default function AddCustomChecklistDialog({ open, onOpenChange, processId
           <SwitchField control={form.control} name="isRequired" label="Required" description="Blocking required items will prevent review submission" />
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => { form.reset(); onOpenChange(false); }} disabled={mutation.isPending}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                form.reset();
+                onOpenChange(false);
+              }}
+              disabled={mutation.isPending}
+            >
               Cancel
             </Button>
             <Button type="submit" disabled={mutation.isPending}>

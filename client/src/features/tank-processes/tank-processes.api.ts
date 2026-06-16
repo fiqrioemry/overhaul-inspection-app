@@ -20,9 +20,8 @@ export interface TankProcessSummary {
   type: ProcessType;
   sequenceOrder: number;
   status: ProcessStatus;
-  plannedStartDate: string | null;
-  actualStartDate: string | null;
-  actualFinishDate: string | null;
+  startDate: string | null;
+  finishDate: string | null;
   remarks: string | null;
   createdAt: string;
   updatedAt: string;

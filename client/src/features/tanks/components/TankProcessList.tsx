@@ -55,8 +55,8 @@ export default function TankProcessList({ tankId }: TankProcessListProps) {
                 </td>
                 <td className="px-4 py-3 text-xs text-muted-foreground">{proc._count.checklistResults}</td>
                 <td className="px-4 py-3 text-xs text-muted-foreground">{proc._count.findings}</td>
-                <td className="px-4 py-3 text-xs text-muted-foreground">{proc.actualStartDate ? format(new Date(proc.actualStartDate), "dd MMM yyyy") : "—"}</td>
-                <td className="px-4 py-3 text-xs text-muted-foreground">{proc.actualFinishDate ? format(new Date(proc.actualFinishDate), "dd MMM yyyy") : "—"}</td>
+                <td className="px-4 py-3 text-xs text-muted-foreground">{proc.startDate ? format(new Date(proc.startDate), "dd MMM yyyy") : "—"}</td>
+                <td className="px-4 py-3 text-xs text-muted-foreground">{proc.finishDate ? format(new Date(proc.finishDate), "dd MMM yyyy") : "—"}</td>
                 <td className="px-4 py-3 text-right">
                   {isLocked ? (
                     <Lock className="h-4 w-4 text-muted-foreground inline-block" />

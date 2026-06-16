@@ -3,7 +3,7 @@ import api from "@/lib/axios";
 import type { ResponseList, ResponseSuccess } from "@/types/response.type";
 import type { PaginatedResponse } from "@/types/pagination.type";
 
-export type FindingStatus = "OPEN" | "IN_REPAIR" | "REPAIRED" | "VERIFIED" | "CLOSED" | "REJECTED";
+export type FindingStatus = "OPEN" | "IN_REPAIR" | "CLOSE";
 export type FindingSeverity = "MINOR" | "MAJOR" | "CRITICAL";
 
 export interface FindingAttachment {

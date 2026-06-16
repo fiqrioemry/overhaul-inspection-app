@@ -92,7 +92,7 @@ export default function InspectionRequestListPage() {
                         </td>
                         <td className="px-4 py-3 text-xs text-muted-foreground">{req.submittedBy?.name ?? "—"}</td>
                         <td className="px-4 py-3 text-xs text-muted-foreground">
-                          {format(new Date(req.submittedAt), "dd MMM yyyy HH:mm")}
+                          {req.submittedAt ? format(new Date(req.submittedAt), "dd MMM yyyy HH:mm") : "—"}
                         </td>
                       </tr>
                     );

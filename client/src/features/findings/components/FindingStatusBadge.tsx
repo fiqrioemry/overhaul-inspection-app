@@ -5,10 +5,7 @@ import type { FindingStatus } from "../findings.api";
 const STATUS_CONFIG: Record<FindingStatus, { label: string; className: string }> = {
   OPEN: { label: "Open", className: "bg-red-100 text-red-700 border-red-200" },
   IN_REPAIR: { label: "In Repair", className: "bg-orange-100 text-orange-700 border-orange-200" },
-  REPAIRED: { label: "Repaired", className: "bg-blue-100 text-blue-700 border-blue-200" },
-  VERIFIED: { label: "Verified", className: "bg-teal-100 text-teal-700 border-teal-200" },
-  CLOSED: { label: "Closed", className: "bg-gray-100 text-gray-600 border-gray-200" },
-  REJECTED: { label: "Rejected", className: "bg-slate-100 text-slate-500 border-slate-200" },
+  CLOSE: { label: "Closed", className: "bg-gray-100 text-gray-600 border-gray-200" },
 };
 
 const SEVERITY_CONFIG: Record<string, { label: string; className: string }> = {

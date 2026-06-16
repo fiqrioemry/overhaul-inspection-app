@@ -64,7 +64,7 @@ export default function FindingFormDialog({ open, onOpenChange, tankId, tankProc
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="xl:h-auto! xl:w-110!">
+      <DialogContent className="xl:h-130 xl:w-110!">
         <div className="p-4">
           <DialogHeader>
             <DialogTitle>Add Finding</DialogTitle>
