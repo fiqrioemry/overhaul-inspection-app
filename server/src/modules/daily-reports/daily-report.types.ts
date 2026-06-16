@@ -7,6 +7,15 @@ export interface PaginationMeta {
   hasPreviousPage: boolean;
 }
 
+export interface DailyReportAttachmentItem {
+  id: string;
+  fileStorageId: string;
+  attachmentUrl: string;
+  caption: string | null;
+  sortOrder: number;
+  createdAt: Date;
+}
+
 export interface DailyReportListItem {
   id: string;
   tankId: string;
@@ -16,11 +25,13 @@ export interface DailyReportListItem {
   description: string | null;
   inspectorId: string | null;
   pertaminaPicId: string | null;
+  aiSuggestedDescription: string | null;
   createdAt: Date;
   updatedAt: Date;
   tank: { id: string; tankNo: string; tankName: string | null };
   tankProcess: { id: string; name: string } | null;
   inspector: { id: string; name: string } | null;
+  attachments: DailyReportAttachmentItem[];
 }
 
 export interface DailyReportListResult {

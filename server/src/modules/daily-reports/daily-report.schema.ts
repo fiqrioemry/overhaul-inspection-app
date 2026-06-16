@@ -1,6 +1,11 @@
 import { z } from "zod";
 import { DailyActivityTypeEnum } from "generated/prisma";
 
+export const captionUpdateItem = z.object({
+  attachmentId: z.string().min(1),
+  caption: z.string().max(300),
+});
+
 export const createDailyReportRequest = z.object({
   tankId: z.string().min(1),
   tankProcessId: z.string().optional(),
@@ -9,11 +14,18 @@ export const createDailyReportRequest = z.object({
   description: z.string().min(1).max(2000),
   inspectorId: z.string().optional(),
   pertaminaPicId: z.string().optional(),
-  fileIds: z.array(z.string()).optional(),
 });
 export type CreateDailyReportRequest = z.infer<typeof createDailyReportRequest>;
 
-export const updateDailyReportRequest = createDailyReportRequest.partial();
+export const updateDailyReportRequest = z.object({
+  reportDate: z.string().optional(),
+  activityType: z.nativeEnum(DailyActivityTypeEnum).optional(),
+  description: z.string().min(1).max(2000).optional(),
+  inspectorId: z.string().optional(),
+  pertaminaPicId: z.string().optional(),
+  removedAttachmentIds: z.array(z.string()).optional(),
+  captions: z.array(captionUpdateItem).optional(),
+});
 export type UpdateDailyReportRequest = z.infer<typeof updateDailyReportRequest>;
 
 export const listDailyReportsQuery = z.object({

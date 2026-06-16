@@ -3,8 +3,6 @@ import { ProcessStatusEnum } from "generated/prisma";
 
 export const updateProcessStatusRequest = z.object({
   status: z.nativeEnum(ProcessStatusEnum),
-  plannedStartDate: z.string().optional(),
-  actualStartDate: z.string().optional(),
   remarks: z.string().optional(),
 });
 export type UpdateProcessStatusRequest = z.infer<typeof updateProcessStatusRequest>;

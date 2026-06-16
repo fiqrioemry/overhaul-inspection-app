@@ -1,11 +1,16 @@
 import { pgsql } from "@/lib/database";
 import { Prisma, DailyActivityTypeEnum } from "generated/prisma";
 
-export class DailyReportRepository {
-  static async create(data: Prisma.DailyReportCreateInput) {
-    return pgsql.dailyReport.create({ data });
-  }
+const attachmentSelect = {
+  id: true,
+  fileStorageId: true,
+  attachmentUrl: true,
+  caption: true,
+  sortOrder: true,
+  createdAt: true,
+} as const;
 
+export class DailyReportRepository {
   static async findById(id: string) {
     return pgsql.dailyReport.findFirst({
       where: { id, deletedAt: null },
@@ -13,6 +18,11 @@ export class DailyReportRepository {
         tank: { select: { id: true, tankNo: true, tankName: true } },
         tankProcess: { select: { id: true, name: true, type: true } },
         inspector: { select: { id: true, name: true } },
+        attachments: {
+          where: { deletedAt: null },
+          select: attachmentSelect,
+          orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+        },
       },
     });
   }
@@ -44,6 +54,11 @@ export class DailyReportRepository {
           tank: { select: { id: true, tankNo: true, tankName: true } },
           tankProcess: { select: { id: true, name: true } },
           inspector: { select: { id: true, name: true } },
+          attachments: {
+            where: { deletedAt: null },
+            select: attachmentSelect,
+            orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+          },
         },
       }),
       pgsql.dailyReport.count({ where }),
@@ -58,6 +73,11 @@ export class DailyReportRepository {
         tank: { select: { id: true, tankNo: true, tankName: true } },
         tankProcess: { select: { id: true, name: true, type: true } },
         inspector: { select: { id: true, name: true } },
+        attachments: {
+          where: { deletedAt: null },
+          select: attachmentSelect,
+          orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+        },
       },
       orderBy: { createdAt: "asc" },
     });

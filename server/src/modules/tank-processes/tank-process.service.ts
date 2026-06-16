@@ -15,11 +15,7 @@ const ALLOWED_STATUS_TRANSITIONS: Partial<Record<ProcessStatusEnum, ProcessStatu
 };
 
 // Findings with these statuses + isBlocking=true block review/completion
-const BLOCKING_FINDING_STATUSES = [
-  FindingStatusEnum.OPEN,
-  FindingStatusEnum.IN_REPAIR,
-  FindingStatusEnum.REPAIRED,
-];
+const BLOCKING_FINDING_STATUSES = [FindingStatusEnum.OPEN, FindingStatusEnum.IN_REPAIR];
 
 async function countBlockingFindings(tankProcessId: string) {
   return pgsql.finding.count({
@@ -91,7 +87,7 @@ export class TankProcessService {
       const blocking = await countBlockingFindings(id);
       if (blocking > 0) {
         throw new HTTPException(422, {
-          message: `Cannot submit for review: ${blocking} blocking finding(s) are unresolved (OPEN, IN_REPAIR, or REPAIRED).`,
+          message: `Cannot submit for review: ${blocking} blocking finding(s) are unresolved (OPEN or IN_REPAIR).`,
           cause: "BLOCKING_FINDINGS_EXIST",
         });
       }
@@ -116,12 +112,13 @@ export class TankProcessService {
     }
 
     return pgsql.$transaction(async (tx) => {
+      const now = new Date();
       const updated = await tx.tankProcess.update({
         where: { id },
         data: {
           status: data.status,
-          ...(data.plannedStartDate && { plannedStartDate: new Date(data.plannedStartDate) }),
-          ...(data.actualStartDate && { actualStartDate: new Date(data.actualStartDate) }),
+          ...(data.status === ProcessStatusEnum.IN_PROGRESS && !process.startDate && { startDate: now }),
+          ...(data.status === ProcessStatusEnum.COMPLETED && { finishDate: now }),
           ...(data.remarks && { remarks: data.remarks }),
         },
       });

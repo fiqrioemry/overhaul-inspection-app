@@ -141,10 +141,7 @@ enum ChecklistSourceEnum {
 enum FindingStatusEnum {
   OPEN
   IN_REPAIR
-  REPAIRED
-  VERIFIED
-  CLOSED
-  REJECTED
+  CLOSE
 }
 
 enum SeverityEnum {
@@ -301,7 +298,8 @@ model FileStorage {
   createdAt DateTime @default(now()) @map("created_at")
   createdBy String?  @map("created_by")
 
-  avatarOfUser User? @relation("UserAvatar")
+  avatarOfUser             User?                   @relation("UserAvatar")
+  dailyReportAttachments   DailyReportAttachment[]
   @@index([isUsed, createdAt])
   @@map("file_storages")
 }
@@ -563,9 +561,8 @@ model TankProcess {
   type              ProcessType
   sequenceOrder     Int               @map("sequence_order")
   status            ProcessStatusEnum @default(LOCKED)
-  plannedStartDate  DateTime?         @map("planned_start_date") @db.Date
-  actualStartDate   DateTime?         @map("actual_start_date") @db.Date
-  actualFinishDate  DateTime?         @map("actual_finish_date") @db.Date
+  startDate   DateTime? @map("start_date")
+  finishDate  DateTime? @map("finish_date")
   remarks           String?
   createdAt         DateTime          @default(now()) @map("created_at")
   updatedAt         DateTime          @updatedAt @map("updated_at")
@@ -756,6 +753,12 @@ model DailyReport {
   updatedAt      DateTime              @updatedAt @map("updated_at")
   deletedAt      DateTime?             @map("deleted_at")
 
+  aiSuggestedDescription String?   @map("ai_suggested_description")
+  aiAnalyzedAt           DateTime? @map("ai_analyzed_at")
+  aiAnalysisMeta         Json?     @map("ai_analysis_meta")
+
+  attachments DailyReportAttachment[]
+
   tank        Tank         @relation(fields: [tankId], references: [id], onDelete: Cascade)
   tankProcess TankProcess? @relation(fields: [tankProcessId], references: [id], onDelete: SetNull)
   inspector   User?        @relation("DailyReportInspector", fields: [inspectorId], references: [id])
@@ -764,4 +767,27 @@ model DailyReport {
   @@index([tankProcessId])
   @@index([reportDate])
   @@map("daily_reports")
+}
+
+model DailyReportAttachment {
+  id            String    @id @default(cuid())
+  dailyReportId String    @map("daily_report_id")
+  fileStorageId String    @map("file_storage_id")
+
+  attachmentUrl String    @map("attachment_url")
+  caption       String?
+  sortOrder     Int       @default(0) @map("sort_order")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  dailyReport DailyReport @relation(fields: [dailyReportId], references: [id], onDelete: Cascade)
+  fileStorage FileStorage @relation(fields: [fileStorageId], references: [id], onDelete: Restrict)
+
+  @@unique([dailyReportId, fileStorageId])
+  @@index([dailyReportId])
+  @@index([fileStorageId])
+  @@index([deletedAt])
+  @@map("daily_report_attachments")
 }

@@ -28,11 +28,7 @@ export interface EligibilityResult {
   reasons: string[];
 }
 
-const BLOCKING_FINDING_STATUSES: FindingStatusEnum[] = [
-  FindingStatusEnum.OPEN,
-  FindingStatusEnum.IN_REPAIR,
-  FindingStatusEnum.REPAIRED,
-];
+const BLOCKING_FINDING_STATUSES: FindingStatusEnum[] = [FindingStatusEnum.OPEN, FindingStatusEnum.IN_REPAIR];
 
 export class EligibilityService {
   static async checkEligibility(tankProcessId: string): Promise<EligibilityResult> {

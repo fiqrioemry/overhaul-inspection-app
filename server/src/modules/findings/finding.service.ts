@@ -12,12 +12,9 @@ function padSeq(n: number): string {
 }
 
 const ALLOWED_STATUS_TRANSITIONS: Partial<Record<FindingStatusEnum, FindingStatusEnum[]>> = {
-  [FindingStatusEnum.OPEN]: [FindingStatusEnum.IN_REPAIR, FindingStatusEnum.REJECTED, FindingStatusEnum.CLOSED],
-  [FindingStatusEnum.IN_REPAIR]: [FindingStatusEnum.REPAIRED, FindingStatusEnum.CLOSED],
-  [FindingStatusEnum.REPAIRED]: [FindingStatusEnum.VERIFIED, FindingStatusEnum.IN_REPAIR, FindingStatusEnum.CLOSED],
-  [FindingStatusEnum.VERIFIED]: [FindingStatusEnum.CLOSED, FindingStatusEnum.REPAIRED],
-  [FindingStatusEnum.CLOSED]: [],
-  [FindingStatusEnum.REJECTED]: [],
+  [FindingStatusEnum.OPEN]: [FindingStatusEnum.IN_REPAIR, FindingStatusEnum.CLOSE],
+  [FindingStatusEnum.IN_REPAIR]: [FindingStatusEnum.OPEN, FindingStatusEnum.CLOSE],
+  [FindingStatusEnum.CLOSE]: [],
 };
 
 export class FindingService {
@@ -145,8 +142,8 @@ export class FindingService {
     if (!finding) {
       throw new HTTPException(404, { message: "Finding not found", cause: "FINDING_NOT_FOUND" });
     }
-    if (finding.status === FindingStatusEnum.CLOSED || finding.status === FindingStatusEnum.REJECTED) {
-      throw new HTTPException(422, { message: "Cannot update a closed or rejected finding", cause: "FINDING_TERMINAL" });
+    if (finding.status === FindingStatusEnum.CLOSE) {
+      throw new HTTPException(422, { message: "Cannot update a closed finding", cause: "FINDING_TERMINAL" });
     }
 
     await pgsql.$transaction(async (tx) => {
@@ -183,7 +180,7 @@ export class FindingService {
       });
     }
 
-    const isClosing = data.status === FindingStatusEnum.CLOSED;
+    const isClosing = data.status === FindingStatusEnum.CLOSE;
     await FindingRepository.update(id, {
       status: data.status,
       ...(isClosing && { closedBy: userId, closedAt: new Date() }),
@@ -213,14 +210,12 @@ export class FindingService {
       select: { id: true, status: true },
     });
 
-    const toClose = findings.filter(
-      (f) => f.status !== FindingStatusEnum.CLOSED && f.status !== FindingStatusEnum.REJECTED,
-    );
+    const toClose = findings.filter((f) => f.status !== FindingStatusEnum.CLOSE);
 
     if (toClose.length > 0) {
       await pgsql.finding.updateMany({
         where: { id: { in: toClose.map((f) => f.id) } },
-        data: { status: FindingStatusEnum.CLOSED, closedBy: userId, closedAt: new Date() },
+        data: { status: FindingStatusEnum.CLOSE, closedBy: userId, closedAt: new Date() },
       });
     }
 
@@ -232,9 +227,9 @@ export class FindingService {
     if (!finding) {
       throw new HTTPException(404, { message: "Finding not found", cause: "FINDING_NOT_FOUND" });
     }
-    if (finding.status !== FindingStatusEnum.CLOSED && finding.status !== FindingStatusEnum.REJECTED) {
+    if (finding.status !== FindingStatusEnum.CLOSE) {
       throw new HTTPException(422, {
-        message: "Only CLOSED or REJECTED findings can be deleted",
+        message: "Only CLOSE findings can be deleted",
         cause: "FINDING_NOT_TERMINAL",
       });
     }
