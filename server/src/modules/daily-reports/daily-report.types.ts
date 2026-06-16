@@ -28,7 +28,7 @@ export interface DailyReportListItem {
   aiSuggestedDescription: string | null;
   createdAt: Date;
   updatedAt: Date;
-  tank: { id: string; tankNo: string; tankName: string | null };
+  tank: { id: string; tankNo: string; tankName: string | null; inspectionCompany: { id: string; name: string } | null };
   tankProcess: { id: string; name: string } | null;
   inspector: { id: string; name: string } | null;
   attachments: DailyReportAttachmentItem[];

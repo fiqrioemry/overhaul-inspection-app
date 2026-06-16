@@ -1,9 +1,9 @@
 export const swaggerConfig = {
   openapi: "3.0.0",
   info: {
-    title: "Pixel Social Media API",
+    title: "Overhaul Inspection & Monitoring API",
     version: "3.2.0",
-    description: "A simple social media API built with Hono and Bun",
+    description: "API for Overhaul Inspection & Monitoring system built with Hono and Bun",
     contact: {
       name: "API Support",
     },

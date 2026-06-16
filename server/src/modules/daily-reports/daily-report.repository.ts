@@ -10,12 +10,19 @@ const attachmentSelect = {
   createdAt: true,
 } as const;
 
+const tankSelect = {
+  id: true,
+  tankNo: true,
+  tankName: true,
+  inspectionCompany: { select: { id: true, name: true } },
+} as const;
+
 export class DailyReportRepository {
   static async findById(id: string) {
     return pgsql.dailyReport.findFirst({
       where: { id, deletedAt: null },
       include: {
-        tank: { select: { id: true, tankNo: true, tankName: true } },
+        tank: { select: tankSelect },
         tankProcess: { select: { id: true, name: true, type: true } },
         inspector: { select: { id: true, name: true } },
         attachments: {
@@ -31,11 +38,13 @@ export class DailyReportRepository {
     tankId?: string;
     tankProcessId?: string;
     reportDate?: string;
+    startDate?: string;
+    endDate?: string;
     activityType?: DailyActivityTypeEnum;
     page: number;
     limit: number;
   }) {
-    const { tankId, tankProcessId, reportDate, activityType, page, limit } = query;
+    const { tankId, tankProcessId, reportDate, startDate, endDate, activityType, page, limit } = query;
     const skip = (page - 1) * limit;
     const where: Prisma.DailyReportWhereInput = {
       deletedAt: null,
@@ -43,6 +52,12 @@ export class DailyReportRepository {
       ...(tankProcessId && { tankProcessId }),
       ...(activityType && { activityType }),
       ...(reportDate && { reportDate: new Date(reportDate) }),
+      ...((startDate || endDate) && {
+        reportDate: {
+          ...(startDate && { gte: new Date(startDate) }),
+          ...(endDate && { lte: new Date(endDate) }),
+        },
+      }),
     };
     const [reports, total] = await Promise.all([
       pgsql.dailyReport.findMany({
@@ -51,7 +66,7 @@ export class DailyReportRepository {
         take: limit,
         orderBy: [{ reportDate: "desc" }, { createdAt: "desc" }],
         include: {
-          tank: { select: { id: true, tankNo: true, tankName: true } },
+          tank: { select: tankSelect },
           tankProcess: { select: { id: true, name: true } },
           inspector: { select: { id: true, name: true } },
           attachments: {
@@ -70,7 +85,7 @@ export class DailyReportRepository {
     return pgsql.dailyReport.findMany({
       where: { tankId, reportDate: new Date(date), deletedAt: null },
       include: {
-        tank: { select: { id: true, tankNo: true, tankName: true } },
+        tank: { select: tankSelect },
         tankProcess: { select: { id: true, name: true, type: true } },
         inspector: { select: { id: true, name: true } },
         attachments: {
