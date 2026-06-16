@@ -36,18 +36,13 @@ export default function UserStatusDialog({ open, onOpenChange, user }: UserStatu
 
   function onSubmit(values: UpdateUserStatusFormValues) {
     if (!user) return;
-    mutation.mutate(
-      { id: user.id, data: values },
-      {
-        onSuccess: () => onOpenChange(false),
-      },
-    );
+    mutation.mutate({ id: user.id, data: values }, { onSuccess: () => onOpenChange(false) });
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4 p-6">
+      <DialogContent className="xl:h-auto! xl:w-95!">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4 p-4">
           <DialogHeader>
             <DialogTitle>Change Status — {user?.name}</DialogTitle>
           </DialogHeader>

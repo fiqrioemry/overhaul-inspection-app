@@ -78,10 +78,10 @@ export default function UserFormDialog({ open, onOpenChange, user }: UserFormDia
   }
 
   function onCreateSubmit(values: CreateUserFormValues) {
-    const payload = { ...values, password: values.password || undefined };
-    createMutation.mutate(payload, {
-      onSuccess: () => onOpenChange(false),
-    });
+    createMutation.mutate(
+      { ...values, password: values.password || undefined },
+      { onSuccess: () => onOpenChange(false) },
+    );
   }
 
   function onEditSubmit(values: UpdateUserFormValues) {
@@ -99,24 +99,24 @@ export default function UserFormDialog({ open, onOpenChange, user }: UserFormDia
   if (isEdit) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent>
-          <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="flex flex-col gap-4 p-6">
+        <DialogContent className="xl:h-auto! xl:w-100!">
+          <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="flex flex-col gap-4 p-4">
             <DialogHeader>
               <DialogTitle>Edit User</DialogTitle>
             </DialogHeader>
 
-            <div className="flex justify-center">
-              <div className="relative w-fit">
-                <Avatar className="h-20 w-20">
+            <div className="flex items-center gap-3">
+              <div className="relative shrink-0">
+                <Avatar className="h-14 w-14">
                   <AvatarImage src={displayAvatar} alt={user?.name} />
-                  <AvatarFallback className="text-lg">{avatarInitial}</AvatarFallback>
+                  <AvatarFallback>{avatarInitial}</AvatarFallback>
                 </Avatar>
                 <button
                   type="button"
                   onClick={() => avatarInputRef.current?.click()}
-                  className="absolute bottom-0 right-0 rounded-full bg-primary p-1.5 text-primary-foreground shadow"
+                  className="absolute -bottom-0.5 -right-0.5 rounded-full bg-primary p-1 text-primary-foreground shadow"
                 >
-                  <Camera className="h-3.5 w-3.5" />
+                  <Camera className="h-3 w-3" />
                 </button>
                 <input
                   ref={avatarInputRef}
@@ -126,10 +126,10 @@ export default function UserFormDialog({ open, onOpenChange, user }: UserFormDia
                   onChange={handleAvatarChange}
                 />
               </div>
+              <p className="text-xs text-muted-foreground">
+                {avatarFile ? avatarFile.name : "JPEG or PNG, max 1 MB"}
+              </p>
             </div>
-            {avatarFile && (
-              <p className="text-center text-xs text-muted-foreground">{avatarFile.name}</p>
-            )}
 
             <ShortTextField control={editForm.control} name="name" label="Name" placeholder="Full name" />
             <SelectField control={editForm.control} name="role" label="Role" options={ROLE_OPTIONS} />
@@ -150,8 +150,8 @@ export default function UserFormDialog({ open, onOpenChange, user }: UserFormDia
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <form onSubmit={createForm.handleSubmit(onCreateSubmit)} className="flex flex-col gap-4 p-6">
+      <DialogContent className="xl:h-auto! xl:w-105!">
+        <form onSubmit={createForm.handleSubmit(onCreateSubmit)} className="flex flex-col gap-4 p-4">
           <DialogHeader>
             <DialogTitle>Create User</DialogTitle>
           </DialogHeader>
