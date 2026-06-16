@@ -18,9 +18,7 @@ export default function Pagination({ meta, onPageChange }: PaginationProps) {
 
   return (
     <div className="flex items-center justify-between gap-4 pt-4">
-      <p className="text-sm text-muted-foreground">
-        {total === 0 ? "No results" : `Showing ${from}–${to} of ${total}`}
-      </p>
+      <p className="text-sm text-muted-foreground">{total === 0 ? "No results" : `Showing ${from}–${to} of ${total}`}</p>
       <div className="flex items-center gap-1">
         <Button variant="outline" size="icon-sm" onClick={() => onPageChange(page - 1)} disabled={!hasPreviousPage}>
           <ChevronLeft />

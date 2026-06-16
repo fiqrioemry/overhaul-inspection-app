@@ -2,7 +2,6 @@
 import { toast } from "sonner";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { login } from "@/features/auth/auth.api";
 import { Link, useNavigate } from "react-router-dom";
@@ -16,7 +15,6 @@ import { ROUTES } from "@/constants/route.constant";
 
 export default function LoginForm() {
   const navigate = useNavigate();
-  const { t } = useTranslation(["auth", "api"]);
   const redirectTo = new URLSearchParams(window.location.search).get("redirectTo") || ROUTES.DASHBOARD;
   const [serverError, setServerError] = useState<ResponseError | null>(null);
 
@@ -34,35 +32,51 @@ export default function LoginForm() {
     try {
       await login(values);
       navigate(redirectTo, { replace: true });
-      toast.success(t("api:LOGIN_SUCCESS"));
+      toast.success("Login berhasil");
     } catch (err) {
       const res = err as ResponseError;
-      const message = res?.code
-        ? t(`api:${res.code}`, { defaultValue: res.message ?? t("auth:loginFailed") })
-        : (res?.message ?? t("auth:loginFailed"));
-      setServerError({ message, errors: res?.errors });
+      setServerError({ message: res?.message ?? "Email atau password tidak valid", errors: res?.errors });
     }
   }
 
   return (
-    <div className="w-full max-w-sm space-y-6">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-bold tracking-tight">{t("auth:loginTitle")}</h1>
-        <p className="text-sm text-muted-foreground">{t("auth:loginSubtitle")}</p>
+    <div className="space-y-5">
+      <div className="space-y-0.5">
+        <h2 className="text-base font-semibold text-slate-800">Masuk</h2>
+        <p className="text-xs text-slate-500">Gunakan akun yang telah didaftarkan oleh administrator</p>
       </div>
 
       <AlertCard message={serverError?.message} errors={serverError?.errors} />
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        <ShortTextField control={control} name="email" label={t("auth:email")} type="email" placeholder={t("auth:emailPlaceholder")} autoComplete="email" />
-        <PasswordField control={control} name="password" label={t("auth:password")} placeholder={t("auth:passwordPlaceholder")} autoComplete="current-password" />
-        <div className="flex justify-end">
-          <Link to={ROUTES.FORGOT_PASSWORD} className="text-xs text-muted-foreground underline underline-offset-4">
-            {t("auth:forgotPassword")}
-          </Link>
+        <ShortTextField
+          control={control}
+          name="email"
+          label="Email"
+          type="email"
+          placeholder="nama@sucofindo.co.id"
+          autoComplete="email"
+        />
+        <div className="space-y-1">
+          <PasswordField
+            control={control}
+            name="password"
+            label="Password"
+            placeholder="••••••••"
+            autoComplete="current-password"
+          />
+          <div className="flex justify-end">
+            <Link
+              to={ROUTES.FORGOT_PASSWORD}
+              className="text-xs text-slate-400 hover:text-slate-600 underline underline-offset-4"
+            >
+              Lupa password?
+            </Link>
+          </div>
         </div>
+
         <Button type="submit" className="w-full" disabled={isSubmitting}>
-          {isSubmitting ? t("auth:loggingIn") : t("auth:loginButton")}
+          {isSubmitting ? "Memproses..." : "Masuk"}
         </Button>
       </form>
     </div>

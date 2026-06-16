@@ -1,92 +1,66 @@
 import { Helmet } from "react-helmet-async";
-import { useTranslation } from "react-i18next";
-import { useLanguage } from "@/hooks/useLanguage";
+import { ShieldCheck } from "lucide-react";
 import LoginForm from "@/features/auth/components/LoginForm";
 
 export default function LoginPage() {
-  const { t } = useTranslation(["auth"]);
-  const { isEnglish, toggleLanguage } = useLanguage();
-
-  const brandFeatures = [t("auth:loginBrandFeature1"), t("auth:loginBrandFeature2"), t("auth:loginBrandFeature3")];
-
   return (
     <>
       <Helmet>
-        <title>Overhaul Progress - Login</title>
-        <meta name="description" content="Login to access your dashboard and manage your account." />
-        <meta name="keywords" content="login, authentication, dashboard" />
-        <meta property="og:title" content="Login - Overhaul Progress" />
-        <meta property="og:description" content="Login to access your dashboard and manage your account." />
-        <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://overhaul.fiqrioemry/login" />
+        <title>Login — Pantau Inspeksi</title>
       </Helmet>
 
-      <div className="min-h-screen flex">
-        {/* Brand panel */}
-        <div className="hidden lg:flex lg:w-[42%] bg-primary flex-col justify-between p-12 relative overflow-hidden">
-          <div
-            className="absolute inset-0 opacity-[0.07]"
-            style={{
-              backgroundImage: "radial-gradient(circle, white 1px, transparent 1px)",
-              backgroundSize: "28px 28px",
-            }}
-          />
+      <div className="min-h-screen flex flex-col bg-slate-100">
 
-          <span className="relative font-bold text-2xl tracking-tight text-primary-foreground">
-            Overhaul<span className="opacity-50">.</span>
-          </span>
+        {/* Corporate header */}
+        <header className="bg-primary text-primary-foreground">
+          <div className="max-w-7xl mx-auto px-6 py-3.5 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="h-5 w-5 opacity-80" />
+                <span className="font-semibold text-sm tracking-wide uppercase">Pantau Inspeksi</span>
+              </div>
+              <span className="text-primary-foreground/30 text-sm">|</span>
+              <span className="text-primary-foreground/60 text-xs">Sistem Monitoring Overhaul Tangki</span>
+            </div>
+            <span className="text-primary-foreground/50 text-xs hidden sm:block">PT. Sucofindo (Persero)</span>
+          </div>
+        </header>
 
-          <div className="relative space-y-8">
-            <div className="space-y-3">
-              <h2 className="text-[2.6rem] font-bold leading-[1.15] text-primary-foreground whitespace-pre-line">{t("auth:loginBrandHeadline")}</h2>
-              <p className="text-primary-foreground/60 text-base leading-relaxed max-w-xs">{t("auth:loginBrandTagline")}</p>
+        {/* Main content */}
+        <main className="flex-1 flex items-center justify-center px-4 py-12">
+          <div className="w-full max-w-md space-y-6">
+
+            {/* System info above card */}
+            <div className="text-center space-y-1">
+              <h1 className="text-lg font-semibold text-slate-700">Akses Sistem</h1>
+              <p className="text-sm text-slate-500">
+                Masukkan kredensial yang telah diberikan oleh administrator
+              </p>
             </div>
 
-            <ul className="space-y-3">
-              {brandFeatures.map((f) => (
-                <li key={f} className="flex items-start gap-3">
-                  <span className="mt-1.75 size-1.5 rounded-full bg-primary-foreground/40 shrink-0" />
-                  <span className="text-primary-foreground/70 text-sm leading-relaxed">{f}</span>
-                </li>
-              ))}
-            </ul>
+            {/* Login card */}
+            <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-8">
+              <LoginForm />
+            </div>
+
+            {/* Security note */}
+            <p className="text-center text-xs text-slate-400">
+              Sistem ini hanya untuk pengguna yang telah terdaftar.
+              <br />
+              Jika mengalami kendala akses, hubungi administrator.
+            </p>
           </div>
+        </main>
 
-          <span className="relative text-primary-foreground/25 text-xs">{t("auth:brandCopyright")}</span>
-        </div>
-
-        {/* Form panel */}
-        <div className="flex-1 flex flex-col min-h-screen bg-background">
-          {/* Top bar */}
-          <div className="flex items-center justify-between px-6 py-5">
-            <span className="lg:hidden font-bold text-xl tracking-tight text-foreground">
-              Overhaul<span className="text-primary">.</span>
+        {/* Footer */}
+        <footer className="border-t border-slate-200 bg-white">
+          <div className="max-w-7xl mx-auto px-6 py-3 flex flex-col sm:flex-row items-center justify-between gap-1">
+            <span className="text-xs text-slate-400">
+              © {new Date().getFullYear()} PT. Sucofindo (Persero). All rights reserved.
             </span>
-            <div className="ml-auto flex items-center gap-0.5 bg-muted rounded-lg p-0.5">
-              <button
-                type="button"
-                onClick={() => !isEnglish && toggleLanguage()}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all ${isEnglish ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-              >
-                <span>🇺🇸</span>
-                <span>EN</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => isEnglish && toggleLanguage()}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all ${!isEnglish ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-              >
-                <span>🇮🇩</span>
-                <span>ID</span>
-              </button>
-            </div>
+            <span className="text-xs text-slate-300">v2.1 Internal SSIE</span>
           </div>
-
-          {/* Centered form */}
-          <div className="flex-1 flex items-center justify-center px-6 pb-10">
-            <LoginForm />
-          </div>
-        </div>
+        </footer>
       </div>
     </>
   );
