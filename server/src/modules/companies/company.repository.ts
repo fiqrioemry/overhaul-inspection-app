@@ -1,6 +1,8 @@
 import { Prisma } from "generated/prisma";
 import { pgsql as database } from "@/lib/database";
-import { CreateCompanyRequest, ListCompaniesQuery, UpdateCompanyRequest } from "@/modules/companies/company.schema";
+import { CompanyOptionsQuery, CreateCompanyRequest, ListCompaniesQuery, UpdateCompanyRequest } from "@/modules/companies/company.schema";
+
+type Db = Prisma.TransactionClient | typeof database;
 
 const companySelect = {
   id: true,
@@ -16,15 +18,16 @@ const companySelect = {
 } as const;
 
 export class CompanyRepository {
-  static async create(data: CreateCompanyRequest) {
-    return database.company.create({
+  static async create(data: CreateCompanyRequest, logoUrl?: string, tx?: Db) {
+    const db = tx ?? database;
+    return db.company.create({
       data: {
         name: data.name,
         type: data.type,
         address: data.address ?? null,
         phone: data.phone ?? null,
         email: data.email || null,
-        logoUrl: data.logoUrl || null,
+        logoUrl: logoUrl || null,
         isActive: data.isActive,
       },
       select: companySelect,
@@ -74,8 +77,9 @@ export class CompanyRepository {
     return { companies, total };
   }
 
-  static async update(id: string, data: UpdateCompanyRequest) {
-    return database.company.update({
+  static async update(id: string, data: UpdateCompanyRequest, logoUrl?: string, tx?: Db) {
+    const db = tx ?? database;
+    return db.company.update({
       where: { id, deletedAt: null },
       data: {
         ...(data.name !== undefined && { name: data.name }),
@@ -83,15 +87,28 @@ export class CompanyRepository {
         ...(data.address !== undefined && { address: data.address }),
         ...(data.phone !== undefined && { phone: data.phone }),
         ...(data.email !== undefined && { email: data.email || null }),
-        ...(data.logoUrl !== undefined && { logoUrl: data.logoUrl || null }),
+        ...(logoUrl !== undefined && { logoUrl }),
         ...(data.isActive !== undefined && { isActive: data.isActive }),
       },
       select: companySelect,
     });
   }
 
-  static async softDelete(id: string) {
-    return database.company.update({
+  static async findOptions(query: CompanyOptionsQuery) {
+    return database.company.findMany({
+      where: {
+        deletedAt: null,
+        isActive: true,
+        ...(query.type && { type: query.type }),
+      },
+      select: { id: true, name: true, logoUrl: true },
+      orderBy: { name: "asc" },
+    });
+  }
+
+  static async softDelete(id: string, tx?: Db) {
+    const db = tx ?? database;
+    return db.company.update({
       where: { id, deletedAt: null },
       data: { deletedAt: new Date() },
     });

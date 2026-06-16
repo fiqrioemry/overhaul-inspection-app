@@ -134,12 +134,7 @@ export class FileRepository {
     );
   }
 
-  static async linkFiles(
-    tx: Prisma.TransactionClient | null,
-    fileIds: string[],
-    targetId: string,
-    module: string,
-  ): Promise<void> {
+  static async linkFiles(tx: Prisma.TransactionClient | null, fileIds: string[], targetId: string, module: string): Promise<void> {
     if (!fileIds || fileIds.length === 0) return;
     const db = tx ?? database;
     await db.fileStorage.updateMany({

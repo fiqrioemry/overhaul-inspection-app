@@ -1,12 +1,7 @@
 import { Context } from "hono";
 import { responseOK, responseCreated } from "@/utils/response";
 import { FindingService } from "./finding.service";
-import {
-  createFindingRequest,
-  listFindingsQuery,
-  updateFindingRequest,
-  updateFindingStatusRequest,
-} from "./finding.schema";
+import { createFindingRequest, listFindingsQuery, updateFindingRequest, updateFindingStatusRequest } from "./finding.schema";
 
 export class FindingController {
   static async createFinding(c: Context) {
