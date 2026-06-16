@@ -1,6 +1,7 @@
 // src/features/acceptance-criteria/components/AcceptanceCriteriaFormDialog.tsx
 import { useEffect } from "react";
 import { useForm, useWatch, Controller } from "react-hook-form";
+import type { Control } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -65,7 +66,10 @@ export default function AcceptanceCriteriaFormDialog({ open, onOpenChange, crite
   });
 
   const form = isEdit ? editForm : createForm;
-  const acceptanceType = useWatch({ control: form.control, name: "acceptanceType" });
+  // Cast to the looser partial type so all shared field components type-check cleanly.
+  // The referenceDocumentIds field uses createForm.control directly, so this cast is safe.
+  const control = form.control as Control<UpdateAcceptanceCriteriaFormValues>;
+  const acceptanceType = useWatch({ control, name: "acceptanceType" });
 
   useEffect(() => {
     if (criteria && isEdit) {
@@ -107,41 +111,41 @@ export default function AcceptanceCriteriaFormDialog({ open, onOpenChange, crite
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
-        <form onSubmit={form.handleSubmit(onSubmit as Parameters<typeof form.handleSubmit>[0])} className="flex flex-col gap-4 p-6 overflow-y-auto max-h-[85vh]">
+        <form onSubmit={form.handleSubmit(onSubmit as (data: UpdateAcceptanceCriteriaFormValues) => void)} className="flex flex-col gap-4 p-6 overflow-y-auto max-h-[85vh]">
           <DialogHeader>
             <DialogTitle>{isEdit ? "Edit Acceptance Criteria" : "Add Acceptance Criteria"}</DialogTitle>
           </DialogHeader>
 
           <div className="grid grid-cols-2 gap-4">
-            <ShortTextField control={form.control} name="code" label="Code" placeholder="e.g. AC-001" />
-            <SelectField control={form.control} name="status" label="Status" options={ACCEPTANCE_CRITERIA_STATUS_OPTIONS} />
+            <ShortTextField control={control} name="code" label="Code" placeholder="e.g. AC-001" />
+            <SelectField control={control} name="status" label="Status" options={ACCEPTANCE_CRITERIA_STATUS_OPTIONS} />
           </div>
 
-          <ShortTextField control={form.control} name="name" label="Name" placeholder="Criteria name" />
-          <LongTextField control={form.control} name="description" label="Description" placeholder="Optional description" rows={2} />
+          <ShortTextField control={control} name="name" label="Name" placeholder="Criteria name" />
+          <LongTextField control={control} name="description" label="Description" placeholder="Optional description" rows={2} />
 
-          <SelectField control={form.control} name="acceptanceType" label="Acceptance Type" options={ACCEPTANCE_TYPE_OPTIONS} />
+          <SelectField control={control} name="acceptanceType" label="Acceptance Type" options={ACCEPTANCE_TYPE_OPTIONS} />
 
           {showNumericMin && (
-            <ShortTextField control={form.control} name="minValue" label="Minimum Value" placeholder="Min" type="text" />
+            <ShortTextField control={control} name="minValue" label="Minimum Value" placeholder="Min" type="text" />
           )}
           {showNumericMax && (
-            <ShortTextField control={form.control} name="maxValue" label="Maximum Value" placeholder="Max" type="text" />
+            <ShortTextField control={control} name="maxValue" label="Maximum Value" placeholder="Max" type="text" />
           )}
           {showUnit && (
-            <ShortTextField control={form.control} name="unit" label="Unit" placeholder="e.g. mm, °C" />
+            <ShortTextField control={control} name="unit" label="Unit" placeholder="e.g. mm, °C" />
           )}
           {showText && (
-            <LongTextField control={form.control} name="acceptanceText" label="Acceptance Text" placeholder="Define acceptance text" rows={2} />
+            <LongTextField control={control} name="acceptanceText" label="Acceptance Text" placeholder="Define acceptance text" rows={2} />
           )}
 
-          <ShortTextField control={form.control} name="method" label="Method" placeholder="Inspection method" />
-          <ShortTextField control={form.control} name="tools" label="Tools" placeholder="Required tools/equipment" />
-          <SelectField control={form.control} name="severity" label="Severity" options={SEVERITY_OPTIONS} placeholder="Select severity (optional)" />
+          <ShortTextField control={control} name="method" label="Method" placeholder="Inspection method" />
+          <ShortTextField control={control} name="tools" label="Tools" placeholder="Required tools/equipment" />
+          <SelectField control={control} name="severity" label="Severity" options={SEVERITY_OPTIONS} placeholder="Select severity (optional)" />
 
           <div className="grid grid-cols-2 gap-4">
-            <SwitchField control={form.control} name="isRequired" label="Required" description="Must be checked on every inspection" />
-            <SwitchField control={form.control} name="isCountable" label="Countable" description="Count instances found" />
+            <SwitchField control={control} name="isRequired" label="Required" description="Must be checked on every inspection" />
+            <SwitchField control={control} name="isCountable" label="Countable" description="Count instances found" />
           </div>
 
           {!isEdit && (

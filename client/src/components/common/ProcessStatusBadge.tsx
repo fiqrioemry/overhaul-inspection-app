@@ -10,7 +10,6 @@ const statusConfig: Record<ProcessStatus, { label: string; className: string }> 
   WAITING_REVIEW: { label: "Waiting Review", className: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" },
   REVIEWED: { label: "Reviewed", className: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400" },
   COMPLETED: { label: "Completed", className: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" },
-  REJECTED: { label: "Rejected", className: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" },
   NOT_APPLICABLE: { label: "N/A", className: "bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-500" },
 };
 
