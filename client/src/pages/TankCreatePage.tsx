@@ -3,14 +3,15 @@ import { useNavigate } from "react-router-dom";
 import PageHeader from "@/components/common/PageHeader";
 import TankForm from "@/features/tanks/components/TankForm";
 import { useCreateTank } from "@/features/tanks/tanks.query";
-import { useCompanies } from "@/features/companies/companies.query";
+import { useCompanyOptions } from "@/features/companies/companies.query";
 import { ROUTES } from "@/constants/route.constant";
 import type { CreateTankFormValues } from "@/schemas/tanks.schema";
 
 export default function TankCreatePage() {
   const navigate = useNavigate();
   const createMutation = useCreateTank();
-  const { data: companiesData } = useCompanies({ limit: 100 });
+  const { data: contractors = [] } = useCompanyOptions("CONTRACTOR");
+  const { data: inspectionCompanies = [] } = useCompanyOptions("INSPECTOR_COMPANY");
 
   function handleSubmit(values: CreateTankFormValues) {
     const payload = {
@@ -34,7 +35,8 @@ export default function TankCreatePage() {
         mode="create"
         onSubmit={handleSubmit}
         isPending={createMutation.isPending}
-        companies={companiesData?.items ?? []}
+        contractors={contractors}
+        inspectionCompanies={inspectionCompanies}
       />
     </div>
   );

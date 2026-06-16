@@ -84,3 +84,14 @@ export async function deleteCompany(id: string): Promise<ResponseOK> {
   const res = await api.delete<ResponseOK>(`/companies/${id}`);
   return res.data;
 }
+
+export interface CompanyOption {
+  id: string;
+  name: string;
+  logoUrl: string | null;
+}
+
+export async function getCompanyOptions(type?: CompanyType): Promise<CompanyOption[]> {
+  const res = await api.get<ResponseSuccess<CompanyOption[]>>("/companies/options", { params: type ? { type } : {} });
+  return res.data.data!;
+}

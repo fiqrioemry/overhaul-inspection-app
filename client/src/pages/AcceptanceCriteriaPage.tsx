@@ -120,7 +120,7 @@ export default function AcceptanceCriteriaPage() {
                           <StatusBadge status={criteria.status} />
                         </td>
                         <td className="px-4 py-3">
-                          <span className={`text-xs font-medium ${criteria.references.length === 0 ? "text-destructive" : "text-muted-foreground"}`}>{criteria.references.length}</span>
+                          <span className={`text-xs font-medium ${(criteria.references?.length ?? 0) === 0 ? "text-destructive" : "text-muted-foreground"}`}>{criteria.references?.length ?? 0}</span>
                         </td>
                         <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                           <div className="flex items-center justify-end gap-2">

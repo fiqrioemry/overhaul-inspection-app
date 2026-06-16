@@ -5,7 +5,7 @@ import LoadingState from "@/components/common/LoadingState";
 import ErrorState from "@/components/common/ErrorState";
 import TankForm from "@/features/tanks/components/TankForm";
 import { useTank, useUpdateTank } from "@/features/tanks/tanks.query";
-import { useCompanies } from "@/features/companies/companies.query";
+import { useCompanyOptions } from "@/features/companies/companies.query";
 import { ROUTES } from "@/constants/route.constant";
 import type { UpdateTankFormValues } from "@/schemas/tanks.schema";
 
@@ -13,7 +13,8 @@ export default function TankEditPage() {
   const { tankId } = useParams<{ tankId: string }>();
   const navigate = useNavigate();
   const { data: tank, isLoading, isError, refetch } = useTank(tankId!);
-  const { data: companiesData } = useCompanies({ limit: 100 });
+  const { data: contractors = [] } = useCompanyOptions("CONTRACTOR");
+  const { data: inspectionCompanies = [] } = useCompanyOptions("INSPECTOR_COMPANY");
   const updateMutation = useUpdateTank();
 
   function handleSubmit(values: UpdateTankFormValues) {
@@ -43,7 +44,8 @@ export default function TankEditPage() {
         tank={tank}
         onSubmit={handleSubmit}
         isPending={updateMutation.isPending}
-        companies={companiesData?.items ?? []}
+        contractors={contractors}
+        inspectionCompanies={inspectionCompanies}
       />
     </div>
   );

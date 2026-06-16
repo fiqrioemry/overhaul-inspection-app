@@ -1,12 +1,13 @@
 // src/features/companies/companies.query.ts
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { listCompanies, createCompany, updateCompany, deleteCompany } from "./companies.api";
-import type { ListCompaniesParams, CreateCompanyPayload, UpdateCompanyPayload } from "./companies.api";
+import { listCompanies, createCompany, updateCompany, deleteCompany, getCompanyOptions } from "./companies.api";
+import type { CompanyType, ListCompaniesParams, CreateCompanyPayload, UpdateCompanyPayload } from "./companies.api";
 
 export const COMPANY_KEYS = {
   all: ["companies"] as const,
   list: (params: ListCompaniesParams) => ["companies", "list", params] as const,
+  options: (type?: CompanyType) => ["companies", "options", type] as const,
 };
 
 export function useCompanies(params: ListCompaniesParams) {
@@ -14,6 +15,14 @@ export function useCompanies(params: ListCompaniesParams) {
     queryKey: COMPANY_KEYS.list(params),
     queryFn: () => listCompanies(params),
     staleTime: 1000 * 30,
+  });
+}
+
+export function useCompanyOptions(type?: CompanyType) {
+  return useQuery({
+    queryKey: COMPANY_KEYS.options(type),
+    queryFn: () => getCompanyOptions(type),
+    staleTime: 1000 * 60 * 5,
   });
 }
 

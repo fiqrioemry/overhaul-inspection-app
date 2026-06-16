@@ -13,13 +13,14 @@ import { Field, FieldLabel } from "@/components/ui/field";
 import { createTankSchema, updateTankSchema } from "@/schemas/tanks.schema";
 import type { CreateTankFormValues, UpdateTankFormValues } from "@/schemas/tanks.schema";
 import type { TankDetail } from "../tanks.api";
-import type { Company } from "@/features/companies/companies.api";
+import type { CompanyOption } from "@/features/companies/companies.api";
 
 interface TankFormCreateProps {
   mode: "create";
   onSubmit: (values: CreateTankFormValues) => void;
   isPending: boolean;
-  companies: Company[];
+  contractors: CompanyOption[];
+  inspectionCompanies: CompanyOption[];
 }
 
 interface TankFormEditProps {
@@ -27,7 +28,8 @@ interface TankFormEditProps {
   tank: TankDetail;
   onSubmit: (values: UpdateTankFormValues) => void;
   isPending: boolean;
-  companies: Company[];
+  contractors: CompanyOption[];
+  inspectionCompanies: CompanyOption[];
 }
 
 type TankFormProps = TankFormCreateProps | TankFormEditProps;
@@ -81,9 +83,14 @@ export default function TankForm(props: TankFormProps) {
     replace(newCourses);
   }, [shellCourseCount]);
 
-  const companyOptions = [
+  const contractorOptions = [
     { label: "None", value: "NONE" },
-    ...props.companies.map((c) => ({ label: c.name, value: c.id })),
+    ...props.contractors.map((c) => ({ label: c.name, value: c.id })),
+  ];
+
+  const inspectionOptions = [
+    { label: "None", value: "NONE" },
+    ...props.inspectionCompanies.map((c) => ({ label: c.name, value: c.id })),
   ];
 
   if (isEdit) {
@@ -102,8 +109,8 @@ export default function TankForm(props: TankFormProps) {
           <DateField control={editForm.control} name="estimatedFinishDate" label="Est. Finish Date" />
         </div>
         <div className="grid grid-cols-2 gap-4">
-          <SelectField control={editForm.control} name="contractorCompanyId" label="Contractor" options={companyOptions} />
-          <SelectField control={editForm.control} name="inspectionCompanyId" label="Inspection Company" options={companyOptions} />
+          <SelectField control={editForm.control} name="contractorCompanyId" label="Contractor" options={contractorOptions} />
+          <SelectField control={editForm.control} name="inspectionCompanyId" label="Inspection Company" options={inspectionOptions} />
         </div>
         <Button type="submit" disabled={props.isPending} className="w-full">
           {props.isPending ? "Saving..." : "Save Changes"}
@@ -131,8 +138,8 @@ export default function TankForm(props: TankFormProps) {
         <DateField control={createForm.control} name="estimatedFinishDate" label="Est. Finish Date" />
       </div>
       <div className="grid grid-cols-2 gap-4">
-        <SelectField control={createForm.control} name="contractorCompanyId" label="Contractor" options={companyOptions} />
-        <SelectField control={createForm.control} name="inspectionCompanyId" label="Inspection Company" options={companyOptions} />
+        <SelectField control={createForm.control} name="contractorCompanyId" label="Contractor" options={contractorOptions} />
+        <SelectField control={createForm.control} name="inspectionCompanyId" label="Inspection Company" options={inspectionOptions} />
       </div>
 
       {fields.length > 0 && (
