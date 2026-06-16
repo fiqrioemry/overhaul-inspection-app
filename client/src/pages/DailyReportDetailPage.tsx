@@ -100,7 +100,7 @@ export default function DailyReportDetailPage() {
       {/* Canva-like page viewer */}
       <div className="report-viewer bg-gray-300 rounded-lg p-8 flex flex-col items-center gap-6">
         {/* ── PAGE 1: content without photos ── */}
-        <div className="report-page bg-white shadow-lg w-full max-w-[794px] min-h-[1123px] p-16 flex flex-col gap-8">
+        <div className="report-page bg-white shadow-lg w-full max-w-198 min-h-[1123px] p-16 flex flex-col gap-8">
           {/* Document Header */}
           <div className="text-center border-b pb-6 space-y-1">
             <p className="text-[11px] text-gray-500 uppercase tracking-widest">PT. Sucofindo (Persero)</p>
