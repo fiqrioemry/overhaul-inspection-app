@@ -15,7 +15,7 @@ import type { InspectionRequestStatus } from "@/features/inspection-requests/ins
 import { format } from "date-fns";
 
 const STATUS_OPTIONS: { label: string; value: string }[] = [
-  { label: "All", value: "" },
+  { label: "All", value: "ALL" },
   { label: "Submitted", value: "SUBMITTED" },
   { label: "Reviewed", value: "REVIEWED" },
   { label: "Returned", value: "RETURNED" },
@@ -25,12 +25,12 @@ const STATUS_OPTIONS: { label: string; value: string }[] = [
 export default function InspectionRequestListPage() {
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
-  const [statusFilter, setStatusFilter] = useState<string>("");
+  const [statusFilter, setStatusFilter] = useState<string>("ALL");
 
   const { data, isLoading, isError, refetch } = useInspectionRequests({
     page,
     limit: 15,
-    status: statusFilter ? (statusFilter as InspectionRequestStatus) : undefined,
+    status: statusFilter !== "ALL" ? (statusFilter as InspectionRequestStatus) : undefined,
   });
 
   return (

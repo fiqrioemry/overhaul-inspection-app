@@ -54,8 +54,8 @@ export default function TankForm(props: TankFormProps) {
           tankName: props.tank.tankName ?? "",
           diameterMm: props.tank.diameterMm ?? undefined,
           heightMm: props.tank.heightMm ?? undefined,
-          contractorCompanyId: props.tank.contractorCompany?.id ?? "",
-          inspectionCompanyId: props.tank.inspectionCompany?.id ?? "",
+          contractorCompanyId: props.tank.contractorCompany?.id ?? "NONE",
+          inspectionCompanyId: props.tank.inspectionCompany?.id ?? "NONE",
           startDate: props.tank.startDate?.slice(0, 10) ?? "",
           estimatedFinishDate: props.tank.estimatedFinishDate?.slice(0, 10) ?? "",
         }
@@ -82,7 +82,7 @@ export default function TankForm(props: TankFormProps) {
   }, [shellCourseCount]);
 
   const companyOptions = [
-    { label: "None", value: "" },
+    { label: "None", value: "NONE" },
     ...props.companies.map((c) => ({ label: c.name, value: c.id })),
   ];
 

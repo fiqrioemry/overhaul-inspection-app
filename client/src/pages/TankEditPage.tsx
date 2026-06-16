@@ -21,8 +21,8 @@ export default function TankEditPage() {
       ...values,
       diameterMm: values.diameterMm ? Number(values.diameterMm) : undefined,
       heightMm: values.heightMm ? Number(values.heightMm) : undefined,
-      contractorCompanyId: values.contractorCompanyId || undefined,
-      inspectionCompanyId: values.inspectionCompanyId || undefined,
+      contractorCompanyId: values.contractorCompanyId && values.contractorCompanyId !== "NONE" ? values.contractorCompanyId : undefined,
+      inspectionCompanyId: values.inspectionCompanyId && values.inspectionCompanyId !== "NONE" ? values.inspectionCompanyId : undefined,
       startDate: values.startDate || undefined,
       estimatedFinishDate: values.estimatedFinishDate || undefined,
     };
