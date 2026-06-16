@@ -2,11 +2,12 @@
 import { useState } from "react";
 import { Building2, Plus, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import PageHeader from "@/components/common/PageHeader";
 import LoadingState from "@/components/common/LoadingState";
 import ErrorState from "@/components/common/ErrorState";
 import EmptyState from "@/components/common/EmptyState";
-import StatusBadge from "@/components/common/StatusBadge";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 import Pagination from "@/components/common/Pagination";
 import PermissionGate from "@/components/common/PermissionGate";
@@ -15,8 +16,13 @@ import { useCompanies, useDeleteCompany } from "@/features/companies/companies.q
 import type { Company } from "@/features/companies/companies.api";
 import { PERMISSIONS } from "@/constants/permission.constant";
 import { useDebounce } from "@/hooks/useDebounce";
-import { Input } from "@/components/ui/input";
 import { format } from "date-fns";
+
+const TYPE_LABEL: Record<string, string> = {
+  OWNER: "Owner",
+  INSPECTOR_COMPANY: "Inspector Company",
+  CONTRACTOR: "Contractor",
+};
 
 export default function CompaniesPage() {
   const [page, setPage] = useState(1);
@@ -52,8 +58,7 @@ export default function CompaniesPage() {
         action={
           <PermissionGate permission={PERMISSIONS.COMPANY_CREATE}>
             <Button onClick={openCreate}>
-              <Plus />
-              Add Company
+              <Plus /> Add Company
             </Button>
           </PermissionGate>
         }
@@ -81,7 +86,9 @@ export default function CompaniesPage() {
                 <thead className="border-b bg-muted/40">
                   <tr>
                     <th className="px-4 py-3 text-left font-medium">Name</th>
-                    <th className="px-4 py-3 text-left font-medium">Role</th>
+                    <th className="px-4 py-3 text-left font-medium">Type</th>
+                    <th className="px-4 py-3 text-left font-medium">Phone</th>
+                    <th className="px-4 py-3 text-left font-medium">Email</th>
                     <th className="px-4 py-3 text-left font-medium">Status</th>
                     <th className="px-4 py-3 text-left font-medium">Created</th>
                     <th className="px-4 py-3 text-right font-medium">Actions</th>
@@ -91,9 +98,24 @@ export default function CompaniesPage() {
                   {data?.items.map((company) => (
                     <tr key={company.id} className="hover:bg-muted/20">
                       <td className="px-4 py-3 font-medium">{company.name}</td>
-                      <td className="px-4 py-3 text-muted-foreground">{company.role}</td>
-                      <td className="px-4 py-3"><StatusBadge status={company.status} /></td>
-                      <td className="px-4 py-3 text-muted-foreground">{format(new Date(company.createdAt), "dd MMM yyyy")}</td>
+                      <td className="px-4 py-3 text-muted-foreground">
+                        {TYPE_LABEL[company.type] ?? company.type}
+                      </td>
+                      <td className="px-4 py-3 text-muted-foreground">{company.phone ?? "—"}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{company.email ?? "—"}</td>
+                      <td className="px-4 py-3">
+                        <Badge
+                          variant="outline"
+                          className={company.isActive
+                            ? "border-0 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                            : "border-0 bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"}
+                        >
+                          {company.isActive ? "Active" : "Inactive"}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-3 text-muted-foreground">
+                        {format(new Date(company.createdAt), "dd MMM yyyy")}
+                      </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-end gap-2">
                           <PermissionGate permission={PERMISSIONS.COMPANY_UPDATE}>
@@ -127,7 +149,7 @@ export default function CompaniesPage() {
         open={Boolean(deleteTarget)}
         onOpenChange={(open) => { if (!open) setDeleteTarget(undefined); }}
         title="Delete Company"
-        description={`Are you sure you want to delete "${deleteTarget?.name}"? This action cannot be undone.`}
+        description={`Delete "${deleteTarget?.name}"? This action cannot be undone.`}
         confirmLabel="Delete"
         variant="destructive"
         loading={deleteMutation.isPending}

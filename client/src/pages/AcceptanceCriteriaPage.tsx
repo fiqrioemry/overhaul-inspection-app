@@ -69,7 +69,10 @@ export default function AcceptanceCriteriaPage() {
         <Input
           placeholder="Search criteria..."
           value={search}
-          onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(1);
+          }}
           className="max-w-xs"
         />
       </div>
@@ -79,7 +82,7 @@ export default function AcceptanceCriteriaPage() {
 
       {!isLoading && !isError && (
         <>
-          {data && data.items.length === 0 ? (
+          {data && data?.items.length === 0 ? (
             <EmptyState title="No acceptance criteria" description="Add criteria to define inspection standards." icon={ClipboardCheck} />
           ) : (
             <div className="rounded-lg border overflow-hidden">
@@ -100,24 +103,24 @@ export default function AcceptanceCriteriaPage() {
                   {data?.items.map((criteria) => (
                     <>
                       <tr key={criteria.id} className="hover:bg-muted/20 cursor-pointer" onClick={() => toggleExpand(criteria.id)}>
-                        <td className="px-4 py-3 text-muted-foreground">
-                          {expandedId === criteria.id ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
-                        </td>
+                        <td className="px-4 py-3 text-muted-foreground">{expandedId === criteria.id ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}</td>
                         <td className="px-4 py-3 font-mono text-xs font-medium">{criteria.code}</td>
                         <td className="px-4 py-3 max-w-xs truncate">{criteria.name}</td>
                         <td className="px-4 py-3 text-muted-foreground text-xs">{criteria.acceptanceType}</td>
                         <td className="px-4 py-3">
                           {criteria.isRequired ? (
-                            <Badge variant="secondary" className="text-xs">Required</Badge>
+                            <Badge variant="secondary" className="text-xs">
+                              Required
+                            </Badge>
                           ) : (
                             <span className="text-muted-foreground text-xs">Optional</span>
                           )}
                         </td>
-                        <td className="px-4 py-3"><StatusBadge status={criteria.status} /></td>
                         <td className="px-4 py-3">
-                          <span className={`text-xs font-medium ${criteria.references.length === 0 ? "text-destructive" : "text-muted-foreground"}`}>
-                            {criteria.references.length}
-                          </span>
+                          <StatusBadge status={criteria.status} />
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`text-xs font-medium ${criteria.references.length === 0 ? "text-destructive" : "text-muted-foreground"}`}>{criteria.references.length}</span>
                         </td>
                         <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                           <div className="flex items-center justify-end gap-2">
@@ -148,9 +151,7 @@ export default function AcceptanceCriteriaPage() {
             </div>
           )}
 
-          {data?.meta && data.meta.totalPages > 1 && (
-            <Pagination meta={data.meta} onPageChange={setPage} />
-          )}
+          {data?.meta && data.meta.totalPages > 1 && <Pagination meta={data.meta} onPageChange={setPage} />}
         </>
       )}
 
@@ -158,7 +159,9 @@ export default function AcceptanceCriteriaPage() {
 
       <ConfirmDialog
         open={Boolean(deleteTarget)}
-        onOpenChange={(open) => { if (!open) setDeleteTarget(undefined); }}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(undefined);
+        }}
         title="Delete Acceptance Criteria"
         description={`Delete "${deleteTarget?.name}"? This cannot be undone.`}
         confirmLabel="Delete"
