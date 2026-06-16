@@ -5,26 +5,15 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import SelectField from "@/components/fields/SelectField";
-import ShortTextField from "@/components/fields/ShortTextField";
 import LongTextField from "@/components/fields/LongTextField";
 import type { ChecklistResult } from "../checklist-results.api";
-import { useUpdateChecklistResult } from "../checklist-results.query";
+import { useCheckChecklist } from "../checklist-results.query";
 
 const schema = z.object({
-  status: z.enum(["PENDING", "PASSED", "FAILED", "NOT_APPLICABLE"]),
-  actualValue: z.string().optional(),
-  remarks: z.string().optional(),
+  remarks: z.string().max(500).optional(),
 });
 
 type FormValues = z.infer<typeof schema>;
-
-const STATUS_OPTIONS = [
-  { label: "Pending", value: "PENDING" },
-  { label: "Passed", value: "PASSED" },
-  { label: "Failed", value: "FAILED" },
-  { label: "N/A", value: "NOT_APPLICABLE" },
-];
 
 interface ChecklistResultDialogProps {
   open: boolean;
@@ -34,27 +23,21 @@ interface ChecklistResultDialogProps {
 }
 
 export default function ChecklistResultDialog({ open, onOpenChange, result, processId }: ChecklistResultDialogProps) {
-  const mutation = useUpdateChecklistResult(processId);
+  const mutation = useCheckChecklist(processId);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { status: "PENDING", actualValue: "", remarks: "" },
+    defaultValues: { remarks: "" },
   });
 
   useEffect(() => {
-    if (result) {
-      form.reset({
-        status: result.status,
-        actualValue: result.actualValue ?? "",
-        remarks: result.remarks ?? "",
-      });
-    }
-  }, [result]);
+    if (open) form.reset({ remarks: result?.remarks ?? "" });
+  }, [open, result]);
 
   function onSubmit(values: FormValues) {
     if (!result) return;
     mutation.mutate(
-      { id: result.id, data: values },
+      { checklistId: result.id, data: { remarks: values.remarks || undefined } },
       { onSuccess: () => onOpenChange(false) },
     );
   }
@@ -65,23 +48,30 @@ export default function ChecklistResultDialog({ open, onOpenChange, result, proc
         <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4 p-4">
           <DialogHeader>
             <DialogTitle className="text-sm font-semibold">
-              {result?.criteria.name ?? "Checklist Result"}
+              {result?.nameDisplay ?? "Mark as Passed"}
             </DialogTitle>
-            {result?.criteria.acceptanceValue && (
-              <p className="text-xs text-muted-foreground">Acceptance: {result.criteria.acceptanceValue}</p>
+            {result?.acceptanceDisplay && result.acceptanceDisplay !== "—" && (
+              <p className="text-xs text-muted-foreground">Acceptance: {result.acceptanceDisplay}</p>
+            )}
+            {result?.referenceDisplay && result.referenceDisplay !== "—" && (
+              <p className="text-xs text-muted-foreground font-mono">Ref: {result.referenceDisplay}</p>
             )}
           </DialogHeader>
 
-          <SelectField control={form.control} name="status" label="Result" options={STATUS_OPTIONS} />
-          <ShortTextField control={form.control} name="actualValue" label="Actual Value" placeholder="Enter measured/actual value" />
-          <LongTextField control={form.control} name="remarks" label="Remarks" placeholder="Optional notes" rows={3} />
+          <LongTextField
+            control={form.control}
+            name="remarks"
+            label="Remarks (optional)"
+            placeholder="Add inspection notes or observations..."
+            rows={3}
+          />
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={mutation.isPending}>
               Cancel
             </Button>
             <Button type="submit" disabled={mutation.isPending}>
-              {mutation.isPending ? "Saving..." : "Save"}
+              {mutation.isPending ? "Saving..." : "Mark as Passed"}
             </Button>
           </DialogFooter>
         </form>

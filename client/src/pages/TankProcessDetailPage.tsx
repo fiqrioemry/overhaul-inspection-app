@@ -15,6 +15,7 @@ import ConfirmDialog from "@/components/common/ConfirmDialog";
 import ProcessStatusBadge from "@/components/common/ProcessStatusBadge";
 import PermissionGate from "@/components/common/PermissionGate";
 import ChecklistTable from "@/features/checklist-results/components/ChecklistTable";
+import { useChecklistResults } from "@/features/checklist-results/checklist-results.query";
 import EligibilityPanel from "@/features/tank-processes/components/EligibilityPanel";
 import InspectionRequestForm from "@/features/inspection-requests/components/InspectionRequestForm";
 import FindingFormDialog from "@/features/findings/components/FindingFormDialog";
@@ -97,6 +98,7 @@ export default function TankProcessDetailPage() {
   const updateStatus = useUpdateProcessStatus();
 
   const { data: findingsData } = useFindings({ tankProcessId: processId!, limit: 50, page: 1 });
+  const { data: checklistResults = [] } = useChecklistResults(processId!);
   const deleteFinding = useDeleteFinding();
   const bulkClose = useBulkCloseFindings();
 
@@ -145,7 +147,8 @@ export default function TankProcessDetailPage() {
   const DAILY_REPORT_BLOCKED_STATUSES: ProcessStatus[] = ["NOT_STARTED", "COMPLETED"];
   const canAddDailyReport = !DAILY_REPORT_BLOCKED_STATUSES.includes(process.status);
   const hasOpenFindings = (findingsData?.items ?? []).some((f) => f.status === "OPEN");
-  const submitForReviewBlocked = nextStatus === "WAITING_REVIEW" && hasOpenFindings;
+  const hasUncheckedRequired = checklistResults.some((c) => c.status === "NOT_CHECKED" && c.isRequired);
+  const submitForReviewBlocked = nextStatus === "WAITING_REVIEW" && (hasOpenFindings || hasUncheckedRequired);
 
   function handleStatusAdvance() {
     if (!nextStatus) return;
@@ -195,7 +198,13 @@ export default function TankProcessDetailPage() {
       {submitForReviewBlocked && (
         <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-800">
           <AlertTriangle className="h-4 w-4 shrink-0" />
-          <span>There are OPEN findings on this process. Close or repair all findings before submitting for review.</span>
+          <span>
+            Cannot submit for review:
+            {hasUncheckedRequired && " required checklist items are not yet passed"}
+            {hasUncheckedRequired && hasOpenFindings && ", and"}
+            {hasOpenFindings && " there are OPEN findings that must be resolved"}
+            .
+          </span>
         </div>
       )}
 
@@ -228,7 +237,7 @@ export default function TankProcessDetailPage() {
 
         {/* CHECKLIST */}
         <TabsContent value="checklist" className="mt-4">
-          <ChecklistTable processId={processId!} />
+          <ChecklistTable processId={processId!} processStatus={process.status} />
         </TabsContent>
 
         {/* FINDINGS */}
