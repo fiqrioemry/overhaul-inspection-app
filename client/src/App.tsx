@@ -34,6 +34,8 @@ import TankDetailPage from "@/pages/TankDetailPage";
 import TankProcessDetailPage from "@/pages/TankProcessDetailPage";
 import InspectionRequestListPage from "@/pages/InspectionRequestListPage";
 import InspectionRequestDetailPage from "@/pages/InspectionRequestDetailPage";
+import FindingListPage from "@/pages/FindingListPage";
+import DailyReportListPage from "@/pages/DailyReportListPage";
 
 export default function AppRouter() {
   useTheme();
@@ -111,6 +113,16 @@ export default function AppRouter() {
             <Route element={<PermissionRoute permission={PERMISSIONS.INSPECTION_REQUEST_READ} />}>
               <Route path={ROUTES.INSPECTION_REQUESTS} element={<InspectionRequestListPage />} />
               <Route path={ROUTES.INSPECTION_REQUEST_DETAIL} element={<InspectionRequestDetailPage />} />
+            </Route>
+
+            {/* Findings */}
+            <Route element={<PermissionRoute permission={PERMISSIONS.FINDING_READ} />}>
+              <Route path={ROUTES.FINDINGS} element={<FindingListPage />} />
+            </Route>
+
+            {/* Daily Reports */}
+            <Route element={<PermissionRoute permission={PERMISSIONS.DAILY_REPORT_READ} />}>
+              <Route path={ROUTES.DAILY_REPORTS} element={<DailyReportListPage />} />
             </Route>
 
             {/* Catch-all inside layout → 404 */}

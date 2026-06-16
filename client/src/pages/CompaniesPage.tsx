@@ -50,8 +50,6 @@ export default function CompaniesPage() {
     deleteMutation.mutate(deleteTarget.id, { onSuccess: () => setDeleteTarget(undefined) });
   }
 
-  console.log("data", data);
-
   return (
     <div className="space-y-6">
       <PageHeader

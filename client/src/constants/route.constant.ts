@@ -14,8 +14,12 @@ export const ROUTES = {
   TANK_DETAIL: "/tanks/:tankId",
   TANK_EDIT: "/tanks/:tankId/edit",
   PROCESS_DETAIL: "/tanks/:tankId/processes/:processId",
+
   FINDINGS: "/findings",
   DAILY_REPORTS: "/daily-reports",
+  TEST_RECORDS: "/test-records",
+  RADIOGRAPHY: "/radiography",
+
   INSPECTION_REQUESTS: "/inspection-requests",
   INSPECTION_REQUEST_DETAIL: "/inspection-requests/:requestId",
   NOTIFICATIONS: "/notifications",

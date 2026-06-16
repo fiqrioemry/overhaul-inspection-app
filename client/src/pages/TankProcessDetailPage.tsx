@@ -1,24 +1,37 @@
 // src/pages/TankProcessDetailPage.tsx
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Send } from "lucide-react";
+import { ArrowLeft, Send, Plus, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import PageHeader from "@/components/common/PageHeader";
 import LoadingState from "@/components/common/LoadingState";
 import ErrorState from "@/components/common/ErrorState";
+import EmptyState from "@/components/common/EmptyState";
 import ProcessStatusBadge from "@/components/common/ProcessStatusBadge";
 import ProcessResultBadge from "@/components/common/ProcessResultBadge";
 import PermissionGate from "@/components/common/PermissionGate";
 import ChecklistTable from "@/features/checklist-results/components/ChecklistTable";
 import EligibilityPanel from "@/features/tank-processes/components/EligibilityPanel";
 import InspectionRequestForm from "@/features/inspection-requests/components/InspectionRequestForm";
+import FindingFormDialog from "@/features/findings/components/FindingFormDialog";
+import { FindingStatusBadge, FindingSeverityBadge } from "@/features/findings/components/FindingStatusBadge";
+import DailyReportFormDialog from "@/features/daily-reports/components/DailyReportFormDialog";
+import TestRecordFormDialog from "@/features/test-records/components/TestRecordFormDialog";
+import RadiographyFormDialog from "@/features/radiography/components/RadiographyFormDialog";
+import JointResultsTable from "@/features/radiography/components/JointResultsTable";
 import { useTankProcess, useUpdateProcessStatus } from "@/features/tank-processes/tank-processes.query";
+import { useFindings } from "@/features/findings/findings.query";
+import { useDailyReports } from "@/features/daily-reports/daily-reports.query";
+import { useTestRecords, useDeleteTestRecord } from "@/features/test-records/test-records.query";
+import { useRadiographyTests, useDeleteRadiography } from "@/features/radiography/radiography.query";
 import { PERMISSIONS } from "@/constants/permission.constant";
 import { ROUTES } from "@/constants/route.constant";
 import { format } from "date-fns";
 import type { ProcessStatus } from "@/features/tank-processes/tank-processes.api";
+import type { TestResult } from "@/features/test-records/test-records.api";
 
 const NEXT_STATUS: Partial<Record<ProcessStatus, ProcessStatus>> = {
   NOT_STARTED: "IN_PROGRESS",
@@ -28,6 +41,13 @@ const NEXT_STATUS: Partial<Record<ProcessStatus, ProcessStatus>> = {
 const STATUS_ACTION_LABEL: Partial<Record<ProcessStatus, string>> = {
   NOT_STARTED: "Start Process",
   IN_PROGRESS: "Submit for Review",
+};
+
+const TEST_RESULT_COLOR: Record<TestResult, string> = {
+  PENDING: "bg-gray-100 text-gray-600",
+  PASSED: "bg-green-100 text-green-700",
+  FAILED: "bg-red-100 text-red-700",
+  NOT_APPLICABLE: "bg-muted text-muted-foreground",
 };
 
 function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
@@ -43,9 +63,22 @@ export default function TankProcessDetailPage() {
   const { tankId, processId } = useParams<{ tankId: string; processId: string }>();
   const navigate = useNavigate();
   const [requestDialogOpen, setRequestDialogOpen] = useState(false);
+  const [findingDialogOpen, setFindingDialogOpen] = useState(false);
+  const [dailyReportDialogOpen, setDailyReportDialogOpen] = useState(false);
+  const [testRecordDialogOpen, setTestRecordDialogOpen] = useState(false);
+  const [radiographyDialogOpen, setRadiographyDialogOpen] = useState(false);
+  const [expandedRadiographyId, setExpandedRadiographyId] = useState<string | null>(null);
 
   const { data: process, isLoading, isError, refetch } = useTankProcess(processId!);
   const updateStatus = useUpdateProcessStatus();
+
+  const { data: findingsData } = useFindings({ tankProcessId: processId!, limit: 50, page: 1 });
+  const { data: dailyReportsData } = useDailyReports({ tankProcessId: processId!, limit: 50, page: 1 });
+  const { data: testRecords = [] } = useTestRecords(processId!);
+  const { data: radiographyTests = [] } = useRadiographyTests(processId!);
+
+  const deleteTestRecord = useDeleteTestRecord(processId!);
+  const deleteRadiography = useDeleteRadiography(processId!);
 
   if (isLoading) return <LoadingState />;
   if (isError || !process) return <ErrorState message="Failed to load process." onRetry={() => refetch()} />;
@@ -53,6 +86,7 @@ export default function TankProcessDetailPage() {
   const tankPath = ROUTES.TANK_DETAIL.replace(":tankId", tankId!);
   const nextStatus = NEXT_STATUS[process.status];
   const actionLabel = STATUS_ACTION_LABEL[process.status];
+  const isTestType = ["TEST", "NDT"].includes(process.type);
 
   function handleStatusAdvance() {
     if (!nextStatus) return;
@@ -100,13 +134,30 @@ export default function TankProcessDetailPage() {
       </div>
 
       <Tabs defaultValue="overview">
-        <TabsList>
+        <TabsList className="flex-wrap h-auto">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="checklist">Checklist</TabsTrigger>
+          <TabsTrigger value="findings">
+            Findings {findingsData?.meta?.total ? <span className="ml-1 text-xs">({findingsData.meta.total})</span> : null}
+          </TabsTrigger>
+          <TabsTrigger value="daily-activity">
+            Daily Activity {dailyReportsData?.meta?.total ? <span className="ml-1 text-xs">({dailyReportsData.meta.total})</span> : null}
+          </TabsTrigger>
+          {isTestType && (
+            <TabsTrigger value="test-records">
+              Test Records {testRecords.length > 0 ? <span className="ml-1 text-xs">({testRecords.length})</span> : null}
+            </TabsTrigger>
+          )}
+          {isTestType && (
+            <TabsTrigger value="radiography">
+              Radiography {radiographyTests.length > 0 ? <span className="ml-1 text-xs">({radiographyTests.length})</span> : null}
+            </TabsTrigger>
+          )}
           <TabsTrigger value="eligibility">Eligibility</TabsTrigger>
           <TabsTrigger value="inspection">Inspection Requests</TabsTrigger>
         </TabsList>
 
+        {/* OVERVIEW */}
         <TabsContent value="overview" className="mt-4">
           <div className="rounded-lg border p-4 space-y-3">
             <InfoRow label="Process Code" value={<span className="font-mono">{process.processTemplate.code}</span>} />
@@ -124,17 +175,244 @@ export default function TankProcessDetailPage() {
               label="Completed At"
               value={process.actualFinishDate ? format(new Date(process.actualFinishDate), "dd MMM yyyy HH:mm") : null}
             />
+            {process.remarks && <InfoRow label="Remarks" value={process.remarks} />}
           </div>
         </TabsContent>
 
+        {/* CHECKLIST */}
         <TabsContent value="checklist" className="mt-4">
           <ChecklistTable processId={processId!} />
         </TabsContent>
 
+        {/* FINDINGS */}
+        <TabsContent value="findings" className="mt-4">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">{findingsData?.meta?.total ?? 0} finding(s)</span>
+              <PermissionGate permission={PERMISSIONS.FINDING_CREATE}>
+                <Button size="sm" variant="outline" onClick={() => setFindingDialogOpen(true)}>
+                  <Plus className="h-4 w-4 mr-1" /> Add Finding
+                </Button>
+              </PermissionGate>
+            </div>
+
+            {!findingsData?.items?.length ? (
+              <EmptyState title="No findings" description="No findings recorded for this process." icon={AlertTriangle} />
+            ) : (
+              <div className="rounded-lg border overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead className="border-b bg-muted/40">
+                    <tr>
+                      <th className="px-4 py-3 text-left font-medium">No.</th>
+                      <th className="px-4 py-3 text-left font-medium">Title</th>
+                      <th className="px-4 py-3 text-left font-medium">Severity</th>
+                      <th className="px-4 py-3 text-left font-medium">Status</th>
+                      <th className="px-4 py-3 text-left font-medium">By</th>
+                      <th className="px-4 py-3 text-left font-medium">Date</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {findingsData.items.map((f) => (
+                      <tr key={f.id} className="hover:bg-muted/20">
+                        <td className="px-4 py-3 font-mono text-xs">{f.findingNo}</td>
+                        <td className="px-4 py-3">
+                          <p className="font-medium text-sm line-clamp-2">{f.title}</p>
+                          {f.locationDetail && <p className="text-xs text-muted-foreground">{f.locationDetail}</p>}
+                        </td>
+                        <td className="px-4 py-3"><FindingSeverityBadge severity={f.severity} /></td>
+                        <td className="px-4 py-3"><FindingStatusBadge status={f.status} /></td>
+                        <td className="px-4 py-3 text-xs text-muted-foreground">{f.createdByUser.name}</td>
+                        <td className="px-4 py-3 text-xs text-muted-foreground">{format(new Date(f.createdAt), "dd MMM yyyy")}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </TabsContent>
+
+        {/* DAILY ACTIVITY */}
+        <TabsContent value="daily-activity" className="mt-4">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">{dailyReportsData?.meta?.total ?? 0} report(s)</span>
+              <PermissionGate permission={PERMISSIONS.DAILY_REPORT_CREATE}>
+                <Button size="sm" variant="outline" onClick={() => setDailyReportDialogOpen(true)}>
+                  <Plus className="h-4 w-4 mr-1" /> Add Report
+                </Button>
+              </PermissionGate>
+            </div>
+
+            {!dailyReportsData?.items?.length ? (
+              <EmptyState title="No daily reports" description="No daily activity recorded for this process." />
+            ) : (
+              <div className="space-y-3">
+                {dailyReportsData.items.map((report) => (
+                  <div key={report.id} className="rounded-lg border p-4">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <span className="text-xs text-muted-foreground">
+                          {format(new Date(report.reportDate), "dd MMM yyyy")}
+                        </span>
+                        <Badge variant="outline" className="ml-2 text-xs">
+                          {report.activityType.replace(/_/g, " ")}
+                        </Badge>
+                      </div>
+                      {report.inspector && (
+                        <span className="text-xs text-muted-foreground shrink-0">{report.inspector.name}</span>
+                      )}
+                    </div>
+                    <p className="mt-2 text-sm whitespace-pre-wrap">{report.description}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </TabsContent>
+
+        {/* TEST RECORDS */}
+        {isTestType && (
+          <TabsContent value="test-records" className="mt-4">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">{testRecords.length} record(s)</span>
+                <PermissionGate permission={PERMISSIONS.TEST_RECORD_CREATE}>
+                  <Button size="sm" variant="outline" onClick={() => setTestRecordDialogOpen(true)}>
+                    <Plus className="h-4 w-4 mr-1" /> Add Test Record
+                  </Button>
+                </PermissionGate>
+              </div>
+
+              {testRecords.length === 0 ? (
+                <EmptyState title="No test records" description="Add test records to document the testing results." />
+              ) : (
+                <div className="rounded-lg border overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead className="border-b bg-muted/40">
+                      <tr>
+                        <th className="px-4 py-3 text-left font-medium">Test Date</th>
+                        <th className="px-4 py-3 text-left font-medium">Pressure</th>
+                        <th className="px-4 py-3 text-left font-medium">Medium</th>
+                        <th className="px-4 py-3 text-left font-medium">Holding Time</th>
+                        <th className="px-4 py-3 text-left font-medium">Leak</th>
+                        <th className="px-4 py-3 text-left font-medium">Result</th>
+                        <th className="px-4 py-3 text-right font-medium"></th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y">
+                      {testRecords.map((rec) => (
+                        <tr key={rec.id} className="hover:bg-muted/20">
+                          <td className="px-4 py-3 text-xs">
+                            {rec.testDate ? format(new Date(rec.testDate), "dd MMM yyyy") : "—"}
+                          </td>
+                          <td className="px-4 py-3 text-xs">
+                            {rec.testPressure != null ? `${rec.testPressure} ${rec.pressureUnit ?? ""}` : "—"}
+                          </td>
+                          <td className="px-4 py-3 text-xs text-muted-foreground">{rec.testMedium ?? "—"}</td>
+                          <td className="px-4 py-3 text-xs text-muted-foreground">{rec.holdingTime ?? "—"}</td>
+                          <td className="px-4 py-3 text-xs">
+                            {rec.leakIndication != null ? (rec.leakIndication ? "Yes" : "No") : "—"}
+                          </td>
+                          <td className="px-4 py-3">
+                            <Badge variant="outline" className={TEST_RESULT_COLOR[rec.result]}>
+                              {rec.result}
+                            </Badge>
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <PermissionGate permission={PERMISSIONS.TEST_RECORD_UPDATE}>
+                              <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                onClick={() => deleteTestRecord.mutate(rec.id)}
+                                disabled={deleteTestRecord.isPending}
+                              >
+                                <span className="text-destructive text-xs">Del</span>
+                              </Button>
+                            </PermissionGate>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </TabsContent>
+        )}
+
+        {/* RADIOGRAPHY */}
+        {isTestType && (
+          <TabsContent value="radiography" className="mt-4">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">{radiographyTests.length} test(s)</span>
+                <PermissionGate permission={PERMISSIONS.RADIOGRAPHY_CREATE}>
+                  <Button size="sm" variant="outline" onClick={() => setRadiographyDialogOpen(true)}>
+                    <Plus className="h-4 w-4 mr-1" /> New Radiography Test
+                  </Button>
+                </PermissionGate>
+              </div>
+
+              {radiographyTests.length === 0 ? (
+                <EmptyState title="No radiography tests" description="Add a radiography test to record RT results." />
+              ) : (
+                <div className="space-y-4">
+                  {radiographyTests.map((rt) => (
+                    <div key={rt.id} className="rounded-lg border">
+                      <div
+                        className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/20"
+                        onClick={() => setExpandedRadiographyId(expandedRadiographyId === rt.id ? null : rt.id)}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div>
+                            <p className="text-sm font-medium">{rt.area ?? "Radiography Test"}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {rt.testDate ? format(new Date(rt.testDate), "dd MMM yyyy") : "No date"}
+                              {" · "}{rt._count?.jointResults ?? 0} joints
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="text-xs text-muted-foreground">
+                            <span className="text-green-600 font-medium">{rt.totalAccepted}</span>/{rt.totalJoint} accepted
+                          </div>
+                          <Badge variant="outline" className={TEST_RESULT_COLOR[rt.result as TestResult] ?? ""}>
+                            {rt.result}
+                          </Badge>
+                          <PermissionGate permission={PERMISSIONS.RADIOGRAPHY_UPDATE}>
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                deleteRadiography.mutate(rt.id);
+                              }}
+                            >
+                              <span className="text-destructive text-xs">Del</span>
+                            </Button>
+                          </PermissionGate>
+                        </div>
+                      </div>
+                      {expandedRadiographyId === rt.id && (
+                        <div className="border-t px-4 py-4">
+                          <JointResultsTable radiographyTestId={rt.id} tankProcessId={processId!} />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </TabsContent>
+        )}
+
+        {/* ELIGIBILITY */}
         <TabsContent value="eligibility" className="mt-4">
           <EligibilityPanel processId={processId!} />
         </TabsContent>
 
+        {/* INSPECTION REQUESTS */}
         <TabsContent value="inspection" className="mt-4">
           <div className="space-y-4">
             <PermissionGate permission={PERMISSIONS.INSPECTION_REQUEST_CREATE}>
@@ -152,6 +430,7 @@ export default function TankProcessDetailPage() {
         </TabsContent>
       </Tabs>
 
+      {/* DIALOGS */}
       <Dialog open={requestDialogOpen} onOpenChange={setRequestDialogOpen}>
         <DialogContent className="xl:h-auto! xl:w-110!">
           <div className="p-4">
@@ -168,6 +447,32 @@ export default function TankProcessDetailPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <FindingFormDialog
+        open={findingDialogOpen}
+        onOpenChange={setFindingDialogOpen}
+        tankId={process.tank?.id ?? tankId!}
+        tankProcessId={processId!}
+      />
+
+      <DailyReportFormDialog
+        open={dailyReportDialogOpen}
+        onOpenChange={setDailyReportDialogOpen}
+        tankId={process.tank?.id ?? tankId!}
+        tankProcessId={processId!}
+      />
+
+      <TestRecordFormDialog
+        open={testRecordDialogOpen}
+        onOpenChange={setTestRecordDialogOpen}
+        tankProcessId={processId!}
+      />
+
+      <RadiographyFormDialog
+        open={radiographyDialogOpen}
+        onOpenChange={setRadiographyDialogOpen}
+        tankProcessId={processId!}
+      />
     </div>
   );
 }
