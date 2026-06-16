@@ -1,8 +1,9 @@
 // src/pages/DailyReportListPage.tsx
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FileText, Pencil, Trash2, Eye } from "lucide-react";
+import { FileText, Pencil, Trash2, Eye, Printer } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import PageHeader from "@/components/common/PageHeader";
 import LoadingState from "@/components/common/LoadingState";
@@ -24,6 +25,8 @@ export default function DailyReportListPage() {
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
   const [activityType, setActivityType] = useState<string>("ALL");
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
   const [editReport, setEditReport] = useState<DailyReportSummary | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<DailyReportSummary | null>(null);
 
@@ -33,13 +36,32 @@ export default function DailyReportListPage() {
     page,
     limit: 20,
     ...(activityType !== "ALL" && { activityType: activityType as DailyActivityType }),
+    ...(startDate && { startDate }),
+    ...(endDate && { endDate }),
   });
+
+  function handlePrintList() {
+    const params = new URLSearchParams();
+    if (startDate) params.set("startDate", startDate);
+    if (endDate) params.set("endDate", endDate);
+    if (activityType !== "ALL") params.set("activityType", activityType);
+    navigate(`${ROUTES.DAILY_REPORT_LIST_PRINT}?${params.toString()}`);
+  }
+
+  function resetFilters() {
+    setActivityType("ALL");
+    setStartDate("");
+    setEndDate("");
+    setPage(1);
+  }
+
+  const hasActiveFilter = activityType !== "ALL" || startDate || endDate;
 
   return (
     <div className="space-y-6">
       <PageHeader title="Daily Reports" description="Inspector daily activity records — create from Process Detail page" />
 
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <Select
           value={activityType}
           onValueChange={(v) => {
@@ -58,6 +80,32 @@ export default function DailyReportListPage() {
             ))}
           </SelectContent>
         </Select>
+
+        <Input
+          type="date"
+          className="w-38 text-sm"
+          value={startDate}
+          onChange={(e) => { setStartDate(e.target.value); setPage(1); }}
+          title="Start date"
+        />
+        <span className="text-muted-foreground text-sm">—</span>
+        <Input
+          type="date"
+          className="w-38 text-sm"
+          value={endDate}
+          onChange={(e) => { setEndDate(e.target.value); setPage(1); }}
+          title="End date"
+        />
+
+        {hasActiveFilter && (
+          <Button variant="ghost" size="sm" onClick={resetFilters} className="text-muted-foreground">
+            Reset
+          </Button>
+        )}
+
+        <Button variant="outline" size="sm" className="ml-auto" onClick={handlePrintList}>
+          <Printer className="h-4 w-4 mr-1" /> Print List
+        </Button>
       </div>
 
       {isLoading && <LoadingState />}

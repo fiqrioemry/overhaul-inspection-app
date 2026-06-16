@@ -1,5 +1,3 @@
-import type { MessageType } from "@/schemas/chats.schema";
-
 export function formatChatTime(dateStr: string): string {
   const date = new Date(dateStr);
   const now = new Date();
@@ -45,21 +43,6 @@ export function formatMessageDate(dateStr: string): string {
   });
 }
 
-export function formatLastMessage(text: string, type: MessageType, senderName?: string): string {
-  const prefix = senderName ? `${senderName}: ` : "";
-
-  switch (type) {
-    case "image":
-      return `${prefix}📷 Photo`;
-    case "file":
-      return `${prefix}📎 File`;
-    case "audio":
-      return `${prefix}🎵 Audio`;
-    default:
-      return `${prefix}${text}`;
-  }
-}
-
 export function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -72,12 +55,6 @@ export function isImageFile(file: File): boolean {
 
 export function isAudioFile(file: File): boolean {
   return file.type.startsWith("audio/");
-}
-
-export function getMessageTypeFromFile(file: File): MessageType {
-  if (file.type.startsWith("image/")) return "image";
-  if (file.type.startsWith("audio/")) return "audio";
-  return "file";
 }
 
 export function formatInitials(name: string): string {

@@ -30,6 +30,7 @@ export default function DailyReportDetailPage() {
   const reportDateFormatted = format(new Date(report.reportDate), "dd MMMM yyyy");
   const activityLabel = ACTIVITY_LABEL[report.activityType] ?? report.activityType.replace(/_/g, " ");
   const hasPhotos = report.attachments.length > 0;
+  const companyName = report.tank.inspectionCompany?.name ?? null;
 
   return (
     <>
@@ -103,7 +104,9 @@ export default function DailyReportDetailPage() {
         <div className="report-page bg-white shadow-lg w-full max-w-198 min-h-[1123px] p-16 flex flex-col gap-8">
           {/* Document Header */}
           <div className="text-center border-b pb-6 space-y-1">
-            <p className="text-[11px] text-gray-500 uppercase tracking-widest">PT. Sucofindo (Persero)</p>
+            {companyName && (
+              <p className="text-[11px] text-gray-500 uppercase tracking-widest">{companyName}</p>
+            )}
             <h1 className="text-lg font-bold uppercase tracking-wide">Laporan Harian Inspeksi</h1>
             <p className="text-[11px] text-gray-500">Daily Inspection Report</p>
           </div>
@@ -149,7 +152,9 @@ export default function DailyReportDetailPage() {
           <div className="photo-page report-page bg-white shadow-lg w-full max-w-[794px] min-h-[1123px] p-16 flex flex-col gap-8">
             {/* Page 2 header */}
             <div className="text-center border-b pb-4 space-y-0.5">
-              <p className="text-[11px] text-gray-500 uppercase tracking-widest">PT. Sucofindo (Persero)</p>
+              {companyName && (
+                <p className="text-[11px] text-gray-500 uppercase tracking-widest">{companyName}</p>
+              )}
               <h2 className="text-base font-semibold uppercase tracking-wide">Dokumentasi Foto</h2>
               <p className="text-[11px] text-gray-500">
                 {report.tank.tankNo} &mdash; {reportDateFormatted}

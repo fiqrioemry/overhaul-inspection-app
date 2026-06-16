@@ -26,18 +26,20 @@ export interface DailyReportSummary {
   aiSuggestedDescription: string | null;
   createdAt: string;
   updatedAt: string;
-  tank: { id: string; tankNo: string; tankName: string | null };
+  tank: { id: string; tankNo: string; tankName: string | null; inspectionCompany: { id: string; name: string } | null };
   tankProcess: { id: string; name: string } | null;
   inspector: { id: string; name: string } | null;
   attachments: DailyReportAttachment[];
 }
 
-export interface DailyReportDetail extends DailyReportSummary {}
+export type DailyReportDetail = DailyReportSummary;
 
 export interface ListDailyReportsParams {
   tankId?: string;
   tankProcessId?: string;
   reportDate?: string;
+  startDate?: string;
+  endDate?: string;
   activityType?: DailyActivityType;
   page?: number;
   limit?: number;

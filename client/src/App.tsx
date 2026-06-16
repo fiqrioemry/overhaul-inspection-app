@@ -37,6 +37,7 @@ import InspectionRequestDetailPage from "@/pages/InspectionRequestDetailPage";
 import FindingListPage from "@/pages/FindingListPage";
 import DailyReportListPage from "@/pages/DailyReportListPage";
 import DailyReportDetailPage from "@/pages/DailyReportDetailPage";
+import DailyReportListPrintPage from "@/pages/DailyReportListPrintPage";
 
 export default function AppRouter() {
   useTheme();
@@ -124,6 +125,7 @@ export default function AppRouter() {
             {/* Daily Reports */}
             <Route element={<PermissionRoute permission={PERMISSIONS.DAILY_REPORT_READ} />}>
               <Route path={ROUTES.DAILY_REPORTS} element={<DailyReportListPage />} />
+              <Route path={ROUTES.DAILY_REPORT_LIST_PRINT} element={<DailyReportListPrintPage />} />
               <Route path={ROUTES.DAILY_REPORT_DETAIL} element={<DailyReportDetailPage />} />
             </Route>
 
