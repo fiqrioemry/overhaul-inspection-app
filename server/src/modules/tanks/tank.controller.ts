@@ -15,7 +15,7 @@ export class TankController {
   static async listTanks(c: Context) {
     const query = listTanksQuery.parse(c.req.query());
     const result = await TankService.listTanks(query);
-    return responseOK(c, "Tanks retrieved successfully", result);
+    return responseOK(c, "Tanks retrieved successfully", result.data, result.meta);
   }
 
   static async getTankById(c: Context) {

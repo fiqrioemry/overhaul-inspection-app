@@ -33,7 +33,7 @@ export interface UpdateChecklistResultPayload {
 }
 
 export async function getChecklistResults(processId: string): Promise<ChecklistResult[]> {
-  const res = await api.get<ResponseSuccess<ChecklistResult[]>>(`/tank-processes/${processId}/checklist`);
+  const res = await api.get<ResponseSuccess<ChecklistResult[]>>(`/processes/${processId}/checklist`);
   return res.data.data!;
 }
 

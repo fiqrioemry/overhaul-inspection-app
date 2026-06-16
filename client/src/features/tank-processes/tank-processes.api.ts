@@ -64,21 +64,21 @@ export async function getTankProcesses(tankId: string): Promise<TankProcessSumma
 }
 
 export async function getTankProcessById(id: string): Promise<TankProcessDetail> {
-  const res = await api.get<ResponseSuccess<TankProcessDetail>>(`/tank-processes/${id}`);
+  const res = await api.get<ResponseSuccess<TankProcessDetail>>(`/processes/${id}`);
   return res.data.data!;
 }
 
 export async function updateProcessStatus(id: string, data: UpdateProcessStatusPayload): Promise<TankProcessDetail> {
-  const res = await api.patch<ResponseSuccess<TankProcessDetail>>(`/tank-processes/${id}/status`, data);
+  const res = await api.patch<ResponseSuccess<TankProcessDetail>>(`/processes/${id}/status`, data);
   return res.data.data!;
 }
 
 export async function updateProcessResult(id: string, data: UpdateProcessResultPayload): Promise<TankProcessDetail> {
-  const res = await api.patch<ResponseSuccess<TankProcessDetail>>(`/tank-processes/${id}/result`, data);
+  const res = await api.patch<ResponseSuccess<TankProcessDetail>>(`/processes/${id}/result`, data);
   return res.data.data!;
 }
 
 export async function getProcessEligibility(id: string): Promise<EligibilityResult> {
-  const res = await api.get<ResponseSuccess<EligibilityResult>>(`/tank-processes/${id}/eligibility`);
+  const res = await api.get<ResponseSuccess<EligibilityResult>>(`/processes/${id}/eligibility`);
   return res.data.data!;
 }
