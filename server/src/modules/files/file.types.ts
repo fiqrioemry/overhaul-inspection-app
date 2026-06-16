@@ -4,7 +4,6 @@ type fileMetadata = {
 };
 
 type createFileData = {
-  targetId?: string;
   module?: string;
   isUsed?: boolean;
   size?: number;

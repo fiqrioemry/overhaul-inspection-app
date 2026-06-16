@@ -74,7 +74,7 @@ export class AuthService {
     return this._createSession(c, isEmailExist);
   }
 
-  private static async _createSession(c: Context, user: { id: string; name: string; role: string; avatar: string | null; email: string }, userAgent?: string): Promise<loginResponse> {
+  private static async _createSession(c: Context, user: { id: string; name: string; role: string; email: string }, userAgent?: string): Promise<loginResponse> {
     const randomToken = generateRandomToken();
     const hashedToken = await hashToken(randomToken);
     const agent = userAgent ?? c.req.header("user-agent") ?? "unknown";
@@ -100,7 +100,7 @@ export class AuthService {
     return {
       token: sessionToken,
       expiredAt: sessionPayload.expiresAt,
-      user: { id: user.id, name: user.name, role: user.role, avatar: user.avatar, email: user.email },
+      user: { id: user.id, name: user.name, role: user.role, email: user.email },
     };
   }
 
@@ -200,7 +200,7 @@ export class AuthService {
 
     await cache.del(cacheKey);
 
-    return this._createSession(c, { id: user.id, name: user.name, role: user.role, avatar: user.avatar, email: user.email }, userAgent);
+    return this._createSession(c, { id: user.id, name: user.name, role: user.role, email: user.email }, userAgent);
   }
 
   static async resendVerificationEmail(c: Context, email: string) {
@@ -251,7 +251,7 @@ export class AuthService {
         name: result.name,
         role: result.role,
         status: result.status,
-        avatar: result.avatar,
+        avatar: result.avatarFile?.url ?? null,
         verifiedAt: result.verifiedAt,
         lastLogin: result.lastLogin,
       },
@@ -460,7 +460,6 @@ export class AuthService {
       id: user?.id!,
       name: user?.name!,
       role: user?.role!,
-      avatar: user?.avatar!,
       email: user?.email!,
     });
   }

@@ -10,7 +10,6 @@ export class FileRepository {
     const result = await db.fileStorage.create({
       data: {
         url: data.url!,
-        targetId: data.targetId!,
         isUsed: data.isUsed ?? false,
         path: data.path!,
         meta: data.metadata!,
@@ -172,7 +171,6 @@ export class FileRepository {
     await db.fileStorage.createMany({
       data: data.map((item) => ({
         url: item.url!,
-        targetId: item.targetId!,
         isUsed: item.isUsed ?? false,
         path: item.path!,
         meta: item.metadata!,

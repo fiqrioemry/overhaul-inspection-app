@@ -21,3 +21,6 @@ FRONTEND.
 
 BACKEND
 1. user.patch("/:id", protect, requirePermission(PERMISSIONS.USER_UPDATE), ctrl.updateUser) pada @user.route.ts endpoint untuk update users patch /users seharusnya field avatar url diganti menjadi upload file dan belum support untuk update role. sesuaikan juga pada /client untuk support file upload avatar bukan berupa url
+
+# new
+1. backend : tambahkan field data untuk menambahkan 

@@ -7,8 +7,7 @@ datasource db {
   provider = "postgresql"
 }
 
-// ─── Enums ───────────────────────────────────────────────────────────────────
-
+ 
 enum RoleEnum {
   USER
   INSPECTOR
@@ -184,7 +183,7 @@ model User {
   email                String     @unique
   passwordHash         String?    @map("password_hash")
   name                 String
-  avatar               String?
+  avatarFileStorageId  String?    @unique @map("avatar_file_storage_id")
   status               StatusEnum @default(ACTIVE)
   role                 RoleEnum   @default(USER)
   verifiedAt           DateTime?  @map("verified_at")
@@ -214,6 +213,8 @@ model User {
   createdTestRecords   TestRecord[]        @relation("TestRecordCreatedBy")
   createdRadiography   RadiographyTest[]   @relation("RadiographyCreatedBy")
   dailyReports         DailyReport[]       @relation("DailyReportInspector")
+  avatarFile           FileStorage? @relation("UserAvatar", fields: [avatarFileStorageId], references: [id], onDelete: SetNull)
+
 
   @@index([email])
   @@index([role])
@@ -297,7 +298,7 @@ model FileStorage {
   createdAt DateTime @default(now()) @map("created_at")
   createdBy String?  @map("created_by")
 
-  @@index([targetId, module])
+  avatarOfUser User? @relation("UserAvatar")
   @@index([isUsed, createdAt])
   @@map("file_storages")
 }

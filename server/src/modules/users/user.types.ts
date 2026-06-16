@@ -35,7 +35,6 @@ type loginResponse = {
     id: string;
     name: string;
     role: string;
-    avatar: string | null;
     email: string;
   };
 };
@@ -50,6 +49,7 @@ type userResponse = {
   verifiedAt: Date | null;
   lastLogin: Date | null;
   createdAt: Date;
+  updatedAt: Date;
 };
 
 type createUserData = {
@@ -89,17 +89,4 @@ export type UpsertOAuthAccountData = {
   expiresAt?: Date;
 };
 
-export {
-  metaResponse,
-  paginationMeta,
-  filterMeta,
-  verificationType,
-  loginResponse,
-  createUserData,
-  userCredential,
-  createVerificationData,
-  userVerificationData,
-  userResponse,
-  userStatus,
-  updateUserActiveData,
-};
+export { metaResponse, paginationMeta, filterMeta, verificationType, loginResponse, createUserData, userCredential, createVerificationData, userVerificationData, userResponse, userStatus, updateUserActiveData };

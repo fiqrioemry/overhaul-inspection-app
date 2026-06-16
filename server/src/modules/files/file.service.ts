@@ -31,7 +31,7 @@ export class FileService {
 
     return {
       url,
-      isUsed: false,
+      isUsed: true,
       size: fileProcessed.length,
       path: storageKey,
       mimeType,
@@ -42,13 +42,7 @@ export class FileService {
   }
 
   static async uploadFileToStorage(c: Context, fileRecord: createFileData) {
-    await minioClient.putObject(
-      BUCKET,
-      fileRecord.path!,
-      fileRecord.imageBuffer!,
-      fileRecord.size!,
-      { "Content-Type": fileRecord.mimeType ?? "application/octet-stream" },
-    );
+    await minioClient.putObject(BUCKET, fileRecord.path!, fileRecord.imageBuffer!, fileRecord.size!, { "Content-Type": fileRecord.mimeType ?? "application/octet-stream" });
   }
 
   static async uploadSingleFile(c: Context, userId: string, file: File, module: string): Promise<fileResponse> {
@@ -88,12 +82,12 @@ export class FileService {
     await FileRepository.deleteFileRecord(fileId);
   }
 
-  static async getFileRecordByTargetId(targetId: string, module: string) {
-    return await FileRepository.getFileRecordByTargetId(targetId, module);
+  static async getFileRecordById(fileId: string) {
+    return await FileRepository.getFileRecordById(fileId);
   }
 
-  static getFileRecordByTargetIdDirectly(targetId: string, module: string) {
-    return FileRepository.getFileRecordByTargetId(targetId, module);
+  static getFileRecordByIdDirectly(fileId: string) {
+    return FileRepository.getFileRecordById(fileId);
   }
 
   static async saveRecordToDatabase(fileRecord: createFileData, tx: Prisma.TransactionClient | null) {

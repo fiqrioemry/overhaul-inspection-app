@@ -10,7 +10,8 @@ export class UserRepository {
       select: {
         id: true,
         email: true,
-        avatar: true,
+        avatarFileStorageId: true,
+        avatarFile: { select: { url: true } },
         name: true,
         role: true,
         passwordHash: true,
@@ -39,7 +40,8 @@ export class UserRepository {
         name: true,
         role: true,
         status: true,
-        avatar: true,
+        avatarFileStorageId: true,
+        avatarFile: { select: { url: true } },
         verifiedAt: true,
         createdAt: true,
       },
@@ -55,7 +57,8 @@ export class UserRepository {
         name: true,
         role: true,
         status: true,
-        avatar: true,
+        avatarFileStorageId: true,
+        avatarFile: { select: { url: true } },
         verifiedAt: true,
         lastLogin: true,
         createdAt: true,
@@ -73,7 +76,8 @@ export class UserRepository {
         name: true,
         role: true,
         status: true,
-        avatar: true,
+        avatarFileStorageId: true,
+        avatarFile: { select: { url: true } },
         verifiedAt: true,
         lastLogin: true,
         createdAt: true,
@@ -107,10 +111,12 @@ export class UserRepository {
           name: true,
           role: true,
           status: true,
-          avatar: true,
+          avatarFileStorageId: true,
+          avatarFile: { select: { url: true } },
           verifiedAt: true,
           lastLogin: true,
           createdAt: true,
+          updatedAt: true,
         },
         orderBy: { [orderBy]: sortBy },
         skip: (page - 1) * limit,
@@ -122,8 +128,18 @@ export class UserRepository {
     return { users, total };
   }
 
-  static async update(id: string, data: { name?: string; role?: RoleEnum; avatar?: string }) {
-    return await database.user.update({
+  static async update(
+    id: string,
+    data: {
+      name?: string;
+      role?: RoleEnum;
+      avatarFileStorageId?: string | null;
+    },
+    tx: Prisma.TransactionClient | null = null,
+  ) {
+    const db = tx ?? database;
+
+    return await db.user.update({
       where: { id, deletedAt: null },
       data,
       select: {
@@ -132,13 +148,13 @@ export class UserRepository {
         name: true,
         role: true,
         status: true,
-        avatar: true,
+        avatarFileStorageId: true,
+        avatarFile: { select: { url: true } },
         verifiedAt: true,
         updatedAt: true,
       },
     });
   }
-
   static async updateStatus(id: string, status: string) {
     return await database.user.update({
       where: { id, deletedAt: null },
@@ -225,11 +241,11 @@ export class UserRepository {
     });
   }
 
-  static async updateAvatar(userId: string, avatarUrl: string, tx: Prisma.TransactionClient | null = null): Promise<void> {
+  static async updateAvatar(userId: string, avatarFileStorageId: string, tx: Prisma.TransactionClient | null = null): Promise<void> {
     const db = tx ?? database;
     await db.user.update({
       where: { id: userId },
-      data: { avatar: avatarUrl },
+      data: { avatarFileStorageId: avatarFileStorageId },
     });
   }
 
@@ -252,7 +268,7 @@ export class UserRepository {
     });
   }
 
-  static async findByOAuthProvider(provider: OAuthProvider, providerAccountId: string): Promise<userCredential | null> {
+  static async findByOAuthProvider(provider: OAuthProvider, providerAccountId: string) {
     const oauth = await database.oAuthAccount.findUnique({
       where: {
         provider_providerAccountId: { provider, providerAccountId },
@@ -262,7 +278,8 @@ export class UserRepository {
           select: {
             id: true,
             email: true,
-            avatar: true,
+            avatarFileStorageId: true,
+            avatarFile: { select: { url: true } },
             name: true,
             role: true,
             passwordHash: true,

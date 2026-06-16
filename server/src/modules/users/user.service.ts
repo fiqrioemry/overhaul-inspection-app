@@ -12,6 +12,7 @@ import { UserRepository } from "@/modules/users/user.repository";
 import { FileRepository } from "@/modules/files/file.repository";
 import { authLimit } from "@/config/constant/auth.constant";
 import { mailConfig, databaseConfig } from "@/config/env";
+import { userResponse } from "@/modules/users/user.types";
 import { CreateUserRequest, ListUsersQuery, UpdateUserPasswordRequest, UpdateUserRequest, UpdateUserStatusRequest, UpdateProfileRequest } from "@/modules/users/user.schema";
 
 export class UserService {
@@ -65,11 +66,24 @@ export class UserService {
     });
   }
 
-  static async listUsers(query: ListUsersQuery) {
+  static async listUsers(query: ListUsersQuery): Promise<{ data: userResponse[]; meta: { page: number; limit: number; total: number; totalPages: number } }> {
     const { users, total } = await UserRepository.findMany(query);
 
+    const responseData = users.map((user) => ({
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      avatar: user.avatarFile?.url ?? null,
+      role: user.role,
+      status: user.status,
+      verifiedAt: user.verifiedAt,
+      lastLogin: user.lastLogin,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    }));
+
     return {
-      data: users,
+      data: responseData,
       meta: {
         page: query.page,
         limit: query.limit,
@@ -79,11 +93,24 @@ export class UserService {
     };
   }
 
-  static async getUserById(id: string) {
-    const user = await UserRepository.findById(id);
-    if (!user) {
+  static async getUserById(id: string): Promise<userResponse> {
+    const result = await UserRepository.findById(id);
+    if (!result) {
       throw new HTTPException(404, { message: "User not found", cause: "USER_NOT_FOUND" });
     }
+
+    const user = {
+      id: result.id,
+      email: result.email,
+      name: result.name,
+      avatar: result.avatarFile?.url ?? null,
+      role: result.role,
+      status: result.status,
+      verifiedAt: result.verifiedAt,
+      lastLogin: result.lastLogin,
+      createdAt: result.createdAt,
+      updatedAt: result.updatedAt,
+    };
     return user;
   }
 
@@ -94,21 +121,19 @@ export class UserService {
     }
 
     return await pgsql.$transaction(async (tx: Prisma.TransactionClient) => {
-      let avatarUrl: string | undefined;
+      let avatarFileStorageId = user.avatarFileStorageId!;
 
       if (avatarFile) {
-        const existingFile = await FileService.getFileRecordByTargetId(id, "USER_AVATAR");
-        if (existingFile) {
-          await FileRepository.markFilesAsUnused(tx, [existingFile.id]);
+        if (user.avatarFileStorageId) {
+          await FileRepository.markFilesAsUnused(tx, [user.avatarFileStorageId!]);
         }
-        const fileDataRecord = await FileService.generateFileRecord(avatarFile, "USER_AVATAR");
+        const fileDataRecord = await FileService.generateFileRecord(avatarFile!, "USER_AVATAR");
         await FileService.uploadFileToStorage(c, fileDataRecord);
-        fileDataRecord.isUsed = true;
-        await FileService.saveRecordToDatabase(fileDataRecord, tx);
-        avatarUrl = fileDataRecord.url!;
+        const newFileRecord = await FileService.saveRecordToDatabase(fileDataRecord, tx);
+        avatarFileStorageId = newFileRecord.id!;
       }
 
-      return await UserRepository.update(id, { name: request.name, role: request.role, avatar: avatarUrl });
+      return await UserRepository.update(id, { name: request.name, role: request.role, avatarFileStorageId }, tx);
     });
   }
 
@@ -151,7 +176,15 @@ export class UserService {
   }
 
   static async updateAvatar(c: Context, userId: string, avatar: File) {
-    const fileRecord = await FileService.getFileRecordByTargetId(userId, "USER_AVATAR");
+    const user = await UserRepository.findById(userId);
+    if (!user) {
+      throw new HTTPException(404, { message: "User not found", cause: "USER_NOT_FOUND" });
+    }
+
+    let fileRecord = null;
+    if (user.avatarFileStorageId) {
+      fileRecord = await FileService.getFileRecordById(user.avatarFileStorageId!);
+    }
 
     return await pgsql.$transaction(async (tx: Prisma.TransactionClient) => {
       const fileDataRecord = await FileService.generateFileRecord(avatar, "USER_AVATAR");
@@ -162,10 +195,9 @@ export class UserService {
 
       await FileService.uploadFileToStorage(c, fileDataRecord);
 
-      fileDataRecord.isUsed = true;
       const uploadedFile = await FileService.saveRecordToDatabase(fileDataRecord, tx);
 
-      await UserRepository.updateAvatar(userId, fileDataRecord.url!, tx);
+      await UserRepository.updateAvatar(userId, uploadedFile.id, tx);
 
       await UserRepository.createActivityLog(tx, {
         userId,
