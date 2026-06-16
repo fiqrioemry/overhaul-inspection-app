@@ -1,6 +1,7 @@
 import { HTTPException } from "hono/http-exception";
 import { ReferenceDocumentRepository } from "@/modules/reference-documents/reference-document.repository";
 import { CreateReferenceDocumentRequest, ListReferenceDocumentsQuery, UpdateReferenceDocumentRequest } from "@/modules/reference-documents/reference-document.schema";
+import type { ReferenceDocumentItem, ReferenceDocumentListResult } from "./reference-document.types";
 
 export class ReferenceDocumentService {
   static async createDocument(request: CreateReferenceDocumentRequest) {
@@ -11,15 +12,32 @@ export class ReferenceDocumentService {
     return ReferenceDocumentRepository.create(request);
   }
 
-  static async listDocuments(query: ListReferenceDocumentsQuery) {
+  static async listDocuments(query: ListReferenceDocumentsQuery): Promise<ReferenceDocumentListResult> {
     const { documents, total } = await ReferenceDocumentRepository.findMany(query);
+    const totalPages = total > 0 ? Math.ceil(total / query.limit) : 0;
+
+    const data: ReferenceDocumentItem[] = documents.map((d) => ({
+      id: d.id,
+      code: d.code,
+      title: d.title,
+      documentType: d.documentType,
+      revision: d.revision,
+      issuer: d.issuer,
+      fileUrl: d.fileUrl,
+      status: d.status,
+      createdAt: d.createdAt,
+      updatedAt: d.updatedAt,
+    }));
+
     return {
-      data: documents,
+      data,
       meta: {
         page: query.page,
         limit: query.limit,
         total,
-        totalPages: Math.ceil(total / query.limit),
+        totalPages,
+        hasNextPage: query.page < totalPages,
+        hasPreviousPage: query.page > 1,
       },
     };
   }

@@ -8,7 +8,7 @@ export class NotificationController {
   static async getUnreadCount(c: Context) {
     const user = c.get("user");
     const response = await NotificationService.getUnreadNotificationCount(c, user.userId);
-    return responseOK(c, "Unread count retrieved successfully", { unreadCount: response });
+    return responseOK(c, notificationSuccessMessage.GET_UNREAD_COUNT, { unreadCount: response });
   }
 
   static async getNotifications(c: Context) {
@@ -29,7 +29,7 @@ export class NotificationController {
   static async markAllAsRead(c: Context) {
     const user = c.get("user");
     await NotificationService.markAllAsRead(c, user.userId);
-    return responseOK(c, "All notifications marked as read");
+    return responseOK(c, notificationSuccessMessage.MARK_AS_READ);
   }
 
   static async deleteNotification(c: Context) {

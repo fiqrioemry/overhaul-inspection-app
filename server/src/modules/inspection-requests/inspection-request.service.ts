@@ -9,6 +9,7 @@ import {
   ListInspectionRequestsQuery,
   ReviewInspectionRequestRequest,
 } from "./inspection-request.schema";
+import type { InspectionRequestListItem, InspectionRequestListResult } from "./inspection-request.types";
 
 function padSeq(n: number): string {
   return String(n + 1).padStart(4, "0");
@@ -90,15 +91,45 @@ export class InspectionRequestService {
     return InspectionRequestRepository.findById(request.id);
   }
 
-  static async listRequests(query: ListInspectionRequestsQuery) {
+  static async listRequests(query: ListInspectionRequestsQuery): Promise<InspectionRequestListResult> {
     const { requests, total } = await InspectionRequestRepository.findMany(query);
+    const totalPages = total > 0 ? Math.ceil(total / query.limit) : 0;
+
+    const data: InspectionRequestListItem[] = requests.map((r) => ({
+      id: r.id,
+      tankProcessId: r.tankProcessId,
+      requestNo: r.requestNo,
+      status: r.status,
+      notes: r.notes,
+      requestedBy: r.requestedBy,
+      requestedAt: r.requestedAt,
+      reviewedBy: r.reviewedBy,
+      reviewNotes: r.reviewNotes,
+      reviewedAt: r.reviewedAt,
+      createdAt: r.createdAt,
+      updatedAt: r.updatedAt,
+      tankProcess: {
+        id: r.tankProcess.id,
+        name: r.tankProcess.name,
+        type: r.tankProcess.type,
+        status: r.tankProcess.status,
+        tankId: r.tankProcess.tankId,
+        tank: r.tankProcess.tank,
+        processTemplate: r.tankProcess.processTemplate,
+      },
+      requestedByUser: r.requestedByUser,
+      reviewedByUser: r.reviewedByUser,
+    }));
+
     return {
-      data: requests,
+      data,
       meta: {
         page: query.page,
         limit: query.limit,
         total,
-        totalPages: total > 0 ? Math.ceil(total / query.limit) : 0,
+        totalPages,
+        hasNextPage: query.page < totalPages,
+        hasPreviousPage: query.page > 1,
       },
     };
   }

@@ -49,6 +49,7 @@ export async function protect(c: Context, next: () => Promise<void>) {
   const permissions = getPermissionsForRole(session.user.role as RoleEnum);
 
   c.set("user", {
+    id: session.userId,
     ssid: session.id,
     userId: session.userId,
     role: session.user.role,

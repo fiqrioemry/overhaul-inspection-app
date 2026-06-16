@@ -19,15 +19,7 @@ export class FindingRepository {
     });
   }
 
-  static async findMany(query: {
-    tankId?: string;
-    tankProcessId?: string;
-    status?: FindingStatusEnum;
-    severity?: string;
-    isBlocking?: boolean;
-    page: number;
-    limit: number;
-  }) {
+  static async findMany(query: { tankId?: string; tankProcessId?: string; status?: FindingStatusEnum; severity?: string; isBlocking?: boolean; page: number; limit: number }) {
     const { tankId, tankProcessId, status, severity, isBlocking, page, limit } = query;
     const skip = (page - 1) * limit;
     const where: Prisma.FindingWhereInput = {

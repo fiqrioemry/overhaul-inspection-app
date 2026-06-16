@@ -3,6 +3,7 @@ import { MasterDataStatus } from "generated/prisma";
 import { AcceptanceCriteriaRepository } from "@/modules/acceptance-criteria/acceptance-criteria.repository";
 import { ReferenceDocumentRepository } from "@/modules/reference-documents/reference-document.repository";
 import { AddCriteriaReferenceRequest, CreateAcceptanceCriteriaRequest, ListAcceptanceCriteriaQuery, UpdateAcceptanceCriteriaRequest } from "@/modules/acceptance-criteria/acceptance-criteria.schema";
+import type { AcceptanceCriteriaItem, AcceptanceCriteriaListResult } from "./acceptance-criteria.types";
 
 export class AcceptanceCriteriaService {
   static async createCriteria(request: CreateAcceptanceCriteriaRequest) {
@@ -13,15 +14,39 @@ export class AcceptanceCriteriaService {
     return AcceptanceCriteriaRepository.create(request);
   }
 
-  static async listCriteria(query: ListAcceptanceCriteriaQuery) {
+  static async listCriteria(query: ListAcceptanceCriteriaQuery): Promise<AcceptanceCriteriaListResult> {
     const { criteria, total } = await AcceptanceCriteriaRepository.findMany(query);
+    const totalPages = total > 0 ? Math.ceil(total / query.limit) : 0;
+
+    const data: AcceptanceCriteriaItem[] = criteria.map((c) => ({
+      id: c.id,
+      code: c.code,
+      name: c.name,
+      description: c.description,
+      acceptanceType: c.acceptanceType,
+      operator: c.operator,
+      minValue: c.minValue,
+      maxValue: c.maxValue,
+      unit: c.unit,
+      acceptanceText: c.acceptanceText,
+      method: c.method,
+      tools: c.tools,
+      isRequired: c.isRequired,
+      severity: c.severity,
+      status: c.status,
+      createdAt: c.createdAt,
+      updatedAt: c.updatedAt,
+    }));
+
     return {
-      data: criteria,
+      data,
       meta: {
         page: query.page,
         limit: query.limit,
         total,
-        totalPages: Math.ceil(total / query.limit),
+        totalPages,
+        hasNextPage: query.page < totalPages,
+        hasPreviousPage: query.page > 1,
       },
     };
   }

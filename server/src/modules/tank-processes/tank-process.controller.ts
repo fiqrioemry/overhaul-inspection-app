@@ -4,12 +4,13 @@ import { EligibilityService } from "@/services/eligibility.service";
 import { ChecklistResultService } from "@/modules/checklist-results/checklist-result.service";
 import { TankProcessService } from "./tank-process.service";
 import { updateProcessStatusRequest, updateProcessResultRequest } from "./tank-process.schema";
+import { tankProcessSuccessMessage } from "@/config/constant/tank-process.constant";
 
 export class TankProcessController {
   static async getProcessById(c: Context) {
     const id = c.req.param("id");
     const process = await TankProcessService.getProcessById(id);
-    return responseOK(c, "Process retrieved successfully", process);
+    return responseOK(c, tankProcessSuccessMessage.GET_PROCESS, process);
   }
 
   static async updateStatus(c: Context) {
@@ -17,7 +18,7 @@ export class TankProcessController {
     const body = await c.req.json();
     const data = updateProcessStatusRequest.parse(body);
     const updated = await TankProcessService.updateStatus(id, data);
-    return responseOK(c, "Process status updated successfully", updated);
+    return responseOK(c, tankProcessSuccessMessage.UPDATE_PROCESS_STATUS, updated);
   }
 
   static async updateResult(c: Context) {
@@ -25,18 +26,18 @@ export class TankProcessController {
     const body = await c.req.json();
     const data = updateProcessResultRequest.parse(body);
     const updated = await TankProcessService.updateResult(id, data);
-    return responseOK(c, "Process result updated successfully", updated);
+    return responseOK(c, tankProcessSuccessMessage.UPDATE_PROCESS_RESULT, updated);
   }
 
   static async getEligibility(c: Context) {
     const id = c.req.param("id");
     const result = await EligibilityService.checkEligibility(id);
-    return responseOK(c, "Eligibility checked successfully", result);
+    return responseOK(c, tankProcessSuccessMessage.GET_ELIGIBILITY, result);
   }
 
   static async getChecklist(c: Context) {
     const id = c.req.param("id");
     const items = await ChecklistResultService.getChecklistByProcess(id);
-    return responseOK(c, "Checklist retrieved successfully", items);
+    return responseOK(c, tankProcessSuccessMessage.GET_CHECKLIST, items);
   }
 }

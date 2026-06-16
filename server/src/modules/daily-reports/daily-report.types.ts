@@ -1,0 +1,29 @@
+export interface PaginationMeta {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+}
+
+export interface DailyReportListItem {
+  id: string;
+  tankId: string;
+  tankProcessId: string | null;
+  reportDate: Date;
+  activityType: string;
+  description: string | null;
+  inspectorId: string | null;
+  pertaminaPicId: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  tank: { id: string; tankNo: string; tankName: string | null };
+  tankProcess: { id: string; name: string } | null;
+  inspector: { id: string; name: string } | null;
+}
+
+export interface DailyReportListResult {
+  data: DailyReportListItem[];
+  meta: PaginationMeta;
+}

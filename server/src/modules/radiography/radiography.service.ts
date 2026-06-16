@@ -11,6 +11,7 @@ import {
   UpdateJointResultRequest,
   UpdateRadiographyRequest,
 } from "./radiography.schema";
+import type { RadiographyTestListItem, RadiographyTestDetail } from "./radiography.types";
 
 export class RadiographyService {
   static async createRadiography(tankProcessId: string, data: CreateRadiographyRequest, userId: string) {
@@ -43,17 +44,61 @@ export class RadiographyService {
     return RadiographyRepository.findById(radiography.id);
   }
 
-  static async listByTankProcess(tankProcessId: string) {
-    return RadiographyRepository.findByTankProcess(tankProcessId);
+  static async listByTankProcess(tankProcessId: string): Promise<RadiographyTestListItem[]> {
+    const tests = await RadiographyRepository.findByTankProcess(tankProcessId);
+    return tests.map((t) => ({
+      id: t.id,
+      tankProcessId: t.tankProcessId,
+      testDate: t.testDate,
+      area: t.area,
+      totalJoint: t.totalJoint,
+      totalShot: t.totalShot,
+      totalAccepted: t.totalAccepted,
+      totalRepair: t.totalRepair,
+      totalReshoot: t.totalReshoot,
+      result: t.result,
+      remarks: t.remarks,
+      createdBy: t.createdBy,
+      createdAt: t.createdAt,
+      updatedAt: t.updatedAt,
+      createdByUser: t.createdByUser,
+      _count: t._count,
+    }));
   }
 
-  static async getById(id: string) {
+  static async getById(id: string): Promise<RadiographyTestDetail> {
     const test = await RadiographyRepository.findById(id);
     if (!test) {
       throw new HTTPException(404, { message: "Radiography test not found", cause: "RADIOGRAPHY_NOT_FOUND" });
     }
     const attachments = await FileRepository.getFileRecordsByTargetId(id, "RADIOGRAPHY_TEST");
-    return { ...test, attachments };
+    return {
+      id: test.id,
+      tankProcessId: test.tankProcessId,
+      testDate: test.testDate,
+      area: test.area,
+      totalJoint: test.totalJoint,
+      totalShot: test.totalShot,
+      totalAccepted: test.totalAccepted,
+      totalRepair: test.totalRepair,
+      totalReshoot: test.totalReshoot,
+      result: test.result,
+      remarks: test.remarks,
+      createdBy: test.createdBy,
+      createdAt: test.createdAt,
+      updatedAt: test.updatedAt,
+      tankProcess: test.tankProcess,
+      createdByUser: test.createdByUser,
+      jointResults: test.jointResults,
+      attachments: attachments.map((a) => ({
+        id: a.id,
+        url: a.url,
+        path: a.path,
+        module: a.module,
+        isUsed: a.isUsed,
+        createdAt: a.createdAt,
+      })),
+    };
   }
 
   static async updateRadiography(id: string, data: UpdateRadiographyRequest) {

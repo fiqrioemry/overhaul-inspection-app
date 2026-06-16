@@ -10,6 +10,7 @@ import {
   UpdateProcessDependencyRequest,
   UpdateProcessTemplateRequest,
 } from "@/modules/process-templates/process-template.schema";
+import type { ProcessTemplateItem, ProcessTemplateListResult } from "./process-template.types";
 
 export class ProcessTemplateService {
   static async createTemplate(request: CreateProcessTemplateRequest) {
@@ -20,15 +21,32 @@ export class ProcessTemplateService {
     return ProcessTemplateRepository.create(request);
   }
 
-  static async listTemplates(query: ListProcessTemplatesQuery) {
+  static async listTemplates(query: ListProcessTemplatesQuery): Promise<ProcessTemplateListResult> {
     const { templates, total } = await ProcessTemplateRepository.findMany(query);
+    const totalPages = total > 0 ? Math.ceil(total / query.limit) : 0;
+
+    const data: ProcessTemplateItem[] = templates.map((t) => ({
+      id: t.id,
+      code: t.code,
+      name: t.name,
+      type: t.type,
+      sequenceOrder: t.sequenceOrder,
+      isOptional: t.isOptional,
+      applicabilityRule: t.applicabilityRule,
+      isActive: t.isActive,
+      createdAt: t.createdAt,
+      updatedAt: t.updatedAt,
+    }));
+
     return {
-      data: templates,
+      data,
       meta: {
         page: query.page,
         limit: query.limit,
         total,
-        totalPages: Math.ceil(total / query.limit),
+        totalPages,
+        hasNextPage: query.page < totalPages,
+        hasPreviousPage: query.page > 1,
       },
     };
   }

@@ -10,37 +10,38 @@ import {
   updateProcessDependencyRequest,
   updateProcessTemplateRequest,
 } from "@/modules/process-templates/process-template.schema";
+import { processTemplateSuccessMessage } from "@/config/constant/process-template.constant";
 
 export class ProcessTemplateController {
   static async createTemplate(c: Context) {
     const request = createProcessTemplateRequest.parse(await c.req.json());
     const template = await ProcessTemplateService.createTemplate(request);
-    return responseCreated(c, "Process template created successfully", template);
+    return responseCreated(c, processTemplateSuccessMessage.CREATE_TEMPLATE, template);
   }
 
   static async listTemplates(c: Context) {
     const query = listProcessTemplatesQuery.parse(c.req.query());
     const result = await ProcessTemplateService.listTemplates(query);
-    return responseOK(c, "Process templates retrieved successfully", result.data, result.meta);
+    return responseOK(c, processTemplateSuccessMessage.GET_TEMPLATES, result.data, result.meta);
   }
 
   static async getTemplateById(c: Context) {
     const id = c.req.param("id");
     const template = await ProcessTemplateService.getTemplateById(id);
-    return responseOK(c, "Process template retrieved successfully", template);
+    return responseOK(c, processTemplateSuccessMessage.GET_TEMPLATE, template);
   }
 
   static async updateTemplate(c: Context) {
     const id = c.req.param("id");
     const request = updateProcessTemplateRequest.parse(await c.req.json());
     const template = await ProcessTemplateService.updateTemplate(id, request);
-    return responseOK(c, "Process template updated successfully", template);
+    return responseOK(c, processTemplateSuccessMessage.UPDATE_TEMPLATE, template);
   }
 
   static async deleteTemplate(c: Context) {
     const id = c.req.param("id");
     await ProcessTemplateService.deleteTemplate(id);
-    return responseOK(c, "Process template deleted successfully");
+    return responseOK(c, processTemplateSuccessMessage.DELETE_TEMPLATE);
   }
 
   // Criteria
@@ -48,13 +49,13 @@ export class ProcessTemplateController {
     const processTemplateId = c.req.param("id");
     const request = addProcessCriteriaRequest.parse(await c.req.json());
     const mapping = await ProcessTemplateService.addCriteria(processTemplateId, request);
-    return responseCreated(c, "Criteria mapped to process template successfully", mapping);
+    return responseCreated(c, processTemplateSuccessMessage.ADD_CRITERIA, mapping);
   }
 
   static async listCriteria(c: Context) {
     const processTemplateId = c.req.param("id");
     const criteria = await ProcessTemplateService.listCriteria(processTemplateId);
-    return responseOK(c, "Process criteria retrieved successfully", criteria);
+    return responseOK(c, processTemplateSuccessMessage.GET_CRITERIA, criteria);
   }
 
   // Dependencies
@@ -62,13 +63,13 @@ export class ProcessTemplateController {
     const processTemplateId = c.req.param("id");
     const request = addProcessDependencyRequest.parse(await c.req.json());
     const dep = await ProcessTemplateService.addDependency(processTemplateId, request);
-    return responseCreated(c, "Process dependency added successfully", dep);
+    return responseCreated(c, processTemplateSuccessMessage.ADD_DEPENDENCY, dep);
   }
 
   static async listDependencies(c: Context) {
     const processTemplateId = c.req.param("id");
     const deps = await ProcessTemplateService.listDependencies(processTemplateId);
-    return responseOK(c, "Process dependencies retrieved successfully", deps);
+    return responseOK(c, processTemplateSuccessMessage.GET_DEPENDENCIES, deps);
   }
 
   // Flat update/delete for process criteria mappings
@@ -76,13 +77,13 @@ export class ProcessTemplateController {
     const id = c.req.param("id");
     const request = updateProcessCriteriaRequest.parse(await c.req.json());
     const mapping = await ProcessTemplateService.updateCriteriaMapping(id, request);
-    return responseOK(c, "Process criteria mapping updated successfully", mapping);
+    return responseOK(c, processTemplateSuccessMessage.UPDATE_CRITERIA_MAPPING, mapping);
   }
 
   static async removeCriteriaMapping(c: Context) {
     const id = c.req.param("id");
     await ProcessTemplateService.removeCriteriaMapping(id);
-    return responseOK(c, "Process criteria mapping removed successfully");
+    return responseOK(c, processTemplateSuccessMessage.REMOVE_CRITERIA_MAPPING);
   }
 
   // Flat update/delete for dependencies
@@ -90,12 +91,12 @@ export class ProcessTemplateController {
     const id = c.req.param("id");
     const request = updateProcessDependencyRequest.parse(await c.req.json());
     const dep = await ProcessTemplateService.updateDependency(id, request);
-    return responseOK(c, "Process dependency updated successfully", dep);
+    return responseOK(c, processTemplateSuccessMessage.UPDATE_DEPENDENCY, dep);
   }
 
   static async removeDependency(c: Context) {
     const id = c.req.param("id");
     await ProcessTemplateService.removeDependency(id);
-    return responseOK(c, "Process dependency removed successfully");
+    return responseOK(c, processTemplateSuccessMessage.REMOVE_DEPENDENCY);
   }
 }

@@ -5,6 +5,7 @@ import { FileRepository } from "@/modules/files/file.repository";
 import { NotificationService } from "@/modules/notifications/notification.service";
 import { FindingRepository } from "./finding.repository";
 import { CreateFindingRequest, ListFindingsQuery, UpdateFindingRequest, UpdateFindingStatusRequest } from "./finding.schema";
+import type { FindingListItem, FindingListResult } from "./finding.types";
 
 function padSeq(n: number): string {
   return String(n + 1).padStart(4, "0");
@@ -21,6 +22,7 @@ const ALLOWED_STATUS_TRANSITIONS: Partial<Record<FindingStatusEnum, FindingStatu
 
 export class FindingService {
   static async createFinding(data: CreateFindingRequest, userId: string) {
+    console.log("Creating finding with data:", userId);
     const tank = await pgsql.tank.findFirst({ where: { id: data.tankId, deletedAt: null } });
     if (!tank) {
       throw new HTTPException(404, { message: "Tank not found", cause: "TANK_NOT_FOUND" });
@@ -80,15 +82,39 @@ export class FindingService {
     return FindingRepository.findById(finding.id);
   }
 
-  static async listFindings(query: ListFindingsQuery) {
+  static async listFindings(query: ListFindingsQuery): Promise<FindingListResult> {
     const { findings, total } = await FindingRepository.findMany(query);
+    const totalPages = total > 0 ? Math.ceil(total / query.limit) : 0;
+
+    const data: FindingListItem[] = findings.map((f) => ({
+      id: f.id,
+      findingNo: f.findingNo,
+      tankId: f.tankId,
+      tankProcessId: f.tankProcessId,
+      criteriaId: f.criteriaId,
+      title: f.title,
+      description: f.description,
+      locationDetail: f.locationDetail,
+      severity: f.severity,
+      status: f.status,
+      isBlocking: f.isBlocking,
+      createdAt: f.createdAt,
+      updatedAt: f.updatedAt,
+      tank: f.tank,
+      tankProcess: f.tankProcess,
+      criteria: f.criteria,
+      createdByUser: f.createdByUser,
+    }));
+
     return {
-      data: findings,
+      data,
       meta: {
         page: query.page,
         limit: query.limit,
         total,
-        totalPages: total > 0 ? Math.ceil(total / query.limit) : 0,
+        totalPages,
+        hasNextPage: query.page < totalPages,
+        hasPreviousPage: query.page > 1,
       },
     };
   }

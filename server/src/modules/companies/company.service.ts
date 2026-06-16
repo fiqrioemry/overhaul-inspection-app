@@ -6,6 +6,7 @@ import { CompanyRepository } from "@/modules/companies/company.repository";
 import { FileService } from "@/modules/files/file.service";
 import { FileRepository } from "@/modules/files/file.repository";
 import { CompanyOptionsQuery, CreateCompanyRequest, ListCompaniesQuery, UpdateCompanyRequest } from "@/modules/companies/company.schema";
+import type { CompanyItem, CompanyListResult, CompanyOption } from "./company.types";
 
 export class CompanyService {
   static async createCompany(c: Context, request: CreateCompanyRequest, logoFile?: File) {
@@ -30,19 +31,36 @@ export class CompanyService {
     });
   }
 
-  static async getCompanyOptions(query: CompanyOptionsQuery) {
+  static async getCompanyOptions(query: CompanyOptionsQuery): Promise<CompanyOption[]> {
     return CompanyRepository.findOptions(query);
   }
 
-  static async listCompanies(query: ListCompaniesQuery) {
+  static async listCompanies(query: ListCompaniesQuery): Promise<CompanyListResult> {
     const { companies, total } = await CompanyRepository.findMany(query);
+    const totalPages = total > 0 ? Math.ceil(total / query.limit) : 0;
+
+    const data: CompanyItem[] = companies.map((c) => ({
+      id: c.id,
+      name: c.name,
+      type: c.type,
+      address: c.address,
+      phone: c.phone,
+      email: c.email,
+      logoUrl: c.logoUrl,
+      isActive: c.isActive,
+      createdAt: c.createdAt,
+      updatedAt: c.updatedAt,
+    }));
+
     return {
-      data: companies,
+      data,
       meta: {
         page: query.page,
         limit: query.limit,
         total,
-        totalPages: Math.ceil(total / query.limit),
+        totalPages,
+        hasNextPage: query.page < totalPages,
+        hasPreviousPage: query.page > 1,
       },
     };
   }

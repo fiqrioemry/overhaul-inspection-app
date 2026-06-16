@@ -1,8 +1,9 @@
 import { pgsql } from "@/lib/database";
 import { FindingStatusEnum, InspectionRequestStatusEnum, ProcessStatusEnum, StatusEnum } from "generated/prisma";
+import type { DashboardSummary, FindingSummary, TankProgressItem, TestSummary } from "./dashboard.types";
 
 export class DashboardService {
-  static async getSummary() {
+  static async getSummary(): Promise<DashboardSummary> {
     const [
       totalTanks,
       activeTanks,
@@ -38,7 +39,7 @@ export class DashboardService {
     };
   }
 
-  static async getTankProgress() {
+  static async getTankProgress(): Promise<TankProgressItem[]> {
     const tanks = await pgsql.tank.findMany({
       where: { deletedAt: null },
       orderBy: { createdAt: "desc" },
@@ -69,7 +70,7 @@ export class DashboardService {
     });
   }
 
-  static async getFindingSummary() {
+  static async getFindingSummary(): Promise<FindingSummary> {
     const [byStatus, bySeverity, recentFindings] = await Promise.all([
       pgsql.finding.groupBy({
         by: ["status"],
@@ -99,7 +100,7 @@ export class DashboardService {
     };
   }
 
-  static async getTestSummary() {
+  static async getTestSummary(): Promise<TestSummary> {
     const [recentTestRecords, recentRadiography] = await Promise.all([
       pgsql.testRecord.findMany({
         orderBy: { createdAt: "desc" },

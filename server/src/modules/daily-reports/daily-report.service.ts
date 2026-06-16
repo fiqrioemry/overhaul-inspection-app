@@ -3,6 +3,7 @@ import { FileRepository } from "@/modules/files/file.repository";
 import { pgsql } from "@/lib/database";
 import { DailyReportRepository } from "./daily-report.repository";
 import { CreateDailyReportRequest, ListDailyReportsQuery, UpdateDailyReportRequest } from "./daily-report.schema";
+import type { DailyReportListItem, DailyReportListResult } from "./daily-report.types";
 
 export class DailyReportService {
   static async createReport(data: CreateDailyReportRequest, userId: string) {
@@ -34,15 +35,35 @@ export class DailyReportService {
     return DailyReportRepository.findById(report.id);
   }
 
-  static async listReports(query: ListDailyReportsQuery) {
+  static async listReports(query: ListDailyReportsQuery): Promise<DailyReportListResult> {
     const { reports, total } = await DailyReportRepository.findMany(query);
+    const totalPages = total > 0 ? Math.ceil(total / query.limit) : 0;
+
+    const data: DailyReportListItem[] = reports.map((r) => ({
+      id: r.id,
+      tankId: r.tankId,
+      tankProcessId: r.tankProcessId,
+      reportDate: r.reportDate,
+      activityType: r.activityType,
+      description: r.description,
+      inspectorId: r.inspectorId,
+      pertaminaPicId: r.pertaminaPicId,
+      createdAt: r.createdAt,
+      updatedAt: r.updatedAt,
+      tank: r.tank,
+      tankProcess: r.tankProcess,
+      inspector: r.inspector,
+    }));
+
     return {
-      data: reports,
+      data,
       meta: {
         page: query.page,
         limit: query.limit,
         total,
-        totalPages: total > 0 ? Math.ceil(total / query.limit) : 0,
+        totalPages,
+        hasNextPage: query.page < totalPages,
+        hasPreviousPage: query.page > 1,
       },
     };
   }

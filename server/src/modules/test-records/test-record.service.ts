@@ -6,6 +6,7 @@ import { NotificationService } from "@/modules/notifications/notification.servic
 import { TankProcessRepository } from "@/modules/tank-processes/tank-process.repository";
 import { TestRecordRepository } from "./test-record.repository";
 import { CompleteTestRecordRequest, CreateTestRecordRequest, UpdateTestRecordRequest } from "./test-record.schema";
+import type { TestRecordListItem, TestRecordDetail } from "./test-record.types";
 
 export class TestRecordService {
   static async createRecord(tankProcessId: string, data: CreateTestRecordRequest, userId: string) {
@@ -43,17 +44,57 @@ export class TestRecordService {
     return TestRecordRepository.findById(record.id);
   }
 
-  static async listByTankProcess(tankProcessId: string) {
-    return TestRecordRepository.findByTankProcess(tankProcessId);
+  static async listByTankProcess(tankProcessId: string): Promise<TestRecordListItem[]> {
+    const records = await TestRecordRepository.findByTankProcess(tankProcessId);
+    return records.map((r) => ({
+      id: r.id,
+      tankProcessId: r.tankProcessId,
+      testDate: r.testDate,
+      testPressure: r.testPressure,
+      pressureUnit: r.pressureUnit,
+      holdingTime: r.holdingTime,
+      testMedium: r.testMedium,
+      leakIndication: r.leakIndication,
+      result: r.result,
+      remarks: r.remarks,
+      createdBy: r.createdBy,
+      createdAt: r.createdAt,
+      updatedAt: r.updatedAt,
+      createdByUser: r.createdByUser,
+    }));
   }
 
-  static async getById(id: string) {
+  static async getById(id: string): Promise<TestRecordDetail> {
     const record = await TestRecordRepository.findById(id);
     if (!record) {
       throw new HTTPException(404, { message: "Test record not found", cause: "TEST_RECORD_NOT_FOUND" });
     }
     const attachments = await FileRepository.getFileRecordsByTargetId(id, "TEST_RECORD");
-    return { ...record, attachments };
+    return {
+      id: record.id,
+      tankProcessId: record.tankProcessId,
+      testDate: record.testDate,
+      testPressure: record.testPressure,
+      pressureUnit: record.pressureUnit,
+      holdingTime: record.holdingTime,
+      testMedium: record.testMedium,
+      leakIndication: record.leakIndication,
+      result: record.result,
+      remarks: record.remarks,
+      createdBy: record.createdBy,
+      createdAt: record.createdAt,
+      updatedAt: record.updatedAt,
+      tankProcess: record.tankProcess,
+      createdByUser: record.createdByUser,
+      attachments: attachments.map((a) => ({
+        id: a.id,
+        url: a.url,
+        path: a.path,
+        module: a.module,
+        isUsed: a.isUsed,
+        createdAt: a.createdAt,
+      })),
+    };
   }
 
   static async updateRecord(id: string, data: UpdateTestRecordRequest) {

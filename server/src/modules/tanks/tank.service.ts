@@ -3,6 +3,7 @@ import { pgsql } from "@/lib/database";
 import { ProcessStatusEnum, ChecklistStatusEnum } from "generated/prisma";
 import { TankRepository } from "./tank.repository";
 import { CreateTankRequest, ListTanksQuery, UpdateTankRequest } from "./tank.schema";
+import type { TankListItem, TankListResult } from "./tank.types";
 
 function isApplicable(applicabilityRule: string | null, hasSteamCoil: boolean): boolean {
   if (!applicabilityRule) return true;
@@ -89,15 +90,37 @@ export class TankService {
     return TankRepository.findById(tank.id);
   }
 
-  static async listTanks(query: ListTanksQuery) {
+  static async listTanks(query: ListTanksQuery): Promise<TankListResult> {
     const { tanks, total } = await TankRepository.findMany(query);
+    const totalPages = total > 0 ? Math.ceil(total / query.limit) : 0;
+
+    const data: TankListItem[] = tanks.map((t) => ({
+      id: t.id,
+      tankNo: t.tankNo,
+      tankName: t.tankName,
+      status: t.status,
+      diameterMm: t.diameterMm,
+      heightMm: t.heightMm,
+      shellCourseCount: t.shellCourseCount,
+      hasSteamCoil: t.hasSteamCoil,
+      startDate: t.startDate,
+      estimatedFinishDate: t.estimatedFinishDate,
+      createdAt: t.createdAt,
+      updatedAt: t.updatedAt,
+      contractorCompany: t.contractorCompany,
+      inspectionCompany: t.inspectionCompany,
+      _count: t._count,
+    }));
+
     return {
-      data: tanks,
+      data,
       meta: {
         page: query.page,
         limit: query.limit,
         total,
-        totalPages: total > 0 ? Math.ceil(total / query.limit) : 0,
+        totalPages,
+        hasNextPage: query.page < totalPages,
+        hasPreviousPage: query.page > 1,
       },
     };
   }
