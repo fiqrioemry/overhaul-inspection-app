@@ -1,7 +1,7 @@
 import { Context } from "hono";
 import { responseOK, responseCreated } from "@/utils/response";
 import { FindingService } from "./finding.service";
-import { createFindingRequest, listFindingsQuery, updateFindingRequest, updateFindingStatusRequest } from "./finding.schema";
+import { bulkCloseFindingsRequest, createFindingRequest, listFindingsQuery, updateFindingRequest, updateFindingStatusRequest } from "./finding.schema";
 import { findingSuccessMessage } from "@/config/constant/finding.constant";
 
 export class FindingController {
@@ -40,6 +40,14 @@ export class FindingController {
     const user = c.get("user");
     const finding = await FindingService.updateFindingStatus(id, data, user.id);
     return responseOK(c, findingSuccessMessage.UPDATE_FINDING_STATUS, finding);
+  }
+
+  static async bulkCloseFindings(c: Context) {
+    const body = await c.req.json();
+    const data = bulkCloseFindingsRequest.parse(body);
+    const user = c.get("user");
+    const result = await FindingService.bulkCloseFindings(data, user.id);
+    return responseOK(c, findingSuccessMessage.BULK_CLOSE_FINDINGS, result);
   }
 
   static async deleteFinding(c: Context) {

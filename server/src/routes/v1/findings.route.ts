@@ -8,6 +8,7 @@ const findings = new Hono();
 
 findings.post("/", protect, requirePermission(PERMISSIONS.FINDING_CREATE), ctrl.createFinding);
 findings.get("/", protect, requirePermission(PERMISSIONS.FINDING_READ), ctrl.listFindings);
+findings.patch("/bulk-close", protect, requirePermission(PERMISSIONS.FINDING_UPDATE), ctrl.bulkCloseFindings);
 findings.get("/:id", protect, requirePermission(PERMISSIONS.FINDING_READ), ctrl.getFindingById);
 findings.patch("/:id", protect, requirePermission(PERMISSIONS.FINDING_UPDATE), ctrl.updateFinding);
 findings.patch("/:id/status", protect, requirePermission(PERMISSIONS.FINDING_UPDATE), ctrl.updateFindingStatus);

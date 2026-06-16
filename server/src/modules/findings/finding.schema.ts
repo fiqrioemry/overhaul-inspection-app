@@ -30,6 +30,12 @@ export const updateFindingStatusRequest = z.object({
 });
 export type UpdateFindingStatusRequest = z.infer<typeof updateFindingStatusRequest>;
 
+export const bulkCloseFindingsRequest = z.object({
+  ids: z.array(z.string().min(1)).min(1, "At least one finding ID required"),
+  remarks: z.string().optional(),
+});
+export type BulkCloseFindingsRequest = z.infer<typeof bulkCloseFindingsRequest>;
+
 export const listFindingsQuery = z.object({
   tankId: z.string().optional(),
   tankProcessId: z.string().optional(),

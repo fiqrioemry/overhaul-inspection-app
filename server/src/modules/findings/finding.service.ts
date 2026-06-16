@@ -4,7 +4,7 @@ import { FindingStatusEnum } from "generated/prisma";
 import { FileRepository } from "@/modules/files/file.repository";
 import { NotificationService } from "@/modules/notifications/notification.service";
 import { FindingRepository } from "./finding.repository";
-import { CreateFindingRequest, ListFindingsQuery, UpdateFindingRequest, UpdateFindingStatusRequest } from "./finding.schema";
+import { BulkCloseFindingsRequest, CreateFindingRequest, ListFindingsQuery, UpdateFindingRequest, UpdateFindingStatusRequest } from "./finding.schema";
 import type { FindingListItem, FindingListResult } from "./finding.types";
 
 function padSeq(n: number): string {
@@ -12,9 +12,9 @@ function padSeq(n: number): string {
 }
 
 const ALLOWED_STATUS_TRANSITIONS: Partial<Record<FindingStatusEnum, FindingStatusEnum[]>> = {
-  [FindingStatusEnum.OPEN]: [FindingStatusEnum.IN_REPAIR, FindingStatusEnum.REJECTED],
-  [FindingStatusEnum.IN_REPAIR]: [FindingStatusEnum.REPAIRED],
-  [FindingStatusEnum.REPAIRED]: [FindingStatusEnum.VERIFIED, FindingStatusEnum.IN_REPAIR],
+  [FindingStatusEnum.OPEN]: [FindingStatusEnum.IN_REPAIR, FindingStatusEnum.REJECTED, FindingStatusEnum.CLOSED],
+  [FindingStatusEnum.IN_REPAIR]: [FindingStatusEnum.REPAIRED, FindingStatusEnum.CLOSED],
+  [FindingStatusEnum.REPAIRED]: [FindingStatusEnum.VERIFIED, FindingStatusEnum.IN_REPAIR, FindingStatusEnum.CLOSED],
   [FindingStatusEnum.VERIFIED]: [FindingStatusEnum.CLOSED, FindingStatusEnum.REPAIRED],
   [FindingStatusEnum.CLOSED]: [],
   [FindingStatusEnum.REJECTED]: [],
@@ -193,6 +193,26 @@ export class FindingService {
     }
 
     return FindingRepository.findById(id);
+  }
+
+  static async bulkCloseFindings(data: BulkCloseFindingsRequest, userId: string) {
+    const findings = await pgsql.finding.findMany({
+      where: { id: { in: data.ids }, deletedAt: null },
+      select: { id: true, status: true },
+    });
+
+    const toClose = findings.filter(
+      (f) => f.status !== FindingStatusEnum.CLOSED && f.status !== FindingStatusEnum.REJECTED,
+    );
+
+    if (toClose.length > 0) {
+      await pgsql.finding.updateMany({
+        where: { id: { in: toClose.map((f) => f.id) } },
+        data: { status: FindingStatusEnum.CLOSED, closedBy: userId, closedAt: new Date() },
+      });
+    }
+
+    return { closed: toClose.length, skipped: findings.length - toClose.length };
   }
 
   static async deleteFinding(id: string) {
