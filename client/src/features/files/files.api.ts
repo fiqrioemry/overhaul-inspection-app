@@ -11,11 +11,12 @@ export interface FileRecord {
   createdAt: string;
 }
 
-export async function uploadFile(file: File): Promise<FileRecord> {
+export async function uploadFile(file: File, module?: string): Promise<FileRecord> {
   const formData = new FormData();
   formData.append("file", file);
   const res = await api.post<ResponseSuccess<FileRecord>>("/files/upload", formData, {
     headers: { "Content-Type": "multipart/form-data" },
+    params: module ? { module } : undefined,
   });
   return res.data.data!;
 }

@@ -143,6 +143,8 @@ export default function TankProcessDetailPage() {
 
   const FINDING_BLOCKED_STATUSES: ProcessStatus[] = ["NOT_STARTED", "COMPLETED", "REVIEWED"];
   const canAddFinding = !FINDING_BLOCKED_STATUSES.includes(process.status);
+  const DAILY_REPORT_BLOCKED_STATUSES: ProcessStatus[] = ["NOT_STARTED", "COMPLETED"];
+  const canAddDailyReport = !DAILY_REPORT_BLOCKED_STATUSES.includes(process.status);
   const hasOpenFindings = (findingsData?.items ?? []).some((f) => f.status === "OPEN");
   const submitForReviewBlocked = nextStatus === "WAITING_REVIEW" && hasOpenFindings;
 
@@ -334,11 +336,13 @@ export default function TankProcessDetailPage() {
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">{dailyReportsData?.meta?.total ?? 0} report(s)</span>
-              <PermissionGate permission={PERMISSIONS.DAILY_REPORT_CREATE}>
-                <Button size="sm" variant="outline" onClick={() => setDailyReportDialogOpen(true)}>
-                  <Plus className="h-4 w-4 mr-1" /> Add Report
-                </Button>
-              </PermissionGate>
+              {canAddDailyReport && (
+                <PermissionGate permission={PERMISSIONS.DAILY_REPORT_CREATE}>
+                  <Button size="sm" variant="outline" onClick={() => setDailyReportDialogOpen(true)}>
+                    <Plus className="h-4 w-4 mr-1" /> Add Report
+                  </Button>
+                </PermissionGate>
+              )}
             </div>
 
             {!dailyReportsData?.items?.length ? (
