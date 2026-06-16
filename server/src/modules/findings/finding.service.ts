@@ -1,6 +1,6 @@
 import { HTTPException } from "hono/http-exception";
 import { pgsql } from "@/lib/database";
-import { FindingStatusEnum } from "generated/prisma";
+import { FindingStatusEnum, ProcessStatusEnum } from "generated/prisma";
 import { FileRepository } from "@/modules/files/file.repository";
 import { NotificationService } from "@/modules/notifications/notification.service";
 import { FindingRepository } from "./finding.repository";
@@ -31,6 +31,18 @@ export class FindingService {
     const tankProcess = await pgsql.tankProcess.findUnique({ where: { id: data.tankProcessId } });
     if (!tankProcess) {
       throw new HTTPException(404, { message: "Tank process not found", cause: "PROCESS_NOT_FOUND" });
+    }
+
+    const blockedStatuses: ProcessStatusEnum[] = [
+      ProcessStatusEnum.NOT_STARTED,
+      ProcessStatusEnum.COMPLETED,
+      ProcessStatusEnum.REVIEWED,
+    ];
+    if (blockedStatuses.includes(tankProcess.status as ProcessStatusEnum)) {
+      throw new HTTPException(422, {
+        message: `Cannot add findings when process is ${tankProcess.status}`,
+        cause: "INVALID_PROCESS_STATUS_FOR_FINDING",
+      });
     }
 
     const count = await FindingRepository.countByTankNo(tank.tankNo);

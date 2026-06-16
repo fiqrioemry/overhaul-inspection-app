@@ -1,13 +1,13 @@
 import { HTTPException } from "hono/http-exception";
 import { pgsql } from "@/lib/database";
-import { ProcessStatusEnum, ProcessResultEnum } from "generated/prisma";
+import { ProcessStatusEnum, ProcessResultEnum, FindingStatusEnum } from "generated/prisma";
 import { TankProcessRepository } from "./tank-process.repository";
 import { UpdateProcessResultRequest, UpdateProcessStatusRequest } from "./tank-process.schema";
 
 const ALLOWED_STATUS_TRANSITIONS: Partial<Record<ProcessStatusEnum, ProcessStatusEnum[]>> = {
   [ProcessStatusEnum.NOT_STARTED]: [ProcessStatusEnum.IN_PROGRESS, ProcessStatusEnum.NOT_APPLICABLE],
   [ProcessStatusEnum.IN_PROGRESS]: [ProcessStatusEnum.WAITING_REVIEW, ProcessStatusEnum.NOT_STARTED],
-  [ProcessStatusEnum.WAITING_REVIEW]: [ProcessStatusEnum.IN_PROGRESS],
+  [ProcessStatusEnum.WAITING_REVIEW]: [ProcessStatusEnum.REVIEWED, ProcessStatusEnum.IN_PROGRESS],
   [ProcessStatusEnum.REVIEWED]: [ProcessStatusEnum.IN_PROGRESS, ProcessStatusEnum.COMPLETED],
   [ProcessStatusEnum.COMPLETED]: [],
   [ProcessStatusEnum.LOCKED]: [],
@@ -47,6 +47,18 @@ export class TankProcessService {
         message: `Cannot transition from ${process.status} to ${data.status}`,
         cause: "INVALID_STATUS_TRANSITION",
       });
+    }
+
+    if (data.status === ProcessStatusEnum.WAITING_REVIEW) {
+      const openFindingsCount = await pgsql.finding.count({
+        where: { tankProcessId: id, status: FindingStatusEnum.OPEN, deletedAt: null },
+      });
+      if (openFindingsCount > 0) {
+        throw new HTTPException(422, {
+          message: `Cannot submit for review: ${openFindingsCount} finding(s) are still OPEN. Close or repair them first.`,
+          cause: "OPEN_FINDINGS_EXIST",
+        });
+      }
     }
 
     return TankProcessRepository.updateStatus(id, {
