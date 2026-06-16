@@ -54,14 +54,21 @@ export default function UserFormDialog({ open, onOpenChange, user }: UserFormDia
   });
 
   useEffect(() => {
+    if (!open) return;
+
     if (user && isEdit) {
       editForm.reset({ name: user.name, role: user.role });
     } else {
-      createForm.reset({ name: "", email: "", role: "USER", status: "ACTIVE", password: "", isVerified: false });
+      createForm.reset({
+        name: "",
+        email: "",
+        role: "USER",
+        status: "ACTIVE",
+        password: "",
+        isVerified: false,
+      });
     }
-    setAvatarFile(null);
-    setAvatarPreview(null);
-  }, [user, open]);
+  }, [user, open, isEdit, editForm, createForm]);
 
   useEffect(() => {
     return () => {
@@ -78,18 +85,12 @@ export default function UserFormDialog({ open, onOpenChange, user }: UserFormDia
   }
 
   function onCreateSubmit(values: CreateUserFormValues) {
-    createMutation.mutate(
-      { ...values, password: values.password || undefined },
-      { onSuccess: () => onOpenChange(false) },
-    );
+    createMutation.mutate({ ...values, password: values.password || undefined }, { onSuccess: () => onOpenChange(false) });
   }
 
   function onEditSubmit(values: UpdateUserFormValues) {
     if (!user) return;
-    updateMutation.mutate(
-      { id: user.id, data: { ...values, avatar: avatarFile ?? undefined } },
-      { onSuccess: () => onOpenChange(false) },
-    );
+    updateMutation.mutate({ id: user.id, data: { ...values, avatar: avatarFile ?? undefined } }, { onSuccess: () => onOpenChange(false) });
   }
 
   const isPending = createMutation.isPending || updateMutation.isPending;
@@ -111,24 +112,12 @@ export default function UserFormDialog({ open, onOpenChange, user }: UserFormDia
                   <AvatarImage src={displayAvatar} alt={user?.name} />
                   <AvatarFallback>{avatarInitial}</AvatarFallback>
                 </Avatar>
-                <button
-                  type="button"
-                  onClick={() => avatarInputRef.current?.click()}
-                  className="absolute -bottom-0.5 -right-0.5 rounded-full bg-primary p-1 text-primary-foreground shadow"
-                >
+                <button type="button" onClick={() => avatarInputRef.current?.click()} className="absolute -bottom-0.5 -right-0.5 rounded-full bg-primary p-1 text-primary-foreground shadow">
                   <Camera className="h-3 w-3" />
                 </button>
-                <input
-                  ref={avatarInputRef}
-                  type="file"
-                  accept="image/jpeg,image/png"
-                  className="hidden"
-                  onChange={handleAvatarChange}
-                />
+                <input ref={avatarInputRef} type="file" accept="image/jpeg,image/png" className="hidden" onChange={handleAvatarChange} />
               </div>
-              <p className="text-xs text-muted-foreground">
-                {avatarFile ? avatarFile.name : "JPEG or PNG, max 1 MB"}
-              </p>
+              <p className="text-xs text-muted-foreground">{avatarFile ? avatarFile.name : "JPEG or PNG, max 1 MB"}</p>
             </div>
 
             <ShortTextField control={editForm.control} name="name" label="Name" placeholder="Full name" />
