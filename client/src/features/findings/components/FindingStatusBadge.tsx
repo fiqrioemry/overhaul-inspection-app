@@ -8,6 +8,7 @@ const STATUS_CONFIG: Record<FindingStatus, { label: string; className: string }>
   REPAIRED: { label: "Repaired", className: "bg-blue-100 text-blue-700 border-blue-200" },
   VERIFIED: { label: "Verified", className: "bg-teal-100 text-teal-700 border-teal-200" },
   CLOSED: { label: "Closed", className: "bg-gray-100 text-gray-600 border-gray-200" },
+  REJECTED: { label: "Rejected", className: "bg-slate-100 text-slate-500 border-slate-200" },
 };
 
 const SEVERITY_CONFIG: Record<string, { label: string; className: string }> = {

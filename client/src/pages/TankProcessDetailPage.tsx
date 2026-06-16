@@ -1,15 +1,17 @@
 // src/pages/TankProcessDetailPage.tsx
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Send, Plus, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Send, Plus, AlertTriangle, Pencil, ArrowRightLeft, Trash2, CheckCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import PageHeader from "@/components/common/PageHeader";
 import LoadingState from "@/components/common/LoadingState";
 import ErrorState from "@/components/common/ErrorState";
 import EmptyState from "@/components/common/EmptyState";
+import ConfirmDialog from "@/components/common/ConfirmDialog";
 import ProcessStatusBadge from "@/components/common/ProcessStatusBadge";
 import ProcessResultBadge from "@/components/common/ProcessResultBadge";
 import PermissionGate from "@/components/common/PermissionGate";
@@ -17,17 +19,20 @@ import ChecklistTable from "@/features/checklist-results/components/ChecklistTab
 import EligibilityPanel from "@/features/tank-processes/components/EligibilityPanel";
 import InspectionRequestForm from "@/features/inspection-requests/components/InspectionRequestForm";
 import FindingFormDialog from "@/features/findings/components/FindingFormDialog";
+import FindingEditDialog from "@/features/findings/components/FindingEditDialog";
+import FindingStatusDialog from "@/features/findings/components/FindingStatusDialog";
 import { FindingStatusBadge, FindingSeverityBadge } from "@/features/findings/components/FindingStatusBadge";
 import DailyReportFormDialog from "@/features/daily-reports/components/DailyReportFormDialog";
 import TestRecordFormDialog from "@/features/test-records/components/TestRecordFormDialog";
 import RadiographyFormDialog from "@/features/radiography/components/RadiographyFormDialog";
 import JointResultsTable from "@/features/radiography/components/JointResultsTable";
 import { useTankProcess, useUpdateProcessStatus } from "@/features/tank-processes/tank-processes.query";
-import { useFindings } from "@/features/findings/findings.query";
+import { useFindings, useDeleteFinding, useBulkCloseFindings } from "@/features/findings/findings.query";
 import { useDailyReports } from "@/features/daily-reports/daily-reports.query";
 import { useTestRecords, useDeleteTestRecord } from "@/features/test-records/test-records.query";
 import { useRadiographyTests, useDeleteRadiography } from "@/features/radiography/radiography.query";
 import { PERMISSIONS } from "@/constants/permission.constant";
+import type { FindingSummary } from "@/features/findings/findings.api";
 import { ROUTES } from "@/constants/route.constant";
 import { format } from "date-fns";
 import type { ProcessStatus } from "@/features/tank-processes/tank-processes.api";
@@ -64,6 +69,12 @@ export default function TankProcessDetailPage() {
   const navigate = useNavigate();
   const [requestDialogOpen, setRequestDialogOpen] = useState(false);
   const [findingDialogOpen, setFindingDialogOpen] = useState(false);
+  const [editFinding, setEditFinding] = useState<FindingSummary | null>(null);
+  const [statusFinding, setStatusFinding] = useState<FindingSummary | null>(null);
+  const [quickCloseFinding, setQuickCloseFinding] = useState<FindingSummary | null>(null);
+  const [bulkCloseFindingOpen, setBulkCloseFindingOpen] = useState(false);
+  const [selectedFindingIds, setSelectedFindingIds] = useState<Set<string>>(new Set());
+  const [deleteFindingTarget, setDeleteFindingTarget] = useState<FindingSummary | null>(null);
   const [dailyReportDialogOpen, setDailyReportDialogOpen] = useState(false);
   const [testRecordDialogOpen, setTestRecordDialogOpen] = useState(false);
   const [radiographyDialogOpen, setRadiographyDialogOpen] = useState(false);
@@ -73,6 +84,32 @@ export default function TankProcessDetailPage() {
   const updateStatus = useUpdateProcessStatus();
 
   const { data: findingsData } = useFindings({ tankProcessId: processId!, limit: 50, page: 1 });
+  const deleteFinding = useDeleteFinding();
+  const bulkClose = useBulkCloseFindings();
+
+  const findingList = findingsData?.items ?? [];
+  const closeableFindingIds = findingList.filter((f) => f.status !== "CLOSED" && f.status !== "REJECTED").map((f) => f.id);
+  const allCloseableSelected = closeableFindingIds.length > 0 && closeableFindingIds.every((id) => selectedFindingIds.has(id));
+
+  function toggleFindingSelectAll() {
+    if (allCloseableSelected) {
+      setSelectedFindingIds(new Set());
+    } else {
+      setSelectedFindingIds(new Set(closeableFindingIds));
+    }
+  }
+
+  function toggleFindingSelect(id: string) {
+    setSelectedFindingIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }
   const { data: dailyReportsData } = useDailyReports({ tankProcessId: processId!, limit: 50, page: 1 });
   const { data: testRecords = [] } = useTestRecords(processId!);
   const { data: radiographyTests = [] } = useRadiographyTests(processId!);
@@ -108,11 +145,7 @@ export default function TankProcessDetailPage() {
           <div className="flex items-center gap-2">
             {nextStatus && actionLabel && (
               <PermissionGate permission={PERMISSIONS.PROCESS_UPDATE}>
-                <Button
-                  variant="outline"
-                  onClick={handleStatusAdvance}
-                  disabled={updateStatus.isPending}
-                >
+                <Button variant="outline" onClick={handleStatusAdvance} disabled={updateStatus.isPending}>
                   {updateStatus.isPending ? "Saving..." : actionLabel}
                 </Button>
               </PermissionGate>
@@ -137,22 +170,10 @@ export default function TankProcessDetailPage() {
         <TabsList className="flex-wrap h-auto">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="checklist">Checklist</TabsTrigger>
-          <TabsTrigger value="findings">
-            Findings {findingsData?.meta?.total ? <span className="ml-1 text-xs">({findingsData.meta.total})</span> : null}
-          </TabsTrigger>
-          <TabsTrigger value="daily-activity">
-            Daily Activity {dailyReportsData?.meta?.total ? <span className="ml-1 text-xs">({dailyReportsData.meta.total})</span> : null}
-          </TabsTrigger>
-          {isTestType && (
-            <TabsTrigger value="test-records">
-              Test Records {testRecords.length > 0 ? <span className="ml-1 text-xs">({testRecords.length})</span> : null}
-            </TabsTrigger>
-          )}
-          {isTestType && (
-            <TabsTrigger value="radiography">
-              Radiography {radiographyTests.length > 0 ? <span className="ml-1 text-xs">({radiographyTests.length})</span> : null}
-            </TabsTrigger>
-          )}
+          <TabsTrigger value="findings">Findings {findingsData?.meta?.total ? <span className="ml-1 text-xs">({findingsData.meta.total})</span> : null}</TabsTrigger>
+          <TabsTrigger value="daily-activity">Daily Activity {dailyReportsData?.meta?.total ? <span className="ml-1 text-xs">({dailyReportsData.meta.total})</span> : null}</TabsTrigger>
+          {isTestType && <TabsTrigger value="test-records">Test Records {testRecords.length > 0 ? <span className="ml-1 text-xs">({testRecords.length})</span> : null}</TabsTrigger>}
+          {isTestType && <TabsTrigger value="radiography">Radiography {radiographyTests.length > 0 ? <span className="ml-1 text-xs">({radiographyTests.length})</span> : null}</TabsTrigger>}
           <TabsTrigger value="eligibility">Eligibility</TabsTrigger>
           <TabsTrigger value="inspection">Inspection Requests</TabsTrigger>
         </TabsList>
@@ -167,14 +188,8 @@ export default function TankProcessDetailPage() {
             <InfoRow label="Optional" value={process.processTemplate.isOptional ? "Yes" : "No"} />
             <InfoRow label="Status" value={<ProcessStatusBadge status={process.status} />} />
             <InfoRow label="Result" value={<ProcessResultBadge result={process.result} />} />
-            <InfoRow
-              label="Started At"
-              value={process.actualStartDate ? format(new Date(process.actualStartDate), "dd MMM yyyy HH:mm") : null}
-            />
-            <InfoRow
-              label="Completed At"
-              value={process.actualFinishDate ? format(new Date(process.actualFinishDate), "dd MMM yyyy HH:mm") : null}
-            />
+            <InfoRow label="Started At" value={process.actualStartDate ? format(new Date(process.actualStartDate), "dd MMM yyyy HH:mm") : null} />
+            <InfoRow label="Completed At" value={process.actualFinishDate ? format(new Date(process.actualFinishDate), "dd MMM yyyy HH:mm") : null} />
             {process.remarks && <InfoRow label="Remarks" value={process.remarks} />}
           </div>
         </TabsContent>
@@ -187,8 +202,18 @@ export default function TankProcessDetailPage() {
         {/* FINDINGS */}
         <TabsContent value="findings" className="mt-4">
           <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">{findingsData?.meta?.total ?? 0} finding(s)</span>
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">{findingsData?.meta?.total ?? 0} finding(s)</span>
+                {selectedFindingIds.size > 0 && (
+                  <PermissionGate permission={PERMISSIONS.FINDING_UPDATE}>
+                    <Button size="sm" variant="outline" className="text-green-700 border-green-300 hover:bg-green-50" onClick={() => setBulkCloseFindingOpen(true)}>
+                      <CheckCheck className="h-3.5 w-3.5 mr-1" />
+                      Close Selected ({selectedFindingIds.size})
+                    </Button>
+                  </PermissionGate>
+                )}
+              </div>
               <PermissionGate permission={PERMISSIONS.FINDING_CREATE}>
                 <Button size="sm" variant="outline" onClick={() => setFindingDialogOpen(true)}>
                   <Plus className="h-4 w-4 mr-1" /> Add Finding
@@ -196,35 +221,85 @@ export default function TankProcessDetailPage() {
               </PermissionGate>
             </div>
 
-            {!findingsData?.items?.length ? (
+            {!findingList.length ? (
               <EmptyState title="No findings" description="No findings recorded for this process." icon={AlertTriangle} />
             ) : (
               <div className="rounded-lg border overflow-hidden">
                 <table className="w-full text-sm">
                   <thead className="border-b bg-muted/40">
                     <tr>
+                      <th className="px-4 py-3 w-10">
+                        <Checkbox
+                          checked={allCloseableSelected}
+                          onCheckedChange={toggleFindingSelectAll}
+                          aria-label="Select all"
+                          disabled={closeableFindingIds.length === 0}
+                        />
+                      </th>
                       <th className="px-4 py-3 text-left font-medium">No.</th>
                       <th className="px-4 py-3 text-left font-medium">Title</th>
                       <th className="px-4 py-3 text-left font-medium">Severity</th>
                       <th className="px-4 py-3 text-left font-medium">Status</th>
                       <th className="px-4 py-3 text-left font-medium">By</th>
                       <th className="px-4 py-3 text-left font-medium">Date</th>
+                      <th className="px-4 py-3"></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y">
-                    {findingsData.items.map((f) => (
-                      <tr key={f.id} className="hover:bg-muted/20">
-                        <td className="px-4 py-3 font-mono text-xs">{f.findingNo}</td>
-                        <td className="px-4 py-3">
-                          <p className="font-medium text-sm line-clamp-2">{f.title}</p>
-                          {f.locationDetail && <p className="text-xs text-muted-foreground">{f.locationDetail}</p>}
-                        </td>
-                        <td className="px-4 py-3"><FindingSeverityBadge severity={f.severity} /></td>
-                        <td className="px-4 py-3"><FindingStatusBadge status={f.status} /></td>
-                        <td className="px-4 py-3 text-xs text-muted-foreground">{f.createdByUser.name}</td>
-                        <td className="px-4 py-3 text-xs text-muted-foreground">{format(new Date(f.createdAt), "dd MMM yyyy")}</td>
-                      </tr>
-                    ))}
+                    {findingList.map((f) => {
+                      const isTerminal = f.status === "CLOSED" || f.status === "REJECTED";
+                      const isSelected = selectedFindingIds.has(f.id);
+                      return (
+                        <tr key={f.id} className={`hover:bg-muted/20 ${isSelected ? "bg-muted/30" : ""}`}>
+                          <td className="px-4 py-3">
+                            {!isTerminal && (
+                              <Checkbox
+                                checked={isSelected}
+                                onCheckedChange={() => toggleFindingSelect(f.id)}
+                                aria-label={`Select ${f.findingNo}`}
+                              />
+                            )}
+                          </td>
+                          <td className="px-4 py-3 font-mono text-xs">{f.findingNo}</td>
+                          <td className="px-4 py-3">
+                            <p className="font-medium text-sm line-clamp-2">{f.title}</p>
+                            {f.locationDetail && <p className="text-xs text-muted-foreground">{f.locationDetail}</p>}
+                          </td>
+                          <td className="px-4 py-3">
+                            <FindingSeverityBadge severity={f.severity} />
+                          </td>
+                          <td className="px-4 py-3">
+                            <FindingStatusBadge status={f.status} />
+                          </td>
+                          <td className="px-4 py-3 text-xs text-muted-foreground">{f.createdByUser?.name}</td>
+                          <td className="px-4 py-3 text-xs text-muted-foreground">{format(new Date(f.createdAt), "dd MMM yyyy")}</td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-1 justify-end">
+                              <PermissionGate permission={PERMISSIONS.FINDING_UPDATE}>
+                                {!isTerminal && (
+                                  <>
+                                    <Button variant="ghost" size="icon-sm" onClick={() => setEditFinding(f)} title="Edit">
+                                      <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                                    </Button>
+                                    <Button variant="ghost" size="icon-sm" onClick={() => setQuickCloseFinding(f)} title="Quick close" className="text-green-600 hover:text-green-700 hover:bg-green-50">
+                                      <CheckCheck className="h-3.5 w-3.5" />
+                                    </Button>
+                                  </>
+                                )}
+                                <Button variant="ghost" size="icon-sm" onClick={() => setStatusFinding(f)} title="Update status">
+                                  <ArrowRightLeft className="h-3.5 w-3.5 text-muted-foreground" />
+                                </Button>
+                                {isTerminal && (
+                                  <Button variant="ghost" size="icon-sm" onClick={() => setDeleteFindingTarget(f)} title="Delete" disabled={deleteFinding.isPending}>
+                                    <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                                  </Button>
+                                )}
+                              </PermissionGate>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -252,16 +327,12 @@ export default function TankProcessDetailPage() {
                   <div key={report.id} className="rounded-lg border p-4">
                     <div className="flex items-start justify-between gap-2">
                       <div>
-                        <span className="text-xs text-muted-foreground">
-                          {format(new Date(report.reportDate), "dd MMM yyyy")}
-                        </span>
+                        <span className="text-xs text-muted-foreground">{format(new Date(report.reportDate), "dd MMM yyyy")}</span>
                         <Badge variant="outline" className="ml-2 text-xs">
                           {report.activityType.replace(/_/g, " ")}
                         </Badge>
                       </div>
-                      {report.inspector && (
-                        <span className="text-xs text-muted-foreground shrink-0">{report.inspector.name}</span>
-                      )}
+                      {report.inspector && <span className="text-xs text-muted-foreground shrink-0">{report.inspector.name}</span>}
                     </div>
                     <p className="mt-2 text-sm whitespace-pre-wrap">{report.description}</p>
                   </div>
@@ -303,17 +374,11 @@ export default function TankProcessDetailPage() {
                     <tbody className="divide-y">
                       {testRecords.map((rec) => (
                         <tr key={rec.id} className="hover:bg-muted/20">
-                          <td className="px-4 py-3 text-xs">
-                            {rec.testDate ? format(new Date(rec.testDate), "dd MMM yyyy") : "—"}
-                          </td>
-                          <td className="px-4 py-3 text-xs">
-                            {rec.testPressure != null ? `${rec.testPressure} ${rec.pressureUnit ?? ""}` : "—"}
-                          </td>
+                          <td className="px-4 py-3 text-xs">{rec.testDate ? format(new Date(rec.testDate), "dd MMM yyyy") : "—"}</td>
+                          <td className="px-4 py-3 text-xs">{rec.testPressure != null ? `${rec.testPressure} ${rec.pressureUnit ?? ""}` : "—"}</td>
                           <td className="px-4 py-3 text-xs text-muted-foreground">{rec.testMedium ?? "—"}</td>
                           <td className="px-4 py-3 text-xs text-muted-foreground">{rec.holdingTime ?? "—"}</td>
-                          <td className="px-4 py-3 text-xs">
-                            {rec.leakIndication != null ? (rec.leakIndication ? "Yes" : "No") : "—"}
-                          </td>
+                          <td className="px-4 py-3 text-xs">{rec.leakIndication != null ? (rec.leakIndication ? "Yes" : "No") : "—"}</td>
                           <td className="px-4 py-3">
                             <Badge variant="outline" className={TEST_RESULT_COLOR[rec.result]}>
                               {rec.result}
@@ -321,12 +386,7 @@ export default function TankProcessDetailPage() {
                           </td>
                           <td className="px-4 py-3 text-right">
                             <PermissionGate permission={PERMISSIONS.TEST_RECORD_UPDATE}>
-                              <Button
-                                variant="ghost"
-                                size="icon-sm"
-                                onClick={() => deleteTestRecord.mutate(rec.id)}
-                                disabled={deleteTestRecord.isPending}
-                              >
+                              <Button variant="ghost" size="icon-sm" onClick={() => deleteTestRecord.mutate(rec.id)} disabled={deleteTestRecord.isPending}>
                                 <span className="text-destructive text-xs">Del</span>
                               </Button>
                             </PermissionGate>
@@ -360,16 +420,14 @@ export default function TankProcessDetailPage() {
                 <div className="space-y-4">
                   {radiographyTests.map((rt) => (
                     <div key={rt.id} className="rounded-lg border">
-                      <div
-                        className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/20"
-                        onClick={() => setExpandedRadiographyId(expandedRadiographyId === rt.id ? null : rt.id)}
-                      >
+                      <div className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/20" onClick={() => setExpandedRadiographyId(expandedRadiographyId === rt.id ? null : rt.id)}>
                         <div className="flex items-center gap-3">
                           <div>
                             <p className="text-sm font-medium">{rt.area ?? "Radiography Test"}</p>
                             <p className="text-xs text-muted-foreground">
                               {rt.testDate ? format(new Date(rt.testDate), "dd MMM yyyy") : "No date"}
-                              {" · "}{rt._count?.jointResults ?? 0} joints
+                              {" · "}
+                              {rt._count?.jointResults ?? 0} joints
                             </p>
                           </div>
                         </div>
@@ -424,7 +482,10 @@ export default function TankProcessDetailPage() {
             </PermissionGate>
             <p className="text-sm text-muted-foreground">
               Inspection requests for this process are listed on the{" "}
-              <a href={ROUTES.INSPECTION_REQUESTS} className="underline">Inspection Requests</a> page.
+              <a href={ROUTES.INSPECTION_REQUESTS} className="underline">
+                Inspection Requests
+              </a>{" "}
+              page.
             </p>
           </div>
         </TabsContent>
@@ -438,41 +499,70 @@ export default function TankProcessDetailPage() {
               <DialogTitle>Submit Inspection Request</DialogTitle>
             </DialogHeader>
             <div className="mt-4">
-              <InspectionRequestForm
-                tankProcessId={processId!}
-                onSuccess={() => setRequestDialogOpen(false)}
-                onCancel={() => setRequestDialogOpen(false)}
-              />
+              <InspectionRequestForm tankProcessId={processId!} onSuccess={() => setRequestDialogOpen(false)} onCancel={() => setRequestDialogOpen(false)} />
             </div>
           </div>
         </DialogContent>
       </Dialog>
 
-      <FindingFormDialog
-        open={findingDialogOpen}
-        onOpenChange={setFindingDialogOpen}
-        tankId={process.tank?.id ?? tankId!}
-        tankProcessId={processId!}
+      <FindingFormDialog open={findingDialogOpen} onOpenChange={setFindingDialogOpen} tankId={process.tank?.id ?? tankId!} tankProcessId={processId!} />
+
+      {editFinding && <FindingEditDialog open={Boolean(editFinding)} onOpenChange={(open) => !open && setEditFinding(null)} finding={editFinding} />}
+
+      {statusFinding && <FindingStatusDialog open={Boolean(statusFinding)} onOpenChange={(open) => !open && setStatusFinding(null)} finding={statusFinding} />}
+
+      <ConfirmDialog
+        open={Boolean(quickCloseFinding)}
+        onOpenChange={(open) => !open && setQuickCloseFinding(null)}
+        title="Close Finding"
+        description={`Close finding "${quickCloseFinding?.findingNo} — ${quickCloseFinding?.title}"? This marks it as resolved.`}
+        confirmLabel="Close Finding"
+        loading={bulkClose.isPending}
+        onConfirm={() => {
+          if (!quickCloseFinding) return;
+          bulkClose.mutate({ ids: [quickCloseFinding.id] }, { onSuccess: () => setQuickCloseFinding(null) });
+        }}
       />
 
-      <DailyReportFormDialog
-        open={dailyReportDialogOpen}
-        onOpenChange={setDailyReportDialogOpen}
-        tankId={process.tank?.id ?? tankId!}
-        tankProcessId={processId!}
+      <ConfirmDialog
+        open={bulkCloseFindingOpen}
+        onOpenChange={setBulkCloseFindingOpen}
+        title="Close Selected Findings"
+        description={`Close ${selectedFindingIds.size} selected finding(s)? Already closed or rejected ones will be skipped.`}
+        confirmLabel={`Close ${selectedFindingIds.size} Finding(s)`}
+        loading={bulkClose.isPending}
+        onConfirm={() => {
+          bulkClose.mutate(
+            { ids: [...selectedFindingIds] },
+            {
+              onSuccess: () => {
+                setSelectedFindingIds(new Set());
+                setBulkCloseFindingOpen(false);
+              },
+            },
+          );
+        }}
       />
 
-      <TestRecordFormDialog
-        open={testRecordDialogOpen}
-        onOpenChange={setTestRecordDialogOpen}
-        tankProcessId={processId!}
+      <ConfirmDialog
+        open={Boolean(deleteFindingTarget)}
+        onOpenChange={(open) => !open && setDeleteFindingTarget(null)}
+        title="Delete Finding"
+        description={`Are you sure you want to delete finding "${deleteFindingTarget?.findingNo}"? This action cannot be undone.`}
+        confirmLabel="Delete"
+        variant="destructive"
+        loading={deleteFinding.isPending}
+        onConfirm={() => {
+          if (!deleteFindingTarget) return;
+          deleteFinding.mutate(deleteFindingTarget.id, { onSuccess: () => setDeleteFindingTarget(null) });
+        }}
       />
 
-      <RadiographyFormDialog
-        open={radiographyDialogOpen}
-        onOpenChange={setRadiographyDialogOpen}
-        tankProcessId={processId!}
-      />
+      <DailyReportFormDialog open={dailyReportDialogOpen} onOpenChange={setDailyReportDialogOpen} tankId={process.tank?.id ?? tankId!} tankProcessId={processId!} />
+
+      <TestRecordFormDialog open={testRecordDialogOpen} onOpenChange={setTestRecordDialogOpen} tankProcessId={processId!} />
+
+      <RadiographyFormDialog open={radiographyDialogOpen} onOpenChange={setRadiographyDialogOpen} tankProcessId={processId!} />
     </div>
   );
 }

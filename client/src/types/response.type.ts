@@ -13,6 +13,7 @@ export interface ResponseSuccess<T> {
   message: string;
   code: string;
   data?: T;
+  meta?: Meta;
 }
 
 export interface ResponseList<T> {

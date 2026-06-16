@@ -8,8 +8,9 @@ import {
   updateFinding,
   updateFindingStatus,
   deleteFinding,
+  bulkCloseFindings,
 } from "./findings.api";
-import type { ListFindingsParams, CreateFindingPayload, UpdateFindingPayload, UpdateFindingStatusPayload } from "./findings.api";
+import type { ListFindingsParams, CreateFindingPayload, UpdateFindingPayload, UpdateFindingStatusPayload, BulkCloseFindingsPayload } from "./findings.api";
 
 export const FINDING_KEYS = {
   all: ["findings"] as const,
@@ -86,6 +87,20 @@ export function useDeleteFinding() {
     },
     onError: () => {
       toast.error("Failed to delete finding");
+    },
+  });
+}
+
+export function useBulkCloseFindings() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: BulkCloseFindingsPayload) => bulkCloseFindings(data),
+    onSuccess: (result) => {
+      qc.invalidateQueries({ queryKey: FINDING_KEYS.all });
+      toast.success(`${result.closed} finding(s) closed${result.skipped > 0 ? `, ${result.skipped} skipped` : ""}`);
+    },
+    onError: () => {
+      toast.error("Failed to close findings");
     },
   });
 }

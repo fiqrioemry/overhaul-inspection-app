@@ -1,10 +1,19 @@
 // src/features/findings/findings.api.ts
 import api from "@/lib/axios";
-import type { ResponseSuccess } from "@/types/response.type";
+import type { ResponseList, ResponseSuccess } from "@/types/response.type";
 import type { PaginatedResponse } from "@/types/pagination.type";
 
-export type FindingStatus = "OPEN" | "IN_REPAIR" | "REPAIRED" | "VERIFIED" | "CLOSED";
+export type FindingStatus = "OPEN" | "IN_REPAIR" | "REPAIRED" | "VERIFIED" | "CLOSED" | "REJECTED";
 export type FindingSeverity = "MINOR" | "MAJOR" | "CRITICAL";
+
+export interface FindingAttachment {
+  id: string;
+  url: string;
+  path: string;
+  module: string;
+  isUsed: boolean;
+  createdAt: string;
+}
 
 export interface FindingSummary {
   id: string;
@@ -23,11 +32,14 @@ export interface FindingSummary {
   tank: { id: string; tankNo: string };
   tankProcess: { id: string; name: string };
   criteria: { id: string; code: string; name: string } | null;
-  createdByUser: { id: string; name: string };
+  createdByUser: { id: string; name: string } | null;
 }
 
-export interface FindingDetail extends FindingSummary {
+export interface FindingDetail extends Omit<FindingSummary, "tank" | "tankProcess"> {
+  tank: { id: string; tankNo: string; tankName: string | null };
+  tankProcess: { id: string; name: string; type: string; status: string };
   closedByUser: { id: string; name: string } | null;
+  attachments: FindingAttachment[];
 }
 
 export interface ListFindingsParams {
@@ -35,6 +47,7 @@ export interface ListFindingsParams {
   tankProcessId?: string;
   status?: FindingStatus;
   severity?: FindingSeverity;
+  isBlocking?: boolean;
   page?: number;
   limit?: number;
 }
@@ -66,8 +79,8 @@ export interface UpdateFindingStatusPayload {
 }
 
 export async function listFindings(params: ListFindingsParams): Promise<PaginatedResponse<FindingSummary>> {
-  const res = await api.get<ResponseSuccess<PaginatedResponse<FindingSummary>>>("/findings", { params });
-  return res.data.data!;
+  const res = await api.get<ResponseList<FindingSummary>>("/findings", { params });
+  return { items: res.data.data, meta: res.data.meta };
 }
 
 export async function getFindingById(id: string): Promise<FindingDetail> {
@@ -92,4 +105,19 @@ export async function updateFindingStatus(id: string, data: UpdateFindingStatusP
 
 export async function deleteFinding(id: string): Promise<void> {
   await api.delete(`/findings/${id}`);
+}
+
+export interface BulkCloseFindingsPayload {
+  ids: string[];
+  remarks?: string;
+}
+
+export interface BulkCloseFindingsResult {
+  closed: number;
+  skipped: number;
+}
+
+export async function bulkCloseFindings(data: BulkCloseFindingsPayload): Promise<BulkCloseFindingsResult> {
+  const res = await api.patch<ResponseSuccess<BulkCloseFindingsResult>>("/findings/bulk-close", data);
+  return res.data.data!;
 }

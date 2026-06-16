@@ -35,10 +35,7 @@ export default function DailyReportListPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Daily Reports"
-        description="Inspector daily activity records — create from Process Detail page"
-      />
+      <PageHeader title="Daily Reports" description="Inspector daily activity records — create from Process Detail page" />
 
       <div className="flex items-center gap-3">
         <Select
@@ -84,9 +81,7 @@ export default function DailyReportListPage() {
                 <tbody className="divide-y">
                   {data.items.map((report) => (
                     <tr key={report.id} className="hover:bg-muted/20">
-                      <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
-                        {format(new Date(report.reportDate), "dd MMM yyyy")}
-                      </td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">{format(new Date(report.reportDate), "dd MMM yyyy")}</td>
                       <td className="px-4 py-3 font-mono text-xs font-medium">{report.tank.tankNo}</td>
                       <td className="px-4 py-3 text-muted-foreground text-xs">{report.tankProcess?.name ?? "—"}</td>
                       <td className="px-4 py-3">
