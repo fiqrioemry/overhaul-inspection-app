@@ -10,11 +10,14 @@ export const ROUTES = {
 
   DASHBOARD: "/",
   TANKS: "/tanks",
+  TANK_CREATE: "/tanks/create",
   TANK_DETAIL: "/tanks/:tankId",
+  TANK_EDIT: "/tanks/:tankId/edit",
   PROCESS_DETAIL: "/tanks/:tankId/processes/:processId",
   FINDINGS: "/findings",
   DAILY_REPORTS: "/daily-reports",
   INSPECTION_REQUESTS: "/inspection-requests",
+  INSPECTION_REQUEST_DETAIL: "/inspection-requests/:requestId",
   NOTIFICATIONS: "/notifications",
   USERS: "/users",
 

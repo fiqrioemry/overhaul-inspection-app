@@ -27,6 +27,13 @@ import ReferenceDocumentsPage from "@/pages/ReferenceDocumentsPage";
 import AcceptanceCriteriaPage from "@/pages/AcceptanceCriteriaPage";
 import ProcessTemplatesPage from "@/pages/ProcessTemplatesPage";
 import ProcessTemplateDetailPage from "@/pages/ProcessTemplateDetailPage";
+import TankListPage from "@/pages/TankListPage";
+import TankCreatePage from "@/pages/TankCreatePage";
+import TankEditPage from "@/pages/TankEditPage";
+import TankDetailPage from "@/pages/TankDetailPage";
+import TankProcessDetailPage from "@/pages/TankProcessDetailPage";
+import InspectionRequestListPage from "@/pages/InspectionRequestListPage";
+import InspectionRequestDetailPage from "@/pages/InspectionRequestDetailPage";
 
 export default function AppRouter() {
   useTheme();
@@ -85,6 +92,25 @@ export default function AppRouter() {
             <Route element={<PermissionRoute permission={PERMISSIONS.MASTER_PROCESS_READ} />}>
               <Route path={ROUTES.MASTER_PROCESS} element={<ProcessTemplatesPage />} />
               <Route path={ROUTES.PROCESS_TEMPLATE_DETAIL} element={<ProcessTemplateDetailPage />} />
+            </Route>
+
+            {/* Tanks */}
+            <Route element={<PermissionRoute permission={PERMISSIONS.TANK_READ} />}>
+              <Route path={ROUTES.TANKS} element={<TankListPage />} />
+              <Route path={ROUTES.TANK_DETAIL} element={<TankDetailPage />} />
+              <Route path={ROUTES.PROCESS_DETAIL} element={<TankProcessDetailPage />} />
+            </Route>
+            <Route element={<PermissionRoute permission={PERMISSIONS.TANK_CREATE} />}>
+              <Route path={ROUTES.TANK_CREATE} element={<TankCreatePage />} />
+            </Route>
+            <Route element={<PermissionRoute permission={PERMISSIONS.TANK_UPDATE} />}>
+              <Route path={ROUTES.TANK_EDIT} element={<TankEditPage />} />
+            </Route>
+
+            {/* Inspection Requests */}
+            <Route element={<PermissionRoute permission={PERMISSIONS.INSPECTION_REQUEST_READ} />}>
+              <Route path={ROUTES.INSPECTION_REQUESTS} element={<InspectionRequestListPage />} />
+              <Route path={ROUTES.INSPECTION_REQUEST_DETAIL} element={<InspectionRequestDetailPage />} />
             </Route>
 
             {/* Catch-all inside layout → 404 */}
