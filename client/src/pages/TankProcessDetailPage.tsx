@@ -22,13 +22,14 @@ import FindingFormDialog from "@/features/findings/components/FindingFormDialog"
 import FindingEditDialog from "@/features/findings/components/FindingEditDialog";
 import FindingStatusDialog from "@/features/findings/components/FindingStatusDialog";
 import { FindingStatusBadge, FindingSeverityBadge } from "@/features/findings/components/FindingStatusBadge";
-import DailyReportFormDialog from "@/features/daily-reports/components/DailyReportFormDialog";
+import DailyReportFormDialog, { ACTIVITY_LABEL } from "@/features/daily-reports/components/DailyReportFormDialog";
 import TestRecordFormDialog from "@/features/test-records/components/TestRecordFormDialog";
 import RadiographyFormDialog from "@/features/radiography/components/RadiographyFormDialog";
 import JointResultsTable from "@/features/radiography/components/JointResultsTable";
 import { useTankProcess, useUpdateProcessStatus } from "@/features/tank-processes/tank-processes.query";
 import { useFindings, useDeleteFinding, useBulkCloseFindings } from "@/features/findings/findings.query";
-import { useDailyReports } from "@/features/daily-reports/daily-reports.query";
+import { useDailyReports, useDeleteDailyReport } from "@/features/daily-reports/daily-reports.query";
+import type { DailyReportSummary } from "@/features/daily-reports/daily-reports.api";
 import { useTestRecords, useDeleteTestRecord } from "@/features/test-records/test-records.query";
 import { useRadiographyTests, useDeleteRadiography } from "@/features/radiography/radiography.query";
 import { PERMISSIONS } from "@/constants/permission.constant";
@@ -41,11 +42,22 @@ import type { TestResult } from "@/features/test-records/test-records.api";
 const NEXT_STATUS: Partial<Record<ProcessStatus, ProcessStatus>> = {
   NOT_STARTED: "IN_PROGRESS",
   IN_PROGRESS: "WAITING_REVIEW",
+  WAITING_REVIEW: "REVIEWED",
+  REVIEWED: "COMPLETED",
 };
 
 const STATUS_ACTION_LABEL: Partial<Record<ProcessStatus, string>> = {
   NOT_STARTED: "Start Process",
   IN_PROGRESS: "Submit for Review",
+  WAITING_REVIEW: "Mark as Reviewed",
+  REVIEWED: "Complete Process",
+};
+
+const STATUS_ACTION_PERMISSION: Partial<Record<ProcessStatus, string>> = {
+  NOT_STARTED: PERMISSIONS.PROCESS_UPDATE,
+  IN_PROGRESS: PERMISSIONS.PROCESS_UPDATE,
+  WAITING_REVIEW: PERMISSIONS.INSPECTION_REQUEST_REVIEW,
+  REVIEWED: PERMISSIONS.PROCESS_UPDATE,
 };
 
 const TEST_RESULT_COLOR: Record<TestResult, string> = {
@@ -76,6 +88,8 @@ export default function TankProcessDetailPage() {
   const [selectedFindingIds, setSelectedFindingIds] = useState<Set<string>>(new Set());
   const [deleteFindingTarget, setDeleteFindingTarget] = useState<FindingSummary | null>(null);
   const [dailyReportDialogOpen, setDailyReportDialogOpen] = useState(false);
+  const [editDailyReport, setEditDailyReport] = useState<DailyReportSummary | null>(null);
+  const [deleteDailyReportTarget, setDeleteDailyReportTarget] = useState<DailyReportSummary | null>(null);
   const [testRecordDialogOpen, setTestRecordDialogOpen] = useState(false);
   const [radiographyDialogOpen, setRadiographyDialogOpen] = useState(false);
   const [expandedRadiographyId, setExpandedRadiographyId] = useState<string | null>(null);
@@ -111,6 +125,7 @@ export default function TankProcessDetailPage() {
     });
   }
   const { data: dailyReportsData } = useDailyReports({ tankProcessId: processId!, limit: 50, page: 1 });
+  const deleteDailyReport = useDeleteDailyReport();
   const { data: testRecords = [] } = useTestRecords(processId!);
   const { data: radiographyTests = [] } = useRadiographyTests(processId!);
 
@@ -123,7 +138,13 @@ export default function TankProcessDetailPage() {
   const tankPath = ROUTES.TANK_DETAIL.replace(":tankId", tankId!);
   const nextStatus = NEXT_STATUS[process.status];
   const actionLabel = STATUS_ACTION_LABEL[process.status];
+  const actionPermission = STATUS_ACTION_PERMISSION[process.status] ?? PERMISSIONS.PROCESS_UPDATE;
   const isTestType = ["TEST", "NDT"].includes(process.type);
+
+  const FINDING_BLOCKED_STATUSES: ProcessStatus[] = ["NOT_STARTED", "COMPLETED", "REVIEWED"];
+  const canAddFinding = !FINDING_BLOCKED_STATUSES.includes(process.status);
+  const hasOpenFindings = (findingsData?.items ?? []).some((f) => f.status === "OPEN");
+  const submitForReviewBlocked = nextStatus === "WAITING_REVIEW" && hasOpenFindings;
 
   function handleStatusAdvance() {
     if (!nextStatus) return;
@@ -144,8 +165,13 @@ export default function TankProcessDetailPage() {
         action={
           <div className="flex items-center gap-2">
             {nextStatus && actionLabel && (
-              <PermissionGate permission={PERMISSIONS.PROCESS_UPDATE}>
-                <Button variant="outline" onClick={handleStatusAdvance} disabled={updateStatus.isPending}>
+              <PermissionGate permission={actionPermission}>
+                <Button
+                  variant="outline"
+                  onClick={handleStatusAdvance}
+                  disabled={updateStatus.isPending || submitForReviewBlocked}
+                  title={submitForReviewBlocked ? "Close all OPEN findings before submitting for review" : undefined}
+                >
                   {updateStatus.isPending ? "Saving..." : actionLabel}
                 </Button>
               </PermissionGate>
@@ -165,6 +191,13 @@ export default function TankProcessDetailPage() {
         <ProcessStatusBadge status={process.status} />
         <ProcessResultBadge result={process.result} />
       </div>
+
+      {submitForReviewBlocked && (
+        <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-800">
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          <span>There are OPEN findings on this process. Close or repair all findings before submitting for review.</span>
+        </div>
+      )}
 
       <Tabs defaultValue="overview">
         <TabsList className="flex-wrap h-auto">
@@ -214,11 +247,13 @@ export default function TankProcessDetailPage() {
                   </PermissionGate>
                 )}
               </div>
-              <PermissionGate permission={PERMISSIONS.FINDING_CREATE}>
-                <Button size="sm" variant="outline" onClick={() => setFindingDialogOpen(true)}>
-                  <Plus className="h-4 w-4 mr-1" /> Add Finding
-                </Button>
-              </PermissionGate>
+              {canAddFinding && (
+                <PermissionGate permission={PERMISSIONS.FINDING_CREATE}>
+                  <Button size="sm" variant="outline" onClick={() => setFindingDialogOpen(true)}>
+                    <Plus className="h-4 w-4 mr-1" /> Add Finding
+                  </Button>
+                </PermissionGate>
+              )}
             </div>
 
             {!findingList.length ? (
@@ -229,12 +264,7 @@ export default function TankProcessDetailPage() {
                   <thead className="border-b bg-muted/40">
                     <tr>
                       <th className="px-4 py-3 w-10">
-                        <Checkbox
-                          checked={allCloseableSelected}
-                          onCheckedChange={toggleFindingSelectAll}
-                          aria-label="Select all"
-                          disabled={closeableFindingIds.length === 0}
-                        />
+                        <Checkbox checked={allCloseableSelected} onCheckedChange={toggleFindingSelectAll} aria-label="Select all" disabled={closeableFindingIds.length === 0} />
                       </th>
                       <th className="px-4 py-3 text-left font-medium">No.</th>
                       <th className="px-4 py-3 text-left font-medium">Title</th>
@@ -251,15 +281,7 @@ export default function TankProcessDetailPage() {
                       const isSelected = selectedFindingIds.has(f.id);
                       return (
                         <tr key={f.id} className={`hover:bg-muted/20 ${isSelected ? "bg-muted/30" : ""}`}>
-                          <td className="px-4 py-3">
-                            {!isTerminal && (
-                              <Checkbox
-                                checked={isSelected}
-                                onCheckedChange={() => toggleFindingSelect(f.id)}
-                                aria-label={`Select ${f.findingNo}`}
-                              />
-                            )}
-                          </td>
+                          <td className="px-4 py-3">{!isTerminal && <Checkbox checked={isSelected} onCheckedChange={() => toggleFindingSelect(f.id)} aria-label={`Select ${f.findingNo}`} />}</td>
                           <td className="px-4 py-3 font-mono text-xs">{f.findingNo}</td>
                           <td className="px-4 py-3">
                             <p className="font-medium text-sm line-clamp-2">{f.title}</p>
@@ -326,15 +348,25 @@ export default function TankProcessDetailPage() {
                 {dailyReportsData.items.map((report) => (
                   <div key={report.id} className="rounded-lg border p-4">
                     <div className="flex items-start justify-between gap-2">
-                      <div>
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-xs text-muted-foreground">{format(new Date(report.reportDate), "dd MMM yyyy")}</span>
-                        <Badge variant="outline" className="ml-2 text-xs">
-                          {report.activityType.replace(/_/g, " ")}
+                        <Badge variant="outline" className="text-xs">
+                          {ACTIVITY_LABEL[report.activityType] ?? report.activityType.replace(/_/g, " ")}
                         </Badge>
+                        {report.inspector && <span className="text-xs text-muted-foreground">{report.inspector.name}</span>}
                       </div>
-                      {report.inspector && <span className="text-xs text-muted-foreground shrink-0">{report.inspector.name}</span>}
+                      <PermissionGate permission={PERMISSIONS.DAILY_REPORT_UPDATE}>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <Button variant="ghost" size="icon-sm" onClick={() => setEditDailyReport(report)} title="Edit">
+                            <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                          </Button>
+                          <Button variant="ghost" size="icon-sm" onClick={() => setDeleteDailyReportTarget(report)} title="Delete" disabled={deleteDailyReport.isPending}>
+                            <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                          </Button>
+                        </div>
+                      </PermissionGate>
                     </div>
-                    <p className="mt-2 text-sm whitespace-pre-wrap">{report.description}</p>
+                    <p className="mt-2 text-sm whitespace-pre-wrap">{report.description ?? "—"}</p>
                   </div>
                 ))}
               </div>
@@ -559,6 +591,24 @@ export default function TankProcessDetailPage() {
       />
 
       <DailyReportFormDialog open={dailyReportDialogOpen} onOpenChange={setDailyReportDialogOpen} tankId={process.tank?.id ?? tankId!} tankProcessId={processId!} />
+
+      {editDailyReport && (
+        <DailyReportFormDialog open={Boolean(editDailyReport)} onOpenChange={(open) => !open && setEditDailyReport(null)} tankId={editDailyReport.tankId} tankProcessId={editDailyReport.tankProcessId ?? undefined} report={editDailyReport} />
+      )}
+
+      <ConfirmDialog
+        open={Boolean(deleteDailyReportTarget)}
+        onOpenChange={(open) => !open && setDeleteDailyReportTarget(null)}
+        title="Delete Daily Report"
+        description={`Delete report dated "${deleteDailyReportTarget ? format(new Date(deleteDailyReportTarget.reportDate), "dd MMM yyyy") : ""}" (${deleteDailyReportTarget ? ACTIVITY_LABEL[deleteDailyReportTarget.activityType] : ""})? This cannot be undone.`}
+        confirmLabel="Delete"
+        variant="destructive"
+        loading={deleteDailyReport.isPending}
+        onConfirm={() => {
+          if (!deleteDailyReportTarget) return;
+          deleteDailyReport.mutate(deleteDailyReportTarget.id, { onSuccess: () => setDeleteDailyReportTarget(null) });
+        }}
+      />
 
       <TestRecordFormDialog open={testRecordDialogOpen} onOpenChange={setTestRecordDialogOpen} tankProcessId={processId!} />
 

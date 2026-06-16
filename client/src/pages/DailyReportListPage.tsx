@@ -1,31 +1,30 @@
 // src/pages/DailyReportListPage.tsx
 import { useState } from "react";
-import { FileText } from "lucide-react";
+import { FileText, Pencil, Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import PageHeader from "@/components/common/PageHeader";
 import LoadingState from "@/components/common/LoadingState";
 import ErrorState from "@/components/common/ErrorState";
 import EmptyState from "@/components/common/EmptyState";
 import Pagination from "@/components/common/Pagination";
-import { useDailyReports } from "@/features/daily-reports/daily-reports.query";
+import ConfirmDialog from "@/components/common/ConfirmDialog";
+import PermissionGate from "@/components/common/PermissionGate";
+import DailyReportFormDialog, { ACTIVITY_OPTIONS, ACTIVITY_LABEL } from "@/features/daily-reports/components/DailyReportFormDialog";
+import { useDailyReports, useDeleteDailyReport } from "@/features/daily-reports/daily-reports.query";
 import { format } from "date-fns";
-import type { DailyActivityType } from "@/features/daily-reports/daily-reports.api";
+import { PERMISSIONS } from "@/constants/permission.constant";
+import type { DailyActivityType, DailyReportSummary } from "@/features/daily-reports/daily-reports.api";
 
-const ACTIVITY_FILTER_OPTIONS = [
-  { label: "All Types", value: "ALL" },
-  { label: "General", value: "GENERAL" },
-  { label: "Fabrication", value: "FABRICATION" },
-  { label: "Inspection", value: "INSPECTION" },
-  { label: "Testing", value: "TESTING" },
-  { label: "Coating", value: "COATING" },
-  { label: "Commissioning", value: "COMMISSIONING" },
-  { label: "Repair", value: "REPAIR" },
-  { label: "Other", value: "OTHER" },
-];
+const ACTIVITY_FILTER_OPTIONS = [{ label: "All Types", value: "ALL" }, ...ACTIVITY_OPTIONS];
 
 export default function DailyReportListPage() {
   const [page, setPage] = useState(1);
   const [activityType, setActivityType] = useState<string>("ALL");
+  const [editReport, setEditReport] = useState<DailyReportSummary | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<DailyReportSummary | null>(null);
+
+  const deleteMutation = useDeleteDailyReport();
 
   const { data, isLoading, isError, refetch } = useDailyReports({
     page,
@@ -64,7 +63,7 @@ export default function DailyReportListPage() {
       {!isLoading && !isError && (
         <>
           {!data?.items?.length ? (
-            <EmptyState title="No daily reports" description="Add a daily report to start tracking activities." icon={FileText} />
+            <EmptyState title="No daily reports" description="Add a daily report from a process detail page." icon={FileText} />
           ) : (
             <div className="rounded-lg border overflow-hidden">
               <table className="w-full text-sm">
@@ -76,6 +75,7 @@ export default function DailyReportListPage() {
                     <th className="px-4 py-3 text-left font-medium">Activity Type</th>
                     <th className="px-4 py-3 text-left font-medium">Description</th>
                     <th className="px-4 py-3 text-left font-medium">Inspector</th>
+                    <th className="px-4 py-3"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
@@ -85,12 +85,24 @@ export default function DailyReportListPage() {
                       <td className="px-4 py-3 font-mono text-xs font-medium">{report.tank.tankNo}</td>
                       <td className="px-4 py-3 text-muted-foreground text-xs">{report.tankProcess?.name ?? "—"}</td>
                       <td className="px-4 py-3">
-                        <span className="text-xs bg-muted px-2 py-0.5 rounded">{report.activityType.replace(/_/g, " ")}</span>
+                        <span className="text-xs bg-muted px-2 py-0.5 rounded">{ACTIVITY_LABEL[report.activityType] ?? report.activityType.replace(/_/g, " ")}</span>
                       </td>
                       <td className="px-4 py-3 max-w-sm">
-                        <p className="line-clamp-2 text-xs">{report.description}</p>
+                        <p className="line-clamp-2 text-xs">{report.description ?? "—"}</p>
                       </td>
                       <td className="px-4 py-3 text-xs text-muted-foreground">{report.inspector?.name ?? "—"}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1 justify-end">
+                          <PermissionGate permission={PERMISSIONS.DAILY_REPORT_UPDATE}>
+                            <Button variant="ghost" size="icon-sm" onClick={() => setEditReport(report)} title="Edit">
+                              <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                            </Button>
+                            <Button variant="ghost" size="icon-sm" onClick={() => setDeleteTarget(report)} title="Delete" disabled={deleteMutation.isPending}>
+                              <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                            </Button>
+                          </PermissionGate>
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -101,6 +113,22 @@ export default function DailyReportListPage() {
           {data?.meta && data.meta.totalPages > 1 && <Pagination meta={data.meta} onPageChange={setPage} />}
         </>
       )}
+
+      {editReport && <DailyReportFormDialog open={Boolean(editReport)} onOpenChange={(open) => !open && setEditReport(null)} tankId={editReport.tankId} tankProcessId={editReport.tankProcessId ?? undefined} report={editReport} />}
+
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title="Delete Daily Report"
+        description={`Delete the report dated "${deleteTarget ? format(new Date(deleteTarget.reportDate), "dd MMM yyyy") : ""}" (${deleteTarget ? ACTIVITY_LABEL[deleteTarget.activityType] : ""})? This cannot be undone.`}
+        confirmLabel="Delete"
+        variant="destructive"
+        loading={deleteMutation.isPending}
+        onConfirm={() => {
+          if (!deleteTarget) return;
+          deleteMutation.mutate(deleteTarget.id, { onSuccess: () => setDeleteTarget(null) });
+        }}
+      />
     </div>
   );
 }

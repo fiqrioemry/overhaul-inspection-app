@@ -9,62 +9,83 @@ import { Button } from "@/components/ui/button";
 import LongTextField from "@/components/fields/LongTextField";
 import SelectField from "@/components/fields/SelectField";
 import DateField from "@/components/fields/DateField";
-import { useCreateDailyReport } from "../daily-reports.query";
+import { useCreateDailyReport, useUpdateDailyReport } from "../daily-reports.query";
 import { format } from "date-fns";
+import type { DailyReportSummary } from "../daily-reports.api";
 
 const schema = z.object({
   reportDate: z.string().min(1, "Report date required"),
-  activityType: z.enum(["GENERAL", "FABRICATION", "INSPECTION", "TESTING", "COATING", "COMMISSIONING", "REPAIR", "OTHER"]),
+  activityType: z.enum(["MONITORING", "INSPECTION", "FINDING", "REPAIR", "TEST_ACTIVITY", "INFORMATION"]),
   description: z.string().min(1, "Description required").max(2000),
 });
 
 type FormValues = z.infer<typeof schema>;
 
-const ACTIVITY_OPTIONS = [
-  { label: "General", value: "GENERAL" },
-  { label: "Fabrication", value: "FABRICATION" },
+export const ACTIVITY_OPTIONS = [
+  { label: "Monitoring", value: "MONITORING" },
   { label: "Inspection", value: "INSPECTION" },
-  { label: "Testing", value: "TESTING" },
-  { label: "Coating", value: "COATING" },
-  { label: "Commissioning", value: "COMMISSIONING" },
+  { label: "Finding", value: "FINDING" },
   { label: "Repair", value: "REPAIR" },
-  { label: "Other", value: "OTHER" },
+  { label: "Test Activity", value: "TEST_ACTIVITY" },
+  { label: "Information", value: "INFORMATION" },
 ];
+
+export const ACTIVITY_LABEL: Record<string, string> = {
+  MONITORING: "Monitoring",
+  INSPECTION: "Inspection",
+  FINDING: "Finding",
+  REPAIR: "Repair",
+  TEST_ACTIVITY: "Test Activity",
+  INFORMATION: "Information",
+};
 
 interface DailyReportFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   tankId: string;
   tankProcessId?: string;
+  report?: DailyReportSummary;
 }
 
-export default function DailyReportFormDialog({ open, onOpenChange, tankId, tankProcessId }: DailyReportFormDialogProps) {
+export default function DailyReportFormDialog({ open, onOpenChange, tankId, tankProcessId, report }: DailyReportFormDialogProps) {
+  const isEdit = Boolean(report);
   const createMutation = useCreateDailyReport();
+  const updateMutation = useUpdateDailyReport();
+  const isPending = createMutation.isPending || updateMutation.isPending;
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema) as Resolver<FormValues>,
     defaultValues: {
       reportDate: format(new Date(), "yyyy-MM-dd"),
-      activityType: "GENERAL",
+      activityType: "MONITORING",
       description: "",
     },
   });
 
   useEffect(() => {
-    if (!open) form.reset({ reportDate: format(new Date(), "yyyy-MM-dd"), activityType: "GENERAL", description: "" });
-  }, [open, form]);
+    if (open && report) {
+      form.reset({
+        reportDate: report.reportDate.slice(0, 10),
+        activityType: report.activityType,
+        description: report.description ?? "",
+      });
+    } else if (!open) {
+      form.reset({ reportDate: format(new Date(), "yyyy-MM-dd"), activityType: "MONITORING", description: "" });
+    }
+  }, [open, report, form]);
 
   function onSubmit(values: FormValues) {
-    createMutation.mutate(
-      {
-        tankId,
-        tankProcessId: tankProcessId || undefined,
-        reportDate: values.reportDate,
-        activityType: values.activityType,
-        description: values.description,
-      },
-      { onSuccess: () => onOpenChange(false) },
-    );
+    if (isEdit && report) {
+      updateMutation.mutate(
+        { id: report.id, data: { reportDate: values.reportDate, activityType: values.activityType, description: values.description } },
+        { onSuccess: () => onOpenChange(false) },
+      );
+    } else {
+      createMutation.mutate(
+        { tankId, tankProcessId: tankProcessId || undefined, reportDate: values.reportDate, activityType: values.activityType, description: values.description },
+        { onSuccess: () => onOpenChange(false) },
+      );
+    }
   }
 
   return (
@@ -72,7 +93,7 @@ export default function DailyReportFormDialog({ open, onOpenChange, tankId, tank
       <DialogContent className="xl:h-auto! xl:w-110!">
         <div className="p-4">
           <DialogHeader>
-            <DialogTitle>Add Daily Report</DialogTitle>
+            <DialogTitle>{isEdit ? "Edit Daily Report" : "Add Daily Report"}</DialogTitle>
           </DialogHeader>
           <form onSubmit={form.handleSubmit(onSubmit)} className="mt-4 space-y-4">
             <DateField control={form.control} name="reportDate" label="Report Date" />
@@ -82,8 +103,8 @@ export default function DailyReportFormDialog({ open, onOpenChange, tankId, tank
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={createMutation.isPending}>
-                {createMutation.isPending ? "Saving..." : "Create Report"}
+              <Button type="submit" disabled={isPending}>
+                {isPending ? "Saving..." : isEdit ? "Save Changes" : "Create Report"}
               </Button>
             </div>
           </form>
