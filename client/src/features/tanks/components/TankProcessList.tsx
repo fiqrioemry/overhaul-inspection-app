@@ -2,7 +2,6 @@
 import { Link } from "react-router-dom";
 import { ChevronRight, Lock } from "lucide-react";
 import ProcessStatusBadge from "@/components/common/ProcessStatusBadge";
-import ProcessResultBadge from "@/components/common/ProcessResultBadge";
 import LoadingState from "@/components/common/LoadingState";
 import ErrorState from "@/components/common/ErrorState";
 import EmptyState from "@/components/common/EmptyState";
@@ -31,7 +30,6 @@ export default function TankProcessList({ tankId }: TankProcessListProps) {
             <th className="px-4 py-3 text-left font-medium">Process</th>
             <th className="px-4 py-3 text-left font-medium">Type</th>
             <th className="px-4 py-3 text-left font-medium">Status</th>
-            <th className="px-4 py-3 text-left font-medium">Result</th>
             <th className="px-4 py-3 text-left font-medium">Checklist</th>
             <th className="px-4 py-3 text-left font-medium">Findings</th>
             <th className="px-4 py-3 text-left font-medium">Started</th>
@@ -54,9 +52,6 @@ export default function TankProcessList({ tankId }: TankProcessListProps) {
                 <td className="px-4 py-3 text-xs text-muted-foreground">{proc.type}</td>
                 <td className="px-4 py-3">
                   <ProcessStatusBadge status={proc.status} />
-                </td>
-                <td className="px-4 py-3">
-                  <ProcessResultBadge result={proc.result} />
                 </td>
                 <td className="px-4 py-3 text-xs text-muted-foreground">{proc._count.checklistResults}</td>
                 <td className="px-4 py-3 text-xs text-muted-foreground">{proc._count.findings}</td>

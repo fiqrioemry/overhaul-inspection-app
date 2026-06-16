@@ -1,21 +1,24 @@
 // src/features/acceptance-criteria/components/AcceptanceCriteriaFormDialog.tsx
 import { useEffect } from "react";
-import { useForm, useWatch } from "react-hook-form";
+import { useForm, useWatch, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import ShortTextField from "@/components/fields/ShortTextField";
 import LongTextField from "@/components/fields/LongTextField";
 import SelectField from "@/components/fields/SelectField";
 import SwitchField from "@/components/fields/SwitchField";
 import {
   createAcceptanceCriteriaSchema,
+  updateAcceptanceCriteriaSchema,
   ACCEPTANCE_TYPE_OPTIONS,
   SEVERITY_OPTIONS,
   ACCEPTANCE_CRITERIA_STATUS_OPTIONS,
 } from "@/schemas/acceptance-criteria.schema";
-import type { CreateAcceptanceCriteriaFormValues } from "@/schemas/acceptance-criteria.schema";
+import type { CreateAcceptanceCriteriaFormValues, UpdateAcceptanceCriteriaFormValues } from "@/schemas/acceptance-criteria.schema";
 import { useCreateAcceptanceCriteria, useUpdateAcceptanceCriteria } from "@/features/acceptance-criteria/acceptance-criteria.query";
+import { useAllReferenceDocuments } from "@/features/reference-documents/reference-documents.query";
 import type { AcceptanceCriteria } from "@/features/acceptance-criteria/acceptance-criteria.api";
 
 interface AcceptanceCriteriaFormDialogProps {
@@ -24,7 +27,18 @@ interface AcceptanceCriteriaFormDialogProps {
   criteria?: AcceptanceCriteria;
 }
 
-const DEFAULT_VALUES: CreateAcceptanceCriteriaFormValues = {
+const CREATE_DEFAULT: CreateAcceptanceCriteriaFormValues = {
+  code: "",
+  name: "",
+  description: "",
+  acceptanceType: "PASS_FAIL",
+  isCountable: false,
+  isRequired: true,
+  status: "ACTIVE",
+  referenceDocumentIds: [],
+};
+
+const EDIT_DEFAULT: UpdateAcceptanceCriteriaFormValues = {
   code: "",
   name: "",
   description: "",
@@ -38,21 +52,28 @@ export default function AcceptanceCriteriaFormDialog({ open, onOpenChange, crite
   const isEdit = Boolean(criteria);
   const createMutation = useCreateAcceptanceCriteria();
   const updateMutation = useUpdateAcceptanceCriteria();
+  const { data: allDocs } = useAllReferenceDocuments();
 
-  const form = useForm<CreateAcceptanceCriteriaFormValues>({
+  const createForm = useForm<CreateAcceptanceCriteriaFormValues>({
     resolver: zodResolver(createAcceptanceCriteriaSchema),
-    defaultValues: DEFAULT_VALUES,
+    defaultValues: CREATE_DEFAULT,
   });
 
+  const editForm = useForm<UpdateAcceptanceCriteriaFormValues>({
+    resolver: zodResolver(updateAcceptanceCriteriaSchema),
+    defaultValues: EDIT_DEFAULT,
+  });
+
+  const form = isEdit ? editForm : createForm;
   const acceptanceType = useWatch({ control: form.control, name: "acceptanceType" });
 
   useEffect(() => {
     if (criteria && isEdit) {
-      form.reset({
+      editForm.reset({
         code: criteria.code,
         name: criteria.name,
         description: criteria.description ?? "",
-        acceptanceType: criteria.acceptanceType as CreateAcceptanceCriteriaFormValues["acceptanceType"],
+        acceptanceType: criteria.acceptanceType as UpdateAcceptanceCriteriaFormValues["acceptanceType"],
         minValue: criteria.minValue ?? undefined,
         maxValue: criteria.maxValue ?? undefined,
         unit: criteria.unit ?? "",
@@ -62,24 +83,18 @@ export default function AcceptanceCriteriaFormDialog({ open, onOpenChange, crite
         isCountable: criteria.isCountable,
         isRequired: criteria.isRequired,
         severity: criteria.severity ?? "",
-        status: criteria.status as CreateAcceptanceCriteriaFormValues["status"],
+        status: criteria.status as UpdateAcceptanceCriteriaFormValues["status"],
       });
     } else {
-      form.reset(DEFAULT_VALUES);
+      createForm.reset(CREATE_DEFAULT);
     }
   }, [criteria, open]);
 
-  function onSubmit(values: CreateAcceptanceCriteriaFormValues) {
-    const payload = {
-      ...values,
-      minValue: values.minValue,
-      maxValue: values.maxValue,
-    };
-
+  function onSubmit(values: CreateAcceptanceCriteriaFormValues | UpdateAcceptanceCriteriaFormValues) {
     if (isEdit && criteria) {
-      updateMutation.mutate({ id: criteria.id, data: payload }, { onSuccess: () => onOpenChange(false) });
+      updateMutation.mutate({ id: criteria.id, data: values as UpdateAcceptanceCriteriaFormValues }, { onSuccess: () => onOpenChange(false) });
     } else {
-      createMutation.mutate(payload, { onSuccess: () => onOpenChange(false) });
+      createMutation.mutate(values as CreateAcceptanceCriteriaFormValues, { onSuccess: () => onOpenChange(false) });
     }
   }
 
@@ -92,7 +107,7 @@ export default function AcceptanceCriteriaFormDialog({ open, onOpenChange, crite
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4 p-6 overflow-y-auto max-h-[85vh]">
+        <form onSubmit={form.handleSubmit(onSubmit as Parameters<typeof form.handleSubmit>[0])} className="flex flex-col gap-4 p-6 overflow-y-auto max-h-[85vh]">
           <DialogHeader>
             <DialogTitle>{isEdit ? "Edit Acceptance Criteria" : "Add Acceptance Criteria"}</DialogTitle>
           </DialogHeader>
@@ -128,6 +143,51 @@ export default function AcceptanceCriteriaFormDialog({ open, onOpenChange, crite
             <SwitchField control={form.control} name="isRequired" label="Required" description="Must be checked on every inspection" />
             <SwitchField control={form.control} name="isCountable" label="Countable" description="Count instances found" />
           </div>
+
+          {!isEdit && (
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">
+                Reference Documents <span className="text-destructive">*</span>
+              </label>
+              <Controller
+                control={createForm.control}
+                name="referenceDocumentIds"
+                render={({ field, fieldState }) => (
+                  <>
+                    <div className="rounded-md border max-h-44 overflow-y-auto divide-y">
+                      {(allDocs ?? []).length === 0 && (
+                        <p className="px-3 py-2 text-sm text-muted-foreground italic">No reference documents available.</p>
+                      )}
+                      {(allDocs ?? []).map((doc) => {
+                        const checked = field.value.includes(doc.id);
+                        return (
+                          <label key={doc.id} className="flex items-center gap-2.5 px-3 py-2 text-sm cursor-pointer hover:bg-muted/30">
+                            <input
+                              type="checkbox"
+                              className="accent-primary"
+                              checked={checked}
+                              onChange={(e) => {
+                                field.onChange(
+                                  e.target.checked
+                                    ? [...field.value, doc.id]
+                                    : field.value.filter((id) => id !== doc.id),
+                                );
+                              }}
+                            />
+                            <Badge variant="outline" className="font-mono text-xs shrink-0">{doc.code}</Badge>
+                            <span className="text-muted-foreground truncate">{doc.title}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                    {fieldState.error && (
+                      <p className="text-xs text-destructive">{fieldState.error.message}</p>
+                    )}
+                  </>
+                )}
+              />
+            </div>
+          )}
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isPending}>Cancel</Button>

@@ -28,7 +28,7 @@ export interface ProcessDependency {
   id: string;
   processTemplateId: string;
   dependsOnId: string;
-  requiredResult: string;
+  requiredStatus: string;
   isRequired: boolean;
   applicabilityRule: string | null;
   dependsOn: { id: string; code: string; name: string; sequenceOrder: number };
@@ -67,7 +67,7 @@ export interface UpdateCriteriaTemplatePayload {
 
 export interface AddDependencyPayload {
   dependsOnId: string;
-  requiredResult?: string;
+  requiredStatus?: string;
   isRequired?: boolean;
   applicabilityRule?: string;
 }

@@ -120,7 +120,15 @@ export default function AcceptanceCriteriaPage() {
                           <StatusBadge status={criteria.status} />
                         </td>
                         <td className="px-4 py-3">
-                          <span className={`text-xs font-medium ${(criteria.references?.length ?? 0) === 0 ? "text-destructive" : "text-muted-foreground"}`}>{criteria.references?.length ?? 0}</span>
+                          {(criteria.criteriaRefs?.length ?? 0) === 0 ? (
+                            <span className="text-xs font-medium text-destructive">None</span>
+                          ) : (
+                            <div className="flex flex-wrap gap-1">
+                              {criteria.criteriaRefs?.map((ref) => (
+                                <Badge key={ref.id} variant="outline" className="text-xs font-mono">{ref.referenceDocument.code}</Badge>
+                              ))}
+                            </div>
+                          )}
                         </td>
                         <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                           <div className="flex items-center justify-end gap-2">

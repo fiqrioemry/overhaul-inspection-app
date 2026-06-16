@@ -34,7 +34,6 @@ export interface TankProgressRow {
     type: string;
     sequenceOrder: number;
     status: string;
-    result: string;
   }>;
   _count: { findings: number };
 }

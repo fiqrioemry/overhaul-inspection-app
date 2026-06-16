@@ -10,10 +10,9 @@ export const PROCESS_TYPE_OPTIONS = [
   { label: "Commissioning", value: "COMMISSIONING" },
 ];
 
-export const REQUIRED_RESULT_OPTIONS = [
-  { label: "Passed", value: "PASSED" },
-  { label: "Failed", value: "FAILED" },
-  { label: "Any", value: "ANY" },
+export const REQUIRED_STATUS_OPTIONS = [
+  { label: "Completed", value: "COMPLETED" },
+  { label: "Reviewed", value: "REVIEWED" },
 ];
 
 export const createProcessTemplateSchema = z.object({
@@ -43,7 +42,7 @@ export type AddCriteriaToTemplateFormValues = z.infer<typeof addCriteriaToTempla
 
 export const addDependencySchema = z.object({
   dependsOnId: z.string().min(1, "Process is required"),
-  requiredResult: z.enum(["PASSED", "FAILED", "ANY"]),
+  requiredStatus: z.enum(["COMPLETED", "REVIEWED"]).default("COMPLETED"),
   isRequired: z.boolean(),
   applicabilityRule: z.string().optional(),
 });

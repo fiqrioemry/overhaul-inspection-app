@@ -12,7 +12,7 @@ import SelectField from "@/components/fields/SelectField";
 import SwitchField from "@/components/fields/SwitchField";
 import LongTextField from "@/components/fields/LongTextField";
 import { useAllProcessTemplates, useTemplateDependencies, useAddTemplateDependency, useRemoveTemplateDependency } from "@/features/process-templates/process-templates.query";
-import { addDependencySchema, REQUIRED_RESULT_OPTIONS } from "@/schemas/process-templates.schema";
+import { addDependencySchema, REQUIRED_STATUS_OPTIONS } from "@/schemas/process-templates.schema";
 import type { AddDependencyFormValues } from "@/schemas/process-templates.schema";
 import type { ProcessDependency } from "@/features/process-templates/process-templates.api";
 
@@ -20,7 +20,7 @@ interface ProcessDependenciesTabProps {
   processTemplateId: string;
 }
 
-const DEFAULT_FORM: AddDependencyFormValues = { dependsOnId: "", requiredResult: "PASSED", isRequired: true, applicabilityRule: "" };
+const DEFAULT_FORM: AddDependencyFormValues = { dependsOnId: "", requiredStatus: "COMPLETED", isRequired: true, applicabilityRule: "" };
 
 export default function ProcessDependenciesTab({ processTemplateId }: ProcessDependenciesTabProps) {
   const [showAdd, setShowAdd] = useState(false);
@@ -78,7 +78,7 @@ export default function ProcessDependenciesTab({ processTemplateId }: ProcessDep
       {showAdd && (
         <form onSubmit={form.handleSubmit(onAdd)} className="rounded-lg border p-4 space-y-3 bg-muted/20">
           <SelectField control={form.control} name="dependsOnId" label="Depends On Process" options={templateOptions} placeholder="Select process..." />
-          <SelectField control={form.control} name="requiredResult" label="Required Result" options={REQUIRED_RESULT_OPTIONS} />
+          <SelectField control={form.control} name="requiredStatus" label="Required Status" options={REQUIRED_STATUS_OPTIONS} />
           <LongTextField control={form.control} name="applicabilityRule" label="Applicability Rule" placeholder="Optional condition" rows={2} />
           <SwitchField control={form.control} name="isRequired" label="Required" description="Must be completed before this process" />
           <div className="flex gap-2 justify-end">
@@ -96,7 +96,7 @@ export default function ProcessDependenciesTab({ processTemplateId }: ProcessDep
             <thead className="border-b bg-muted/40">
               <tr>
                 <th className="px-4 py-3 text-left font-medium">Required Process</th>
-                <th className="px-4 py-3 text-left font-medium">Required Result</th>
+                <th className="px-4 py-3 text-left font-medium">Required Status</th>
                 <th className="px-4 py-3 text-left font-medium">Required</th>
                 <th className="px-4 py-3 text-left font-medium">Applicability</th>
                 <th className="px-4 py-3 text-right font-medium">Actions</th>
@@ -110,8 +110,8 @@ export default function ProcessDependenciesTab({ processTemplateId }: ProcessDep
                     {dep.dependsOn.name}
                   </td>
                   <td className="px-4 py-3">
-                    <Badge variant={dep.requiredResult === "PASSED" ? "secondary" : dep.requiredResult === "FAILED" ? "destructive" : "outline"} className="text-xs">
-                      {dep.requiredResult}
+                    <Badge variant={dep.requiredStatus === "COMPLETED" ? "secondary" : "outline"} className="text-xs">
+                      {dep.requiredStatus}
                     </Badge>
                   </td>
                   <td className="px-4 py-3">

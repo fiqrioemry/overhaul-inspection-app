@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import StatusBadge from "@/components/common/StatusBadge";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
-import { useAddCriteriaReference, useDeleteCriteriaReference } from "@/features/acceptance-criteria/acceptance-criteria.query";
+import LoadingState from "@/components/common/LoadingState";
+import { useAddCriteriaReference, useDeleteCriteriaReference, useCriteriaReferences } from "@/features/acceptance-criteria/acceptance-criteria.query";
 import { useAllReferenceDocuments } from "@/features/reference-documents/reference-documents.query";
 import { addCriteriaReferenceSchema } from "@/schemas/acceptance-criteria.schema";
 import type { AddCriteriaReferenceFormValues } from "@/schemas/acceptance-criteria.schema";
@@ -23,6 +24,7 @@ export default function CriteriaDetailPanel({ criteria }: CriteriaDetailPanelPro
   const [deleteRef, setDeleteRef] = useState<CriteriaReference | undefined>();
   const [showAddRef, setShowAddRef] = useState(false);
 
+  const { data: refs, isLoading: refsLoading } = useCriteriaReferences(criteria.id);
   const addRefMutation = useAddCriteriaReference();
   const deleteRefMutation = useDeleteCriteriaReference();
   const { data: allDocs } = useAllReferenceDocuments();
@@ -119,7 +121,7 @@ export default function CriteriaDetailPanel({ criteria }: CriteriaDetailPanelPro
           <div className="flex items-center gap-2">
             <BookOpen className="size-4 text-muted-foreground" />
             <h3 className="font-medium">Reference Documents / Acuan</h3>
-            <span className="text-xs text-muted-foreground">({criteria.references.length})</span>
+            {!refsLoading && <span className="text-xs text-muted-foreground">({refs?.length ?? 0})</span>}
           </div>
           <Button variant="outline" size="sm" onClick={() => setShowAddRef(!showAddRef)}>
             <Plus />
@@ -140,11 +142,13 @@ export default function CriteriaDetailPanel({ criteria }: CriteriaDetailPanelPro
           </form>
         )}
 
-        {criteria.references.length === 0 ? (
+        {refsLoading ? (
+          <LoadingState />
+        ) : (refs?.length ?? 0) === 0 ? (
           <p className="text-sm text-muted-foreground italic">No reference documents linked. Every criteria should have at least one reference.</p>
         ) : (
           <div className="space-y-2">
-            {criteria.references.map((ref) => (
+            {refs?.map((ref) => (
               <div key={ref.id} className="flex items-center justify-between rounded-lg border px-3 py-2 text-sm">
                 <div>
                   <span className="font-mono font-medium">{ref.referenceDocument.code}</span>

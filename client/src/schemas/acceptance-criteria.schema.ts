@@ -22,7 +22,7 @@ export const ACCEPTANCE_CRITERIA_STATUS_OPTIONS = [
   { label: "Inactive", value: "INACTIVE" },
 ];
 
-export const createAcceptanceCriteriaSchema = z.object({
+const criteriaBaseSchema = z.object({
   code: z.string().min(1, "Code is required"),
   name: z.string().min(1, "Name is required"),
   description: z.string().optional(),
@@ -41,9 +41,13 @@ export const createAcceptanceCriteriaSchema = z.object({
   status: z.enum(["ACTIVE", "INACTIVE"]),
 });
 
+export const createAcceptanceCriteriaSchema = criteriaBaseSchema.extend({
+  referenceDocumentIds: z.array(z.string()).min(1, "At least one reference document is required"),
+});
+
 export type CreateAcceptanceCriteriaFormValues = z.infer<typeof createAcceptanceCriteriaSchema>;
 
-export const updateAcceptanceCriteriaSchema = createAcceptanceCriteriaSchema.partial();
+export const updateAcceptanceCriteriaSchema = criteriaBaseSchema.partial();
 export type UpdateAcceptanceCriteriaFormValues = z.infer<typeof updateAcceptanceCriteriaSchema>;
 
 export const addCriteriaReferenceSchema = z.object({

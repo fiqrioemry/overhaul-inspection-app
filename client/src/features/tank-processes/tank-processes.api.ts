@@ -2,9 +2,7 @@
 import api from "@/lib/axios";
 import type { ResponseSuccess } from "@/types/response.type";
 
-export type ProcessStatus = "LOCKED" | "NOT_STARTED" | "WAITING_REVIEW" | "REVIEWED" | "IN_PROGRESS" | "COMPLETED" | "REJECTED" | "NOT_APPLICABLE";
-
-export type ProcessResult = "PENDING" | "PASSED" | "FAILED" | "NOT_APPLICABLE";
+export type ProcessStatus = "LOCKED" | "NOT_STARTED" | "WAITING_REVIEW" | "REVIEWED" | "IN_PROGRESS" | "COMPLETED";
 
 export type ProcessType = "WORK" | "INSPECTION" | "TEST" | "NDT" | "COATING" | "COMMISSIONING";
 
@@ -22,7 +20,6 @@ export interface TankProcessSummary {
   type: ProcessType;
   sequenceOrder: number;
   status: ProcessStatus;
-  result: ProcessResult;
   plannedStartDate: string | null;
   actualStartDate: string | null;
   actualFinishDate: string | null;
@@ -52,12 +49,6 @@ export interface UpdateProcessStatusPayload {
   status: ProcessStatus;
 }
 
-export interface UpdateProcessResultPayload {
-  result: ProcessResult;
-  remarks?: string;
-  actualFinishDate?: string;
-}
-
 export async function getTankProcesses(tankId: string): Promise<TankProcessSummary[]> {
   const res = await api.get<ResponseSuccess<TankProcessSummary[]>>(`/tanks/${tankId}/processes`);
   return res.data.data!;
@@ -70,11 +61,6 @@ export async function getTankProcessById(id: string): Promise<TankProcessDetail>
 
 export async function updateProcessStatus(id: string, data: UpdateProcessStatusPayload): Promise<TankProcessDetail> {
   const res = await api.patch<ResponseSuccess<TankProcessDetail>>(`/processes/${id}/status`, data);
-  return res.data.data!;
-}
-
-export async function updateProcessResult(id: string, data: UpdateProcessResultPayload): Promise<TankProcessDetail> {
-  const res = await api.patch<ResponseSuccess<TankProcessDetail>>(`/processes/${id}/result`, data);
   return res.data.data!;
 }
 

@@ -13,7 +13,6 @@ import ErrorState from "@/components/common/ErrorState";
 import EmptyState from "@/components/common/EmptyState";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 import ProcessStatusBadge from "@/components/common/ProcessStatusBadge";
-import ProcessResultBadge from "@/components/common/ProcessResultBadge";
 import PermissionGate from "@/components/common/PermissionGate";
 import ChecklistTable from "@/features/checklist-results/components/ChecklistTable";
 import EligibilityPanel from "@/features/tank-processes/components/EligibilityPanel";
@@ -191,7 +190,6 @@ export default function TankProcessDetailPage() {
 
       <div className="flex items-center gap-3">
         <ProcessStatusBadge status={process.status} />
-        <ProcessResultBadge result={process.result} />
       </div>
 
       {submitForReviewBlocked && (
@@ -222,7 +220,6 @@ export default function TankProcessDetailPage() {
             <InfoRow label="Sequence" value={process.sequenceOrder} />
             <InfoRow label="Optional" value={process.processTemplate.isOptional ? "Yes" : "No"} />
             <InfoRow label="Status" value={<ProcessStatusBadge status={process.status} />} />
-            <InfoRow label="Result" value={<ProcessResultBadge result={process.result} />} />
             <InfoRow label="Started At" value={process.actualStartDate ? format(new Date(process.actualStartDate), "dd MMM yyyy HH:mm") : null} />
             <InfoRow label="Completed At" value={process.actualFinishDate ? format(new Date(process.actualFinishDate), "dd MMM yyyy HH:mm") : null} />
             {process.remarks && <InfoRow label="Remarks" value={process.remarks} />}

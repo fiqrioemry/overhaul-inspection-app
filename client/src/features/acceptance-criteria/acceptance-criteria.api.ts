@@ -11,6 +11,11 @@ export interface CriteriaReference {
   referenceDocument: { id: string; code: string; title: string };
 }
 
+export interface CriteriaRefSummary {
+  id: string;
+  referenceDocument: { id: string; code: string; title: string };
+}
+
 export interface AcceptanceCriteria {
   id: string;
   code: string;
@@ -29,7 +34,7 @@ export interface AcceptanceCriteria {
   severity: string | null;
   status: string;
   createdAt: string;
-  references: CriteriaReference[];
+  criteriaRefs: CriteriaRefSummary[];
 }
 
 export interface ListAcceptanceCriteriaParams {
@@ -55,6 +60,7 @@ export interface CreateAcceptanceCriteriaPayload {
   isRequired?: boolean;
   severity?: string;
   status?: string;
+  referenceDocumentIds: string[];
 }
 
 export interface UpdateAcceptanceCriteriaPayload extends Partial<CreateAcceptanceCriteriaPayload> {}
