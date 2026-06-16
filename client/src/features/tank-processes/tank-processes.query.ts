@@ -1,13 +1,7 @@
 // src/features/tank-processes/tank-processes.query.ts
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  getTankProcesses,
-  getTankProcessById,
-  updateProcessStatus,
-  updateProcessResult,
-  getProcessEligibility,
-} from "./tank-processes.api";
+import { getTankProcesses, getTankProcessById, updateProcessStatus, updateProcessResult, getProcessEligibility } from "./tank-processes.api";
 import type { UpdateProcessStatusPayload, UpdateProcessResultPayload } from "./tank-processes.api";
 
 export const PROCESS_KEYS = {

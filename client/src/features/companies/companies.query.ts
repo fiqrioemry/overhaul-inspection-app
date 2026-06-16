@@ -30,8 +30,8 @@ export function useCreateCompany() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (data: CreateCompanyPayload) => createCompany(data),
-    onSuccess: (_, __, _ctx) => {
-      toast.success("Company created successfully");
+    onSuccess: (res) => {
+      toast.success(res.message || "Company created successfully");
       queryClient.invalidateQueries({ queryKey: COMPANY_KEYS.all });
     },
     onError: (err: { message: string }) => {
@@ -44,8 +44,8 @@ export function useUpdateCompany() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateCompanyPayload }) => updateCompany(id, data),
-    onSuccess: () => {
-      toast.success("Company updated successfully");
+    onSuccess: (res) => {
+      toast.success(res.message || "Company updated successfully");
       queryClient.invalidateQueries({ queryKey: COMPANY_KEYS.all });
     },
     onError: (err: { message: string }) => {

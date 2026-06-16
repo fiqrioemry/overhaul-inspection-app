@@ -32,6 +32,8 @@ export default function TankProcessList({ tankId }: TankProcessListProps) {
             <th className="px-4 py-3 text-left font-medium">Type</th>
             <th className="px-4 py-3 text-left font-medium">Status</th>
             <th className="px-4 py-3 text-left font-medium">Result</th>
+            <th className="px-4 py-3 text-left font-medium">Checklist</th>
+            <th className="px-4 py-3 text-left font-medium">Findings</th>
             <th className="px-4 py-3 text-left font-medium">Started</th>
             <th className="px-4 py-3 text-left font-medium">Completed</th>
             <th className="px-4 py-3 text-right font-medium"></th>
@@ -43,27 +45,23 @@ export default function TankProcessList({ tankId }: TankProcessListProps) {
             const isLocked = proc.status === "LOCKED";
             return (
               <tr key={proc.id} className="hover:bg-muted/20">
-                <td className="px-4 py-3 text-muted-foreground">{proc.processTemplate.sequenceOrder}</td>
+                <td className="px-4 py-3 text-muted-foreground">{proc.sequenceOrder}</td>
                 <td className="px-4 py-3 font-mono text-xs">{proc.processTemplate.code}</td>
                 <td className="px-4 py-3 font-medium">
-                  {proc.processTemplate.name}
-                  {proc.processTemplate.isOptional && (
-                    <span className="ml-1 text-xs text-muted-foreground">(optional)</span>
-                  )}
+                  {proc.name}
+                  {proc.processTemplate.isOptional && <span className="ml-1 text-xs text-muted-foreground">(optional)</span>}
                 </td>
-                <td className="px-4 py-3 text-xs text-muted-foreground">{proc.processTemplate.type}</td>
+                <td className="px-4 py-3 text-xs text-muted-foreground">{proc.type}</td>
                 <td className="px-4 py-3">
                   <ProcessStatusBadge status={proc.status} />
                 </td>
                 <td className="px-4 py-3">
                   <ProcessResultBadge result={proc.result} />
                 </td>
-                <td className="px-4 py-3 text-xs text-muted-foreground">
-                  {proc.startedAt ? format(new Date(proc.startedAt), "dd MMM yyyy") : "—"}
-                </td>
-                <td className="px-4 py-3 text-xs text-muted-foreground">
-                  {proc.completedAt ? format(new Date(proc.completedAt), "dd MMM yyyy") : "—"}
-                </td>
+                <td className="px-4 py-3 text-xs text-muted-foreground">{proc._count.checklistResults}</td>
+                <td className="px-4 py-3 text-xs text-muted-foreground">{proc._count.findings}</td>
+                <td className="px-4 py-3 text-xs text-muted-foreground">{proc.actualStartDate ? format(new Date(proc.actualStartDate), "dd MMM yyyy") : "—"}</td>
+                <td className="px-4 py-3 text-xs text-muted-foreground">{proc.actualFinishDate ? format(new Date(proc.actualFinishDate), "dd MMM yyyy") : "—"}</td>
                 <td className="px-4 py-3 text-right">
                   {isLocked ? (
                     <Lock className="h-4 w-4 text-muted-foreground inline-block" />

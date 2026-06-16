@@ -2,37 +2,35 @@
 import api from "@/lib/axios";
 import type { ResponseSuccess } from "@/types/response.type";
 
-export type ProcessStatus =
-  | "LOCKED"
-  | "NOT_STARTED"
-  | "WAITING_REVIEW"
-  | "REVIEWED"
-  | "IN_PROGRESS"
-  | "COMPLETED"
-  | "REJECTED"
-  | "NOT_APPLICABLE";
+export type ProcessStatus = "LOCKED" | "NOT_STARTED" | "WAITING_REVIEW" | "REVIEWED" | "IN_PROGRESS" | "COMPLETED" | "REJECTED" | "NOT_APPLICABLE";
 
 export type ProcessResult = "PENDING" | "PASSED" | "FAILED" | "NOT_APPLICABLE";
 
 export type ProcessType = "WORK" | "INSPECTION" | "TEST" | "NDT" | "COATING" | "COMMISSIONING";
 
 export interface ProcessTemplate {
-  id: string;
   code: string;
-  name: string;
-  type: ProcessType;
-  sequenceOrder: number;
   isOptional: boolean;
+  applicabilityRule: string | null;
 }
 
 export interface TankProcessSummary {
   id: string;
   tankId: string;
+  processTemplateId: string;
+  name: string;
+  type: ProcessType;
+  sequenceOrder: number;
   status: ProcessStatus;
   result: ProcessResult;
-  startedAt: string | null;
-  completedAt: string | null;
+  plannedStartDate: string | null;
+  actualStartDate: string | null;
+  actualFinishDate: string | null;
+  remarks: string | null;
+  createdAt: string;
+  updatedAt: string;
   processTemplate: ProcessTemplate;
+  _count: { checklistResults: number; findings: number };
 }
 
 export interface TankProcessDetail extends TankProcessSummary {

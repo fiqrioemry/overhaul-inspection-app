@@ -1,5 +1,7 @@
 // src/pages/TankEditPage.tsx
 import { useNavigate, useParams } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import PageHeader from "@/components/common/PageHeader";
 import LoadingState from "@/components/common/LoadingState";
 import ErrorState from "@/components/common/ErrorState";
@@ -38,7 +40,16 @@ export default function TankEditPage() {
 
   return (
     <div className="space-y-6 max-w-3xl">
-      <PageHeader title={`Edit Tank — ${tank.tankNo}`} description="Update tank information" />
+      <PageHeader
+        title={`Edit Tank — ${tank.tankNo}`}
+        description="Update tank information"
+        action={
+          <Button variant="outline" onClick={() => navigate(ROUTES.TANK_DETAIL.replace(":tankId", tankId!))}>
+            <ArrowLeft />
+            Back
+          </Button>
+        }
+      />
       <TankForm
         mode="edit"
         tank={tank}

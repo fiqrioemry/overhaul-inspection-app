@@ -50,6 +50,8 @@ export default function CompaniesPage() {
     deleteMutation.mutate(deleteTarget.id, { onSuccess: () => setDeleteTarget(undefined) });
   }
 
+  console.log("data", data);
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -68,7 +70,10 @@ export default function CompaniesPage() {
         <Input
           placeholder="Search companies..."
           value={search}
-          onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(1);
+          }}
           className="max-w-xs"
         />
       </div>
@@ -98,24 +103,15 @@ export default function CompaniesPage() {
                   {data?.items.map((company) => (
                     <tr key={company.id} className="hover:bg-muted/20">
                       <td className="px-4 py-3 font-medium">{company.name}</td>
-                      <td className="px-4 py-3 text-muted-foreground">
-                        {TYPE_LABEL[company.type] ?? company.type}
-                      </td>
+                      <td className="px-4 py-3 text-muted-foreground">{TYPE_LABEL[company.type] ?? company.type}</td>
                       <td className="px-4 py-3 text-muted-foreground">{company.phone ?? "—"}</td>
                       <td className="px-4 py-3 text-muted-foreground">{company.email ?? "—"}</td>
                       <td className="px-4 py-3">
-                        <Badge
-                          variant="outline"
-                          className={company.isActive
-                            ? "border-0 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                            : "border-0 bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"}
-                        >
+                        <Badge variant="outline" className={company.isActive ? "border-0 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "border-0 bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"}>
                           {company.isActive ? "Active" : "Inactive"}
                         </Badge>
                       </td>
-                      <td className="px-4 py-3 text-muted-foreground">
-                        {format(new Date(company.createdAt), "dd MMM yyyy")}
-                      </td>
+                      <td className="px-4 py-3 text-muted-foreground">{format(new Date(company.createdAt), "dd MMM yyyy")}</td>
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-end gap-2">
                           <PermissionGate permission={PERMISSIONS.COMPANY_UPDATE}>
@@ -137,9 +133,7 @@ export default function CompaniesPage() {
             </div>
           )}
 
-          {data?.meta && data.meta.totalPages > 1 && (
-            <Pagination meta={data.meta} onPageChange={setPage} />
-          )}
+          {data?.meta && data.meta.totalPages > 1 && <Pagination meta={data.meta} onPageChange={setPage} />}
         </>
       )}
 
@@ -147,7 +141,9 @@ export default function CompaniesPage() {
 
       <ConfirmDialog
         open={Boolean(deleteTarget)}
-        onOpenChange={(open) => { if (!open) setDeleteTarget(undefined); }}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(undefined);
+        }}
         title="Delete Company"
         description={`Delete "${deleteTarget?.name}"? This action cannot be undone.`}
         confirmLabel="Delete"

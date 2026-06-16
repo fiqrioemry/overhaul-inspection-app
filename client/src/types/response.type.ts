@@ -11,6 +11,7 @@ export interface ResponseError {
 export interface ResponseSuccess<T> {
   success: boolean;
   message: string;
+  code: string;
   data?: T;
 }
 
@@ -25,4 +26,5 @@ export interface ResponseList<T> {
 export interface ResponseOK {
   success: boolean;
   message: string;
+  code: string;
 }

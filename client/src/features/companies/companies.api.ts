@@ -70,14 +70,14 @@ function toFormData(data: CreateCompanyPayload | UpdateCompanyPayload): FormData
   return form;
 }
 
-export async function createCompany(data: CreateCompanyPayload): Promise<Company> {
+export async function createCompany(data: CreateCompanyPayload): Promise<ResponseSuccess<Company>> {
   const res = await api.post<ResponseSuccess<Company>>("/companies", toFormData(data));
-  return res.data.data!;
+  return res.data;
 }
 
-export async function updateCompany(id: string, data: UpdateCompanyPayload): Promise<Company> {
+export async function updateCompany(id: string, data: UpdateCompanyPayload): Promise<ResponseSuccess<Company>> {
   const res = await api.patch<ResponseSuccess<Company>>(`/companies/${id}`, toFormData(data));
-  return res.data.data!;
+  return res.data;
 }
 
 export async function deleteCompany(id: string): Promise<ResponseOK> {

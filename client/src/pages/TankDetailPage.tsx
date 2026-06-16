@@ -1,6 +1,6 @@
 // src/pages/TankDetailPage.tsx
 import { useParams, useNavigate } from "react-router-dom";
-import { Pencil } from "lucide-react";
+import { ArrowLeft, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PageHeader from "@/components/common/PageHeader";
@@ -39,11 +39,16 @@ export default function TankDetailPage() {
         title={`${tank.tankNo}${tank.tankName ? ` — ${tank.tankName}` : ""}`}
         description="Tank overview and process workflow"
         action={
-          <PermissionGate permission={PERMISSIONS.TANK_UPDATE}>
-            <Button variant="outline" onClick={() => navigate(editPath)}>
-              <Pencil /> Edit Tank
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => navigate(ROUTES.TANKS)}>
+              <ArrowLeft /> Back
             </Button>
-          </PermissionGate>
+            <PermissionGate permission={PERMISSIONS.TANK_UPDATE}>
+              <Button variant="outline" onClick={() => navigate(editPath)}>
+                <Pencil /> Edit Tank
+              </Button>
+            </PermissionGate>
+          </div>
         }
       />
 

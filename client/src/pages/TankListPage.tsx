@@ -1,7 +1,7 @@
 // src/pages/TankListPage.tsx
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Container, Plus, Pencil, Trash2 } from "lucide-react";
+import { Container, Plus, Eye, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import PageHeader from "@/components/common/PageHeader";
@@ -52,7 +52,10 @@ export default function TankListPage() {
         <Input
           placeholder="Search tanks..."
           value={search}
-          onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(1);
+          }}
           className="max-w-xs"
         />
       </div>
@@ -82,13 +85,8 @@ export default function TankListPage() {
                 <tbody className="divide-y">
                   {data.items.map((tank) => {
                     const detailPath = ROUTES.TANK_DETAIL.replace(":tankId", tank.id);
-                    const editPath = ROUTES.TANK_EDIT.replace(":tankId", tank.id);
                     return (
-                      <tr
-                        key={tank.id}
-                        className="hover:bg-muted/20 cursor-pointer"
-                        onClick={() => navigate(detailPath)}
-                      >
+                      <tr key={tank.id} className="hover:bg-muted/20 cursor-pointer" onClick={() => navigate(detailPath)}>
                         <td className="px-4 py-3 font-mono font-medium">{tank.tankNo}</td>
                         <td className="px-4 py-3 text-muted-foreground">{tank.tankName ?? "—"}</td>
                         <td className="px-4 py-3 text-muted-foreground">{tank._count.tankProcesses}</td>
@@ -96,19 +94,13 @@ export default function TankListPage() {
                           <StatusBadge status={tank.status} />
                         </td>
                         <td className="px-4 py-3 text-muted-foreground text-xs">{tank.contractorCompany?.name ?? "—"}</td>
-                        <td className="px-4 py-3 text-xs text-muted-foreground">
-                          {tank.startDate ? format(new Date(tank.startDate), "dd MMM yyyy") : "—"}
-                        </td>
-                        <td className="px-4 py-3 text-xs text-muted-foreground">
-                          {tank.estimatedFinishDate ? format(new Date(tank.estimatedFinishDate), "dd MMM yyyy") : "—"}
-                        </td>
+                        <td className="px-4 py-3 text-xs text-muted-foreground">{tank.startDate ? format(new Date(tank.startDate), "dd MMM yyyy") : "—"}</td>
+                        <td className="px-4 py-3 text-xs text-muted-foreground">{tank.estimatedFinishDate ? format(new Date(tank.estimatedFinishDate), "dd MMM yyyy") : "—"}</td>
                         <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                           <div className="flex items-center justify-end gap-2">
-                            <PermissionGate permission={PERMISSIONS.TANK_UPDATE}>
-                              <Button variant="ghost" size="icon-sm" title="Edit tank" onClick={() => navigate(editPath)}>
-                                <Pencil />
-                              </Button>
-                            </PermissionGate>
+                            <Button variant="ghost" size="icon-sm" title="Detail tank" onClick={() => navigate(detailPath)}>
+                              <Eye />
+                            </Button>
                             <PermissionGate permission={PERMISSIONS.TANK_UPDATE}>
                               <Button variant="ghost" size="icon-sm" title="Delete tank" onClick={() => setDeleteTarget(tank)}>
                                 <Trash2 className="text-destructive" />
@@ -130,7 +122,9 @@ export default function TankListPage() {
 
       <ConfirmDialog
         open={Boolean(deleteTarget)}
-        onOpenChange={(open) => { if (!open) setDeleteTarget(undefined); }}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(undefined);
+        }}
         title="Delete Tank"
         description={`Delete tank "${deleteTarget?.tankNo}"? All associated processes and data will be removed. This action cannot be undone.`}
         confirmLabel="Delete"

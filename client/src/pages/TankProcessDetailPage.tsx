@@ -68,8 +68,8 @@ export default function TankProcessDetailPage() {
       </div>
 
       <PageHeader
-        title={process.processTemplate.name}
-        description={`${process.processTemplate.code} · ${process.processTemplate.type}`}
+        title={process.name}
+        description={`${process.processTemplate.code} · ${process.type}`}
         action={
           <div className="flex items-center gap-2">
             {nextStatus && actionLabel && (
@@ -110,19 +110,19 @@ export default function TankProcessDetailPage() {
         <TabsContent value="overview" className="mt-4">
           <div className="rounded-lg border p-4 space-y-3">
             <InfoRow label="Process Code" value={<span className="font-mono">{process.processTemplate.code}</span>} />
-            <InfoRow label="Process Name" value={process.processTemplate.name} />
-            <InfoRow label="Type" value={process.processTemplate.type} />
-            <InfoRow label="Sequence" value={process.processTemplate.sequenceOrder} />
+            <InfoRow label="Process Name" value={process.name} />
+            <InfoRow label="Type" value={process.type} />
+            <InfoRow label="Sequence" value={process.sequenceOrder} />
             <InfoRow label="Optional" value={process.processTemplate.isOptional ? "Yes" : "No"} />
             <InfoRow label="Status" value={<ProcessStatusBadge status={process.status} />} />
             <InfoRow label="Result" value={<ProcessResultBadge result={process.result} />} />
             <InfoRow
               label="Started At"
-              value={process.startedAt ? format(new Date(process.startedAt), "dd MMM yyyy HH:mm") : null}
+              value={process.actualStartDate ? format(new Date(process.actualStartDate), "dd MMM yyyy HH:mm") : null}
             />
             <InfoRow
               label="Completed At"
-              value={process.completedAt ? format(new Date(process.completedAt), "dd MMM yyyy HH:mm") : null}
+              value={process.actualFinishDate ? format(new Date(process.actualFinishDate), "dd MMM yyyy HH:mm") : null}
             />
           </div>
         </TabsContent>
