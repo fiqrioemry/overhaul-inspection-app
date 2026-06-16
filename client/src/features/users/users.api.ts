@@ -37,8 +37,8 @@ export interface CreateUserPayload {
 
 export interface UpdateUserPayload {
   name?: string;
-  email?: string;
   role?: RoleEnum;
+  avatar?: File;
 }
 
 export interface UpdateUserStatusPayload {
@@ -61,7 +61,11 @@ export async function createUser(data: CreateUserPayload): Promise<UserDetail> {
 }
 
 export async function updateUser(id: string, data: UpdateUserPayload): Promise<UserDetail> {
-  const res = await api.patch<ResponseSuccess<UserDetail>>(`/users/${id}`, data);
+  const formData = new FormData();
+  if (data.name !== undefined) formData.append("name", data.name);
+  if (data.role !== undefined) formData.append("role", data.role);
+  if (data.avatar instanceof File) formData.append("avatar", data.avatar);
+  const res = await api.patch<ResponseSuccess<UserDetail>>(`/users/${id}`, formData);
   return res.data.data!;
 }
 

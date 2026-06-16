@@ -36,9 +36,12 @@ export default function UserStatusDialog({ open, onOpenChange, user }: UserStatu
 
   function onSubmit(values: UpdateUserStatusFormValues) {
     if (!user) return;
-    mutation.mutate({ id: user.id, data: values }, {
-      onSuccess: () => onOpenChange(false),
-    });
+    mutation.mutate(
+      { id: user.id, data: values },
+      {
+        onSuccess: () => onOpenChange(false),
+      },
+    );
   }
 
   return (
