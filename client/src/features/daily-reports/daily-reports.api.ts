@@ -26,7 +26,7 @@ export interface DailyReportSummary {
   aiSuggestedDescription: string | null;
   createdAt: string;
   updatedAt: string;
-  tank: { id: string; tankNo: string; tankName: string | null; inspectionCompany: { id: string; name: string } | null };
+  tank: { id: string; tankNo: string; tankName: string | null; location: string | null; inspectionCompany: { id: string; name: string } | null };
   tankProcess: { id: string; name: string } | null;
   inspector: { id: string; name: string } | null;
   attachments: DailyReportAttachment[];

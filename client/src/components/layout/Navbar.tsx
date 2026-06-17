@@ -1,6 +1,6 @@
 // src/components/layout/Navbar.tsx
 import { useNavigate } from "react-router-dom";
-import { LogOut, User, ChevronDown } from "lucide-react";
+import { LogOut, User, ChevronDown, Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -15,6 +15,7 @@ import { useAuthStore } from "@/stores/auth.store";
 import { useLogout } from "@/features/auth/auth.query";
 import NotificationBell from "@/features/notifications/components/NotificationBell";
 import { ROUTES } from "@/constants/route.constant";
+import { useUIStore } from "@/stores/ui.store";
 
 const ROLE_LABELS: Record<string, string> = {
   USER: "User",
@@ -36,6 +37,8 @@ export default function Navbar() {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const logoutMutation = useLogout();
+  const darkMode = useUIStore((s) => s.darkMode);
+  const toggleDarkMode = useUIStore((s) => s.toggleDarkMode);
 
   async function handleLogout() {
     try {
@@ -48,6 +51,15 @@ export default function Navbar() {
   return (
     <header className="flex h-14 items-center border-b bg-background px-4 gap-3">
       <div className="flex-1" />
+
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={toggleDarkMode}
+        title={darkMode ? "Switch to light mode" : "Switch to dark mode"}
+      >
+        {darkMode ? <Sun className="size-4" /> : <Moon className="size-4" />}
+      </Button>
 
       <NotificationBell />
 

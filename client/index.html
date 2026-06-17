@@ -6,6 +6,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link href="/src/style.css" rel="stylesheet" />
     <title>Overhaul Inspection & Monitoring</title>
+    <script>
+      (function () {
+        var stored = localStorage.getItem("darkMode");
+        var isDark = stored !== null ? stored === "true" : true;
+        if (isDark) document.documentElement.classList.add("dark");
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

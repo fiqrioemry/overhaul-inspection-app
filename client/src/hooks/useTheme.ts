@@ -1,26 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { useUIStore } from "@/stores/ui.store";
 
 const useTheme = () => {
-  const [darkMode, setDarkMode] = useState(() => {
-    const item = localStorage.getItem("darkMode");
-    return item !== null ? JSON.parse(item) : true;
-  });
-
-  const handleDarkMode = () => {
-    const isDark = !darkMode;
-    setDarkMode(isDark);
-    localStorage.setItem("darkMode", JSON.stringify(isDark));
-  };
+  const darkMode = useUIStore((s) => s.darkMode);
 
   useEffect(() => {
-    if (darkMode) {
-      document.body.classList.add("dark");
-    } else {
-      document.body.classList.remove("dark");
-    }
+    document.documentElement.classList.toggle("dark", darkMode);
   }, [darkMode]);
-
-  return { handleDarkMode, darkMode };
 };
 
 export default useTheme;
