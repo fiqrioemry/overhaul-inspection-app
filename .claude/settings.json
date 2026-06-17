@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd /home/oemry/project/pantau-inspeksi/client && bun tsc *)",
+      "Bash(cd /home/oemry/project/pantau-inspeksi/server && bunx tsc *)",
+      "Bash(cd /home/oemry/project/pantau-inspeksi/server && bun tsc *)"
+    ]
+  }
+}
