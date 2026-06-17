@@ -18,7 +18,7 @@ import type { DailyReportSummary, DailyReportAttachment } from "../daily-reports
 
 const schema = z.object({
   reportDate: z.string().min(1, "Report date required"),
-  activityType: z.enum(["MONITORING", "INSPECTION", "FINDING", "REPAIR", "TEST_ACTIVITY", "INFORMATION"]),
+  activityType: z.enum(["MONITORING", "INSPECTION"]),
   description: z.string().min(1, "Description required").max(2000),
 });
 
@@ -27,19 +27,11 @@ type FormValues = z.infer<typeof schema>;
 export const ACTIVITY_OPTIONS = [
   { label: "Monitoring", value: "MONITORING" },
   { label: "Inspection", value: "INSPECTION" },
-  { label: "Finding", value: "FINDING" },
-  { label: "Repair", value: "REPAIR" },
-  { label: "Test Activity", value: "TEST_ACTIVITY" },
-  { label: "Information", value: "INFORMATION" },
 ];
 
 export const ACTIVITY_LABEL: Record<string, string> = {
   MONITORING: "Monitoring",
   INSPECTION: "Inspection",
-  FINDING: "Finding",
-  REPAIR: "Repair",
-  TEST_ACTIVITY: "Test Activity",
-  INFORMATION: "Information",
 };
 
 const MAX_ATTACHMENTS = 15;

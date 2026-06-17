@@ -3,7 +3,7 @@ import api from "@/lib/axios";
 import type { ResponseSuccess, ResponseList } from "@/types/response.type";
 import type { PaginatedResponse } from "@/types/pagination.type";
 
-export type DailyActivityType = "MONITORING" | "INSPECTION" | "FINDING" | "REPAIR" | "TEST_ACTIVITY" | "INFORMATION";
+export type DailyActivityType = "MONITORING" | "INSPECTION";
 
 export interface DailyReportAttachment {
   id: string;
