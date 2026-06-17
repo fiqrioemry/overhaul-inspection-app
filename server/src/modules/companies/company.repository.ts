@@ -11,14 +11,15 @@ const companySelect = {
   address: true,
   phone: true,
   email: true,
-  logoUrl: true,
+  logoFileStorageId: true,
+  logoFile: { select: { id: true, url: true } },
   isActive: true,
   createdAt: true,
   updatedAt: true,
 } as const;
 
 export class CompanyRepository {
-  static async create(data: CreateCompanyRequest, logoUrl?: string, tx?: Db) {
+  static async create(data: CreateCompanyRequest, logoFileStorageId?: string, tx?: Db) {
     const db = tx ?? database;
     return db.company.create({
       data: {
@@ -27,7 +28,7 @@ export class CompanyRepository {
         address: data.address ?? null,
         phone: data.phone ?? null,
         email: data.email || null,
-        logoUrl: logoUrl || null,
+        logoFileStorageId: logoFileStorageId ?? null,
         isActive: data.isActive,
       },
       select: companySelect,
@@ -77,7 +78,7 @@ export class CompanyRepository {
     return { companies, total };
   }
 
-  static async update(id: string, data: UpdateCompanyRequest, logoUrl?: string, tx?: Db) {
+  static async update(id: string, data: UpdateCompanyRequest, logoFileStorageId?: string | null, tx?: Db) {
     const db = tx ?? database;
     return db.company.update({
       where: { id, deletedAt: null },
@@ -87,7 +88,7 @@ export class CompanyRepository {
         ...(data.address !== undefined && { address: data.address }),
         ...(data.phone !== undefined && { phone: data.phone }),
         ...(data.email !== undefined && { email: data.email || null }),
-        ...(logoUrl !== undefined && { logoUrl }),
+        ...(logoFileStorageId !== undefined && { logoFileStorageId }),
         ...(data.isActive !== undefined && { isActive: data.isActive }),
       },
       select: companySelect,
@@ -101,7 +102,7 @@ export class CompanyRepository {
         isActive: true,
         ...(query.type && { type: query.type }),
       },
-      select: { id: true, name: true, logoUrl: true },
+      select: { id: true, name: true, logoFile: { select: { url: true } } },
       orderBy: { name: "asc" },
     });
   }

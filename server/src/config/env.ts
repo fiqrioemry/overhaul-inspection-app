@@ -24,16 +24,8 @@ const databaseConfig = {
 };
 
 const oauthProviders: Record<OAuthProviderKey, IOAuthProvider> = {
-  google: new GoogleOAuthProvider(
-    process.env.GOOGLE_CLIENT_ID!,
-    process.env.GOOGLE_CLIENT_SECRET!,
-    process.env.GOOGLE_REDIRECT_URI ?? "http://localhost:5001/api/v1/auth/google/callback",
-  ),
-  github: new GitHubOAuthProvider(
-    process.env.GITHUB_CLIENT_ID!,
-    process.env.GITHUB_CLIENT_SECRET!,
-    process.env.GITHUB_REDIRECT_URI ?? "http://localhost:5001/api/v1/auth/github/callback",
-  ),
+  google: new GoogleOAuthProvider(process.env.GOOGLE_CLIENT_ID!, process.env.GOOGLE_CLIENT_SECRET!, process.env.GOOGLE_REDIRECT_URI ?? "http://localhost:5001/api/v1/auth/google/callback"),
+  github: new GitHubOAuthProvider(process.env.GITHUB_CLIENT_ID!, process.env.GITHUB_CLIENT_SECRET!, process.env.GITHUB_REDIRECT_URI ?? "http://localhost:5001/api/v1/auth/github/callback"),
 };
 
 export function getOAuthProvider(key: OAuthProviderKey): IOAuthProvider {
@@ -68,4 +60,9 @@ const appConfig = {
   ORPHAN_FILE_TTL_MINUTES: process.env.ORPHAN_FILE_TTL_MINUTES ? parseInt(process.env.ORPHAN_FILE_TTL_MINUTES) : 60,
 };
 
-export { mailConfig, databaseConfig, minioConfig, redisConfig, oauthProviders, appConfig };
+const openaiConfig = {
+  API_KEY: process.env.OPENAI_API_KEY || "",
+  MODEL: (process.env.OPENAI_MODEL || "gpt-4o") as string,
+};
+
+export { mailConfig, databaseConfig, minioConfig, redisConfig, oauthProviders, appConfig, openaiConfig };

@@ -8,6 +8,10 @@ import { FileRepository } from "@/modules/files/file.repository";
 import { CompanyOptionsQuery, CreateCompanyRequest, ListCompaniesQuery, UpdateCompanyRequest } from "@/modules/companies/company.schema";
 import type { CompanyItem, CompanyListResult, CompanyOption } from "./company.types";
 
+function toLogoUrl(logoFile: { url: string } | null | undefined): string | null {
+  return logoFile?.url ?? null;
+}
+
 export class CompanyService {
   static async createCompany(c: Context, request: CreateCompanyRequest, logoFile?: File) {
     const existing = await CompanyRepository.findByName(request.name);
@@ -16,23 +20,23 @@ export class CompanyService {
     }
 
     return await pgsql.$transaction(async (tx: Prisma.TransactionClient) => {
-      const company = await CompanyRepository.create(request, undefined, tx);
+      let logoFileStorageId: string | undefined;
 
       if (logoFile) {
         const fileRecord = await FileService.generateFileRecord(logoFile, "COMPANY_LOGO");
         await FileService.uploadFileToStorage(c, fileRecord);
-        fileRecord.isUsed = true;
-        fileRecord.targetId = company.id;
-        await FileService.saveRecordToDatabase(fileRecord, tx);
-        return CompanyRepository.update(company.id, {}, fileRecord.url!, tx);
+        const saved = await FileService.saveRecordToDatabase(fileRecord, tx);
+        logoFileStorageId = saved.id;
       }
 
-      return company;
+      const company = await CompanyRepository.create(request, logoFileStorageId, tx);
+      return { ...company, logoUrl: toLogoUrl(company.logoFile) };
     });
   }
 
   static async getCompanyOptions(query: CompanyOptionsQuery): Promise<CompanyOption[]> {
-    return CompanyRepository.findOptions(query);
+    const rows = await CompanyRepository.findOptions(query);
+    return rows.map((r) => ({ id: r.id, name: r.name, logoUrl: toLogoUrl(r.logoFile) }));
   }
 
   static async listCompanies(query: ListCompaniesQuery): Promise<CompanyListResult> {
@@ -46,7 +50,7 @@ export class CompanyService {
       address: c.address,
       phone: c.phone,
       email: c.email,
-      logoUrl: c.logoUrl,
+      logoUrl: toLogoUrl(c.logoFile),
       isActive: c.isActive,
       createdAt: c.createdAt,
       updatedAt: c.updatedAt,
@@ -70,7 +74,7 @@ export class CompanyService {
     if (!company) {
       throw new HTTPException(404, { message: "Company not found", cause: "COMPANY_NOT_FOUND" });
     }
-    return company;
+    return { ...company, logoUrl: toLogoUrl(company.logoFile) };
   }
 
   static async updateCompany(c: Context, id: string, request: UpdateCompanyRequest, logoFile?: File) {
@@ -86,22 +90,21 @@ export class CompanyService {
     }
 
     return await pgsql.$transaction(async (tx: Prisma.TransactionClient) => {
-      let logoUrl: string | undefined;
+      let newLogoFileStorageId: string | null | undefined;
 
       if (logoFile) {
-        const existingFile = await FileService.getFileRecordByTargetId(id, "COMPANY_LOGO");
-        if (existingFile) {
-          await FileRepository.markFilesAsUnused(tx, [existingFile.id]);
+        // Mark old logo file as unused
+        if (company.logoFileStorageId) {
+          await FileRepository.markFilesAsUnused(tx, [company.logoFileStorageId]);
         }
         const fileRecord = await FileService.generateFileRecord(logoFile, "COMPANY_LOGO");
         await FileService.uploadFileToStorage(c, fileRecord);
-        fileRecord.isUsed = true;
-        fileRecord.targetId = id;
-        await FileService.saveRecordToDatabase(fileRecord, tx);
-        logoUrl = fileRecord.url!;
+        const saved = await FileService.saveRecordToDatabase(fileRecord, tx);
+        newLogoFileStorageId = saved.id;
       }
 
-      return CompanyRepository.update(id, request, logoUrl, tx);
+      const updated = await CompanyRepository.update(id, request, newLogoFileStorageId, tx);
+      return { ...updated, logoUrl: toLogoUrl(updated.logoFile) };
     });
   }
 
@@ -112,9 +115,8 @@ export class CompanyService {
     }
 
     return await pgsql.$transaction(async (tx: Prisma.TransactionClient) => {
-      const logoFile = await FileService.getFileRecordByTargetId(id, "COMPANY_LOGO");
-      if (logoFile) {
-        await FileRepository.markFilesAsUnused(tx, [logoFile.id]);
+      if (company.logoFileStorageId) {
+        await FileRepository.markFilesAsUnused(tx, [company.logoFileStorageId]);
       }
       await CompanyRepository.softDelete(id, tx);
     });

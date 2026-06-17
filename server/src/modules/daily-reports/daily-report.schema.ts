@@ -14,6 +14,7 @@ export const createDailyReportRequest = z.object({
   description: z.string().min(1).max(2000),
   inspectorId: z.string().optional(),
   pertaminaPicId: z.string().optional(),
+  newFileCaptions: z.array(z.string().max(300)).optional(),
 });
 export type CreateDailyReportRequest = z.infer<typeof createDailyReportRequest>;
 

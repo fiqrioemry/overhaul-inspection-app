@@ -101,6 +101,7 @@ export class DailyReportService {
             fileStorageId: f.id,
             attachmentUrl: f.url,
             sortOrder: idx,
+            caption: data.newFileCaptions?.[idx] ?? undefined,
           })),
         );
       }

@@ -320,6 +320,7 @@ model FileStorage {
   createdBy String?  @map("created_by")
 
   avatarOfUser             User?                   @relation("UserAvatar")
+  logoOfCompany            Company?                @relation("CompanyLogo")
   dailyReportAttachments   DailyReportAttachment[]
   @@index([isUsed, createdAt])
   @@map("file_storages")
@@ -365,18 +366,19 @@ model Notification {
 // ─── Company ──────────────────────────────────────────────────────────────────
 
 model Company {
-  id        String      @id @default(cuid())
-  name      String
-  type      CompanyType
-  address   String?
-  phone     String?
-  email     String?
-  logoUrl   String?     @map("logo_url")
-  isActive  Boolean     @default(true) @map("is_active")
-  createdAt DateTime    @default(now()) @map("created_at")
-  updatedAt DateTime    @updatedAt @map("updated_at")
-  deletedAt DateTime?   @map("deleted_at")
+  id                  String      @id @default(cuid())
+  name                String
+  type                CompanyType
+  address             String?
+  phone               String?
+  email               String?
+  logoFileStorageId   String?     @unique @map("logo_file_storage_id")
+  isActive            Boolean     @default(true) @map("is_active")
+  createdAt           DateTime    @default(now()) @map("created_at")
+  updatedAt           DateTime    @updatedAt @map("updated_at")
+  deletedAt           DateTime?   @map("deleted_at")
 
+  logoFile        FileStorage?  @relation("CompanyLogo", fields: [logoFileStorageId], references: [id], onDelete: SetNull)
   contractorTanks Tank[] @relation("TankContractor")
   inspectionTanks Tank[] @relation("TankInspectionCompany")
 

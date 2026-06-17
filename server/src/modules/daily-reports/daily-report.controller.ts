@@ -1,6 +1,8 @@
 import { Context } from "hono";
+import { HTTPException } from "hono/http-exception";
 import { responseOK, responseCreated } from "@/utils/response";
 import { DailyReportService } from "./daily-report.service";
+import { DailyReportAIService } from "./daily-report-ai.service";
 import { createDailyReportRequest, listDailyReportsQuery, updateDailyReportRequest } from "./daily-report.schema";
 import { dailyReportSuccessMessage } from "@/config/constant/daily-report.constant";
 
@@ -33,6 +35,7 @@ export class DailyReportController {
       description: body["description"],
       inspectorId: body["inspectorId"] || undefined,
       pertaminaPicId: body["pertaminaPicId"] || undefined,
+      newFileCaptions: parseJsonField<string[]>(body["newFileCaptions"], []),
     });
 
     const user = c.get("user");
@@ -76,5 +79,19 @@ export class DailyReportController {
     const id = c.req.param("id");
     await DailyReportService.deleteReport(id);
     return responseOK(c, dailyReportSuccessMessage.DELETE_REPORT, null);
+  }
+
+  static async generateAI(c: Context) {
+    const body = await c.req.parseBody({ all: true });
+    const files = extractFiles(body as Record<string, unknown>);
+    const tankId = String(body["tankId"] ?? "");
+    const activityType = String(body["activityType"] ?? "MONITORING");
+    const processName = body["processName"] ? String(body["processName"]) : undefined;
+
+    if (!tankId) throw new HTTPException(400, { message: "tankId is required" });
+    if (files.length === 0) throw new HTTPException(400, { message: "At least one photo file is required" });
+
+    const result = await DailyReportAIService.generate(files, activityType, tankId, processName);
+    return responseOK(c, "AI content generated successfully", result);
   }
 }

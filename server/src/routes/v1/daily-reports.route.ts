@@ -6,6 +6,7 @@ import { DailyReportController as ctrl } from "@/modules/daily-reports/daily-rep
 
 const dailyReports = new Hono();
 
+dailyReports.post("/ai/generate", protect, requirePermission(PERMISSIONS.DAILY_REPORT_CREATE), ctrl.generateAI);
 dailyReports.post("/", protect, requirePermission(PERMISSIONS.DAILY_REPORT_CREATE), ctrl.createReport);
 dailyReports.get("/", protect, requirePermission(PERMISSIONS.DAILY_REPORT_READ), ctrl.listReports);
 dailyReports.get("/:id", protect, requirePermission(PERMISSIONS.DAILY_REPORT_READ), ctrl.getReportById);
