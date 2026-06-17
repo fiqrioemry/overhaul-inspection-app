@@ -10,6 +10,13 @@ import { ACTIVITY_LABEL } from "@/features/daily-reports/components/DailyReportF
 import { ROUTES } from "@/constants/route.constant";
 import { format } from "date-fns";
 
+const LOCATION_LABEL: Record<string, string> = {
+  SUNGAI_GERONG: "Sungai Gerong",
+  PLADJU: "Pladju",
+};
+
+const PHOTOS_PER_PAGE = 6;
+
 export default function DailyReportDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -29,23 +36,25 @@ export default function DailyReportDetailPage() {
 
   const reportDateFormatted = format(new Date(report.reportDate), "dd MMMM yyyy");
   const activityLabel = ACTIVITY_LABEL[report.activityType] ?? report.activityType.replace(/_/g, " ");
-  const hasPhotos = report.attachments.length > 0;
   const companyName = report.tank.inspectionCompany?.name ?? null;
+  const locationLabel = report.tank.location ? (LOCATION_LABEL[report.tank.location] ?? report.tank.location) : null;
+
+  const attachments = report.attachments;
+  const photoPages: typeof attachments[] = [];
+  for (let i = 0; i < attachments.length; i += PHOTOS_PER_PAGE) {
+    photoPages.push(attachments.slice(i, i + PHOTOS_PER_PAGE));
+  }
+  const totalPages = 1 + photoPages.length;
 
   return (
     <>
       <style>{`
         @media print {
-          /* Fix AppLayout overflow constraints */
           html, body {
             height: auto !important;
             overflow: visible !important;
           }
-          #root {
-            height: auto !important;
-            overflow: visible !important;
-          }
-          #root > div {
+          #root, #root > div {
             height: auto !important;
             overflow: visible !important;
           }
@@ -57,8 +66,6 @@ export default function DailyReportDetailPage() {
             padding: 0 !important;
             flex: none !important;
           }
-
-          /* Report layout */
           .no-print { display: none !important; }
           .report-viewer {
             background: none !important;
@@ -75,11 +82,8 @@ export default function DailyReportDetailPage() {
             padding: 0 !important;
             margin: 0 !important;
           }
-          .photo-page {
-            break-before: page !important;
-          }
+          .photo-page { break-before: page !important; }
           img { break-inside: avoid; }
-          .attachment-grid { grid-template-columns: repeat(3, 1fr) !important; }
         }
 
         @page {
@@ -98,11 +102,10 @@ export default function DailyReportDetailPage() {
         </Button>
       </div>
 
-      {/* Canva-like page viewer */}
       <div className="report-viewer bg-gray-300 rounded-lg p-8 flex flex-col items-center gap-6">
-        {/* ── PAGE 1: content without photos ── */}
-        <div className="report-page bg-white shadow-lg w-full max-w-198 min-h-[1123px] p-16 flex flex-col gap-8">
-          {/* Document Header */}
+        {/* ── PAGE 1: report content ── */}
+        <div className="report-page bg-white shadow-lg w-full max-w-198.5 min-h-280.75 p-16 flex flex-col gap-8">
+          {/* Header */}
           <div className="text-center border-b pb-6 space-y-1">
             {companyName && (
               <p className="text-[11px] text-gray-500 uppercase tracking-widest">{companyName}</p>
@@ -111,46 +114,45 @@ export default function DailyReportDetailPage() {
             <p className="text-[11px] text-gray-500">Daily Inspection Report</p>
           </div>
 
-          {/* Metadata Table */}
+          {/* Metadata table — 10px font */}
           <div>
-            <table className="w-full text-sm border-collapse">
+            <table className="w-full border-collapse" style={{ fontSize: "10px" }}>
               <tbody>
                 <MetaRow label="Tanggal / Date" value={reportDateFormatted} />
                 <MetaRow label="Nomor Tangki / Tank No." value={report.tank.tankNo} />
-                {report.tank.tankName && <MetaRow label="Nama Tangki / Tank Name" value={report.tank.tankName} />}
+                {locationLabel && <MetaRow label="Lokasi / Location" value={locationLabel} />}
                 <MetaRow label="Proses / Process" value={report.tankProcess?.name ?? "—"} />
                 <MetaRow label="Jenis Kegiatan / Activity Type" value={activityLabel} />
-                <MetaRow label="Inspektor / Inspector" value={report.inspector?.name ?? "—"} />
               </tbody>
             </table>
           </div>
 
-          {/* Description */}
+          {/* Description — no border on content */}
           <div className="space-y-3 flex-1">
             <SectionTitle>Uraian Kegiatan / Activity Description</SectionTitle>
-            <div className="border rounded p-4 min-h-48 text-sm leading-relaxed whitespace-pre-wrap">{report.description || <span className="text-gray-400 italic">Tidak ada deskripsi.</span>}</div>
-          </div>
-
-          {/* Signature Section */}
-          <div className="space-y-4 mt-auto">
-            <SectionTitle>Tanda Tangan / Signatures</SectionTitle>
-            <div className="grid grid-cols-2 gap-12">
-              <SignatureBox label="Inspektor / Inspector" name={report.inspector?.name} />
-              <SignatureBox label="Pejabat PIC / Pertamina PIC" name={undefined} />
+            <div className="min-h-48 text-sm leading-relaxed whitespace-pre-wrap pt-2">
+              {report.description || <span className="text-gray-400 italic">Tidak ada deskripsi.</span>}
             </div>
           </div>
 
           {/* Footer */}
-          <div className="border-t pt-4 text-center text-[11px] text-gray-400">
+          <div className="border-t pt-4 text-center text-[11px] text-gray-400 mt-auto">
             <p>Dicetak pada {format(new Date(), "dd MMMM yyyy HH:mm")}</p>
-            {hasPhotos && <p className="mt-0.5 text-gray-300">Halaman 1 dari 2 — Dokumentasi foto terdapat di halaman berikutnya</p>}
+            {photoPages.length > 0 && (
+              <p className="mt-0.5 text-gray-300">
+                Halaman 1 dari {totalPages} — Dokumentasi foto terdapat di halaman berikutnya
+              </p>
+            )}
           </div>
         </div>
 
-        {/* ── PAGE 2: photos only ── */}
-        {hasPhotos && (
-          <div className="photo-page report-page bg-white shadow-lg w-full max-w-[794px] min-h-[1123px] p-16 flex flex-col gap-8">
-            {/* Page 2 header */}
+        {/* ── PHOTO PAGES: 6 photos per page, 2 columns ── */}
+        {photoPages.map((pagePhotos, pageIdx) => (
+          <div
+            key={pageIdx}
+            className="photo-page report-page bg-white shadow-lg w-full max-w-198.5 min-h-280.75 p-16 flex flex-col gap-6"
+          >
+            {/* Page header */}
             <div className="text-center border-b pb-4 space-y-0.5">
               {companyName && (
                 <p className="text-[11px] text-gray-500 uppercase tracking-widest">{companyName}</p>
@@ -161,24 +163,35 @@ export default function DailyReportDetailPage() {
               </p>
             </div>
 
-            {/* Photo grid */}
-            <div className="attachment-grid grid grid-cols-2 sm:grid-cols-3 gap-6">
-              {report.attachments.map((att, idx) => (
-                <div key={att.id} className="space-y-1.5">
-                  <div className="border rounded overflow-hidden aspect-4/3 bg-gray-100">
-                    <img src={att.attachmentUrl} alt={att.caption ?? `Foto ${idx + 1}`} className="w-full h-full object-cover" />
+            {/* 2-column grid, max 6 photos */}
+            <div className="grid grid-cols-2 gap-6 flex-1">
+              {pagePhotos.map((att, idx) => {
+                const globalIdx = pageIdx * PHOTOS_PER_PAGE + idx + 1;
+                return (
+                  <div key={att.id} className="space-y-1">
+                    <div className="border rounded overflow-hidden aspect-4/3 bg-gray-100">
+                      <img
+                        src={att.attachmentUrl}
+                        alt={att.caption ?? `Foto ${globalIdx}`}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <p style={{ fontSize: "8px" }} className="text-center text-gray-500 leading-snug">
+                      {att.caption ? att.caption : <span className="italic text-gray-300">Foto {globalIdx}</span>}
+                    </p>
                   </div>
-                  {att.caption ? <p className="text-[11px] text-center text-gray-500 leading-snug">{att.caption}</p> : <p className="text-[11px] text-center text-gray-300 italic">Foto {idx + 1}</p>}
-                </div>
-              ))}
+                );
+              })}
             </div>
 
-            {/* Footer page 2 */}
-            <div className="border-t pt-4 mt-auto text-center text-[11px] text-gray-400">
-              <p>Halaman 2 dari 2</p>
+            {/* Footer */}
+            <div className="border-t pt-4 text-center text-[11px] text-gray-400">
+              <p>
+                Halaman {pageIdx + 2} dari {totalPages}
+              </p>
             </div>
           </div>
-        )}
+        ))}
       </div>
     </>
   );
@@ -187,22 +200,16 @@ export default function DailyReportDetailPage() {
 function MetaRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <tr className="border-b last:border-b-0">
-      <td className="py-2.5 pr-4 text-gray-500 font-medium w-56 align-top text-sm">{label}</td>
-      <td className="py-2.5 font-semibold text-sm">{value}</td>
+      <td className="py-2 pr-4 text-gray-500 font-medium w-56 align-top">{label}</td>
+      <td className="py-2 font-semibold">{value}</td>
     </tr>
   );
 }
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
-  return <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-500 border-b pb-1.5">{children}</h2>;
-}
-
-function SignatureBox({ label, name }: { label: string; name: string | undefined }) {
   return (
-    <div className="space-y-2 text-center">
-      <p className="text-xs text-gray-500">{label}</p>
-      <div className="h-24 border-b border-dashed border-gray-300" />
-      <p className="text-sm font-medium">{name ?? "( ________________________ )"}</p>
-    </div>
+    <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-500 border-b pb-1.5">
+      {children}
+    </h2>
   );
 }

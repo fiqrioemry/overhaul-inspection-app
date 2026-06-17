@@ -12,6 +12,8 @@ import {
   ProcessType,
   ProcessStatusEnum,
   ChecklistStatusEnum,
+  TankLocationEnum,
+  TankServiceEnum,
 } from "../generated/prisma";
 import { hashPassword } from "../src/utils/hash";
 
@@ -416,28 +418,64 @@ async function main() {
   const contractorCo = await prisma.company.findFirst({ where: { name: "PT Jasa Karya Teknik", deletedAt: null } });
   const inspectionCo = await prisma.company.findFirst({ where: { name: "PT Biro Klasifikasi Indonesia", deletedAt: null } });
 
+  const tanksToSeed = [
+    {
+      tankNo: "TK-170",
+      tankName: "Tangki Timbun TK-170",
+      location: TankLocationEnum.SUNGAI_GERONG,
+      capacityM3: 13000,
+      service: TankServiceEnum.AVTUR,
+      diameterMm: 36631,
+      heightMm: 12778,
+      shellCourseCount: 6,
+      hasSteamCoil: true,
+      startDate: new Date("2026-06-01"),
+      estimatedFinishDate: new Date("2026-09-30"),
+    },
+    {
+      tankNo: "TK-101",
+      tankName: "Tangki Timbun TK-101",
+      location: TankLocationEnum.PLADJU,
+      capacityM3: 5000,
+      service: TankServiceEnum.SOLAR,
+      diameterMm: 24000,
+      heightMm: 11000,
+      shellCourseCount: 5,
+      hasSteamCoil: false,
+      startDate: new Date("2026-07-01"),
+      estimatedFinishDate: new Date("2026-10-31"),
+    },
+  ];
+
   let tank = await prisma.tank.findFirst({ where: { tankNo: "TK-170", deletedAt: null } });
 
-  if (!tank) {
-    tank = await prisma.tank.create({
-      data: {
-        tankNo: "TK-170",
-        tankName: "Tangki Timbun TK-170",
-        diameterMm: 36631,
-        heightMm: 12778,
-        shellCourseCount: 6,
-        hasSteamCoil: true,
-        contractorCompanyId: contractorCo?.id,
-        inspectionCompanyId: inspectionCo?.id,
-        startDate: new Date("2026-06-01"),
-        estimatedFinishDate: new Date("2026-09-30"),
-        createdBy: inspectorUser?.id,
-      },
-    });
-    console.log(`  ✅ Tank created: ${tank.tankNo} (id: ${tank.id})`);
-  } else {
-    console.log(`  ℹ️  Tank already exists: ${tank.tankNo}`);
+  for (const tankData of tanksToSeed) {
+    const existingTank = await prisma.tank.findFirst({ where: { tankNo: tankData.tankNo, deletedAt: null } });
+    if (!existingTank) {
+      await prisma.tank.create({
+        data: {
+          ...tankData,
+          contractorCompanyId: contractorCo?.id,
+          inspectionCompanyId: inspectionCo?.id,
+          createdBy: inspectorUser?.id,
+        },
+      });
+      console.log(`  ✅ Tank created: ${tankData.tankNo}`);
+    } else {
+      await prisma.tank.update({
+        where: { id: existingTank.id },
+        data: {
+          location: tankData.location,
+          capacityM3: tankData.capacityM3,
+          service: tankData.service,
+        },
+      });
+      console.log(`  ℹ️  Tank updated: ${tankData.tankNo} (location, capacity, service)`);
+    }
   }
+
+  tank = await prisma.tank.findFirst({ where: { tankNo: "TK-170", deletedAt: null } });
+  if (!tank) throw new Error("TK-170 not found after seeding");
 
   // Shell courses
   const shellCourses = [

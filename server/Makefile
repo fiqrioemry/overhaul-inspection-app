@@ -24,7 +24,7 @@ migrate:
 	bunx prisma migrate dev --name $(name) --schema=prisma/schema.prisma
 
 seed:
-	bun run prisma/seed.ts
+	bun --env-file=.env.$(ENV) run prisma/seed.ts
 
 up:
 	docker-compose -f docker-compose.dev.yml up -d --build

@@ -14,6 +14,7 @@ const tankSelect = {
   id: true,
   tankNo: true,
   tankName: true,
+  location: true,
   inspectionCompany: { select: { id: true, name: true } },
 } as const;
 
