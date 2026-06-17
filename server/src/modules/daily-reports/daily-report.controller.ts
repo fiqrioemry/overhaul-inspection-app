@@ -68,6 +68,7 @@ export class DailyReportController {
       pertaminaPicId: body["pertaminaPicId"] || undefined,
       removedAttachmentIds: parseJsonField<string[]>(body["removedAttachmentIds"], []),
       captions: parseJsonField<Array<{ attachmentId: string; caption: string }>>(body["captions"], []),
+      sortOrders: parseJsonField<Array<{ attachmentId: string; sortOrder: number }>>(body["sortOrders"], []),
     });
 
     const user = c.get("user");

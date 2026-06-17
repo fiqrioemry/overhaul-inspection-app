@@ -71,4 +71,20 @@ export class DailyReportAttachmentRepository {
       ),
     );
   }
+
+  static async updateSortOrders(
+    tx: Prisma.TransactionClient,
+    updates: Array<{ attachmentId: string; sortOrder: number }>,
+    dailyReportId: string,
+  ) {
+    const db = tx ?? pgsql;
+    return Promise.all(
+      updates.map((u) =>
+        db.dailyReportAttachment.updateMany({
+          where: { id: u.attachmentId, dailyReportId, deletedAt: null },
+          data: { sortOrder: u.sortOrder },
+        }),
+      ),
+    );
+  }
 }

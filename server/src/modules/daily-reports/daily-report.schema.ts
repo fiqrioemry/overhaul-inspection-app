@@ -11,21 +11,27 @@ export const createDailyReportRequest = z.object({
   tankProcessId: z.string().optional(),
   reportDate: z.string().min(1),
   activityType: z.nativeEnum(DailyActivityTypeEnum),
-  description: z.string().min(1).max(2000),
+  description: z.string().min(1).max(10000),
   inspectorId: z.string().optional(),
   pertaminaPicId: z.string().optional(),
   newFileCaptions: z.array(z.string().max(300)).optional(),
 });
 export type CreateDailyReportRequest = z.infer<typeof createDailyReportRequest>;
 
+export const sortOrderUpdateItem = z.object({
+  attachmentId: z.string().min(1),
+  sortOrder: z.number().int().min(0),
+});
+
 export const updateDailyReportRequest = z.object({
   reportDate: z.string().optional(),
   activityType: z.nativeEnum(DailyActivityTypeEnum).optional(),
-  description: z.string().min(1).max(2000).optional(),
+  description: z.string().min(1).max(10000).optional(),
   inspectorId: z.string().optional(),
   pertaminaPicId: z.string().optional(),
   removedAttachmentIds: z.array(z.string()).optional(),
   captions: z.array(captionUpdateItem).optional(),
+  sortOrders: z.array(sortOrderUpdateItem).optional(),
 });
 export type UpdateDailyReportRequest = z.infer<typeof updateDailyReportRequest>;
 

@@ -160,6 +160,7 @@ export class DailyReportService {
     const activeAttachments = await DailyReportAttachmentRepository.findActiveByDailyReportId(id);
     const removedIds = data.removedAttachmentIds ?? [];
     const captions = data.captions ?? [];
+    const sortOrders = data.sortOrders ?? [];
 
     const countAfterRemoval = activeAttachments.length - removedIds.filter((rid) => activeAttachments.some((a) => a.id === rid)).length;
     const newTotal = countAfterRemoval + newFiles.length;
@@ -233,6 +234,11 @@ export class DailyReportService {
       // Update captions for existing attachments
       if (captions.length > 0) {
         await DailyReportAttachmentRepository.updateCaptions(tx, captions, id);
+      }
+
+      // Update sort orders for drag-reordered attachments
+      if (sortOrders.length > 0) {
+        await DailyReportAttachmentRepository.updateSortOrders(tx, sortOrders, id);
       }
 
       // Update DailyReport fields
