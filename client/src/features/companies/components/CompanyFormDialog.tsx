@@ -98,7 +98,7 @@ export default function CompanyFormDialog({ open, onOpenChange, company }: Compa
 
   return (
     <Dialog open={open} onOpenChange={handleDialogChange}>
-      <DialogContent className="xl:h-auto! xl:w-110!">
+      <DialogContent className="xl:h-138 xl:w-110!">
         <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4 p-4">
           <DialogHeader>
             <DialogTitle>{isEdit ? "Edit Company" : "Add Company"}</DialogTitle>
@@ -107,30 +107,14 @@ export default function CompanyFormDialog({ open, onOpenChange, company }: Compa
           <div className="flex items-center gap-3">
             <div className="relative shrink-0">
               <div className="h-14 w-14 rounded-lg border bg-muted flex items-center justify-center overflow-hidden">
-                {displayLogo ? (
-                  <img src={displayLogo} alt="Logo" className="h-full w-full object-cover" />
-                ) : (
-                  <span className="text-xs text-muted-foreground">Logo</span>
-                )}
+                {displayLogo ? <img src={displayLogo} alt="Logo" className="h-full w-full object-cover" /> : <span className="text-xs text-muted-foreground">Logo</span>}
               </div>
-              <button
-                type="button"
-                onClick={() => logoInputRef.current?.click()}
-                className="absolute -bottom-0.5 -right-0.5 rounded-full bg-primary p-1 text-primary-foreground shadow"
-              >
+              <button type="button" onClick={() => logoInputRef.current?.click()} className="absolute -bottom-0.5 -right-0.5 rounded-full bg-primary p-1 text-primary-foreground shadow">
                 <Camera className="h-3 w-3" />
               </button>
-              <input
-                ref={logoInputRef}
-                type="file"
-                accept="image/jpeg,image/png"
-                className="hidden"
-                onChange={handleLogoChange}
-              />
+              <input ref={logoInputRef} type="file" accept="image/jpeg,image/png" className="hidden" onChange={handleLogoChange} />
             </div>
-            <p className="text-xs text-muted-foreground">
-              {logoFile ? logoFile.name : "JPEG or PNG, max 1 MB"}
-            </p>
+            <p className="text-xs text-muted-foreground">{logoFile ? logoFile.name : "JPEG or PNG, max 1 MB"}</p>
           </div>
 
           <ShortTextField control={form.control} name="name" label="Company Name" placeholder="PT. Example" />

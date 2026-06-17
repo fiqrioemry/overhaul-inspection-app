@@ -1,7 +1,7 @@
 // src/pages/DailyReportDetailPage.tsx
 import { useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Printer } from "lucide-react";
+import { ArrowLeft, Printer, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import LoadingState from "@/components/common/LoadingState";
 import ErrorState from "@/components/common/ErrorState";
@@ -24,7 +24,7 @@ export default function DailyReportDetailPage() {
 
   useEffect(() => {
     if (report) {
-      document.title = `Daily Report — ${report.tank.tankNo} — ${format(new Date(report.reportDate), "dd MMM yyyy")}`;
+      document.title = `Laporan Harian — ${report.tank.tankNo} — ${format(new Date(report.reportDate), "dd MMM yyyy")}`;
     }
     return () => {
       document.title = "Pantau Inspeksi";
@@ -36,15 +36,18 @@ export default function DailyReportDetailPage() {
 
   const reportDateFormatted = format(new Date(report.reportDate), "dd MMMM yyyy");
   const activityLabel = ACTIVITY_LABEL[report.activityType] ?? report.activityType.replace(/_/g, " ");
-  const companyName = report.tank.inspectionCompany?.name ?? null;
   const locationLabel = report.tank.location ? (LOCATION_LABEL[report.tank.location] ?? report.tank.location) : null;
+
+  const inspectionCompany = report.tank.inspectionCompany;
+  const contractorCompany = report.tank.contractorCompany;
+  const inspectionLogoUrl = inspectionCompany?.logoFile?.url ?? null;
+  const contractorLogoUrl = contractorCompany?.logoFile?.url ?? null;
 
   const attachments = report.attachments;
   const photoPages: typeof attachments[] = [];
   for (let i = 0; i < attachments.length; i += PHOTOS_PER_PAGE) {
     photoPages.push(attachments.slice(i, i + PHOTOS_PER_PAGE));
   }
-  const totalPages = 1 + photoPages.length;
 
   return (
     <>
@@ -79,16 +82,17 @@ export default function DailyReportDetailPage() {
             width: 100% !important;
             max-width: none !important;
             min-height: auto !important;
-            padding: 0 !important;
+            padding: 15mm 20mm !important;
             margin: 0 !important;
           }
           .photo-page { break-before: page !important; }
           img { break-inside: avoid; }
         }
 
+        /* Suppress browser print headers (URL, date, title, page number) */
         @page {
           size: A4 portrait;
-          margin: 20mm;
+          margin: 0;
         }
       `}</style>
 
@@ -105,13 +109,25 @@ export default function DailyReportDetailPage() {
       <div className="report-viewer bg-gray-300 rounded-lg p-8 flex flex-col items-center gap-6">
         {/* ── PAGE 1: report content ── */}
         <div className="report-page bg-white shadow-lg w-full max-w-198.5 min-h-280.75 p-16 flex flex-col gap-8">
-          {/* Header */}
-          <div className="text-center border-b pb-6 space-y-1">
-            {companyName && (
-              <p className="text-[11px] text-gray-500 uppercase tracking-widest">{companyName}</p>
-            )}
-            <h1 className="text-lg font-bold uppercase tracking-wide">Laporan Harian Inspeksi</h1>
-            <p className="text-[11px] text-gray-500">Daily Inspection Report</p>
+
+          {/* Header — logos left/right, title centered */}
+          <div className="border-b pb-6">
+            <div className="flex items-center justify-between gap-4">
+              {/* Left: Inspection company logo */}
+              <CompanyLogo url={inspectionLogoUrl} name={inspectionCompany?.name} />
+
+              {/* Center: title */}
+              <div className="flex-1 text-center space-y-0.5">
+                <h1 className="text-base font-bold uppercase tracking-wide">Laporan Harian Inspeksi</h1>
+                <p className="text-[10px] text-gray-500">Daily Inspection Report</p>
+                {inspectionCompany && (
+                  <p className="text-[9px] text-gray-400 uppercase tracking-widest mt-1">{inspectionCompany.name}</p>
+                )}
+              </div>
+
+              {/* Right: Contractor/owner company logo */}
+              <CompanyLogo url={contractorLogoUrl} name={contractorCompany?.name} />
+            </div>
           </div>
 
           {/* Metadata table — 10px font */}
@@ -127,22 +143,17 @@ export default function DailyReportDetailPage() {
             </table>
           </div>
 
-          {/* Description — no border on content */}
+          {/* Description */}
           <div className="space-y-3 flex-1">
             <SectionTitle>Uraian Kegiatan / Activity Description</SectionTitle>
-            <div className="min-h-48 text-sm leading-relaxed whitespace-pre-wrap pt-2">
+            <div className="min-h-48 leading-relaxed whitespace-pre-wrap pt-2" style={{ fontSize: "10px" }}>
               {report.description || <span className="text-gray-400 italic">Tidak ada deskripsi.</span>}
             </div>
           </div>
 
           {/* Footer */}
-          <div className="border-t pt-4 text-center text-[11px] text-gray-400 mt-auto">
+          <div className="border-t pt-4 text-center text-[10px] text-gray-400 mt-auto">
             <p>Dicetak pada {format(new Date(), "dd MMMM yyyy HH:mm")}</p>
-            {photoPages.length > 0 && (
-              <p className="mt-0.5 text-gray-300">
-                Halaman 1 dari {totalPages} — Dokumentasi foto terdapat di halaman berikutnya
-              </p>
-            )}
           </div>
         </div>
 
@@ -153,14 +164,17 @@ export default function DailyReportDetailPage() {
             className="photo-page report-page bg-white shadow-lg w-full max-w-198.5 min-h-280.75 p-16 flex flex-col gap-6"
           >
             {/* Page header */}
-            <div className="text-center border-b pb-4 space-y-0.5">
-              {companyName && (
-                <p className="text-[11px] text-gray-500 uppercase tracking-widest">{companyName}</p>
-              )}
-              <h2 className="text-base font-semibold uppercase tracking-wide">Dokumentasi Foto</h2>
-              <p className="text-[11px] text-gray-500">
-                {report.tank.tankNo} &mdash; {reportDateFormatted}
-              </p>
+            <div className="border-b pb-4">
+              <div className="flex items-center justify-between gap-4">
+                <CompanyLogo url={inspectionLogoUrl} name={inspectionCompany?.name} size="sm" />
+                <div className="flex-1 text-center space-y-0.5">
+                  <h2 className="text-sm font-semibold uppercase tracking-wide">Dokumentasi Foto</h2>
+                  <p className="text-[10px] text-gray-500">
+                    {report.tank.tankNo} &mdash; {reportDateFormatted}
+                  </p>
+                </div>
+                <CompanyLogo url={contractorLogoUrl} name={contractorCompany?.name} size="sm" />
+              </div>
             </div>
 
             {/* 2-column grid, max 6 photos */}
@@ -185,15 +199,34 @@ export default function DailyReportDetailPage() {
             </div>
 
             {/* Footer */}
-            <div className="border-t pt-4 text-center text-[11px] text-gray-400">
-              <p>
-                Halaman {pageIdx + 2} dari {totalPages}
-              </p>
+            <div className="border-t pt-3 text-center text-[10px] text-gray-400">
+              <p>Dicetak pada {format(new Date(), "dd MMMM yyyy HH:mm")}</p>
             </div>
           </div>
         ))}
       </div>
     </>
+  );
+}
+
+function CompanyLogo({
+  url,
+  name,
+  size = "md",
+}: {
+  url: string | null;
+  name: string | undefined;
+  size?: "sm" | "md";
+}) {
+  const dim = size === "sm" ? "h-10 w-10" : "h-14 w-14";
+  return (
+    <div className={`${dim} shrink-0 flex items-center justify-center`}>
+      {url ? (
+        <img src={url} alt={name ?? "logo"} className="h-full w-full object-contain" />
+      ) : (
+        <Building2 className="size-6 text-gray-300" />
+      )}
+    </div>
   );
 }
 

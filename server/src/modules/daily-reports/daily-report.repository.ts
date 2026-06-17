@@ -15,7 +15,8 @@ const tankSelect = {
   tankNo: true,
   tankName: true,
   location: true,
-  inspectionCompany: { select: { id: true, name: true } },
+  inspectionCompany: { select: { id: true, name: true, logoFile: { select: { url: true } } } },
+  contractorCompany: { select: { id: true, name: true, logoFile: { select: { url: true } } } },
 } as const;
 
 export class DailyReportRepository {
