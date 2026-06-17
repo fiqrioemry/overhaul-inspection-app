@@ -12,7 +12,7 @@ import EmptyState from "@/components/common/EmptyState";
 import Pagination from "@/components/common/Pagination";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 import PermissionGate from "@/components/common/PermissionGate";
-import DailyReportFormDialog, { ACTIVITY_OPTIONS, ACTIVITY_LABEL } from "@/features/daily-reports/components/DailyReportFormDialog";
+import { ACTIVITY_OPTIONS, ACTIVITY_LABEL } from "@/features/daily-reports/components/DailyReportFormDialog";
 import { useDailyReports, useDeleteDailyReport } from "@/features/daily-reports/daily-reports.query";
 import { format } from "date-fns";
 import { PERMISSIONS } from "@/constants/permission.constant";
@@ -27,7 +27,6 @@ export default function DailyReportListPage() {
   const [activityType, setActivityType] = useState<string>("ALL");
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
-  const [editReport, setEditReport] = useState<DailyReportSummary | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<DailyReportSummary | null>(null);
 
   const deleteMutation = useDeleteDailyReport();
@@ -139,7 +138,7 @@ export default function DailyReportListPage() {
                         <span className="text-xs bg-muted px-2 py-0.5 rounded">{ACTIVITY_LABEL[report.activityType] ?? report.activityType.replace(/_/g, " ")}</span>
                       </td>
                       <td className="px-4 py-3 max-w-sm">
-                        <p className="line-clamp-2 text-xs">{report.description ?? "—"}</p>
+                        <p className="line-clamp-2 text-xs">{report.description ? report.description.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim() : "—"}</p>
                       </td>
                       <td className="px-4 py-3 text-xs text-muted-foreground">{report.inspector?.name ?? "—"}</td>
                       <td className="px-4 py-3">
@@ -153,7 +152,7 @@ export default function DailyReportListPage() {
                             <Eye className="h-3.5 w-3.5 text-muted-foreground" />
                           </Button>
                           <PermissionGate permission={PERMISSIONS.DAILY_REPORT_UPDATE}>
-                            <Button variant="ghost" size="icon-sm" onClick={() => setEditReport(report)} title="Edit">
+                            <Button variant="ghost" size="icon-sm" onClick={() => navigate(ROUTES.DAILY_REPORT_EDIT.replace(":id", report.id))} title="Edit">
                               <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
                             </Button>
                             <Button variant="ghost" size="icon-sm" onClick={() => setDeleteTarget(report)} title="Delete" disabled={deleteMutation.isPending}>
@@ -172,8 +171,6 @@ export default function DailyReportListPage() {
           {data?.meta && data.meta.totalPages > 1 && <Pagination meta={data.meta} onPageChange={setPage} />}
         </>
       )}
-
-      {editReport && <DailyReportFormDialog open={Boolean(editReport)} onOpenChange={(open) => !open && setEditReport(null)} tankId={editReport.tankId} tankProcessId={editReport.tankProcessId ?? undefined} report={editReport} />}
 
       <ConfirmDialog
         open={Boolean(deleteTarget)}

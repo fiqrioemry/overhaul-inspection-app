@@ -139,7 +139,7 @@ export default function UserFormDialog({ open, onOpenChange, user }: UserFormDia
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="xl:h-auto! xl:w-105!">
+      <DialogContent className="xl:h-140 xl:w-105!">
         <form onSubmit={createForm.handleSubmit(onCreateSubmit)} className="flex flex-col gap-4 p-4">
           <DialogHeader>
             <DialogTitle>Create User</DialogTitle>

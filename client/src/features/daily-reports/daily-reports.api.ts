@@ -86,6 +86,7 @@ export interface UpdateDailyReportPayload {
   newFiles?: File[];
   removedAttachmentIds?: string[];
   captions?: Array<{ attachmentId: string; caption: string }>;
+  sortOrders?: Array<{ attachmentId: string; sortOrder: number }>;
 }
 
 export async function listDailyReports(params: ListDailyReportsParams): Promise<PaginatedResponse<DailyReportSummary>> {
@@ -125,6 +126,9 @@ export async function updateDailyReport(id: string, payload: UpdateDailyReportPa
   (payload.newFiles ?? []).forEach((file) => formData.append("attachments", file));
   formData.append("removedAttachmentIds", JSON.stringify(payload.removedAttachmentIds ?? []));
   formData.append("captions", JSON.stringify(payload.captions ?? []));
+  if (payload.sortOrders && payload.sortOrders.length > 0) {
+    formData.append("sortOrders", JSON.stringify(payload.sortOrders));
+  }
   const res = await api.patch<ResponseSuccess<DailyReportDetail>>(`/daily-reports/${id}`, formData);
   return res.data.data!;
 }

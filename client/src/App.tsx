@@ -37,6 +37,7 @@ import InspectionRequestDetailPage from "@/pages/InspectionRequestDetailPage";
 import FindingListPage from "@/pages/FindingListPage";
 import DailyReportListPage from "@/pages/DailyReportListPage";
 import DailyReportDetailPage from "@/pages/DailyReportDetailPage";
+import DailyReportEditPage from "@/pages/DailyReportEditPage";
 import DailyReportListPrintPage from "@/pages/DailyReportListPrintPage";
 
 export default function AppRouter() {
@@ -127,6 +128,9 @@ export default function AppRouter() {
               <Route path={ROUTES.DAILY_REPORTS} element={<DailyReportListPage />} />
               <Route path={ROUTES.DAILY_REPORT_LIST_PRINT} element={<DailyReportListPrintPage />} />
               <Route path={ROUTES.DAILY_REPORT_DETAIL} element={<DailyReportDetailPage />} />
+            </Route>
+            <Route element={<PermissionRoute permission={PERMISSIONS.DAILY_REPORT_UPDATE} />}>
+              <Route path={ROUTES.DAILY_REPORT_EDIT} element={<DailyReportEditPage />} />
             </Route>
 
             {/* Catch-all inside layout → 404 */}

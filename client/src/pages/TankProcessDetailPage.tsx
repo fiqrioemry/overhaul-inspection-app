@@ -373,7 +373,11 @@ export default function TankProcessDetailPage() {
                         </PermissionGate>
                       </div>
                     </div>
-                    <p className="mt-2 text-sm whitespace-pre-wrap">{report.description ?? "—"}</p>
+                    {report.description ? (
+                      <div className="mt-2 text-sm prose prose-sm max-w-none dark:prose-invert" dangerouslySetInnerHTML={{ __html: report.description }} />
+                    ) : (
+                      <p className="mt-2 text-sm text-muted-foreground">—</p>
+                    )}
                   </div>
                 ))}
               </div>

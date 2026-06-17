@@ -19,6 +19,7 @@ export const ROUTES = {
   DAILY_REPORTS: "/daily-reports",
   DAILY_REPORT_LIST_PRINT: "/daily-reports/print",
   DAILY_REPORT_DETAIL: "/daily-reports/:id",
+  DAILY_REPORT_EDIT: "/daily-reports/:id/edit",
   TEST_RECORDS: "/test-records",
   RADIOGRAPHY: "/radiography",
 

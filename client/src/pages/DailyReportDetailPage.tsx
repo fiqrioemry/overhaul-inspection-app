@@ -146,9 +146,17 @@ export default function DailyReportDetailPage() {
           {/* Description */}
           <div className="space-y-3 flex-1">
             <SectionTitle>Uraian Kegiatan / Activity Description</SectionTitle>
-            <div className="min-h-48 leading-relaxed whitespace-pre-wrap pt-2" style={{ fontSize: "10px" }}>
-              {report.description || <span className="text-gray-400 italic">Tidak ada deskripsi.</span>}
-            </div>
+            {report.description ? (
+              <div
+                className="min-h-48 leading-relaxed pt-2 prose prose-sm max-w-none"
+                style={{ fontSize: "10px" }}
+                dangerouslySetInnerHTML={{ __html: report.description }}
+              />
+            ) : (
+              <div className="min-h-48 pt-2" style={{ fontSize: "10px" }}>
+                <span className="text-gray-400 italic">Tidak ada deskripsi.</span>
+              </div>
+            )}
           </div>
 
           {/* Footer */}

@@ -120,7 +120,9 @@ export default function DailyReportListPrintPage() {
                         {ACTIVITY_LABEL[report.activityType] ?? report.activityType.replace(/_/g, " ")}
                       </td>
                       <td className="border border-gray-300 px-3 py-2 text-gray-700">
-                        <p className="whitespace-pre-wrap">{report.description ?? "—"}</p>
+                        {report.description ? (
+                          <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: report.description }} />
+                        ) : "—"}
                       </td>
                     </tr>
                   ))}
