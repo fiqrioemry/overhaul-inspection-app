@@ -12,6 +12,7 @@ import PasswordField from "@/components/fields/PasswordField";
 import ShortTextField from "@/components/fields/ShortTextField";
 import { loginSchema, type LoginFormValues } from "@/schemas/auth.schema";
 import { ROUTES } from "@/constants/route.constant";
+import { ShieldCheck } from "lucide-react";
 
 export default function LoginForm() {
   const navigate = useNavigate();
@@ -41,35 +42,22 @@ export default function LoginForm() {
 
   return (
     <div className="space-y-5">
-      <div className="space-y-0.5">
-        <h2 className="text-base font-semibold text-foreground">Masuk</h2>
-        <p className="text-xs text-muted-foreground">Gunakan akun yang telah didaftarkan oleh administrator</p>
+      <div className="space-y-0.5 text-center">
+        <div className="flex items-center justify-center gap-2 mb-2">
+          <ShieldCheck className="h-5 w-5 opacity-80" />
+          <span className="font-semibold text-sm tracking-wide uppercase">Pantau Inspeksi</span>
+        </div>
+        <p className="text-xs text-muted-foreground">Login dengan akun yang telah didaftarkan oleh administrator</p>
       </div>
 
       <AlertCard message={serverError?.message} errors={serverError?.errors} />
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        <ShortTextField
-          control={control}
-          name="email"
-          label="Email"
-          type="email"
-          placeholder="nama@pertamina.com"
-          autoComplete="email"
-        />
+        <ShortTextField control={control} name="email" label="Email" type="email" placeholder="nama@pertamina.com" autoComplete="email" />
         <div className="space-y-1">
-          <PasswordField
-            control={control}
-            name="password"
-            label="Password"
-            placeholder="••••••••"
-            autoComplete="current-password"
-          />
+          <PasswordField control={control} name="password" label="Password" placeholder="••••••••" autoComplete="current-password" />
           <div className="flex justify-end">
-            <Link
-              to={ROUTES.FORGOT_PASSWORD}
-              className="text-xs text-slate-400 hover:text-slate-600 underline underline-offset-4"
-            >
+            <Link to={ROUTES.FORGOT_PASSWORD} className="text-xs text-slate-400 hover:text-slate-600 underline underline-offset-4">
               Lupa password?
             </Link>
           </div>

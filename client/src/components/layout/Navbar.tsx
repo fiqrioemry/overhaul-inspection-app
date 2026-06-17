@@ -3,14 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { LogOut, User, ChevronDown, Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useAuthStore } from "@/stores/auth.store";
 import { useLogout } from "@/features/auth/auth.query";
 import NotificationBell from "@/features/notifications/components/NotificationBell";
@@ -52,12 +45,7 @@ export default function Navbar() {
     <header className="flex h-14 items-center border-b bg-background px-4 gap-3">
       <div className="flex-1" />
 
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={toggleDarkMode}
-        title={darkMode ? "Switch to light mode" : "Switch to dark mode"}
-      >
+      <Button variant="ghost" size="icon" onClick={toggleDarkMode} title={darkMode ? "Switch to light mode" : "Switch to dark mode"}>
         {darkMode ? <Sun className="size-4" /> : <Moon className="size-4" />}
       </Button>
 
@@ -68,15 +56,11 @@ export default function Navbar() {
           <Button variant="ghost" className="flex items-center gap-2 h-9 px-2">
             <Avatar className="size-7">
               <AvatarImage src={user?.avatar ?? undefined} alt={user?.name} />
-              <AvatarFallback className="text-xs">
-                {user?.name ? userInitials(user.name) : "?"}
-              </AvatarFallback>
+              <AvatarFallback className="text-xs">{user?.name ? userInitials(user.name) : "?"}</AvatarFallback>
             </Avatar>
             <div className="hidden sm:flex flex-col items-start leading-none">
               <span className="text-sm font-medium">{user?.name ?? "User"}</span>
-              <span className="text-xs text-muted-foreground">
-                {user?.role ? ROLE_LABELS[user.role] : ""}
-              </span>
+              <span className="text-xs text-muted-foreground">{user?.role ? ROLE_LABELS[user.role] : ""}</span>
             </div>
             <ChevronDown className="size-3.5 text-muted-foreground" />
           </Button>
@@ -90,16 +74,12 @@ export default function Navbar() {
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem className="cursor-pointer">
+          <DropdownMenuItem className="cursor-pointer" onClick={() => navigate(ROUTES.PROFILE)}>
             <User className="size-4 mr-2" />
             Profile
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem
-            className="cursor-pointer text-destructive focus:text-destructive"
-            onClick={handleLogout}
-            disabled={logoutMutation.isPending}
-          >
+          <DropdownMenuItem className="cursor-pointer text-destructive focus:text-destructive" onClick={handleLogout} disabled={logoutMutation.isPending}>
             <LogOut className="size-4 mr-2" />
             {logoutMutation.isPending ? "Logging out..." : "Log out"}
           </DropdownMenuItem>

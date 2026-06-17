@@ -7,6 +7,15 @@ export const AUTH_ENDPOINTS = {
   verifyEmail: "/auth/verify-email",
   forgotPassword: "/auth/forgot-password",
   resetPassword: "/auth/reset-password",
+  changePassword: "/auth/change-password",
+  sessions: "/auth/sessions",
+  sessionsRevoke: "/auth/sessions-revoke",
+  deleteSession: (id: string) => `/auth/sessions/${id}`,
+} as const;
+
+export const USER_ENDPOINTS = {
+  updateProfile: "/users/profile",
+  updateAvatar: "/users/profile/avatar",
 } as const;
 
 export const OAUTH_ENDPOINTS = {

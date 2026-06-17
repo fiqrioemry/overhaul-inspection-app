@@ -39,6 +39,7 @@ import DailyReportListPage from "@/pages/DailyReportListPage";
 import DailyReportDetailPage from "@/pages/DailyReportDetailPage";
 import DailyReportEditPage from "@/pages/DailyReportEditPage";
 import DailyReportListPrintPage from "@/pages/DailyReportListPrintPage";
+import ProfilePage from "@/pages/ProfilePage";
 
 export default function AppRouter() {
   useTheme();
@@ -132,6 +133,9 @@ export default function AppRouter() {
             <Route element={<PermissionRoute permission={PERMISSIONS.DAILY_REPORT_UPDATE} />}>
               <Route path={ROUTES.DAILY_REPORT_EDIT} element={<DailyReportEditPage />} />
             </Route>
+
+            {/* Profile */}
+            <Route path={ROUTES.PROFILE} element={<ProfilePage />} />
 
             {/* Catch-all inside layout → 404 */}
             <Route path="*" element={<NotFoundPage />} />

@@ -34,4 +34,6 @@ export const ROUTES = {
   MASTER_CRITERIA: "/master-data/criteria",
   MASTER_REFERENCE_DOCS: "/master-data/reference-documents",
   MASTER_COMPANIES: "/master-data/companies",
+
+  PROFILE: "/profile",
 } as const;
