@@ -1,10 +1,10 @@
 // src/features/daily-reports/components/DailyReportFormDialog.tsx
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import type { Resolver } from "react-hook-form";
-import { X, ImageIcon } from "lucide-react";
+import { X, ImageIcon, Sparkles, Loader2, CheckCircle2, AlertTriangle, RotateCcw } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,9 +12,10 @@ import LongTextField from "@/components/fields/LongTextField";
 import SelectField from "@/components/fields/SelectField";
 import DateField from "@/components/fields/DateField";
 import { ImageDropzone } from "@/components/fields/ImageDropzone";
-import { useCreateDailyReport, useUpdateDailyReport, useDailyReport } from "../daily-reports.query";
+import { useCreateDailyReport, useUpdateDailyReport, useDailyReport, useGenerateAIDailyReport } from "../daily-reports.query";
 import { format } from "date-fns";
 import type { DailyReportSummary, DailyReportAttachment } from "../daily-reports.api";
+import { cn } from "@/lib/utils";
 
 const schema = z.object({
   reportDate: z.string().min(1, "Report date required"),
@@ -38,6 +39,13 @@ const MAX_ATTACHMENTS = 15;
 const MAX_FILE_SIZE = 8 * 1024 * 1024;
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
+const AI_STEPS = [
+  "Menganalisis foto...",
+  "Memahami konteks inspeksi...",
+  "Membuat uraian kegiatan...",
+  "Membuat caption foto...",
+];
+
 interface LocalFile {
   file: File;
   previewUrl: string;
@@ -48,28 +56,43 @@ interface DailyReportFormDialogProps {
   onOpenChange: (open: boolean) => void;
   tankId: string;
   tankProcessId?: string;
+  processName?: string;
   report?: DailyReportSummary;
 }
 
-export default function DailyReportFormDialog({ open, onOpenChange, tankId, tankProcessId, report }: DailyReportFormDialogProps) {
+export default function DailyReportFormDialog({
+  open,
+  onOpenChange,
+  tankId,
+  tankProcessId,
+  processName,
+  report,
+}: DailyReportFormDialogProps) {
   const isEdit = Boolean(report);
   const createMutation = useCreateDailyReport();
   const updateMutation = useUpdateDailyReport();
+  const generateAI = useGenerateAIDailyReport();
   const isPending = createMutation.isPending || updateMutation.isPending;
 
   const { data: detail } = useDailyReport(report?.id ?? "");
 
-  // Local new files (not yet uploaded)
   const [localFiles, setLocalFiles] = useState<LocalFile[]>([]);
-  // IDs of existing attachments to remove
+  const [localCaptions, setLocalCaptions] = useState<string[]>([]);
   const [removedIds, setRemovedIds] = useState<Set<string>>(new Set());
-  // Editable captions for existing attachments (keyed by attachmentId)
   const [captionMap, setCaptionMap] = useState<Record<string, string>>({});
-  // Validation error message
   const [fileError, setFileError] = useState<string | null>(null);
 
-  const existingAttachments: DailyReportAttachment[] = (detail?.attachments ?? []).filter((a) => !removedIds.has(a.id));
+  // AI state
+  const [aiStep, setAiStep] = useState(0);
+  const [aiHighlight, setAiHighlight] = useState(false);
+  const [aiWarning, setAiWarning] = useState(false);
+  const stepTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const existingAttachments: DailyReportAttachment[] = (detail?.attachments ?? []).filter(
+    (a) => !removedIds.has(a.id),
+  );
   const totalCount = existingAttachments.length + localFiles.length;
+  const hasNewFiles = localFiles.length > 0;
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema) as Resolver<FormValues>,
@@ -83,33 +106,47 @@ export default function DailyReportFormDialog({ open, onOpenChange, tankId, tank
         activityType: report.activityType,
         description: report.description ?? "",
       });
-      // Init captions from detail
       if (detail?.attachments) {
         const initial: Record<string, string> = {};
-        detail.attachments.forEach((a) => { initial[a.id] = a.caption ?? ""; });
+        detail.attachments.forEach((a) => {
+          initial[a.id] = a.caption ?? "";
+        });
         setCaptionMap(initial);
       }
     } else if (!open) {
       form.reset({ reportDate: format(new Date(), "yyyy-MM-dd"), activityType: "MONITORING", description: "" });
       localFiles.forEach((lf) => URL.revokeObjectURL(lf.previewUrl));
       setLocalFiles([]);
+      setLocalCaptions([]);
       setRemovedIds(new Set());
       setCaptionMap({});
       setFileError(null);
+      setAiWarning(false);
+      if (stepTimerRef.current) clearInterval(stepTimerRef.current);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, report]);
 
-  // Re-init captions when detail loads during edit
   useEffect(() => {
     if (isEdit && detail?.attachments) {
       setCaptionMap((prev) => {
         const next = { ...prev };
-        detail.attachments.forEach((a) => { if (!(a.id in next)) next[a.id] = a.caption ?? ""; });
+        detail.attachments.forEach((a) => {
+          if (!(a.id in next)) next[a.id] = a.caption ?? "";
+        });
         return next;
       });
     }
   }, [detail, isEdit]);
+
+  // Keep localCaptions in sync when localFiles changes (add/remove)
+  useEffect(() => {
+    setLocalCaptions((prev) => {
+      if (prev.length === localFiles.length) return prev;
+      if (localFiles.length > prev.length) return [...prev, ...Array(localFiles.length - prev.length).fill("")];
+      return prev.slice(0, localFiles.length);
+    });
+  }, [localFiles.length]);
 
   const handleDrop = useCallback(
     (files: File[]) => {
@@ -117,8 +154,8 @@ export default function DailyReportFormDialog({ open, onOpenChange, tankId, tank
       const available = MAX_ATTACHMENTS - totalCount;
       const toAdd = files.slice(0, available);
       const errors: string[] = [];
-
       const valid: LocalFile[] = [];
+
       for (const file of toAdd) {
         if (!ALLOWED_TYPES.has(file.type)) {
           errors.push(`"${file.name}" is not a supported image type (jpeg/png/webp).`);
@@ -137,16 +174,63 @@ export default function DailyReportFormDialog({ open, onOpenChange, tankId, tank
     [totalCount],
   );
 
-  function removeLocal(previewUrl: string) {
+  function removeLocal(idx: number) {
     setLocalFiles((prev) => {
-      const removed = prev.find((lf) => lf.previewUrl === previewUrl);
+      const removed = prev[idx];
       if (removed) URL.revokeObjectURL(removed.previewUrl);
-      return prev.filter((lf) => lf.previewUrl !== previewUrl);
+      return prev.filter((_, i) => i !== idx);
     });
+    setLocalCaptions((prev) => prev.filter((_, i) => i !== idx));
   }
 
   function removeExisting(id: string) {
     setRemovedIds((prev) => new Set(prev).add(id));
+  }
+
+  function setLocalCaption(idx: number, value: string) {
+    setLocalCaptions((prev) => {
+      const next = [...prev];
+      next[idx] = value;
+      return next;
+    });
+  }
+
+  async function handleGenerateAI() {
+    if (!hasNewFiles) return;
+    setAiWarning(false);
+    setAiStep(0);
+
+    // Cycle through step labels while waiting
+    let step = 0;
+    stepTimerRef.current = setInterval(() => {
+      step = Math.min(step + 1, AI_STEPS.length - 1);
+      setAiStep(step);
+    }, 1800);
+
+    try {
+      const result = await generateAI.mutateAsync({
+        tankId,
+        activityType: form.getValues("activityType"),
+        processName: processName || undefined,
+        files: localFiles.map((lf) => lf.file),
+      });
+
+      if (stepTimerRef.current) clearInterval(stepTimerRef.current);
+      setAiStep(AI_STEPS.length - 1);
+
+      form.setValue("description", result.description, { shouldDirty: true, shouldValidate: true });
+      setLocalCaptions((prev) =>
+        prev.map((_, i) => result.captions[i] ?? prev[i] ?? ""),
+      );
+
+      if (result.relevanceWarning) setAiWarning(true);
+
+      // Brief highlight flash on description area
+      setAiHighlight(true);
+      setTimeout(() => setAiHighlight(false), 1600);
+    } catch {
+      if (stepTimerRef.current) clearInterval(stepTimerRef.current);
+    }
   }
 
   function onSubmit(values: FormValues) {
@@ -178,11 +262,15 @@ export default function DailyReportFormDialog({ open, onOpenChange, tankId, tank
           activityType: values.activityType,
           description: values.description,
           files: localFiles.map((lf) => lf.file),
+          newFileCaptions: localCaptions,
         },
         { onSuccess: () => onOpenChange(false) },
       );
     }
   }
+
+  const isGenerating = generateAI.isPending;
+  const generationDone = generateAI.isSuccess && !isGenerating;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -193,13 +281,112 @@ export default function DailyReportFormDialog({ open, onOpenChange, tankId, tank
           </DialogHeader>
           <form onSubmit={form.handleSubmit(onSubmit)} className="mt-4 space-y-4">
             <DateField control={form.control} name="reportDate" label="Report Date" />
-            <SelectField control={form.control} name="activityType" label="Activity Type" options={ACTIVITY_OPTIONS} />
-            <LongTextField control={form.control} name="description" label="Activity Description" placeholder="Describe the daily activities..." rows={4} maxLength={2000} />
+            <SelectField
+              control={form.control}
+              name="activityType"
+              label="Activity Type"
+              options={ACTIVITY_OPTIONS}
+            />
+
+            {/* Description with AI button */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">
+                  Activity Description
+                  {generationDone && (
+                    <span className="ml-2 inline-flex items-center gap-1 text-[11px] text-violet-600 font-normal">
+                      <Sparkles className="size-3" /> AI generated
+                    </span>
+                  )}
+                </span>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={!hasNewFiles || isGenerating}
+                  onClick={handleGenerateAI}
+                  className={cn(
+                    "h-7 gap-1.5 text-xs transition-all",
+                    hasNewFiles && !isGenerating && "border-violet-300 text-violet-700 hover:bg-violet-50",
+                  )}
+                  title={!hasNewFiles ? "Upload minimal 1 foto baru untuk menggunakan fitur AI" : "Generate uraian dan caption dari foto"}
+                >
+                  {isGenerating ? (
+                    <Loader2 className="size-3.5 animate-spin" />
+                  ) : (
+                    <Sparkles className="size-3.5" />
+                  )}
+                  {isGenerating ? "Generating..." : "Generate dengan AI"}
+                </Button>
+              </div>
+
+              {/* AI Generating progress banner */}
+              {isGenerating && (
+                <div className="rounded-lg border border-violet-200 bg-violet-50 px-4 py-3 space-y-2.5">
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="size-4 animate-spin text-violet-600 shrink-0" />
+                    <span className="text-sm font-medium text-violet-700">{AI_STEPS[aiStep]}</span>
+                  </div>
+                  <div className="flex gap-1">
+                    {AI_STEPS.map((_, i) => (
+                      <div
+                        key={i}
+                        className={cn(
+                          "h-1 flex-1 rounded-full transition-all duration-500",
+                          i <= aiStep ? "bg-violet-500" : "bg-violet-100",
+                        )}
+                      />
+                    ))}
+                  </div>
+                  <p className="text-[11px] text-violet-500">
+                    AI sedang menganalisis foto dan membuat uraian kegiatan inspeksi...
+                  </p>
+                </div>
+              )}
+
+              {/* AI success ribbon */}
+              {generationDone && !aiWarning && (
+                <div className="flex items-center gap-2 rounded-md border border-green-200 bg-green-50 px-3 py-1.5 text-xs text-green-700">
+                  <CheckCircle2 className="size-3.5 shrink-0" />
+                  Uraian dan caption foto berhasil dibuat. Silakan periksa dan edit sesuai kebutuhan.
+                </div>
+              )}
+
+              {/* Relevance warning */}
+              {aiWarning && (
+                <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                  <AlertTriangle className="size-3.5 shrink-0 mt-0.5" />
+                  <span>
+                    <strong>Perhatian:</strong> Foto yang diunggah tampaknya tidak berhubungan dengan kegiatan inspeksi
+                    tangki. Pastikan foto yang diunggah adalah dokumentasi pekerjaan inspeksi/overhaul untuk hasil AI
+                    yang akurat.
+                  </span>
+                </div>
+              )}
+
+              <div
+                className={cn(
+                  "rounded-md transition-all duration-700",
+                  aiHighlight && "ring-2 ring-violet-400 ring-offset-1",
+                )}
+              >
+                <LongTextField
+                  control={form.control}
+                  name="description"
+                  label=""
+                  placeholder="Describe the daily activities..."
+                  rows={4}
+                  maxLength={2000}
+                />
+              </div>
+            </div>
 
             {/* Existing attachments (edit mode) */}
             {existingAttachments.length > 0 && (
               <div>
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Existing Attachments</p>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
+                  Existing Attachments
+                </p>
                 <div className="grid grid-cols-3 gap-2">
                   {existingAttachments.map((att) => (
                     <div key={att.id} className="space-y-1">
@@ -226,27 +413,58 @@ export default function DailyReportFormDialog({ open, onOpenChange, tankId, tank
               </div>
             )}
 
-            {/* New local files */}
+            {/* New local files with caption inputs */}
             {localFiles.length > 0 && (
               <div>
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">New Attachments</p>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                    New Attachments
+                  </p>
+                  {generationDone && (
+                    <span className="inline-flex items-center gap-1 text-[11px] text-violet-600">
+                      <Sparkles className="size-3" /> Caption dibuat AI
+                    </span>
+                  )}
+                </div>
                 <div className="grid grid-cols-3 gap-2">
-                  {localFiles.map((lf) => (
+                  {localFiles.map((lf, idx) => (
                     <div key={lf.previewUrl} className="space-y-1">
                       <div className="relative w-full aspect-square rounded-lg overflow-hidden border border-border group bg-muted">
                         <img src={lf.previewUrl} alt={lf.file.name} className="w-full h-full object-contain" />
                         <button
                           type="button"
-                          onClick={() => removeLocal(lf.previewUrl)}
+                          onClick={() => removeLocal(idx)}
                           className="absolute top-1 right-1 flex size-5 items-center justify-center rounded-full bg-black/70 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive"
                         >
                           <X className="size-3" />
                         </button>
+                        {localCaptions[idx] && (
+                          <div className="absolute bottom-0 inset-x-0 bg-black/40 px-1.5 py-0.5">
+                            <Sparkles className="size-2.5 text-violet-300 inline mr-0.5" />
+                          </div>
+                        )}
                       </div>
-                      <p className="text-xs text-muted-foreground truncate" title={lf.file.name}>{lf.file.name}</p>
+                      <Input
+                        value={localCaptions[idx] ?? ""}
+                        onChange={(e) => setLocalCaption(idx, e.target.value)}
+                        placeholder="Add caption..."
+                        className={cn(
+                          "text-xs h-7 px-2 transition-all duration-500",
+                          aiHighlight && localCaptions[idx] && "ring-1 ring-violet-400",
+                        )}
+                        maxLength={300}
+                      />
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {/* Hint when no new files */}
+            {!hasNewFiles && !isEdit && (
+              <div className="flex items-center gap-2 rounded-md border border-dashed border-violet-200 bg-violet-50/50 px-3 py-2 text-[11px] text-violet-600">
+                <Sparkles className="size-3.5 shrink-0" />
+                Upload foto untuk mengaktifkan fitur Generate dengan AI
               </div>
             )}
 
@@ -267,11 +485,29 @@ export default function DailyReportFormDialog({ open, onOpenChange, tankId, tank
               </div>
             )}
 
-            <div className="flex justify-end gap-2 pt-2">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-              <Button type="submit" disabled={isPending}>
-                {isPending ? "Saving..." : isEdit ? "Save Changes" : "Create Report"}
-              </Button>
+            <div className="flex justify-between gap-2 pt-2">
+              {generationDone && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="text-muted-foreground text-xs gap-1"
+                  onClick={() => {
+                    generateAI.reset();
+                    setAiWarning(false);
+                  }}
+                >
+                  <RotateCcw className="size-3" /> Reset AI
+                </Button>
+              )}
+              <div className="flex gap-2 ml-auto">
+                <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={isPending}>
+                  {isPending ? "Saving..." : isEdit ? "Save Changes" : "Create Report"}
+                </Button>
+              </div>
             </div>
           </form>
         </div>

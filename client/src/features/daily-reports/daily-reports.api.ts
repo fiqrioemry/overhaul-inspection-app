@@ -3,6 +3,19 @@ import api from "@/lib/axios";
 import type { ResponseSuccess, ResponseList } from "@/types/response.type";
 import type { PaginatedResponse } from "@/types/pagination.type";
 
+export interface AIGeneratePayload {
+  tankId: string;
+  activityType: DailyActivityType;
+  processName?: string;
+  files: File[];
+}
+
+export interface AIGenerateResult {
+  description: string;
+  captions: string[];
+  relevanceWarning: boolean;
+}
+
 export type DailyActivityType = "MONITORING" | "INSPECTION";
 
 export interface DailyReportAttachment {
@@ -54,6 +67,7 @@ export interface CreateDailyReportPayload {
   inspectorId?: string;
   pertaminaPicId?: string;
   files: File[];
+  newFileCaptions?: string[];
 }
 
 export interface UpdateDailyReportPayload {
@@ -87,6 +101,9 @@ export async function createDailyReport(payload: CreateDailyReportPayload): Prom
   if (payload.inspectorId) formData.append("inspectorId", payload.inspectorId);
   if (payload.pertaminaPicId) formData.append("pertaminaPicId", payload.pertaminaPicId);
   payload.files.forEach((file) => formData.append("attachments", file));
+  if (payload.newFileCaptions && payload.newFileCaptions.length > 0) {
+    formData.append("newFileCaptions", JSON.stringify(payload.newFileCaptions));
+  }
   const res = await api.post<ResponseSuccess<DailyReportDetail>>("/daily-reports", formData);
   return res.data.data!;
 }
@@ -107,4 +124,14 @@ export async function updateDailyReport(id: string, payload: UpdateDailyReportPa
 
 export async function deleteDailyReport(id: string): Promise<void> {
   await api.delete(`/daily-reports/${id}`);
+}
+
+export async function generateAIDailyReport(payload: AIGeneratePayload): Promise<AIGenerateResult> {
+  const formData = new FormData();
+  formData.append("tankId", payload.tankId);
+  formData.append("activityType", payload.activityType);
+  if (payload.processName) formData.append("processName", payload.processName);
+  payload.files.forEach((file) => formData.append("attachments", file));
+  const res = await api.post<ResponseSuccess<AIGenerateResult>>("/daily-reports/ai/generate", formData);
+  return res.data.data!;
 }

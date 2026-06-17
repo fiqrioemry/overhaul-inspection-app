@@ -100,7 +100,18 @@ export default function CompaniesPage() {
                 <tbody className="divide-y">
                   {data?.items.map((company) => (
                     <tr key={company.id} className="hover:bg-muted/20">
-                      <td className="px-4 py-3 font-medium">{company.name}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2.5">
+                          <div className="size-8 shrink-0 rounded-md border bg-muted flex items-center justify-center overflow-hidden">
+                            {company.logoUrl ? (
+                              <img src={company.logoUrl} alt={company.name} className="size-full object-cover" />
+                            ) : (
+                              <Building2 className="size-4 text-muted-foreground" />
+                            )}
+                          </div>
+                          <span className="font-medium">{company.name}</span>
+                        </div>
+                      </td>
                       <td className="px-4 py-3 text-muted-foreground">{TYPE_LABEL[company.type] ?? company.type}</td>
                       <td className="px-4 py-3 text-muted-foreground">{company.phone ?? "—"}</td>
                       <td className="px-4 py-3 text-muted-foreground">{company.email ?? "—"}</td>

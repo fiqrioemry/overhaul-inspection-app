@@ -44,7 +44,7 @@ export default function CompanyFormDialog({ open, onOpenChange, company }: Compa
   });
 
   useEffect(() => {
-    if (company && isEdit) {
+    if (open && company && isEdit) {
       form.reset({
         name: company.name,
         type: company.type,
@@ -53,8 +53,9 @@ export default function CompanyFormDialog({ open, onOpenChange, company }: Compa
         email: company.email ?? "",
         isActive: company.isActive,
       });
-    } else {
+    } else if (!open) {
       form.reset(DEFAULT_VALUES);
+      clearLogo();
     }
   }, [company, open]);
 
