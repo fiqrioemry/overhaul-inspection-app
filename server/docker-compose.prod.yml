@@ -1,18 +1,19 @@
 services:
   app:
     build: .
-    container_name: overhaul
+    container_name: social_media
     restart: unless-stopped
 
     env_file:
       - .env.production
+
     ports:
       - "${APP_PORT}:${APP_PORT}"
     expose:
       - "${APP_PORT}"
 
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:${APP_PORT}/api/v1/health || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:${APP_PORT}/health || exit 1"]
       interval: 120s
       timeout: 5s
       retries: 3

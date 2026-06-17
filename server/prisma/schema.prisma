@@ -162,10 +162,6 @@ enum InspectionRequestStatusEnum {
 enum DailyActivityTypeEnum {
   MONITORING
   INSPECTION
-  FINDING
-  REPAIR
-  TEST_ACTIVITY
-  INFORMATION
 }
 
 enum RadiographyJointResultEnum {
