@@ -24,6 +24,7 @@ export default function TankEditPage() {
       ...values,
       diameterMm: values.diameterMm ? Number(values.diameterMm) : undefined,
       heightMm: values.heightMm ? Number(values.heightMm) : undefined,
+      capacityM3: values.capacityM3 ? Number(values.capacityM3) : undefined,
       contractorCompanyId: values.contractorCompanyId && values.contractorCompanyId !== "NONE" ? values.contractorCompanyId : undefined,
       inspectionCompanyId: values.inspectionCompanyId && values.inspectionCompanyId !== "NONE" ? values.inspectionCompanyId : undefined,
       startDate: values.startDate || undefined,
