@@ -42,8 +42,8 @@ export default function LoginForm() {
   return (
     <div className="space-y-5">
       <div className="space-y-0.5">
-        <h2 className="text-base font-semibold text-slate-800">Masuk</h2>
-        <p className="text-xs text-slate-500">Gunakan akun yang telah didaftarkan oleh administrator</p>
+        <h2 className="text-base font-semibold text-foreground">Masuk</h2>
+        <p className="text-xs text-muted-foreground">Gunakan akun yang telah didaftarkan oleh administrator</p>
       </div>
 
       <AlertCard message={serverError?.message} errors={serverError?.errors} />
@@ -54,7 +54,7 @@ export default function LoginForm() {
           name="email"
           label="Email"
           type="email"
-          placeholder="nama@sucofindo.co.id"
+          placeholder="nama@pertamina.com"
           autoComplete="email"
         />
         <div className="space-y-1">

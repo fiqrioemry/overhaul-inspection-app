@@ -43,19 +43,25 @@ export default function ProcessDependenciesTab({ processTemplateId }: ProcessDep
 
   function onAdd(values: AddDependencyFormValues) {
     const payload = { ...values, applicabilityRule: values.applicabilityRule || undefined };
-    addMutation.mutate({ processTemplateId, data: payload }, {
-      onSuccess: () => {
-        form.reset(DEFAULT_FORM);
-        setShowAdd(false);
+    addMutation.mutate(
+      { processTemplateId, data: payload },
+      {
+        onSuccess: () => {
+          form.reset(DEFAULT_FORM);
+          setShowAdd(false);
+        },
       },
-    });
+    );
   }
 
   function handleRemove() {
     if (!deleteTarget) return;
-    removeMutation.mutate({ id: deleteTarget.id, templateId: processTemplateId }, {
-      onSuccess: () => setDeleteTarget(undefined),
-    });
+    removeMutation.mutate(
+      { id: deleteTarget.id, templateId: processTemplateId },
+      {
+        onSuccess: () => setDeleteTarget(undefined),
+      },
+    );
   }
 
   if (isLoading) return <LoadingState />;
@@ -64,7 +70,9 @@ export default function ProcessDependenciesTab({ processTemplateId }: ProcessDep
     <div className="space-y-4">
       <div className="flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-700 dark:border-blue-900 dark:bg-blue-950/30 dark:text-blue-400">
         <Info className="size-4 shrink-0" />
-        <p>Only add <strong>direct</strong> dependencies. Transitive dependencies are automatically inherited.</p>
+        <p>
+          Only add <strong>direct</strong> dependencies. Transitive dependencies are automatically inherited.
+        </p>
       </div>
 
       <div className="flex items-center justify-between">
@@ -82,8 +90,20 @@ export default function ProcessDependenciesTab({ processTemplateId }: ProcessDep
           <LongTextField control={form.control} name="applicabilityRule" label="Applicability Rule" placeholder="Optional condition" rows={2} />
           <SwitchField control={form.control} name="isRequired" label="Required" description="Must be completed before this process" />
           <div className="flex gap-2 justify-end">
-            <Button type="button" variant="ghost" size="sm" onClick={() => { setShowAdd(false); form.reset(DEFAULT_FORM); }}>Cancel</Button>
-            <Button type="submit" size="sm" disabled={addMutation.isPending}>{addMutation.isPending ? "Adding..." : "Add"}</Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setShowAdd(false);
+                form.reset(DEFAULT_FORM);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" size="sm" disabled={addMutation.isPending}>
+              {addMutation.isPending ? "Adding..." : "Add"}
+            </Button>
           </div>
         </form>
       )}
@@ -116,7 +136,9 @@ export default function ProcessDependenciesTab({ processTemplateId }: ProcessDep
                   </td>
                   <td className="px-4 py-3">
                     {dep.isRequired ? (
-                      <Badge variant="secondary" className="text-xs">Yes</Badge>
+                      <Badge variant="secondary" className="text-xs">
+                        Yes
+                      </Badge>
                     ) : (
                       <span className="text-muted-foreground text-xs">Optional</span>
                     )}
@@ -136,7 +158,9 @@ export default function ProcessDependenciesTab({ processTemplateId }: ProcessDep
 
       <ConfirmDialog
         open={Boolean(deleteTarget)}
-        onOpenChange={(open) => { if (!open) setDeleteTarget(undefined); }}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(undefined);
+        }}
         title="Remove Dependency"
         description={`Remove dependency on "${deleteTarget?.dependsOn.name}"?`}
         confirmLabel="Remove"

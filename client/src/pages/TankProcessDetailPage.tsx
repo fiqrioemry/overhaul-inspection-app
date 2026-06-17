@@ -170,12 +170,7 @@ export default function TankProcessDetailPage() {
           <div className="flex items-center gap-2">
             {nextStatus && actionLabel && (
               <PermissionGate permission={actionPermission}>
-                <Button
-                  variant="outline"
-                  onClick={handleStatusAdvance}
-                  disabled={updateStatus.isPending || submitForReviewBlocked}
-                  title={submitForReviewBlocked ? "Close all OPEN findings before submitting for review" : undefined}
-                >
+                <Button variant="outline" onClick={handleStatusAdvance} disabled={updateStatus.isPending || submitForReviewBlocked} title={submitForReviewBlocked ? "Close all OPEN findings before submitting for review" : undefined}>
                   {updateStatus.isPending ? "Saving..." : actionLabel}
                 </Button>
               </PermissionGate>
@@ -202,8 +197,7 @@ export default function TankProcessDetailPage() {
             Cannot submit for review:
             {hasUncheckedRequired && " required checklist items are not yet passed"}
             {hasUncheckedRequired && hasOpenFindings && ", and"}
-            {hasOpenFindings && " there are OPEN findings that must be resolved"}
-            .
+            {hasOpenFindings && " there are OPEN findings that must be resolved"}.
           </span>
         </div>
       )}
@@ -366,12 +360,7 @@ export default function TankProcessDetailPage() {
                         {report.inspector && <span className="text-xs text-muted-foreground">{report.inspector.name}</span>}
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          onClick={() => navigate(ROUTES.DAILY_REPORT_DETAIL.replace(":id", report.id))}
-                          title="View Detail"
-                        >
+                        <Button variant="ghost" size="icon-sm" onClick={() => navigate(ROUTES.DAILY_REPORT_DETAIL.replace(":id", report.id))} title="View Detail">
                           <Eye className="h-3.5 w-3.5 text-muted-foreground" />
                         </Button>
                         <PermissionGate permission={PERMISSIONS.DAILY_REPORT_UPDATE}>

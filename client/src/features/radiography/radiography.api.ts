@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-empty-object-type */
 // src/features/radiography/radiography.api.ts
 import api from "@/lib/axios";
 import type { ResponseSuccess } from "@/types/response.type";

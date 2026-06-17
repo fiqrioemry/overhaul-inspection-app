@@ -16,8 +16,8 @@ export default function UserAvatar({ user, size = "xl" }: UserAvatarProps & { si
 
   return (
     <Avatar className={`${sizeClasses[size]} ring-2 ring-offset-1 ring-gradient-to-tr ring-pink-500`}>
-      <AvatarImage src={user?.avatar ?? "/default-avatar.png"} alt={user?.username} />
-      <AvatarFallback className="text-xs font-bold">{user?.username?.slice(0, 2).toUpperCase() ?? "U"}</AvatarFallback>
+      <AvatarImage src={user?.avatar ?? "/default-avatar.png"} alt={user?.avatar ? "Avatar" : "Default Avatar"} />
+      <AvatarFallback className="text-xs font-bold">{user?.name?.slice(0, 2).toUpperCase() ?? "U"}</AvatarFallback>
     </Avatar>
   );
 }

@@ -42,7 +42,7 @@ export type AddCriteriaToTemplateFormValues = z.infer<typeof addCriteriaToTempla
 
 export const addDependencySchema = z.object({
   dependsOnId: z.string().min(1, "Process is required"),
-  requiredStatus: z.enum(["COMPLETED", "REVIEWED"]).default("COMPLETED"),
+  requiredStatus: z.enum(["COMPLETED", "REVIEWED"]),
   isRequired: z.boolean(),
   applicabilityRule: z.string().optional(),
 });

@@ -32,6 +32,7 @@ export interface CreateTestRecordPayload {
   fileIds?: string[];
 }
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface UpdateTestRecordPayload extends CreateTestRecordPayload {}
 
 export interface CompleteTestRecordPayload {

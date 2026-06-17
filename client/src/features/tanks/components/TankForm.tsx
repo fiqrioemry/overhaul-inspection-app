@@ -1,8 +1,9 @@
 // src/features/tanks/components/TankForm.tsx
 import { useEffect } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
+import type { Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import ShortTextField from "@/components/fields/ShortTextField";
@@ -38,7 +39,7 @@ export default function TankForm(props: TankFormProps) {
   const isEdit = props.mode === "edit";
 
   const createForm = useForm<CreateTankFormValues>({
-    resolver: zodResolver(createTankSchema),
+    resolver: zodResolver(createTankSchema) as Resolver<CreateTankFormValues>,
     defaultValues: {
       tankNo: "",
       tankName: "",
@@ -49,7 +50,7 @@ export default function TankForm(props: TankFormProps) {
   });
 
   const editForm = useForm<UpdateTankFormValues>({
-    resolver: zodResolver(updateTankSchema),
+    resolver: zodResolver(updateTankSchema) as Resolver<UpdateTankFormValues>,
     defaultValues: isEdit
       ? {
           tankNo: props.tank.tankNo,
@@ -64,7 +65,7 @@ export default function TankForm(props: TankFormProps) {
       : {},
   });
 
-  const { fields, append, remove, replace } = useFieldArray({
+  const { fields, append, replace } = useFieldArray({
     control: createForm.control,
     name: "shellCourses",
   });
@@ -83,15 +84,9 @@ export default function TankForm(props: TankFormProps) {
     replace(newCourses);
   }, [shellCourseCount]);
 
-  const contractorOptions = [
-    { label: "None", value: "NONE" },
-    ...props.contractors.map((c) => ({ label: c.name, value: c.id })),
-  ];
+  const contractorOptions = [{ label: "None", value: "NONE" }, ...props.contractors.map((c) => ({ label: c.name, value: c.id }))];
 
-  const inspectionOptions = [
-    { label: "None", value: "NONE" },
-    ...props.inspectionCompanies.map((c) => ({ label: c.name, value: c.id })),
-  ];
+  const inspectionOptions = [{ label: "None", value: "NONE" }, ...props.inspectionCompanies.map((c) => ({ label: c.name, value: c.id }))];
 
   if (isEdit) {
     return (
@@ -150,22 +145,11 @@ export default function TankForm(props: TankFormProps) {
               <div key={field.id} className="grid grid-cols-4 gap-2 p-3 items-end">
                 <Field>
                   <FieldLabel className="text-xs">Course No.</FieldLabel>
-                  <Input
-                    type="number"
-                    readOnly
-                    value={index + 1}
-                    className="bg-muted"
-                    {...createForm.register(`shellCourses.${index}.courseNo`, { valueAsNumber: true })}
-                  />
+                  <Input type="number" readOnly value={index + 1} className="bg-muted" {...createForm.register(`shellCourses.${index}.courseNo`, { valueAsNumber: true })} />
                 </Field>
                 <Field>
                   <FieldLabel className="text-xs">Thickness (mm)</FieldLabel>
-                  <Input
-                    type="number"
-                    step="0.1"
-                    placeholder="0.0"
-                    {...createForm.register(`shellCourses.${index}.thicknessMm`, { valueAsNumber: true })}
-                  />
+                  <Input type="number" step="0.1" placeholder="0.0" {...createForm.register(`shellCourses.${index}.thicknessMm`, { valueAsNumber: true })} />
                 </Field>
                 <Field>
                   <FieldLabel className="text-xs">Plate Dimension</FieldLabel>
@@ -178,12 +162,7 @@ export default function TankForm(props: TankFormProps) {
               </div>
             ))}
           </div>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => append({ courseNo: fields.length + 1, thicknessMm: 0 })}
-          >
+          <Button type="button" variant="outline" size="sm" onClick={() => append({ courseNo: fields.length + 1, thicknessMm: 0 })}>
             <Plus className="h-3 w-3" /> Add Course
           </Button>
         </div>
