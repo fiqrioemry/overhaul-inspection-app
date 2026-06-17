@@ -17,10 +17,19 @@ export interface ShellCourse {
   remarks: string | null;
 }
 
+export type TankLocation = "SUNGAI_GERONG" | "PLADJU";
+export type TankService =
+  | "AVTUR" | "NAPTHA" | "PREMIUM" | "PERTALITE" | "PERTAMAX" | "PERTAMAX_TURBO"
+  | "SOLAR" | "DEXLITE" | "PERTAMINA_DEX" | "KEROSENE" | "CRUDE_OIL"
+  | "FUEL_OIL" | "LUBRICATING_OIL" | "LPG" | "CONDENSATE" | "SLOP_OIL" | "OTHER";
+
 export interface TankSummary {
   id: string;
   tankNo: string;
   tankName: string | null;
+  location: TankLocation | null;
+  capacityM3: number | null;
+  service: TankService | null;
   diameterMm: number | null;
   heightMm: number | null;
   shellCourseCount: number;
@@ -55,6 +64,9 @@ export interface ShellCourseInput {
 export interface CreateTankPayload {
   tankNo: string;
   tankName?: string;
+  location?: TankLocation;
+  capacityM3?: number;
+  service?: TankService;
   diameterMm?: number;
   heightMm?: number;
   shellCourseCount: number;
@@ -69,6 +81,9 @@ export interface CreateTankPayload {
 export interface UpdateTankPayload {
   tankNo?: string;
   tankName?: string;
+  location?: TankLocation;
+  capacityM3?: number;
+  service?: TankService;
   diameterMm?: number;
   heightMm?: number;
   contractorCompanyId?: string;

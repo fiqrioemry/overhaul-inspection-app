@@ -13,6 +13,7 @@ import { useTank } from "@/features/tanks/tanks.query";
 import { PERMISSIONS } from "@/constants/permission.constant";
 import { ROUTES } from "@/constants/route.constant";
 import { format } from "date-fns";
+import { TANK_LOCATION_LABEL, TANK_SERVICE_LABEL } from "@/schemas/tanks.schema";
 
 function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
@@ -66,6 +67,9 @@ export default function TankDetailPage() {
             </div>
             <InfoRow label="Tank No." value={tank.tankNo} />
             <InfoRow label="Tank Name" value={tank.tankName} />
+            <InfoRow label="Location" value={tank.location ? TANK_LOCATION_LABEL[tank.location] : null} />
+            <InfoRow label="Capacity (m³)" value={tank.capacityM3?.toLocaleString()} />
+            <InfoRow label="Service / Product" value={tank.service ? TANK_SERVICE_LABEL[tank.service] : null} />
             <InfoRow label="Diameter (mm)" value={tank.diameterMm?.toLocaleString()} />
             <InfoRow label="Height (mm)" value={tank.heightMm?.toLocaleString()} />
             <InfoRow label="Shell Courses" value={tank.shellCourseCount} />

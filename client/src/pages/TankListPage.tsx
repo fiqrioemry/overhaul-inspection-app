@@ -18,6 +18,7 @@ import { PERMISSIONS } from "@/constants/permission.constant";
 import { ROUTES } from "@/constants/route.constant";
 import { useDebounce } from "@/hooks/useDebounce";
 import { format } from "date-fns";
+import { TANK_LOCATION_LABEL, TANK_SERVICE_LABEL } from "@/schemas/tanks.schema";
 
 export default function TankListPage() {
   const navigate = useNavigate();
@@ -74,11 +75,11 @@ export default function TankListPage() {
                   <tr>
                     <th className="px-4 py-3 text-left font-medium">Tank No.</th>
                     <th className="px-4 py-3 text-left font-medium">Name</th>
+                    <th className="px-4 py-3 text-left font-medium">Location</th>
+                    <th className="px-4 py-3 text-left font-medium">Service</th>
                     <th className="px-4 py-3 text-left font-medium">Processes</th>
                     <th className="px-4 py-3 text-left font-medium">Status</th>
-                    <th className="px-4 py-3 text-left font-medium">Contractor</th>
                     <th className="px-4 py-3 text-left font-medium">Start Date</th>
-                    <th className="px-4 py-3 text-left font-medium">Est. Finish</th>
                     <th className="px-4 py-3 text-right font-medium">Actions</th>
                   </tr>
                 </thead>
@@ -89,14 +90,14 @@ export default function TankListPage() {
                       <tr key={tank.id} className="hover:bg-muted/20 cursor-pointer" onClick={() => navigate(detailPath)}>
                         <td className="px-4 py-3 font-mono font-medium">{tank.tankNo}</td>
                         <td className="px-4 py-3 text-muted-foreground">{tank.tankName ?? "—"}</td>
+                        <td className="px-4 py-3 text-xs text-muted-foreground">{tank.location ? TANK_LOCATION_LABEL[tank.location] : "—"}</td>
+                        <td className="px-4 py-3 text-xs text-muted-foreground">{tank.service ? TANK_SERVICE_LABEL[tank.service] : "—"}</td>
                         <td className="px-4 py-3 text-muted-foreground">{tank._count.tankProcesses}</td>
                         <td className="px-4 py-3">
                           <StatusBadge status={tank.status} />
                         </td>
-                        <td className="px-4 py-3 text-muted-foreground text-xs">{tank.contractorCompany?.name ?? "—"}</td>
                         <td className="px-4 py-3 text-xs text-muted-foreground">{tank.startDate ? format(new Date(tank.startDate), "dd MMM yyyy") : "—"}</td>
-                        <td className="px-4 py-3 text-xs text-muted-foreground">{tank.estimatedFinishDate ? format(new Date(tank.estimatedFinishDate), "dd MMM yyyy") : "—"}</td>
-                        <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                        <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                           <div className="flex items-center justify-end gap-2">
                             <Button variant="ghost" size="icon-sm" title="Detail tank" onClick={() => navigate(detailPath)}>
                               <Eye />

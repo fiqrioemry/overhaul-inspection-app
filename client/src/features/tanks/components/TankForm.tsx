@@ -11,7 +11,7 @@ import DateField from "@/components/fields/DateField";
 import SelectField from "@/components/fields/SelectField";
 import SwitchField from "@/components/fields/SwitchField";
 import { Field, FieldLabel } from "@/components/ui/field";
-import { createTankSchema, updateTankSchema } from "@/schemas/tanks.schema";
+import { createTankSchema, updateTankSchema, TANK_LOCATION_OPTIONS, TANK_SERVICE_OPTIONS } from "@/schemas/tanks.schema";
 import type { CreateTankFormValues, UpdateTankFormValues } from "@/schemas/tanks.schema";
 import type { TankDetail } from "../tanks.api";
 import type { CompanyOption } from "@/features/companies/companies.api";
@@ -55,6 +55,9 @@ export default function TankForm(props: TankFormProps) {
       ? {
           tankNo: props.tank.tankNo,
           tankName: props.tank.tankName ?? "",
+          location: (props.tank.location ?? undefined) as UpdateTankFormValues["location"],
+          capacityM3: props.tank.capacityM3 ?? undefined,
+          service: (props.tank.service ?? undefined) as UpdateTankFormValues["service"],
           diameterMm: props.tank.diameterMm ?? undefined,
           heightMm: props.tank.heightMm ?? undefined,
           contractorCompanyId: props.tank.contractorCompany?.id ?? "NONE",
@@ -96,6 +99,11 @@ export default function TankForm(props: TankFormProps) {
           <ShortTextField control={editForm.control} name="tankName" label="Tank Name" placeholder="Optional name" />
         </div>
         <div className="grid grid-cols-2 gap-4">
+          <SelectField control={editForm.control} name="location" label="Location" options={[...TANK_LOCATION_OPTIONS]} placeholder="Select location" />
+          <SelectField control={editForm.control} name="service" label="Service / Product" options={[...TANK_SERVICE_OPTIONS]} placeholder="Select service" />
+        </div>
+        <ShortTextField control={editForm.control} name="capacityM3" label="Capacity (m³)" type="text" placeholder="e.g. 5000" />
+        <div className="grid grid-cols-2 gap-4">
           <ShortTextField control={editForm.control} name="diameterMm" label="Diameter (mm)" type="text" placeholder="e.g. 18000" />
           <ShortTextField control={editForm.control} name="heightMm" label="Height (mm)" type="text" placeholder="e.g. 12000" />
         </div>
@@ -120,6 +128,11 @@ export default function TankForm(props: TankFormProps) {
         <ShortTextField control={createForm.control} name="tankNo" label="Tank No." placeholder="e.g. T-01" />
         <ShortTextField control={createForm.control} name="tankName" label="Tank Name" placeholder="Optional name" />
       </div>
+      <div className="grid grid-cols-2 gap-4">
+        <SelectField control={createForm.control} name="location" label="Location" options={[...TANK_LOCATION_OPTIONS]} placeholder="Select location" />
+        <SelectField control={createForm.control} name="service" label="Service / Product" options={[...TANK_SERVICE_OPTIONS]} placeholder="Select service" />
+      </div>
+      <ShortTextField control={createForm.control} name="capacityM3" label="Capacity (m³)" type="text" placeholder="e.g. 5000" />
       <div className="grid grid-cols-2 gap-4">
         <ShortTextField control={createForm.control} name="diameterMm" label="Diameter (mm)" type="text" placeholder="e.g. 18000" />
         <ShortTextField control={createForm.control} name="heightMm" label="Height (mm)" type="text" placeholder="e.g. 12000" />
