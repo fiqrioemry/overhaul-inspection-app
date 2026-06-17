@@ -16,7 +16,6 @@ import ProcessStatusBadge from "@/components/common/ProcessStatusBadge";
 import PermissionGate from "@/components/common/PermissionGate";
 import ChecklistTable from "@/features/checklist-results/components/ChecklistTable";
 import { useChecklistResults } from "@/features/checklist-results/checklist-results.query";
-import EligibilityPanel from "@/features/tank-processes/components/EligibilityPanel";
 import InspectionRequestForm from "@/features/inspection-requests/components/InspectionRequestForm";
 import FindingFormDialog from "@/features/findings/components/FindingFormDialog";
 import FindingEditDialog from "@/features/findings/components/FindingEditDialog";
@@ -210,7 +209,6 @@ export default function TankProcessDetailPage() {
           <TabsTrigger value="daily-activity">Daily Activity {dailyReportsData?.meta?.total ? <span className="ml-1 text-xs">({dailyReportsData.meta.total})</span> : null}</TabsTrigger>
           {isTestType && <TabsTrigger value="test-records">Test Records {testRecords.length > 0 ? <span className="ml-1 text-xs">({testRecords.length})</span> : null}</TabsTrigger>}
           {isTestType && <TabsTrigger value="radiography">Radiography {radiographyTests.length > 0 ? <span className="ml-1 text-xs">({radiographyTests.length})</span> : null}</TabsTrigger>}
-          <TabsTrigger value="eligibility">Eligibility</TabsTrigger>
           <TabsTrigger value="inspection">Inspection Requests</TabsTrigger>
         </TabsList>
 
@@ -373,11 +371,7 @@ export default function TankProcessDetailPage() {
                         </PermissionGate>
                       </div>
                     </div>
-                    {report.description ? (
-                      <div className="mt-2 text-sm prose prose-sm max-w-none dark:prose-invert" dangerouslySetInnerHTML={{ __html: report.description }} />
-                    ) : (
-                      <p className="mt-2 text-sm text-muted-foreground">—</p>
-                    )}
+                    {report.description ? <div className="mt-2 text-sm prose prose-sm max-w-none dark:prose-invert" dangerouslySetInnerHTML={{ __html: report.description }} /> : <p className="mt-2 text-sm text-muted-foreground">—</p>}
                   </div>
                 ))}
               </div>
@@ -508,11 +502,6 @@ export default function TankProcessDetailPage() {
           </TabsContent>
         )}
 
-        {/* ELIGIBILITY */}
-        <TabsContent value="eligibility" className="mt-4">
-          <EligibilityPanel processId={processId!} />
-        </TabsContent>
-
         {/* INSPECTION REQUESTS */}
         <TabsContent value="inspection" className="mt-4">
           <div className="space-y-4">
@@ -621,8 +610,10 @@ export default function TankProcessDetailPage() {
         }}
       />
 
+      {/* test record */}
       <TestRecordFormDialog open={testRecordDialogOpen} onOpenChange={setTestRecordDialogOpen} tankProcessId={processId!} />
 
+      {/* radiography */}
       <RadiographyFormDialog open={radiographyDialogOpen} onOpenChange={setRadiographyDialogOpen} tankProcessId={processId!} />
     </div>
   );
