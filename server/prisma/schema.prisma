@@ -164,6 +164,31 @@ enum DailyActivityTypeEnum {
   INSPECTION
 }
 
+enum TankLocationEnum {
+  SUNGAI_GERONG
+  PLADJU
+}
+
+enum TankServiceEnum {
+  AVTUR
+  NAPTHA
+  PREMIUM
+  PERTALITE
+  PERTAMAX
+  PERTAMAX_TURBO
+  SOLAR
+  DEXLITE
+  PERTAMINA_DEX
+  KEROSENE
+  CRUDE_OIL
+  FUEL_OIL
+  LUBRICATING_OIL
+  LPG
+  CONDENSATE
+  SLOP_OIL
+  OTHER
+}
+
 enum RadiographyJointResultEnum {
   PENDING
   ACCEPTED
@@ -508,8 +533,11 @@ model Tank {
   heightMm            Float?     @map("height_mm")
   shellCourseCount    Int?       @map("shell_course_count")
   bottomPlateDimension String?   @map("bottom_plate_dimension")
-  hasSteamCoil        Boolean    @default(false) @map("has_steam_coil")
-  contractorCompanyId String?    @map("contractor_company_id")
+  hasSteamCoil        Boolean           @default(false) @map("has_steam_coil")
+  location            TankLocationEnum? @map("location")
+  capacityM3          Float?            @map("capacity_m3")
+  service             TankServiceEnum?  @map("service")
+  contractorCompanyId String?           @map("contractor_company_id")
   inspectionCompanyId String?    @map("inspection_company_id")
   startDate           DateTime?  @map("start_date") @db.Date
   estimatedFinishDate DateTime?  @map("estimated_finish_date") @db.Date

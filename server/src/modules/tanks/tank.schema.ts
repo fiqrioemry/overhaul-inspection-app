@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { StatusEnum } from "generated/prisma";
+import { StatusEnum, TankLocationEnum, TankServiceEnum } from "generated/prisma";
 
 export const shellCourseInput = z.object({
   courseNo: z.number().int().min(1),
@@ -12,6 +12,9 @@ export type ShellCourseInput = z.infer<typeof shellCourseInput>;
 export const createTankRequest = z.object({
   tankNo: z.string().min(1).max(50),
   tankName: z.string().max(200).optional(),
+  location: z.nativeEnum(TankLocationEnum).optional(),
+  capacityM3: z.number().positive().optional(),
+  service: z.nativeEnum(TankServiceEnum).optional(),
   diameterMm: z.number().positive().optional(),
   heightMm: z.number().positive().optional(),
   shellCourseCount: z.number().int().min(1).optional(),

@@ -12,6 +12,9 @@ export interface TankListItem {
   tankNo: string;
   tankName: string | null;
   status: string;
+  location: string | null;
+  capacityM3: number | null;
+  service: string | null;
   diameterMm: number | null;
   heightMm: number | null;
   shellCourseCount: number | null;
@@ -38,6 +41,9 @@ export interface TankDetail {
   tankNo: string;
   tankName: string | null;
   status: string;
+  location: string | null;
+  capacityM3: number | null;
+  service: string | null;
   diameterMm: number | null;
   heightMm: number | null;
   shellCourseCount: number | null;
