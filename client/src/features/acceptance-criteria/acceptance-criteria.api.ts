@@ -75,6 +75,19 @@ export async function listAcceptanceCriteria(params: ListAcceptanceCriteriaParam
   return { items: res.data.data, meta: res.data.meta };
 }
 
+export async function getAllAcceptanceCriteria(): Promise<AcceptanceCriteria[]> {
+  const PAGE_SIZE = 100;
+  let page = 1;
+  const collected: AcceptanceCriteria[] = [];
+  while (true) {
+    const res = await api.get<ResponseList<AcceptanceCriteria>>("/acceptance-criteria", { params: { limit: PAGE_SIZE, page } });
+    collected.push(...res.data.data);
+    if (collected.length >= res.data.meta.total) break;
+    page++;
+  }
+  return collected;
+}
+
 export async function getAcceptanceCriteriaById(id: string): Promise<AcceptanceCriteria> {
   const res = await api.get<ResponseSuccess<AcceptanceCriteria>>(`/acceptance-criteria/${id}`);
   return res.data.data!;

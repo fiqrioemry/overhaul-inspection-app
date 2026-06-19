@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   listAcceptanceCriteria,
+  getAllAcceptanceCriteria,
   getAcceptanceCriteriaById,
   createAcceptanceCriteria,
   updateAcceptanceCriteria,
@@ -21,6 +22,7 @@ import type {
 export const ACCEPTANCE_CRITERIA_KEYS = {
   all: ["acceptance-criteria"] as const,
   list: (params: ListAcceptanceCriteriaParams) => ["acceptance-criteria", "list", params] as const,
+  allList: ["acceptance-criteria", "all"] as const,
   detail: (id: string) => ["acceptance-criteria", "detail", id] as const,
   references: (criteriaId: string) => ["acceptance-criteria", "references", criteriaId] as const,
 };
@@ -30,6 +32,14 @@ export function useAcceptanceCriteria(params: ListAcceptanceCriteriaParams) {
     queryKey: ACCEPTANCE_CRITERIA_KEYS.list(params),
     queryFn: () => listAcceptanceCriteria(params),
     staleTime: 1000 * 30,
+  });
+}
+
+export function useAllAcceptanceCriteria() {
+  return useQuery({
+    queryKey: ACCEPTANCE_CRITERIA_KEYS.allList,
+    queryFn: () => getAllAcceptanceCriteria(),
+    staleTime: 1000 * 60 * 5,
   });
 }
 
