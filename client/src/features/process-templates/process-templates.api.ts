@@ -78,8 +78,16 @@ export async function listProcessTemplates(params: ListProcessTemplatesParams): 
 }
 
 export async function getAllProcessTemplates(): Promise<ProcessTemplate[]> {
-  const res = await api.get<ResponseList<ProcessTemplate>>("/process-templates", { params: { limit: 1000 } });
-  return res.data.data;
+  const PAGE_SIZE = 100;
+  let page = 1;
+  const collected: ProcessTemplate[] = [];
+  while (true) {
+    const res = await api.get<ResponseList<ProcessTemplate>>("/process-templates", { params: { limit: PAGE_SIZE, page } });
+    collected.push(...res.data.data);
+    if (collected.length >= res.data.meta.total) break;
+    page++;
+  }
+  return collected;
 }
 
 export async function getProcessTemplateById(id: string): Promise<ProcessTemplate> {
