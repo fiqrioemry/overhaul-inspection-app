@@ -10,7 +10,7 @@ import EmptyState from "@/components/common/EmptyState";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 import SelectField from "@/components/fields/SelectField";
 import SwitchField from "@/components/fields/SwitchField";
-import { useAcceptanceCriteria } from "@/features/acceptance-criteria/acceptance-criteria.query";
+import { useAllAcceptanceCriteria } from "@/features/acceptance-criteria/acceptance-criteria.query";
 import { useTemplateCriteria, useAddCriteriaToTemplate, useRemoveTemplateCriteria } from "@/features/process-templates/process-templates.query";
 import { addCriteriaToTemplateSchema } from "@/schemas/process-templates.schema";
 import type { AddCriteriaToTemplateFormValues } from "@/schemas/process-templates.schema";
@@ -27,11 +27,11 @@ export default function ProcessTemplateCriteriaTab({ processTemplateId }: Proces
   const [deleteTarget, setDeleteTarget] = useState<ProcessCriteriaTemplate | undefined>();
 
   const { data: criteria, isLoading } = useTemplateCriteria(processTemplateId);
-  const { data: allCriteria } = useAcceptanceCriteria({ limit: 1000 });
+  const { data: allCriteria } = useAllAcceptanceCriteria();
   const addMutation = useAddCriteriaToTemplate();
   const removeMutation = useRemoveTemplateCriteria();
 
-  const criteriaOptions = (allCriteria?.items ?? []).map((c) => ({ label: `${c.code} — ${c.name}`, value: c.id }));
+  const criteriaOptions = (allCriteria ?? []).map((c) => ({ label: `${c.code} — ${c.name}`, value: c.id }));
 
   const form = useForm<AddCriteriaToTemplateFormValues>({
     resolver: zodResolver(addCriteriaToTemplateSchema),

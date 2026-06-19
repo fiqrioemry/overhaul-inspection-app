@@ -46,8 +46,16 @@ export async function listReferenceDocuments(params: ListReferenceDocumentsParam
 }
 
 export async function getAllReferenceDocuments(): Promise<ReferenceDocument[]> {
-  const res = await api.get<ResponseList<ReferenceDocument>>("/reference-documents", { params: { limit: 1000 } });
-  return res.data.data;
+  const PAGE_SIZE = 100;
+  let page = 1;
+  const collected: ReferenceDocument[] = [];
+  while (true) {
+    const res = await api.get<ResponseList<ReferenceDocument>>("/reference-documents", { params: { limit: PAGE_SIZE, page } });
+    collected.push(...res.data.data);
+    if (collected.length >= res.data.meta.total) break;
+    page++;
+  }
+  return collected;
 }
 
 export async function createReferenceDocument(data: CreateReferenceDocumentPayload): Promise<ReferenceDocument> {
