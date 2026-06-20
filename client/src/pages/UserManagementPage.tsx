@@ -93,13 +93,24 @@ export default function UserManagementPage() {
           }}
           className="max-w-xs"
         />
-        <FilterSelect
-          value={role}
-          onChange={(v) => { setRole(v); setPage(1); }}
-          options={ROLE_OPTIONS}
-          placeholder="Role"
-          allLabel="All Roles"
-        />
+        <div className="ml-auto flex items-center gap-2">
+          <FilterSelect
+            value={role}
+            onChange={(v) => { setRole(v); setPage(1); }}
+            options={ROLE_OPTIONS}
+            placeholder="Role"
+            allLabel="All Roles"
+          />
+          {(search || role) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => { setSearch(""); setRole(""); setPage(1); }}
+            >
+              Reset
+            </Button>
+          )}
+        </div>
       </div>
 
       {isLoading && <LoadingState />}
