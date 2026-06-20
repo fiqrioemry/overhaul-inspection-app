@@ -1,4 +1,5 @@
 export { default as DateField } from "./DateField";
+export { default as FilterSelect } from "./FilterSelect";
 export { default as PhoneField } from "./PhoneField";
 export { default as SwitchField } from "./SwitchField";
 export { default as SelectField } from "./SelectField";
