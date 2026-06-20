@@ -13,12 +13,20 @@ import StatusBadge from "@/components/common/StatusBadge";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 import Pagination from "@/components/common/Pagination";
 import PermissionGate from "@/components/common/PermissionGate";
+import FilterSelect from "@/components/fields/FilterSelect";
 import UserFormDialog from "@/features/users/components/UserFormDialog";
 import UserStatusDialog from "@/features/users/components/UserStatusDialog";
 import { useUsers, useDeleteUser } from "@/features/users/users.query";
 import type { UserListItem } from "@/features/users/users.api";
 import { PERMISSIONS } from "@/constants/permission.constant";
 import { useDebounce } from "@/hooks/useDebounce";
+
+const ROLE_OPTIONS = [
+  { label: "User", value: "USER" },
+  { label: "Inspector", value: "INSPECTOR" },
+  { label: "Admin", value: "ADMIN" },
+  { label: "Super Admin", value: "SUPER_ADMIN" },
+];
 
 const ROLE_LABEL: Record<string, string> = {
   USER: "User",
@@ -30,13 +38,14 @@ const ROLE_LABEL: Record<string, string> = {
 export default function UserManagementPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
+  const [role, setRole] = useState("");
   const [formOpen, setFormOpen] = useState(false);
   const [statusOpen, setStatusOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserListItem | undefined>();
   const [deleteTarget, setDeleteTarget] = useState<UserListItem | undefined>();
 
   const debouncedSearch = useDebounce(search, 400);
-  const { data, isLoading, isError, refetch } = useUsers({ page, limit: 10, search: debouncedSearch });
+  const { data, isLoading, isError, refetch } = useUsers({ page, limit: 10, search: debouncedSearch, role: role || undefined });
   const deleteMutation = useDeleteUser();
 
   function openCreate() {
@@ -83,6 +92,13 @@ export default function UserManagementPage() {
             setPage(1);
           }}
           className="max-w-xs"
+        />
+        <FilterSelect
+          value={role}
+          onChange={(v) => { setRole(v); setPage(1); }}
+          options={ROLE_OPTIONS}
+          placeholder="Role"
+          allLabel="All Roles"
         />
       </div>
 
