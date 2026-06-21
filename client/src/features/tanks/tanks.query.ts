@@ -1,7 +1,7 @@
 // src/features/tanks/tanks.query.ts
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { listTanks, getTankById, createTank, updateTank, deleteTank } from "./tanks.api";
+import { listTanks, getTankById, createTank, updateTank, deleteTank, extractTankDocument } from "./tanks.api";
 import type { ListTanksParams, CreateTankPayload, UpdateTankPayload } from "./tanks.api";
 
 export const TANK_KEYS = {
@@ -37,6 +37,15 @@ export function useCreateTank() {
     },
     onError: (err: { message: string }) => {
       toast.error(err.message);
+    },
+  });
+}
+
+export function useExtractTankDocument() {
+  return useMutation({
+    mutationFn: (files: File[]) => extractTankDocument(files),
+    onError: (err: { message: string }) => {
+      toast.error(err.message || "Gagal mengekstrak data dokumen");
     },
   });
 }

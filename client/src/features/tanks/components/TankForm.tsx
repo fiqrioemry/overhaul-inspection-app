@@ -1,7 +1,7 @@
 // src/features/tanks/components/TankForm.tsx
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
-import type { Resolver } from "react-hook-form";
+import type { Resolver, Path } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -13,12 +13,13 @@ import SwitchField from "@/components/fields/SwitchField";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { createTankSchema, updateTankSchema, TANK_LOCATION_OPTIONS, TANK_SERVICE_OPTIONS } from "@/schemas/tanks.schema";
 import type { CreateTankFormValues, UpdateTankFormValues } from "@/schemas/tanks.schema";
-import type { TankDetail } from "../tanks.api";
+import TankDocumentSection from "./TankDocumentSection";
+import type { TankDetail, TankExtractResult } from "../tanks.api";
 import type { CompanyOption } from "@/features/companies/companies.api";
 
 interface TankFormCreateProps {
   mode: "create";
-  onSubmit: (values: CreateTankFormValues) => void;
+  onSubmit: (values: CreateTankFormValues, files: File[]) => void;
   isPending: boolean;
   contractors: CompanyOption[];
   inspectionCompanies: CompanyOption[];
@@ -73,6 +74,40 @@ export default function TankForm(props: TankFormProps) {
     name: "shellCourses",
   });
 
+  const [documents, setDocuments] = useState<File[]>([]);
+
+  function applyExtraction(result: TankExtractResult) {
+    const setIf = (key: Path<CreateTankFormValues>, value: unknown) => {
+      if (value === null || value === undefined) return;
+      createForm.setValue(key, value as never, { shouldDirty: true, shouldValidate: true });
+    };
+
+    setIf("tankNo", result.tankNo);
+    setIf("tankName", result.tankName);
+    setIf("location", result.location);
+    setIf("service", result.service);
+    setIf("capacityM3", result.capacityM3);
+    setIf("diameterMm", result.diameterMm);
+    setIf("heightMm", result.heightMm);
+    if (typeof result.hasSteamCoil === "boolean") setIf("hasSteamCoil", result.hasSteamCoil);
+    setIf("startDate", result.startDate);
+    setIf("estimatedFinishDate", result.estimatedFinishDate);
+
+    // Shell courses: prefer explicit rows; otherwise fall back to count.
+    if (result.shellCourses && result.shellCourses.length > 0) {
+      const courses = result.shellCourses.map((sc, i) => ({
+        courseNo: sc.courseNo ?? i + 1,
+        thicknessMm: sc.thicknessMm ?? 0,
+        plateDimension: sc.plateDimension ?? "",
+        remarks: sc.remarks ?? "",
+      }));
+      createForm.setValue("shellCourseCount", courses.length, { shouldDirty: true, shouldValidate: true });
+      replace(courses);
+    } else if (result.shellCourseCount && result.shellCourseCount > 0) {
+      setIf("shellCourseCount", result.shellCourseCount);
+    }
+  }
+
   const shellCourseCount = createForm.watch("shellCourseCount");
 
   useEffect(() => {
@@ -123,7 +158,9 @@ export default function TankForm(props: TankFormProps) {
   }
 
   return (
-    <form onSubmit={createForm.handleSubmit(props.onSubmit as (v: CreateTankFormValues) => void)} className="space-y-4">
+    <form onSubmit={createForm.handleSubmit((values) => (props.onSubmit as (v: CreateTankFormValues, f: File[]) => void)(values, documents))} className="space-y-4">
+      <TankDocumentSection files={documents} onFilesChange={setDocuments} onApplyExtraction={applyExtraction} />
+
       <div className="grid grid-cols-2 gap-4">
         <ShortTextField control={createForm.control} name="tankNo" label="Tank No." placeholder="e.g. T-01" />
         <ShortTextField control={createForm.control} name="tankName" label="Tank Name" placeholder="Optional name" />

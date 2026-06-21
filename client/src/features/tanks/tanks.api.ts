@@ -17,6 +17,15 @@ export interface ShellCourse {
   remarks: string | null;
 }
 
+export interface TankAttachment {
+  id: string;
+  fileStorageId: string;
+  attachmentUrl: string;
+  caption: string | null;
+  sortOrder: number;
+  createdAt: string;
+}
+
 export type TankLocation = "SUNGAI_GERONG" | "PLADJU";
 export type TankService =
   | "AVTUR" | "NAPTHA" | "PREMIUM" | "PERTALITE" | "PERTAMAX" | "PERTAMAX_TURBO"
@@ -45,6 +54,24 @@ export interface TankSummary {
 
 export interface TankDetail extends TankSummary {
   shellCourses: ShellCourse[];
+  attachments: TankAttachment[];
+}
+
+export interface TankExtractResult {
+  tankNo: string | null;
+  tankName: string | null;
+  location: TankLocation | null;
+  capacityM3: number | null;
+  service: TankService | null;
+  diameterMm: number | null;
+  heightMm: number | null;
+  shellCourseCount: number | null;
+  bottomPlateDimension: string | null;
+  hasSteamCoil: boolean | null;
+  startDate: string | null;
+  estimatedFinishDate: string | null;
+  shellCourses: Array<{ courseNo: number; thicknessMm?: number; plateDimension?: string; remarks?: string }>;
+  relevanceWarning: boolean;
 }
 
 export interface ListTanksParams {
@@ -76,6 +103,8 @@ export interface CreateTankPayload {
   startDate?: string;
   estimatedFinishDate?: string;
   shellCourses?: ShellCourseInput[];
+  files?: File[];
+  newFileCaptions?: string[];
 }
 
 export interface UpdateTankPayload {
@@ -103,7 +132,43 @@ export async function getTankById(id: string): Promise<TankDetail> {
 }
 
 export async function createTank(data: CreateTankPayload): Promise<TankDetail> {
-  const res = await api.post<ResponseSuccess<TankDetail>>("/tanks", data);
+  const { files, newFileCaptions, ...rest } = data;
+
+  // When document attachments are present, send multipart/form-data; otherwise JSON.
+  if (files && files.length > 0) {
+    const formData = new FormData();
+    formData.append("tankNo", rest.tankNo);
+    if (rest.tankName) formData.append("tankName", rest.tankName);
+    if (rest.location) formData.append("location", rest.location);
+    if (rest.capacityM3 !== undefined) formData.append("capacityM3", String(rest.capacityM3));
+    if (rest.service) formData.append("service", rest.service);
+    if (rest.diameterMm !== undefined) formData.append("diameterMm", String(rest.diameterMm));
+    if (rest.heightMm !== undefined) formData.append("heightMm", String(rest.heightMm));
+    formData.append("shellCourseCount", String(rest.shellCourseCount));
+    if (rest.hasSteamCoil !== undefined) formData.append("hasSteamCoil", String(rest.hasSteamCoil));
+    if (rest.contractorCompanyId) formData.append("contractorCompanyId", rest.contractorCompanyId);
+    if (rest.inspectionCompanyId) formData.append("inspectionCompanyId", rest.inspectionCompanyId);
+    if (rest.startDate) formData.append("startDate", rest.startDate);
+    if (rest.estimatedFinishDate) formData.append("estimatedFinishDate", rest.estimatedFinishDate);
+    if (rest.shellCourses && rest.shellCourses.length > 0) {
+      formData.append("shellCourses", JSON.stringify(rest.shellCourses));
+    }
+    if (newFileCaptions && newFileCaptions.length > 0) {
+      formData.append("newFileCaptions", JSON.stringify(newFileCaptions));
+    }
+    files.forEach((file) => formData.append("attachments", file));
+    const res = await api.post<ResponseSuccess<TankDetail>>("/tanks", formData);
+    return res.data.data!;
+  }
+
+  const res = await api.post<ResponseSuccess<TankDetail>>("/tanks", rest);
+  return res.data.data!;
+}
+
+export async function extractTankDocument(files: File[]): Promise<TankExtractResult> {
+  const formData = new FormData();
+  files.forEach((file) => formData.append("attachments", file));
+  const res = await api.post<ResponseSuccess<TankExtractResult>>("/tanks/ai/extract", formData);
   return res.data.data!;
 }
 

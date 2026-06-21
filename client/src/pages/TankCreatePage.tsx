@@ -13,7 +13,7 @@ export default function TankCreatePage() {
   const { data: contractors = [] } = useCompanyOptions("CONTRACTOR");
   const { data: inspectionCompanies = [] } = useCompanyOptions("INSPECTOR_COMPANY");
 
-  function handleSubmit(values: CreateTankFormValues) {
+  function handleSubmit(values: CreateTankFormValues, files: File[]) {
     const payload = {
       ...values,
       diameterMm: values.diameterMm ? Number(values.diameterMm) : undefined,
@@ -23,6 +23,7 @@ export default function TankCreatePage() {
       inspectionCompanyId: values.inspectionCompanyId && values.inspectionCompanyId !== "NONE" ? values.inspectionCompanyId : undefined,
       startDate: values.startDate || undefined,
       estimatedFinishDate: values.estimatedFinishDate || undefined,
+      files: files.length > 0 ? files : undefined,
     };
     createMutation.mutate(payload, {
       onSuccess: (tank) => navigate(ROUTES.TANK_DETAIL.replace(":tankId", tank.id)),
