@@ -1,14 +1,31 @@
 // src/features/daily-reports/daily-reports.query.ts
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { listDailyReports, getDailyReportById, createDailyReport, updateDailyReport, deleteDailyReport, generateAIDailyReport } from "./daily-reports.api";
+import { listDailyReports, getDailyReportById, createDailyReport, updateDailyReport, deleteDailyReport, generateAIDailyReport, listTankOptions, listTankProcessOptions } from "./daily-reports.api";
 import type { ListDailyReportsParams, CreateDailyReportPayload, UpdateDailyReportPayload, AIGeneratePayload } from "./daily-reports.api";
 
 export const DAILY_REPORT_KEYS = {
   all: ["daily-reports"] as const,
   list: (params: ListDailyReportsParams) => ["daily-reports", "list", params] as const,
   detail: (id: string) => ["daily-reports", "detail", id] as const,
+  tankOptions: () => ["daily-reports", "tank-options"] as const,
+  tankProcessOptions: (tankId: string) => ["daily-reports", "tank-process-options", tankId] as const,
 };
+
+export function useTankOptions() {
+  return useQuery({
+    queryKey: DAILY_REPORT_KEYS.tankOptions(),
+    queryFn: () => listTankOptions(),
+  });
+}
+
+export function useTankProcessOptions(tankId: string) {
+  return useQuery({
+    queryKey: DAILY_REPORT_KEYS.tankProcessOptions(tankId),
+    queryFn: () => listTankProcessOptions(tankId),
+    enabled: Boolean(tankId),
+  });
+}
 
 export function useDailyReports(params: ListDailyReportsParams) {
   return useQuery({

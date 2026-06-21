@@ -114,7 +114,7 @@ export default function DailyReportListPrintPage() {
                         {format(new Date(report.reportDate), "dd MMM yyyy")}
                       </td>
                       <td className="border border-gray-300 px-3 py-2 font-mono font-medium">
-                        {report.tank.tankNo}
+                        {report.tank?.tankNo ?? "—"}
                       </td>
                       <td className="border border-gray-300 px-3 py-2">
                         {ACTIVITY_LABEL[report.activityType] ?? report.activityType.replace(/_/g, " ")}

@@ -349,7 +349,7 @@ export default function DailyReportEditPage() {
         <div>
           <h1 className="text-lg font-semibold">Edit Daily Report</h1>
           <p className="text-xs text-muted-foreground">
-            {report.tank.tankNo} — {format(new Date(report.reportDate), "dd MMM yyyy")}
+            {report.tank?.tankNo ?? "Kegiatan Umum"} — {format(new Date(report.reportDate), "dd MMM yyyy")}
           </p>
         </div>
       </div>

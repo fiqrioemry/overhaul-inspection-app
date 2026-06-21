@@ -24,7 +24,7 @@ export default function DailyReportDetailPage() {
 
   useEffect(() => {
     if (report) {
-      document.title = `Laporan Harian — ${report.tank.tankNo} — ${format(new Date(report.reportDate), "dd MMM yyyy")}`;
+      document.title = `Laporan Harian — ${report.tank?.tankNo ?? "Umum"} — ${format(new Date(report.reportDate), "dd MMM yyyy")}`;
     }
     return () => {
       document.title = "Pantau Inspeksi";
@@ -36,10 +36,10 @@ export default function DailyReportDetailPage() {
 
   const reportDateFormatted = format(new Date(report.reportDate), "dd MMMM yyyy");
   const activityLabel = ACTIVITY_LABEL[report.activityType] ?? report.activityType.replace(/_/g, " ");
-  const locationLabel = report.tank.location ? (LOCATION_LABEL[report.tank.location] ?? report.tank.location) : null;
+  const locationLabel = report.tank?.location ? (LOCATION_LABEL[report.tank.location] ?? report.tank.location) : null;
 
-  const inspectionCompany = report.tank.inspectionCompany;
-  const contractorCompany = report.tank.contractorCompany;
+  const inspectionCompany = report.tank?.inspectionCompany ?? null;
+  const contractorCompany = report.tank?.contractorCompany ?? null;
   const inspectionLogoUrl = inspectionCompany?.logoFile?.url ?? null;
   const contractorLogoUrl = contractorCompany?.logoFile?.url ?? null;
 
@@ -135,7 +135,7 @@ export default function DailyReportDetailPage() {
             <table className="w-full border-collapse" style={{ fontSize: "10px" }}>
               <tbody>
                 <MetaRow label="Tanggal / Date" value={reportDateFormatted} />
-                <MetaRow label="Nomor Tangki / Tank No." value={report.tank.tankNo} />
+                <MetaRow label="Nomor Tangki / Tank No." value={report.tank?.tankNo ?? "—"} />
                 {locationLabel && <MetaRow label="Lokasi / Location" value={locationLabel} />}
                 <MetaRow label="Proses / Process" value={report.tankProcess?.name ?? "—"} />
                 <MetaRow label="Jenis Kegiatan / Activity Type" value={activityLabel} />
@@ -178,7 +178,7 @@ export default function DailyReportDetailPage() {
                 <div className="flex-1 text-center space-y-0.5">
                   <h2 className="text-sm font-semibold uppercase tracking-wide">Dokumentasi Foto</h2>
                   <p className="text-[10px] text-gray-500">
-                    {report.tank.tankNo} &mdash; {reportDateFormatted}
+                    {report.tank?.tankNo ?? "Kegiatan Umum"} &mdash; {reportDateFormatted}
                   </p>
                 </div>
                 <CompanyLogo url={contractorLogoUrl} name={contractorCompany?.name} size="sm" />

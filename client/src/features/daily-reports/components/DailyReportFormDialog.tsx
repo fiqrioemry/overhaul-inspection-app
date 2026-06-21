@@ -12,7 +12,7 @@ import LongTextField from "@/components/fields/LongTextField";
 import SelectField from "@/components/fields/SelectField";
 import DateField from "@/components/fields/DateField";
 import { ImageDropzone } from "@/components/fields/ImageDropzone";
-import { useCreateDailyReport, useUpdateDailyReport, useDailyReport, useGenerateAIDailyReport } from "../daily-reports.query";
+import { useCreateDailyReport, useUpdateDailyReport, useDailyReport, useGenerateAIDailyReport, useTankOptions, useTankProcessOptions } from "../daily-reports.query";
 import { format } from "date-fns";
 import type { DailyReportSummary, DailyReportAttachment } from "../daily-reports.api";
 import { cn } from "@/lib/utils";
@@ -21,9 +21,14 @@ const schema = z.object({
   reportDate: z.string().min(1, "Report date required"),
   activityType: z.enum(["MONITORING", "INSPECTION"]),
   description: z.string().min(1, "Description required").max(2000),
+  tankId: z.string().optional(),
+  tankProcessId: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof schema>;
+
+const NO_TANK_VALUE = "__none__";
+const NO_PROCESS_VALUE = "__none__";
 
 export const ACTIVITY_OPTIONS = [
   { label: "Monitoring", value: "MONITORING" },
@@ -54,7 +59,8 @@ interface LocalFile {
 interface DailyReportFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  tankId: string;
+  /** When provided, the report is fixed to this tank and the tank/process selectors are hidden. */
+  tankId?: string;
   tankProcessId?: string;
   processName?: string;
   report?: DailyReportSummary;
@@ -69,6 +75,8 @@ export default function DailyReportFormDialog({
   report,
 }: DailyReportFormDialogProps) {
   const isEdit = Boolean(report);
+  // Selectable mode: no fixed tank from the page context (e.g. /daily-reports).
+  const selectable = !isEdit && !tankId;
   const createMutation = useCreateDailyReport();
   const updateMutation = useUpdateDailyReport();
   const generateAI = useGenerateAIDailyReport();
@@ -96,8 +104,48 @@ export default function DailyReportFormDialog({
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema) as Resolver<FormValues>,
-    defaultValues: { reportDate: format(new Date(), "yyyy-MM-dd"), activityType: "MONITORING", description: "" },
+    defaultValues: { reportDate: format(new Date(), "yyyy-MM-dd"), activityType: "MONITORING", description: "", tankId: "", tankProcessId: "" },
   });
+
+  // Tank/process selectors (only used in selectable mode)
+  const selectedTankValue = form.watch("tankId") ?? "";
+  const selectedProcessValue = form.watch("tankProcessId") ?? "";
+  // Effective tank id resolves the "general" sentinel to undefined.
+  const effectiveTankId = selectable
+    ? selectedTankValue && selectedTankValue !== NO_TANK_VALUE
+      ? selectedTankValue
+      : undefined
+    : tankId;
+  const { data: tankOptions = [] } = useTankOptions();
+  const { data: tankProcessOptions = [] } = useTankProcessOptions(selectable ? effectiveTankId ?? "" : "");
+
+  const tankSelectOptions = [
+    { label: "General — no tank", value: NO_TANK_VALUE },
+    ...tankOptions.map((t) => ({ label: t.tankName ? `${t.tankNo} — ${t.tankName}` : t.tankNo, value: t.id })),
+  ];
+  const processSelectOptions = [
+    { label: "No specific process", value: NO_PROCESS_VALUE },
+    ...tankProcessOptions.map((p) => ({ label: p.name, value: p.id })),
+  ];
+
+  const effectiveTankProcessId = selectable
+    ? selectedProcessValue && selectedProcessValue !== NO_PROCESS_VALUE
+      ? selectedProcessValue
+      : undefined
+    : tankProcessId;
+  const effectiveProcessName = selectable
+    ? tankProcessOptions.find((p) => p.id === selectedProcessValue)?.name
+    : processName;
+
+  // Reset the selected process whenever the tank changes (process belongs to a tank).
+  const prevTankRef = useRef(selectedTankValue);
+  useEffect(() => {
+    if (prevTankRef.current !== selectedTankValue) {
+      prevTankRef.current = selectedTankValue;
+      form.setValue("tankProcessId", "");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedTankValue]);
 
   useEffect(() => {
     if (open && report) {
@@ -105,6 +153,8 @@ export default function DailyReportFormDialog({
         reportDate: report.reportDate.slice(0, 10),
         activityType: report.activityType,
         description: report.description ?? "",
+        tankId: report.tankId ?? "",
+        tankProcessId: report.tankProcessId ?? "",
       });
       if (detail?.attachments) {
         const initial: Record<string, string> = {};
@@ -114,7 +164,7 @@ export default function DailyReportFormDialog({
         setCaptionMap(initial);
       }
     } else if (!open) {
-      form.reset({ reportDate: format(new Date(), "yyyy-MM-dd"), activityType: "MONITORING", description: "" });
+      form.reset({ reportDate: format(new Date(), "yyyy-MM-dd"), activityType: "MONITORING", description: "", tankId: "", tankProcessId: "" });
       localFiles.forEach((lf) => URL.revokeObjectURL(lf.previewUrl));
       setLocalFiles([]);
       setLocalCaptions([]);
@@ -209,9 +259,9 @@ export default function DailyReportFormDialog({
 
     try {
       const result = await generateAI.mutateAsync({
-        tankId,
+        tankId: effectiveTankId,
         activityType: form.getValues("activityType"),
-        processName: processName || undefined,
+        processName: effectiveProcessName || undefined,
         files: localFiles.map((lf) => lf.file),
       });
 
@@ -256,8 +306,8 @@ export default function DailyReportFormDialog({
     } else {
       createMutation.mutate(
         {
-          tankId,
-          tankProcessId: tankProcessId || undefined,
+          tankId: effectiveTankId,
+          tankProcessId: effectiveTankProcessId,
           reportDate: values.reportDate,
           activityType: values.activityType,
           description: values.description,
@@ -280,6 +330,27 @@ export default function DailyReportFormDialog({
             <DialogTitle>{isEdit ? "Edit Daily Report" : "Add Daily Report"}</DialogTitle>
           </DialogHeader>
           <form onSubmit={form.handleSubmit(onSubmit)} className="mt-4 space-y-4">
+            {/* Tank / process selectors — only when not bound to a page context */}
+            {selectable && (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <SelectField
+                  control={form.control}
+                  name="tankId"
+                  label="Tank (optional)"
+                  placeholder="Select tank..."
+                  options={tankSelectOptions}
+                  description="Leave as general for activity not tied to a tank."
+                />
+                <SelectField
+                  control={form.control}
+                  name="tankProcessId"
+                  label="Process (optional)"
+                  placeholder={effectiveTankId ? "Select process..." : "Select a tank first"}
+                  options={effectiveTankId ? processSelectOptions : []}
+                />
+              </div>
+            )}
+
             <DateField control={form.control} name="reportDate" label="Report Date" />
             <SelectField
               control={form.control}

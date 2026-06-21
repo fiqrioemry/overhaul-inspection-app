@@ -1,7 +1,7 @@
 // src/pages/DailyReportListPage.tsx
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FileText, Pencil, Trash2, Eye, Printer } from "lucide-react";
+import { FileText, Pencil, Trash2, Eye, Printer, Plus } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,7 @@ import EmptyState from "@/components/common/EmptyState";
 import Pagination from "@/components/common/Pagination";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 import PermissionGate from "@/components/common/PermissionGate";
-import { ACTIVITY_OPTIONS, ACTIVITY_LABEL } from "@/features/daily-reports/components/DailyReportFormDialog";
+import DailyReportFormDialog, { ACTIVITY_OPTIONS, ACTIVITY_LABEL } from "@/features/daily-reports/components/DailyReportFormDialog";
 import { useDailyReports, useDeleteDailyReport } from "@/features/daily-reports/daily-reports.query";
 import { format } from "date-fns";
 import { PERMISSIONS } from "@/constants/permission.constant";
@@ -28,6 +28,7 @@ export default function DailyReportListPage() {
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
   const [deleteTarget, setDeleteTarget] = useState<DailyReportSummary | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
 
   const deleteMutation = useDeleteDailyReport();
 
@@ -58,7 +59,17 @@ export default function DailyReportListPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Daily Reports" description="Inspector daily activity records — create from Process Detail page" />
+      <PageHeader
+        title="Daily Reports"
+        description="Inspector daily activity records — tank, process, or general activity"
+        action={
+          <PermissionGate permission={PERMISSIONS.DAILY_REPORT_CREATE}>
+            <Button onClick={() => setCreateOpen(true)}>
+              <Plus className="h-4 w-4 mr-1" /> Create Report
+            </Button>
+          </PermissionGate>
+        }
+      />
 
       <div className="flex flex-wrap items-center gap-3">
         <Select
@@ -132,7 +143,7 @@ export default function DailyReportListPage() {
                   {data.items.map((report) => (
                     <tr key={report.id} className="hover:bg-muted/20">
                       <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">{format(new Date(report.reportDate), "dd MMM yyyy")}</td>
-                      <td className="px-4 py-3 font-mono text-xs font-medium">{report.tank.tankNo}</td>
+                      <td className="px-4 py-3 font-mono text-xs font-medium">{report.tank?.tankNo ?? "—"}</td>
                       <td className="px-4 py-3 text-muted-foreground text-xs">{report.tankProcess?.name ?? "—"}</td>
                       <td className="px-4 py-3">
                         <span className="text-xs bg-muted px-2 py-0.5 rounded">{ACTIVITY_LABEL[report.activityType] ?? report.activityType.replace(/_/g, " ")}</span>
@@ -185,6 +196,8 @@ export default function DailyReportListPage() {
           deleteMutation.mutate(deleteTarget.id, { onSuccess: () => setDeleteTarget(null) });
         }}
       />
+
+      <DailyReportFormDialog open={createOpen} onOpenChange={setCreateOpen} />
     </div>
   );
 }

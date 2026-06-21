@@ -4,10 +4,23 @@ import type { ResponseSuccess, ResponseList } from "@/types/response.type";
 import type { PaginatedResponse } from "@/types/pagination.type";
 
 export interface AIGeneratePayload {
-  tankId: string;
+  tankId?: string;
   activityType: DailyActivityType;
   processName?: string;
   files: File[];
+}
+
+export interface TankOption {
+  id: string;
+  tankNo: string;
+  tankName: string | null;
+}
+
+export interface TankProcessOption {
+  id: string;
+  name: string;
+  type: string;
+  status: string;
 }
 
 export interface AIGenerateResult {
@@ -46,7 +59,7 @@ export interface DailyReportSummary {
     location: string | null;
     inspectionCompany: { id: string; name: string; logoFile: { url: string } | null } | null;
     contractorCompany: { id: string; name: string; logoFile: { url: string } | null } | null;
-  };
+  } | null;
   tankProcess: { id: string; name: string } | null;
   inspector: { id: string; name: string } | null;
   attachments: DailyReportAttachment[];
@@ -66,7 +79,7 @@ export interface ListDailyReportsParams {
 }
 
 export interface CreateDailyReportPayload {
-  tankId: string;
+  tankId?: string;
   tankProcessId?: string;
   reportDate: string;
   activityType: DailyActivityType;
@@ -101,7 +114,7 @@ export async function getDailyReportById(id: string): Promise<DailyReportDetail>
 
 export async function createDailyReport(payload: CreateDailyReportPayload): Promise<DailyReportDetail> {
   const formData = new FormData();
-  formData.append("tankId", payload.tankId);
+  if (payload.tankId) formData.append("tankId", payload.tankId);
   if (payload.tankProcessId) formData.append("tankProcessId", payload.tankProcessId);
   formData.append("reportDate", payload.reportDate);
   formData.append("activityType", payload.activityType);
@@ -139,10 +152,22 @@ export async function deleteDailyReport(id: string): Promise<void> {
 
 export async function generateAIDailyReport(payload: AIGeneratePayload): Promise<AIGenerateResult> {
   const formData = new FormData();
-  formData.append("tankId", payload.tankId);
+  if (payload.tankId) formData.append("tankId", payload.tankId);
   formData.append("activityType", payload.activityType);
   if (payload.processName) formData.append("processName", payload.processName);
   payload.files.forEach((file) => formData.append("attachments", file));
   const res = await api.post<ResponseSuccess<AIGenerateResult>>("/daily-reports/ai/generate", formData);
+  return res.data.data!;
+}
+
+export async function listTankOptions(): Promise<TankOption[]> {
+  const res = await api.get<ResponseSuccess<TankOption[]>>("/daily-reports/options/tanks");
+  return res.data.data!;
+}
+
+export async function listTankProcessOptions(tankId: string): Promise<TankProcessOption[]> {
+  const res = await api.get<ResponseSuccess<TankProcessOption[]>>("/daily-reports/options/tank-processes", {
+    params: { tankId },
+  });
   return res.data.data!;
 }
