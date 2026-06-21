@@ -14,6 +14,11 @@ export class TankRepository {
         inspectionCompany: { select: { id: true, name: true, type: true } },
         createdByUser: { select: { id: true, name: true } },
         shellCourses: { orderBy: { courseNo: "asc" } },
+        attachments: {
+          where: { deletedAt: null },
+          orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+          select: { id: true, fileStorageId: true, attachmentUrl: true, caption: true, sortOrder: true, createdAt: true },
+        },
         _count: { select: { processes: true, findings: true } },
       },
     });

@@ -1,9 +1,48 @@
 import { HTTPException } from "hono/http-exception";
+import { Context } from "hono";
 import { pgsql } from "@/lib/database";
 import { ProcessStatusEnum, ChecklistStatusEnum } from "generated/prisma";
 import { TankRepository } from "./tank.repository";
+import { TankAttachmentRepository } from "./tank-attachment.repository";
+import { FileService } from "@/modules/files/file.service";
 import { CreateTankRequest, ListTanksQuery, UpdateTankRequest } from "./tank.schema";
 import type { TankListItem, TankListResult } from "./tank.types";
+
+const MAX_ATTACHMENTS = 10;
+const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15 MB
+const ALLOWED_DOCUMENT_MIME_TYPES = new Set([
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+]);
+
+function validateDocumentFiles(files: File[]) {
+  if (files.length > MAX_ATTACHMENTS) {
+    throw new HTTPException(400, {
+      message: `Maximum ${MAX_ATTACHMENTS} document attachments are allowed per tank`,
+      cause: "TANK_ATTACHMENT_LIMIT_EXCEEDED",
+    });
+  }
+  for (const file of files) {
+    if (!ALLOWED_DOCUMENT_MIME_TYPES.has(file.type)) {
+      throw new HTTPException(400, {
+        message: `File "${file.name}" has unsupported type ${file.type}. Allowed: pdf, doc, docx, xls, xlsx, jpeg, png, webp.`,
+        cause: "INVALID_FILE_TYPE",
+      });
+    }
+    if (file.size > MAX_FILE_SIZE) {
+      throw new HTTPException(400, {
+        message: `File "${file.name}" exceeds the 15 MB size limit.`,
+        cause: "FILE_TOO_LARGE",
+      });
+    }
+  }
+}
 
 function isApplicable(applicabilityRule: string | null, hasSteamCoil: boolean): boolean {
   if (!applicabilityRule) return true;
@@ -12,10 +51,20 @@ function isApplicable(applicabilityRule: string | null, hasSteamCoil: boolean): 
 }
 
 export class TankService {
-  static async createTank(data: CreateTankRequest, createdBy: string) {
+  static async createTank(data: CreateTankRequest, createdBy: string, c?: Context, files: File[] = []) {
     const existing = await TankRepository.findByTankNo(data.tankNo);
     if (existing) {
       throw new HTTPException(409, { message: "Tank number already exists", cause: "TANK_NO_EXISTS" });
+    }
+
+    validateDocumentFiles(files);
+
+    // Process + upload document attachments to MinIO outside the transaction.
+    const fileRecords = files.length > 0 && c
+      ? await Promise.all(files.map((f) => FileService.generateFileRecord(f, "TANK")))
+      : [];
+    if (fileRecords.length > 0 && c) {
+      await Promise.all(fileRecords.map((fr) => FileService.uploadFileToStorage(c, fr)));
     }
 
     const templates = await pgsql.processTemplate.findMany({
@@ -44,6 +93,37 @@ export class TankService {
           createdBy,
         },
       });
+
+      if (fileRecords.length > 0) {
+        const storedFiles = await Promise.all(
+          fileRecords.map((fr) =>
+            tx.fileStorage.create({
+              data: {
+                url: fr.url!,
+                isUsed: true,
+                path: fr.path!,
+                meta: fr.metadata!,
+                module: "TANK",
+                size: fr.size!,
+                createdBy,
+                mimeType: fr.mimeType ?? null,
+              },
+              select: { id: true, url: true },
+            }),
+          ),
+        );
+
+        await TankAttachmentRepository.createMany(
+          tx,
+          storedFiles.map((f, idx) => ({
+            tankId: newTank.id,
+            fileStorageId: f.id,
+            attachmentUrl: f.url,
+            sortOrder: idx,
+            caption: data.newFileCaptions?.[idx] ?? undefined,
+          })),
+        );
+      }
 
       if (data.shellCourses && data.shellCourses.length > 0) {
         await tx.tankShellCourse.createMany({

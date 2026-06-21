@@ -7,6 +7,7 @@ import { TankProcessController as processCtrl } from "@/modules/tank-processes/t
 
 const tanks = new Hono();
 
+tanks.post("/ai/extract", protect, requirePermission(PERMISSIONS.TANK_CREATE), ctrl.extractDocument);
 tanks.post("/", protect, requirePermission(PERMISSIONS.TANK_CREATE), ctrl.createTank);
 tanks.get("/", protect, requirePermission(PERMISSIONS.TANK_READ), ctrl.listTanks);
 tanks.get("/:id", protect, requirePermission(PERMISSIONS.TANK_READ), ctrl.getTankById);

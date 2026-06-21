@@ -25,10 +25,11 @@ export const createTankRequest = z.object({
   startDate: z.string().optional(),
   estimatedFinishDate: z.string().optional(),
   shellCourses: z.array(shellCourseInput).optional(),
+  newFileCaptions: z.array(z.string().max(300)).optional(),
 });
 export type CreateTankRequest = z.infer<typeof createTankRequest>;
 
-export const updateTankRequest = createTankRequest.omit({ shellCourses: true }).partial();
+export const updateTankRequest = createTankRequest.omit({ shellCourses: true, newFileCaptions: true }).partial();
 export type UpdateTankRequest = z.infer<typeof updateTankRequest>;
 
 export const listTanksQuery = z.object({

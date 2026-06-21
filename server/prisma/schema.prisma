@@ -322,6 +322,7 @@ model FileStorage {
   avatarOfUser             User?                   @relation("UserAvatar")
   logoOfCompany            Company?                @relation("CompanyLogo")
   dailyReportAttachments   DailyReportAttachment[]
+  tankAttachments          TankAttachment[]
   @@index([isUsed, createdAt])
   @@map("file_storages")
 }
@@ -550,6 +551,9 @@ model Tank {
   updatedAt           DateTime   @updatedAt @map("updated_at")
   deletedAt           DateTime?  @map("deleted_at")
 
+  aiExtractedAt     DateTime? @map("ai_extracted_at")
+  aiExtractionMeta  Json?     @map("ai_extraction_meta")
+
   contractorCompany Company?   @relation("TankContractor", fields: [contractorCompanyId], references: [id])
   inspectionCompany Company?   @relation("TankInspectionCompany", fields: [inspectionCompanyId], references: [id])
   createdByUser     User?      @relation("TankCreatedBy", fields: [createdBy], references: [id])
@@ -558,6 +562,7 @@ model Tank {
   processes    TankProcess[]
   findings     Finding[]
   dailyReports DailyReport[]
+  attachments  TankAttachment[]
 
   @@index([status])
   @@index([deletedAt])
@@ -577,6 +582,29 @@ model TankShellCourse {
   @@unique([tankId, courseNo])
   @@index([tankId])
   @@map("tank_shell_courses")
+}
+
+model TankAttachment {
+  id            String @id @default(cuid())
+  tankId        String @map("tank_id")
+  fileStorageId String @map("file_storage_id")
+
+  attachmentUrl String  @map("attachment_url")
+  caption       String?
+  sortOrder     Int     @default(0) @map("sort_order")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  tank        Tank        @relation(fields: [tankId], references: [id], onDelete: Cascade)
+  fileStorage FileStorage @relation(fields: [fileStorageId], references: [id], onDelete: Restrict)
+
+  @@unique([tankId, fileStorageId])
+  @@index([tankId])
+  @@index([fileStorageId])
+  @@index([deletedAt])
+  @@map("tank_attachments")
 }
 
 model TankProcess {

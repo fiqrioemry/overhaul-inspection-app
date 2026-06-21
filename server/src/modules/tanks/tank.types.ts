@@ -36,6 +36,15 @@ export interface TankShellCourse {
   remarks: string | null;
 }
 
+export interface TankAttachment {
+  id: string;
+  fileStorageId: string;
+  attachmentUrl: string;
+  caption: string | null;
+  sortOrder: number;
+  createdAt: Date;
+}
+
 export interface TankDetail {
   id: string;
   tankNo: string;
@@ -57,6 +66,7 @@ export interface TankDetail {
   inspectionCompany: { id: string; name: string; type: string } | null;
   createdByUser: { id: string; name: string } | null;
   shellCourses: TankShellCourse[];
+  attachments: TankAttachment[];
   _count: { processes: number; findings: number };
 }
 
