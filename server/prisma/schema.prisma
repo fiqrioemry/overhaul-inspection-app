@@ -796,7 +796,7 @@ model RadiographyJointResult {
 
 model DailyReport {
   id             String                @id @default(cuid())
-  tankId         String                @map("tank_id")
+  tankId         String?               @map("tank_id")
   tankProcessId  String?               @map("tank_process_id")
   reportDate     DateTime              @map("report_date") @db.Date
   activityType   DailyActivityTypeEnum @map("activity_type")
@@ -813,7 +813,7 @@ model DailyReport {
 
   attachments DailyReportAttachment[]
 
-  tank        Tank         @relation(fields: [tankId], references: [id], onDelete: Cascade)
+  tank        Tank?        @relation(fields: [tankId], references: [id], onDelete: Cascade)
   tankProcess TankProcess? @relation(fields: [tankProcessId], references: [id], onDelete: SetNull)
   inspector   User?        @relation("DailyReportInspector", fields: [inspectorId], references: [id])
 

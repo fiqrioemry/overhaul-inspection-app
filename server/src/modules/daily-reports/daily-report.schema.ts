@@ -6,17 +6,28 @@ export const captionUpdateItem = z.object({
   caption: z.string().max(300),
 });
 
-export const createDailyReportRequest = z.object({
-  tankId: z.string().min(1),
-  tankProcessId: z.string().optional(),
-  reportDate: z.string().min(1),
-  activityType: z.nativeEnum(DailyActivityTypeEnum),
-  description: z.string().min(1).max(10000),
-  inspectorId: z.string().optional(),
-  pertaminaPicId: z.string().optional(),
-  newFileCaptions: z.array(z.string().max(300)).optional(),
-});
+export const createDailyReportRequest = z
+  .object({
+    tankId: z.string().optional(),
+    tankProcessId: z.string().optional(),
+    reportDate: z.string().min(1),
+    activityType: z.nativeEnum(DailyActivityTypeEnum),
+    description: z.string().min(1).max(10000),
+    inspectorId: z.string().optional(),
+    pertaminaPicId: z.string().optional(),
+    newFileCaptions: z.array(z.string().max(300)).optional(),
+  })
+  // A tank process can only be referenced when the report is also tied to a tank.
+  .refine((data) => !data.tankProcessId || Boolean(data.tankId), {
+    message: "tankId is required when tankProcessId is provided",
+    path: ["tankProcessId"],
+  });
 export type CreateDailyReportRequest = z.infer<typeof createDailyReportRequest>;
+
+export const tankProcessOptionsQuery = z.object({
+  tankId: z.string().min(1),
+});
+export type TankProcessOptionsQuery = z.infer<typeof tankProcessOptionsQuery>;
 
 export const sortOrderUpdateItem = z.object({
   attachmentId: z.string().min(1),

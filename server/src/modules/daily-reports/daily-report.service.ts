@@ -32,12 +32,28 @@ function validateFiles(files: File[]) {
 
 export class DailyReportService {
   static async createReport(c: Context, data: CreateDailyReportRequest, files: File[], userId: string) {
-    const tank = await pgsql.tank.findFirst({ where: { id: data.tankId } });
-    if (!tank) throw new HTTPException(404, { message: "Tank not found", cause: "TANK_NOT_FOUND" });
+    // tankId is optional: a daily report may be tied to a tank+process, a tank only,
+    // or be a general activity record with no tank/process at all.
+    if (data.tankId) {
+      const tank = await pgsql.tank.findFirst({ where: { id: data.tankId } });
+      if (!tank) throw new HTTPException(404, { message: "Tank not found", cause: "TANK_NOT_FOUND" });
+    }
 
     if (data.tankProcessId) {
+      if (!data.tankId) {
+        throw new HTTPException(400, {
+          message: "tankId is required when tankProcessId is provided",
+          cause: "TANK_REQUIRED_FOR_PROCESS",
+        });
+      }
       const tankProcess = await pgsql.tankProcess.findUnique({ where: { id: data.tankProcessId } });
       if (!tankProcess) throw new HTTPException(404, { message: "Tank process not found", cause: "PROCESS_NOT_FOUND" });
+      if (tankProcess.tankId !== data.tankId) {
+        throw new HTTPException(422, {
+          message: "Tank process does not belong to the provided tank",
+          cause: "PROCESS_TANK_MISMATCH",
+        });
+      }
       if (DAILY_REPORT_BLOCKED_STATUSES.includes(tankProcess.status as ProcessStatusEnum)) {
         throw new HTTPException(422, {
           message: `Cannot add daily report when process is ${tankProcess.status}`,
@@ -65,7 +81,7 @@ export class DailyReportService {
     const report = await pgsql.$transaction(async (tx) => {
       const created = await tx.dailyReport.create({
         data: {
-          tankId: data.tankId,
+          tankId: data.tankId ?? null,
           tankProcessId: data.tankProcessId ?? null,
           reportDate: new Date(data.reportDate),
           activityType: data.activityType,
@@ -261,5 +277,15 @@ export class DailyReportService {
     const report = await DailyReportRepository.findById(id);
     if (!report) throw new HTTPException(404, { message: "Daily report not found", cause: "REPORT_NOT_FOUND" });
     await DailyReportRepository.softDelete(id);
+  }
+
+  static async listTankOptions() {
+    return DailyReportRepository.findTankOptions();
+  }
+
+  static async listTankProcessOptions(tankId: string) {
+    const tank = await pgsql.tank.findFirst({ where: { id: tankId, deletedAt: null }, select: { id: true } });
+    if (!tank) throw new HTTPException(404, { message: "Tank not found", cause: "TANK_NOT_FOUND" });
+    return DailyReportRepository.findTankProcessOptions(tankId);
   }
 }

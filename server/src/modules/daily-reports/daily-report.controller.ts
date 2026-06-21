@@ -3,7 +3,7 @@ import { HTTPException } from "hono/http-exception";
 import { responseOK, responseCreated } from "@/utils/response";
 import { DailyReportService } from "./daily-report.service";
 import { DailyReportAIService } from "./daily-report-ai.service";
-import { createDailyReportRequest, listDailyReportsQuery, updateDailyReportRequest } from "./daily-report.schema";
+import { createDailyReportRequest, listDailyReportsQuery, updateDailyReportRequest, tankProcessOptionsQuery } from "./daily-report.schema";
 import { dailyReportSuccessMessage } from "@/config/constant/daily-report.constant";
 
 function extractFiles(body: Record<string, unknown>): File[] {
@@ -85,14 +85,24 @@ export class DailyReportController {
   static async generateAI(c: Context) {
     const body = await c.req.parseBody({ all: true });
     const files = extractFiles(body as Record<string, unknown>);
-    const tankId = String(body["tankId"] ?? "");
+    const tankId = body["tankId"] ? String(body["tankId"]) : undefined;
     const activityType = String(body["activityType"] ?? "MONITORING");
     const processName = body["processName"] ? String(body["processName"]) : undefined;
 
-    if (!tankId) throw new HTTPException(400, { message: "tankId is required" });
     if (files.length === 0) throw new HTTPException(400, { message: "At least one photo file is required" });
 
     const result = await DailyReportAIService.generate(files, activityType, tankId, processName);
     return responseOK(c, "AI content generated successfully", result);
+  }
+
+  static async listTankOptions(c: Context) {
+    const options = await DailyReportService.listTankOptions();
+    return responseOK(c, dailyReportSuccessMessage.GET_TANK_OPTIONS, options);
+  }
+
+  static async listTankProcessOptions(c: Context) {
+    const { tankId } = tankProcessOptionsQuery.parse(c.req.query());
+    const options = await DailyReportService.listTankProcessOptions(tankId);
+    return responseOK(c, dailyReportSuccessMessage.GET_TANK_PROCESS_OPTIONS, options);
   }
 }

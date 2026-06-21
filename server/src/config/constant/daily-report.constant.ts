@@ -4,6 +4,8 @@ const dailyReportSuccessMessage = {
   GET_REPORT: "Daily report retrieved successfully",
   UPDATE_REPORT: "Daily report updated successfully",
   DELETE_REPORT: "Daily report deleted successfully",
+  GET_TANK_OPTIONS: "Tank options retrieved successfully",
+  GET_TANK_PROCESS_OPTIONS: "Tank process options retrieved successfully",
 };
 
 export { dailyReportSuccessMessage };

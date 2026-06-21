@@ -107,4 +107,20 @@ export class DailyReportRepository {
   static async softDelete(id: string) {
     return pgsql.dailyReport.update({ where: { id }, data: { deletedAt: new Date() } });
   }
+
+  static async findTankOptions() {
+    return pgsql.tank.findMany({
+      where: { deletedAt: null },
+      select: { id: true, tankNo: true, tankName: true },
+      orderBy: { tankNo: "asc" },
+    });
+  }
+
+  static async findTankProcessOptions(tankId: string) {
+    return pgsql.tankProcess.findMany({
+      where: { tankId },
+      select: { id: true, name: true, type: true, status: true },
+      orderBy: { sequenceOrder: "asc" },
+    });
+  }
 }

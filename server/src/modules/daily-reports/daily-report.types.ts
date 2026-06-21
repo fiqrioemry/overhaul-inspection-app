@@ -18,7 +18,7 @@ export interface DailyReportAttachmentItem {
 
 export interface DailyReportListItem {
   id: string;
-  tankId: string;
+  tankId: string | null;
   tankProcessId: string | null;
   reportDate: Date;
   activityType: string;
@@ -28,7 +28,7 @@ export interface DailyReportListItem {
   aiSuggestedDescription: string | null;
   createdAt: Date;
   updatedAt: Date;
-  tank: { id: string; tankNo: string; tankName: string | null; inspectionCompany: { id: string; name: string } | null };
+  tank: { id: string; tankNo: string; tankName: string | null; inspectionCompany: { id: string; name: string } | null } | null;
   tankProcess: { id: string; name: string } | null;
   inspector: { id: string; name: string } | null;
   attachments: DailyReportAttachmentItem[];

@@ -21,18 +21,18 @@ export interface AIGenerateResult {
 
 function buildSystemPrompt(
   activityType: string,
-  tank: { tankNo: string; tankName: string | null; location: string | null; service: string | null; capacityM3: number | null },
+  tank: { tankNo: string; tankName: string | null; location: string | null; service: string | null; capacityM3: number | null } | null,
   processName?: string,
 ): string {
   const lines = [
     "Kamu adalah asisten AI untuk mendokumentasikan kegiatan inspeksi dan overhaul tangki penyimpanan minyak bumi di depot Pertamina Patra Niaga.",
     "",
     "KONTEKS PEKERJAAN:",
-    `- Nomor Tangki: ${tank.tankNo}`,
-    tank.tankName ? `- Nama Tangki: ${tank.tankName}` : null,
-    tank.location ? `- Lokasi: ${LOCATION_LABELS[tank.location] ?? tank.location}` : null,
-    tank.service ? `- Produk/Service: ${tank.service.replace(/_/g, " ")}` : null,
-    tank.capacityM3 ? `- Kapasitas: ${tank.capacityM3} m³` : null,
+    tank ? `- Nomor Tangki: ${tank.tankNo}` : "- Kegiatan umum (tidak terkait tangki tertentu)",
+    tank?.tankName ? `- Nama Tangki: ${tank.tankName}` : null,
+    tank?.location ? `- Lokasi: ${LOCATION_LABELS[tank.location] ?? tank.location}` : null,
+    tank?.service ? `- Produk/Service: ${tank.service.replace(/_/g, " ")}` : null,
+    tank?.capacityM3 ? `- Kapasitas: ${tank.capacityM3} m³` : null,
     processName ? `- Proses Pekerjaan: ${processName}` : null,
     `- Jenis Kegiatan: ${ACTIVITY_LABELS[activityType] ?? activityType}`,
     "",
@@ -65,18 +65,22 @@ export class DailyReportAIService {
   static async generate(
     files: File[],
     activityType: string,
-    tankId: string,
+    tankId?: string,
     processName?: string,
   ): Promise<AIGenerateResult> {
     if (files.length === 0) {
       throw new HTTPException(400, { message: "Minimal satu foto diperlukan untuk generate AI" });
     }
 
-    const tank = await pgsql.tank.findUnique({
-      where: { id: tankId },
-      select: { tankNo: true, tankName: true, location: true, service: true, capacityM3: true },
-    });
-    if (!tank) throw new HTTPException(404, { message: "Tank not found" });
+    // tankId is optional: general daily reports are documented without tank context.
+    let tank: { tankNo: string; tankName: string | null; location: string | null; service: string | null; capacityM3: number | null } | null = null;
+    if (tankId) {
+      tank = await pgsql.tank.findUnique({
+        where: { id: tankId },
+        select: { tankNo: true, tankName: true, location: true, service: true, capacityM3: true },
+      });
+      if (!tank) throw new HTTPException(404, { message: "Tank not found" });
+    }
 
     const imageContents = await Promise.all(
       files.map(async (file) => {
@@ -105,7 +109,7 @@ export class DailyReportAIService {
           content: [
             {
               type: "text",
-              text: `Ini adalah ${files.length} foto dari kegiatan ${ACTIVITY_LABELS[activityType] ?? activityType} pada tangki ${tank.tankNo}. Buat uraian kegiatan dan caption untuk setiap foto (total ${files.length} caption).`,
+              text: `Ini adalah ${files.length} foto dari kegiatan ${ACTIVITY_LABELS[activityType] ?? activityType}${tank ? ` pada tangki ${tank.tankNo}` : ""}. Buat uraian kegiatan dan caption untuk setiap foto (total ${files.length} caption).`,
             },
             ...imageContents,
           ],
