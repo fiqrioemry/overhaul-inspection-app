@@ -5,6 +5,7 @@ import { ProcessStatusEnum } from "generated/prisma";
 import { DailyReportRepository } from "./daily-report.repository";
 import { DailyReportAttachmentRepository } from "./daily-report-attachment.repository";
 import { FileService } from "@/modules/files/file.service";
+import { sanitizeHtml } from "@/utils/sanitize-html";
 import type { CreateDailyReportRequest, UpdateDailyReportRequest, ListDailyReportsQuery } from "./daily-report.schema";
 import type { DailyReportListItem, DailyReportListResult } from "./daily-report.types";
 
@@ -85,7 +86,8 @@ export class DailyReportService {
           tankProcessId: data.tankProcessId ?? null,
           reportDate: new Date(data.reportDate),
           activityType: data.activityType,
-          description: data.description,
+          description: sanitizeHtml(data.description) ?? data.description,
+          recommendation: sanitizeHtml(data.recommendation),
           inspectorId: data.inspectorId ?? userId,
           pertaminaPicId: data.pertaminaPicId ?? null,
         },
@@ -139,6 +141,7 @@ export class DailyReportService {
       reportDate: r.reportDate,
       activityType: r.activityType,
       description: r.description,
+      recommendation: (r as any).recommendation ?? null,
       inspectorId: r.inspectorId,
       pertaminaPicId: r.pertaminaPicId,
       aiSuggestedDescription: (r as any).aiSuggestedDescription ?? null,
@@ -263,7 +266,8 @@ export class DailyReportService {
         data: {
           ...(data.reportDate && { reportDate: new Date(data.reportDate) }),
           ...(data.activityType && { activityType: data.activityType }),
-          ...(data.description !== undefined && { description: data.description }),
+          ...(data.description !== undefined && { description: sanitizeHtml(data.description) ?? data.description }),
+          ...(data.recommendation !== undefined && { recommendation: sanitizeHtml(data.recommendation) }),
           ...(data.inspectorId !== undefined && { inspectorId: data.inspectorId }),
           ...(data.pertaminaPicId !== undefined && { pertaminaPicId: data.pertaminaPicId }),
         },

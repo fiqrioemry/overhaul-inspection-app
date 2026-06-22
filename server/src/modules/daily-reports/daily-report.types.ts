@@ -23,6 +23,7 @@ export interface DailyReportListItem {
   reportDate: Date;
   activityType: string;
   description: string | null;
+  recommendation: string | null;
   inspectorId: string | null;
   pertaminaPicId: string | null;
   aiSuggestedDescription: string | null;

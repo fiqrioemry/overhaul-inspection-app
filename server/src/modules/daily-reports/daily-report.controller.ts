@@ -33,6 +33,7 @@ export class DailyReportController {
       reportDate: body["reportDate"],
       activityType: body["activityType"],
       description: body["description"],
+      recommendation: body["recommendation"] || undefined,
       inspectorId: body["inspectorId"] || undefined,
       pertaminaPicId: body["pertaminaPicId"] || undefined,
       newFileCaptions: parseJsonField<string[]>(body["newFileCaptions"], []),
@@ -64,6 +65,7 @@ export class DailyReportController {
       reportDate: body["reportDate"] || undefined,
       activityType: body["activityType"] || undefined,
       description: body["description"] || undefined,
+      recommendation: body["recommendation"] !== undefined ? (body["recommendation"] || null) : undefined,
       inspectorId: body["inspectorId"] || undefined,
       pertaminaPicId: body["pertaminaPicId"] || undefined,
       removedAttachmentIds: parseJsonField<string[]>(body["removedAttachmentIds"], []),
@@ -88,10 +90,21 @@ export class DailyReportController {
     const tankId = body["tankId"] ? String(body["tankId"]) : undefined;
     const activityType = String(body["activityType"] ?? "MONITORING");
     const processName = body["processName"] ? String(body["processName"]) : undefined;
+    const location = body["location"] ? String(body["location"]) : undefined;
+    const descriptionDraft = body["descriptionDraft"] ? String(body["descriptionDraft"]) : undefined;
+    const recommendationDraft = body["recommendationDraft"] ? String(body["recommendationDraft"]) : undefined;
 
     if (files.length === 0) throw new HTTPException(400, { message: "At least one photo file is required" });
 
-    const result = await DailyReportAIService.generate(files, activityType, tankId, processName);
+    const result = await DailyReportAIService.generate({
+      files,
+      activityType,
+      tankId,
+      processName,
+      location,
+      descriptionDraft,
+      recommendationDraft,
+    });
     return responseOK(c, "AI content generated successfully", result);
   }
 

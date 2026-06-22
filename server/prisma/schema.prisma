@@ -898,6 +898,7 @@ model DailyReport {
   reportDate     DateTime              @map("report_date") @db.Date
   activityType   DailyActivityTypeEnum @map("activity_type")
   description    String
+  recommendation String?
   inspectorId    String?               @map("inspector_id")
   pertaminaPicId String?               @map("pertamina_pic_id")
   createdAt      DateTime              @default(now()) @map("created_at")
