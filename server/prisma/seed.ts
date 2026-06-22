@@ -60,6 +60,20 @@ const companies = [
   },
 ];
 
+// ─── Batch 1: Company personnel (positioned users) ───────────────────────────
+
+const companyPersonnel = [
+  // PT Pertamina Patra Niaga (OWNER) — role USER
+  { email: "romi.nuzulian@pertamina.com", name: "Romi Nuzulian", role: RoleEnum.USER, position: "Inspector", companyName: "PT Pertamina Patra Niaga" },
+  { email: "muhammad.ari.wijaya@pertamina.com", name: "Muhammad Ari Wijaya", role: RoleEnum.USER, position: "Inspector", companyName: "PT Pertamina Patra Niaga" },
+  { email: "nikita.indira.kusuma@pertamina.com", name: "Nikita Indira Kusuma", role: RoleEnum.USER, position: "Jr. Engineer I", companyName: "PT Pertamina Patra Niaga" },
+  { email: "fajar@pertamina.com", name: "Fajar", role: RoleEnum.USER, position: "Lead of Statutory Eng.", companyName: "PT Pertamina Patra Niaga" },
+  // PT Biro Klasifikasi Indonesia (INSPECTOR_COMPANY) — role INSPECTOR
+  { email: "brian.adiguna@bki.co.id", name: "Brian Adiguna", role: RoleEnum.INSPECTOR, position: "Tank Inspector", companyName: "PT Biro Klasifikasi Indonesia" },
+  { email: "ahmad.fiqri.oemry@bki.co.id", name: "Ahmad Fiqri Oemry", role: RoleEnum.INSPECTOR, position: "Welding Inspector", companyName: "PT Biro Klasifikasi Indonesia" },
+  { email: "bayu.ade.wijaya@bki.co.id", name: "Bayu Ade Wijaya", role: RoleEnum.INSPECTOR, position: "Welding Inspector", companyName: "PT Biro Klasifikasi Indonesia" },
+];
+
 // ─── Batch 2: Reference Documents ────────────────────────────────────────────
 
 const referenceDocs = [
@@ -308,12 +322,35 @@ async function main() {
 
   // ── Batch 1: Companies ──────────────────────────────────────────────────────
   console.log("\n🏢 Seeding companies...");
+  const companyMap: Record<string, string> = {};
   for (const companyData of companies) {
     const existing = await prisma.company.findFirst({ where: { name: companyData.name, deletedAt: null } });
     const company = existing
       ? await prisma.company.update({ where: { id: existing.id }, data: { name: companyData.name } })
       : await prisma.company.create({ data: companyData });
+    companyMap[company.name] = company.id;
     console.log(`  ✅ ${company.type}: ${company.name}`);
+  }
+
+  // ── Batch 1: Company personnel (with position + company relation) ─────────────
+  console.log("\n👷 Seeding company personnel...");
+  for (const personnel of companyPersonnel) {
+    const companyId = companyMap[personnel.companyName];
+    const user = await prisma.user.upsert({
+      where: { email: personnel.email },
+      update: { name: personnel.name, role: personnel.role, position: personnel.position, companyId },
+      create: {
+        email: personnel.email,
+        name: personnel.name,
+        passwordHash,
+        role: personnel.role,
+        position: personnel.position,
+        companyId,
+        status: StatusEnum.ACTIVE,
+        verifiedAt: new Date(),
+      },
+    });
+    console.log(`  ✅ ${user.role}: ${user.name} — ${personnel.position} @ ${personnel.companyName}`);
   }
 
   // ── Batch 2: Reference Documents ────────────────────────────────────────────
@@ -450,7 +487,8 @@ async function main() {
   let tank = await prisma.tank.findFirst({ where: { tankNo: "TK-170", deletedAt: null } });
 
   for (const tankData of tanksToSeed) {
-    const existingTank = await prisma.tank.findFirst({ where: { tankNo: tankData.tankNo, deletedAt: null } });
+    // tankNo is globally unique, so match regardless of soft-delete to keep seed idempotent
+    const existingTank = await prisma.tank.findFirst({ where: { tankNo: tankData.tankNo } });
     if (!existingTank) {
       await prisma.tank.create({
         data: {
@@ -468,6 +506,7 @@ async function main() {
           location: tankData.location,
           capacityM3: tankData.capacityM3,
           service: tankData.service,
+          deletedAt: null,
         },
       });
       console.log(`  ℹ️  Tank updated: ${tankData.tankNo} (location, capacity, service)`);

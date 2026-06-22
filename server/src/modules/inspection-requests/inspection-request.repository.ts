@@ -32,10 +32,21 @@ const tankSelect = {
   contractorCompany: { select: { id: true, name: true, logoFile: { select: { url: true } } } },
 } as const;
 
+const personnelSelect = {
+  id: true,
+  name: true,
+  position: true,
+  company: { select: { id: true, name: true, type: true } },
+} as const;
+
 const detailInclude = {
   tank: { select: tankSelect },
   tankProcess: { select: { id: true, name: true, type: true } },
   requestedByUser: { select: { id: true, name: true, email: true } },
+  executionCompany: { select: { id: true, name: true, type: true } },
+  receivedByUser: { select: personnelSelect },
+  preparedByUser: { select: personnelSelect },
+  approvedByUser: { select: personnelSelect },
   items: { select: itemSelect, orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
   attachments: {
     where: { deletedAt: null },

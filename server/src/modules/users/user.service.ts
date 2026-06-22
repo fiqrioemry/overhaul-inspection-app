@@ -13,7 +13,7 @@ import { FileRepository } from "@/modules/files/file.repository";
 import { authLimit } from "@/config/constant/auth.constant";
 import { mailConfig, databaseConfig } from "@/config/env";
 import { userResponse } from "@/modules/users/user.types";
-import { CreateUserRequest, ListUsersQuery, UpdateUserPasswordRequest, UpdateUserRequest, UpdateUserStatusRequest, UpdateProfileRequest } from "@/modules/users/user.schema";
+import { CreateUserRequest, ListUsersQuery, UpdateUserPasswordRequest, UpdateUserRequest, UpdateUserStatusRequest, UpdateProfileRequest, UserOptionsQuery } from "@/modules/users/user.schema";
 
 export class UserService {
   static async createUser(request: CreateUserRequest) {
@@ -76,6 +76,9 @@ export class UserService {
       avatar: user.avatarFile?.url ?? null,
       role: user.role,
       status: user.status,
+      position: user.position ?? null,
+      companyId: user.companyId ?? null,
+      company: user.company ?? null,
       verifiedAt: user.verifiedAt,
       lastLogin: user.lastLogin,
       createdAt: user.createdAt,
@@ -91,6 +94,19 @@ export class UserService {
         totalPages: Math.ceil(total / query.limit),
       },
     };
+  }
+
+  static async listUserOptions(query: UserOptionsQuery) {
+    const users = await UserRepository.findOptions(query);
+    return users.map((user) => ({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      position: user.position ?? null,
+      companyId: user.companyId ?? null,
+      company: user.company ?? null,
+    }));
   }
 
   static async getUserById(id: string): Promise<userResponse> {

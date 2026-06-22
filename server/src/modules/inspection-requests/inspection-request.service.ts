@@ -1,36 +1,19 @@
 import { HTTPException } from "hono/http-exception";
 import { Context } from "hono";
 import { pgsql } from "@/lib/database";
-import {
-  InspectionRequestStatusEnum,
-  InspectionRequestTypeEnum,
-  InspectionRequestAttachmentTypeEnum,
-} from "generated/prisma";
+import { InspectionRequestStatusEnum, InspectionRequestTypeEnum, InspectionRequestAttachmentTypeEnum, CompanyType } from "generated/prisma";
 import { FileService } from "@/modules/files/file.service";
 import { InspectionRequestRepository } from "./inspection-request.repository";
 import { InspectionRequestAttachmentRepository } from "./inspection-request-attachment.repository";
-import type {
-  CreateInspectionRequestRequest,
-  UpdateInspectionRequestRequest,
-  ListInspectionRequestsQuery,
-  UpdateStatusRequest,
-  InspectionRequestItemInput,
-} from "./inspection-request.schema";
-import type {
-  InspectionRequestListItem,
-  InspectionRequestListResult,
-  InspectionRequestSummaryCounts,
-} from "./inspection-request.types";
+import type { CreateInspectionRequestRequest, UpdateInspectionRequestRequest, ListInspectionRequestsQuery, UpdateStatusRequest, InspectionRequestItemInput } from "./inspection-request.schema";
+import type { InspectionRequestListItem, InspectionRequestListResult, InspectionRequestSummaryCounts } from "./inspection-request.types";
 
 const MAX_ATTACHMENTS = 15;
 const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15 MB
 const ALLOWED_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "application/pdf"]);
 
 // NDT test types use the User / Inspector / Head of SSIE signatory set.
-const NDT_TEST_TYPES = new Set<InspectionRequestTypeEnum>([
-  InspectionRequestTypeEnum.PENETRANT_TEST,
-  InspectionRequestTypeEnum.RADIOGRAPHY_TEST,
-]);
+const NDT_TEST_TYPES = new Set<InspectionRequestTypeEnum>([InspectionRequestTypeEnum.PENETRANT_TEST, InspectionRequestTypeEnum.RADIOGRAPHY_TEST]);
 
 const TEST_TYPE_LABELS: Record<string, string> = {
   PENETRANT_TEST: "Penetrant Test",
@@ -85,16 +68,10 @@ function validateFiles(files: File[]) {
 }
 
 export function getSignatoryTemplate(testType: InspectionRequestTypeEnum): string[] {
-  return NDT_TEST_TYPES.has(testType)
-    ? ["User", "Inspector", "Head of SSIE"]
-    : ["Inspector", "Contractor", "User"];
+  return NDT_TEST_TYPES.has(testType) ? ["User", "Inspector", "Head of SSIE"] : ["Inspector", "Contractor", "User"];
 }
 
-function buildRequestDescription(
-  testType: InspectionRequestTypeEnum,
-  items: InspectionRequestItemInput[],
-  tankNo?: string | null,
-): string {
+function buildRequestDescription(testType: InspectionRequestTypeEnum, items: InspectionRequestItemInput[], tankNo?: string | null): string {
   const label = TEST_TYPE_LABELS[testType] ?? "Inspection";
   const head = tankNo ? `Lakukan ${label} pada tangki ${tankNo}:` : `Lakukan ${label} pada objek berikut:`;
   const lines = items.map((item, idx) => {
@@ -107,10 +84,7 @@ function buildRequestDescription(
   return [head, ...lines].join("\n");
 }
 
-function computeSummary(
-  items: Array<unknown>,
-  testRecords: Array<{ status: string }>,
-): InspectionRequestSummaryCounts {
+function computeSummary(items: Array<unknown>, testRecords: Array<{ status: string }>): InspectionRequestSummaryCounts {
   const totalObjects = items.length;
   const totalTestRecords = testRecords.length;
   const totalPassed = testRecords.filter((t) => t.status === "PASSED").length;
@@ -160,8 +134,42 @@ export class InspectionRequestService {
     return tankNo;
   }
 
+  private static async assertUserInCompanyType(userId: string, companyType: CompanyType, errorMessage: string) {
+    const user = await pgsql.user.findFirst({
+      where: { id: userId, deletedAt: null, status: "ACTIVE" },
+      select: { company: { select: { type: true, deletedAt: true, isActive: true } } },
+    });
+    if (!user) throw new HTTPException(404, { message: "Selected user not found", cause: "USER_NOT_FOUND" });
+    if (!user.company || user.company.deletedAt || !user.company.isActive || user.company.type !== companyType) {
+      throw new HTTPException(422, { message: errorMessage, cause: "INVALID_USER_COMPANY" });
+    }
+  }
+
+  private static async assertPersonnel(data: { executionCompanyId?: string | null; receivedById?: string | null; preparedById?: string | null; approvedById?: string | null }) {
+    if (data.executionCompanyId) {
+      const company = await pgsql.company.findFirst({
+        where: { id: data.executionCompanyId, deletedAt: null, isActive: true },
+        select: { type: true },
+      });
+      if (!company) throw new HTTPException(404, { message: "Execution company not found", cause: "EXECUTION_COMPANY_NOT_FOUND" });
+      if (company.type !== CompanyType.INSPECTOR_COMPANY) {
+        throw new HTTPException(422, { message: "Execution company must be an inspector company", cause: "INVALID_EXECUTION_COMPANY" });
+      }
+    }
+    if (data.receivedById) {
+      await this.assertUserInCompanyType(data.receivedById, CompanyType.INSPECTOR_COMPANY, "Received by must be selected from inspector company users");
+    }
+    if (data.preparedById) {
+      await this.assertUserInCompanyType(data.preparedById, CompanyType.OWNER, "Prepared by must be selected from owner company users");
+    }
+    if (data.approvedById) {
+      await this.assertUserInCompanyType(data.approvedById, CompanyType.OWNER, "Approved by must be selected from owner company users");
+    }
+  }
+
   static async createRequest(c: Context, data: CreateInspectionRequestRequest, files: File[], userId: string) {
     const tankNo = await this.assertTankAndProcess(data.tankId, data.tankProcessId);
+    await this.assertPersonnel(data);
 
     if (files.length > MAX_ATTACHMENTS) {
       throw new HTTPException(400, { message: `Maximum ${MAX_ATTACHMENTS} attachments are allowed`, cause: "ATTACHMENT_LIMIT_EXCEEDED" });
@@ -172,9 +180,7 @@ export class InspectionRequestService {
     const description = data.description?.trim() || buildRequestDescription(data.testType, data.items, tankNo);
 
     // Upload supporting files to MinIO outside the transaction
-    const fileRecords = files.length > 0
-      ? await Promise.all(files.map((f) => FileService.generateFileRecord(f, "INSPECTION_REQUEST")))
-      : [];
+    const fileRecords = files.length > 0 ? await Promise.all(files.map((f) => FileService.generateFileRecord(f, "INSPECTION_REQUEST"))) : [];
     if (fileRecords.length > 0) {
       await Promise.all(fileRecords.map((fr) => FileService.uploadFileToStorage(c, fr)));
     }
@@ -196,6 +202,10 @@ export class InspectionRequestService {
           tank: data.tankId ? { connect: { id: data.tankId } } : undefined,
           tankProcess: data.tankProcessId ? { connect: { id: data.tankProcessId } } : undefined,
           requestedByUser: { connect: { id: data.requestedBy ?? userId } },
+          executionCompany: data.executionCompanyId ? { connect: { id: data.executionCompanyId } } : undefined,
+          receivedByUser: data.receivedById ? { connect: { id: data.receivedById } } : undefined,
+          preparedByUser: data.preparedById ? { connect: { id: data.preparedById } } : undefined,
+          approvedByUser: data.approvedById ? { connect: { id: data.approvedById } } : undefined,
         },
         toItemRows(data.items),
       );
@@ -293,6 +303,7 @@ export class InspectionRequestService {
     const nextTankId = data.tankId !== undefined ? data.tankId : request.tankId;
     const nextProcessId = data.tankProcessId !== undefined ? data.tankProcessId : request.tankProcessId;
     await this.assertTankAndProcess(nextTankId, nextProcessId);
+    await this.assertPersonnel(data);
 
     await pgsql.$transaction(async (tx) => {
       await tx.inspectionRequest.update({
@@ -306,6 +317,18 @@ export class InspectionRequestService {
           }),
           ...(data.assetHolder !== undefined && { assetHolder: data.assetHolder }),
           ...(data.executionParty !== undefined && { executionParty: data.executionParty }),
+          ...(data.executionCompanyId !== undefined && {
+            executionCompany: data.executionCompanyId ? { connect: { id: data.executionCompanyId } } : { disconnect: true },
+          }),
+          ...(data.receivedById !== undefined && {
+            receivedByUser: data.receivedById ? { connect: { id: data.receivedById } } : { disconnect: true },
+          }),
+          ...(data.preparedById !== undefined && {
+            preparedByUser: data.preparedById ? { connect: { id: data.preparedById } } : { disconnect: true },
+          }),
+          ...(data.approvedById !== undefined && {
+            approvedByUser: data.approvedById ? { connect: { id: data.approvedById } } : { disconnect: true },
+          }),
           ...(data.standardAndCode !== undefined && { standardAndCode: data.standardAndCode }),
           ...(data.requestLocation !== undefined && { requestLocation: data.requestLocation }),
           ...(data.description !== undefined && { description: data.description }),
@@ -361,8 +384,7 @@ export class InspectionRequestService {
 
     // Allowed: IN_PROCESS -> REPAIR/PASSED, REPAIR -> PASSED
     const allowed =
-      (request.status === InspectionRequestStatusEnum.IN_PROCESS &&
-        (data.status === InspectionRequestStatusEnum.REPAIR || data.status === InspectionRequestStatusEnum.PASSED)) ||
+      (request.status === InspectionRequestStatusEnum.IN_PROCESS && (data.status === InspectionRequestStatusEnum.REPAIR || data.status === InspectionRequestStatusEnum.PASSED)) ||
       (request.status === InspectionRequestStatusEnum.REPAIR && data.status === InspectionRequestStatusEnum.PASSED);
 
     if (!allowed) {
@@ -380,14 +402,7 @@ export class InspectionRequestService {
     return this.getRequestById(id);
   }
 
-  static async uploadAttachment(
-    c: Context,
-    id: string,
-    attachmentType: InspectionRequestAttachmentTypeEnum,
-    caption: string | undefined,
-    files: File[],
-    userId: string,
-  ) {
+  static async uploadAttachment(c: Context, id: string, attachmentType: InspectionRequestAttachmentTypeEnum, caption: string | undefined, files: File[], userId: string) {
     const request = await InspectionRequestRepository.findById(id);
     if (!request) throw new HTTPException(404, { message: "Inspection request not found", cause: "REQUEST_NOT_FOUND" });
     if (files.length === 0) throw new HTTPException(400, { message: "At least one file is required" });

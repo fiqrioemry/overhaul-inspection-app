@@ -1,7 +1,7 @@
 import { Context } from "hono";
 import { UserService } from "@/modules/users/user.service";
 import { responseCreated, responseError, responseOK } from "@/utils/response";
-import { updateProfileRequest, createUserRequest, updateUserRequest, updateUserStatusRequest, updateUserPasswordRequest, listUsersQuery } from "@/modules/users/user.schema";
+import { updateProfileRequest, createUserRequest, updateUserRequest, updateUserStatusRequest, updateUserPasswordRequest, listUsersQuery, userOptionsQuery } from "@/modules/users/user.schema";
 import { userSuccessMessage } from "@/config/constant/user.constant";
 import { fileErrorCode, fileErrorMessage } from "@/config/constant/file.constant";
 
@@ -16,6 +16,12 @@ export class UserController {
     const query = listUsersQuery.parse(c.req.query());
     const response = await UserService.listUsers(query);
     return responseOK(c, userSuccessMessage.GET_USERS_SUCCESS, response.data, response.meta);
+  }
+
+  static async getUserOptions(c: Context) {
+    const query = userOptionsQuery.parse(c.req.query());
+    const response = await UserService.listUserOptions(query);
+    return responseOK(c, userSuccessMessage.GET_USERS_SUCCESS, response);
   }
 
   static async getUserById(c: Context) {

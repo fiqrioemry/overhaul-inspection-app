@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { RoleEnum, StatusEnum } from "generated/prisma";
+import { RoleEnum, StatusEnum, CompanyType } from "generated/prisma";
 
 const passwordValidation = z
   .string()
@@ -48,6 +48,13 @@ export const listUsersQuery = z.object({
   sortBy: z.enum(["asc", "desc"]).default("desc"),
 });
 export type ListUsersQuery = z.infer<typeof listUsersQuery>;
+
+export const userOptionsQuery = z.object({
+  companyType: z.nativeEnum(CompanyType).optional(),
+  role: z.enum(RoleEnum).optional(),
+  search: z.string().optional(),
+});
+export type UserOptionsQuery = z.infer<typeof userOptionsQuery>;
 
 export const updateProfileRequest = z.object({
   userId: z.string().optional(),

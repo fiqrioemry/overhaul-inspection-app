@@ -1,6 +1,6 @@
 import { pgsql as database } from "@/lib/database";
 import { Prisma, OAuthProvider, RoleEnum } from "generated/prisma/edge";
-import { CreateUserActivityLogRequest, ListUsersQuery } from "@/modules/users/user.schema";
+import { CreateUserActivityLogRequest, ListUsersQuery, UserOptionsQuery } from "@/modules/users/user.schema";
 import { createUserData, verificationType, createVerificationData, updateUserActiveData, UpsertOAuthAccountData, userCredential } from "@/modules/users/user.types";
 
 export class UserRepository {
@@ -111,6 +111,9 @@ export class UserRepository {
           name: true,
           role: true,
           status: true,
+          position: true,
+          companyId: true,
+          company: { select: { id: true, name: true, type: true } },
           avatarFileStorageId: true,
           avatarFile: { select: { url: true } },
           verifiedAt: true,
@@ -126,6 +129,34 @@ export class UserRepository {
     ]);
 
     return { users, total };
+  }
+
+  static async findOptions(query: UserOptionsQuery) {
+    const { companyType, role, search } = query;
+
+    const where: Prisma.UserWhereInput = {
+      deletedAt: null,
+      status: "ACTIVE",
+      ...(role && { role }),
+      ...(companyType && { company: { is: { type: companyType, deletedAt: null, isActive: true } } }),
+      ...(search && {
+        OR: [{ name: { contains: search, mode: "insensitive" } }, { email: { contains: search, mode: "insensitive" } }],
+      }),
+    };
+
+    return database.user.findMany({
+      where,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        position: true,
+        companyId: true,
+        company: { select: { id: true, name: true, type: true } },
+      },
+      orderBy: { name: "asc" },
+    });
   }
 
   static async update(

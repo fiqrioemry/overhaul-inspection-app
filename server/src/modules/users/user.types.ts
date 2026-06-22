@@ -1,4 +1,4 @@
-import { OAuthProvider, RoleEnum, StatusEnum } from "generated/prisma";
+import { OAuthProvider, RoleEnum, StatusEnum, CompanyType } from "generated/prisma";
 
 type verificationType = "EMAIL_VERIFICATION" | "PASSWORD_RESET";
 type userStatus = "ACTIVE" | "INACTIVE" | "BANNED";
@@ -46,6 +46,9 @@ type userResponse = {
   avatar: string | null;
   role: string;
   status: string;
+  position?: string | null;
+  companyId?: string | null;
+  company?: { id: string; name: string; type: CompanyType } | null;
   verifiedAt: Date | null;
   lastLogin: Date | null;
   createdAt: Date;
