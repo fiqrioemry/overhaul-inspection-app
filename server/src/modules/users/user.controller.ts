@@ -38,6 +38,8 @@ export class UserController {
     const request = updateUserRequest.parse({
       name: body["name"] || undefined,
       role: body["role"] || undefined,
+      position: body["position"] !== undefined ? body["position"] || null : undefined,
+      companyId: body["companyId"] !== undefined ? body["companyId"] || null : undefined,
     });
 
     const response = await UserService.updateUser(c, id, request, avatarFile);

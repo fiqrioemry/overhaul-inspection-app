@@ -16,11 +16,23 @@ import { userResponse } from "@/modules/users/user.types";
 import { CreateUserRequest, ListUsersQuery, UpdateUserPasswordRequest, UpdateUserRequest, UpdateUserStatusRequest, UpdateProfileRequest, UserOptionsQuery } from "@/modules/users/user.schema";
 
 export class UserService {
+  private static async assertCompanyExists(companyId: string) {
+    const company = await pgsql.company.findFirst({
+      where: { id: companyId, deletedAt: null, isActive: true },
+      select: { id: true },
+    });
+    if (!company) {
+      throw new HTTPException(404, { message: "Company not found", cause: "COMPANY_NOT_FOUND" });
+    }
+  }
+
   static async createUser(request: CreateUserRequest) {
     const existing = await UserRepository.findByEmail(request.email);
     if (existing) {
       throw new HTTPException(409, { message: "Email already exists", cause: "EMAIL_EXISTS" });
     }
+
+    if (request.companyId) await this.assertCompanyExists(request.companyId);
 
     let passwordHash: string | undefined;
 
@@ -34,6 +46,8 @@ export class UserService {
         name: request.name,
         role: request.role,
         status: request.isVerified ? "ACTIVE" : "INACTIVE",
+        position: request.position ?? null,
+        companyId: request.companyId ?? null,
         isVerified: request.isVerified,
         passwordHash,
       });
@@ -122,6 +136,9 @@ export class UserService {
       avatar: result.avatarFile?.url ?? null,
       role: result.role,
       status: result.status,
+      position: result.position ?? null,
+      companyId: result.companyId ?? null,
+      company: result.company ?? null,
       verifiedAt: result.verifiedAt,
       lastLogin: result.lastLogin,
       createdAt: result.createdAt,
@@ -136,6 +153,8 @@ export class UserService {
       throw new HTTPException(404, { message: "User not found", cause: "USER_NOT_FOUND" });
     }
 
+    if (request.companyId) await this.assertCompanyExists(request.companyId);
+
     return await pgsql.$transaction(async (tx: Prisma.TransactionClient) => {
       let avatarFileStorageId = user.avatarFileStorageId!;
 
@@ -149,7 +168,17 @@ export class UserService {
         avatarFileStorageId = newFileRecord.id!;
       }
 
-      return await UserRepository.update(id, { name: request.name, role: request.role, avatarFileStorageId }, tx);
+      return await UserRepository.update(
+        id,
+        {
+          name: request.name,
+          role: request.role,
+          ...(request.position !== undefined && { position: request.position }),
+          ...(request.companyId !== undefined && { companyId: request.companyId }),
+          avatarFileStorageId,
+        },
+        tx,
+      );
     });
   }
 

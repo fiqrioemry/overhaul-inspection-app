@@ -61,6 +61,8 @@ type createUserData = {
   name: string;
   role: RoleEnum;
   status: StatusEnum;
+  position?: string | null;
+  companyId?: string | null;
   isVerified: boolean;
 };
 

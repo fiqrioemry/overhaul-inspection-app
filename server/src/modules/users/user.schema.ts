@@ -11,6 +11,8 @@ export const createUserRequest = z.object({
   email: z.string().email("Invalid email address"),
   name: z.string().min(1, "Name is required").max(100),
   role: z.enum(RoleEnum).default(RoleEnum.USER),
+  position: z.string().max(100).optional(),
+  companyId: z.string().optional(),
   isVerified: z.boolean().default(false),
   password: passwordValidation.optional(),
 });
@@ -19,6 +21,8 @@ export type CreateUserRequest = z.infer<typeof createUserRequest>;
 export const updateUserRequest = z.object({
   name: z.string().min(1).max(100).optional(),
   role: z.enum(RoleEnum).optional(),
+  position: z.string().max(100).nullable().optional(),
+  companyId: z.string().nullable().optional(),
 });
 export type UpdateUserRequest = z.infer<typeof updateUserRequest>;
 

@@ -32,6 +32,8 @@ export class UserRepository {
         name: user.name,
         role: user.role,
         status: user.status,
+        position: user.position ?? null,
+        companyId: user.companyId ?? null,
         verifiedAt: user.isVerified ? new Date() : null,
       },
       select: {
@@ -40,6 +42,9 @@ export class UserRepository {
         name: true,
         role: true,
         status: true,
+        position: true,
+        companyId: true,
+        company: { select: { id: true, name: true, type: true } },
         avatarFileStorageId: true,
         avatarFile: { select: { url: true } },
         verifiedAt: true,
@@ -57,6 +62,9 @@ export class UserRepository {
         name: true,
         role: true,
         status: true,
+        position: true,
+        companyId: true,
+        company: { select: { id: true, name: true, type: true } },
         avatarFileStorageId: true,
         avatarFile: { select: { url: true } },
         verifiedAt: true,
@@ -164,6 +172,8 @@ export class UserRepository {
     data: {
       name?: string;
       role?: RoleEnum;
+      position?: string | null;
+      companyId?: string | null;
       avatarFileStorageId?: string | null;
     },
     tx: Prisma.TransactionClient | null = null,
@@ -179,6 +189,9 @@ export class UserRepository {
         name: true,
         role: true,
         status: true,
+        position: true,
+        companyId: true,
+        company: { select: { id: true, name: true, type: true } },
         avatarFileStorageId: true,
         avatarFile: { select: { url: true } },
         verifiedAt: true,
