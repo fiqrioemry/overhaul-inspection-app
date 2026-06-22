@@ -30,7 +30,7 @@ export default function DailyReportListPrintPage() {
   const reports = data?.items ?? [];
 
   // Derive company name from the first report's inspection company
-  const companyName = reports[0]?.tank.inspectionCompany?.name ?? null;
+  const companyName = reports[0]?.tank?.inspectionCompany?.name ?? null;
 
   const periodLabel = (() => {
     if (startDate && endDate) return `${format(new Date(startDate), "dd MMM yyyy")} – ${format(new Date(endDate), "dd MMM yyyy")}`;

@@ -39,9 +39,7 @@ export default function DailyReportDetailPage() {
   const locationLabel = report.tank?.location ? (LOCATION_LABEL[report.tank.location] ?? report.tank.location) : null;
 
   const inspectionCompany = report.tank?.inspectionCompany ?? null;
-  const contractorCompany = report.tank?.contractorCompany ?? null;
   const inspectionLogoUrl = inspectionCompany?.logoFile?.url ?? null;
-  const contractorLogoUrl = contractorCompany?.logoFile?.url ?? null;
 
   const attachments = report.attachments;
   const photoPages: (typeof attachments)[] = [];
@@ -110,15 +108,15 @@ export default function DailyReportDetailPage() {
         {/* ── PAGE 1: report content ── */}
         <div className="report-page bg-white shadow-lg w-full max-w-198.5 min-h-280.75 p-16 flex flex-col gap-8">
           {/* Header — logos left/right, title centered */}
-          <div className="border-b pb-6">
+          <div className="border-b-2 border-black pb-6">
             <div className="flex items-center justify-between gap-4">
               {/* Left: Inspection company logo */}
-              <CompanyLogo url={inspectionLogoUrl} name={inspectionCompany?.name} />
+              <CompanyLogo url={inspectionLogoUrl} name={inspectionCompany?.name} size="md" />
 
               {/* Center: title */}
               <div className="flex-1 text-center space-y-0.5">
                 <h1 className="text-base font-bold uppercase tracking-wide">Laporan Harian Inspeksi</h1>
-                <p className="text-[10px] text-gray-500">Daily Inspection Report</p>
+                <p className="text-[11px] text-gray-500">Daily Inspection Report</p>
                 {inspectionCompany && <p className="text-[9px] text-gray-400 uppercase tracking-widest mt-1">{inspectionCompany.name}</p>}
               </div>
             </div>
@@ -168,14 +166,13 @@ export default function DailyReportDetailPage() {
             {/* Page header */}
             <div className="border-b pb-4">
               <div className="flex items-center justify-between gap-4">
-                <CompanyLogo url={inspectionLogoUrl} name={inspectionCompany?.name} size="sm" />
+                <CompanyLogo url={inspectionLogoUrl} name={inspectionCompany?.name} size="md" />
                 <div className="flex-1 text-center space-y-0.5">
                   <h2 className="text-sm font-semibold uppercase tracking-wide">Dokumentasi Foto</h2>
                   <p className="text-[10px] text-gray-500">
                     {report.tank?.tankNo ?? "Kegiatan Umum"} &mdash; {reportDateFormatted}
                   </p>
                 </div>
-                <CompanyLogo url={contractorLogoUrl} name={contractorCompany?.name} size="sm" />
               </div>
             </div>
 

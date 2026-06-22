@@ -216,39 +216,42 @@ export default function DailyReportEditPage() {
     [attachments.length, localFiles.length],
   );
 
-  function onSubmit(values: FormValues) {
-    const description = descRef.current?.getHTML() ?? "";
-    if (descRef.current?.isEmpty()) {
-      descRef.current?.focus();
-      return;
-    }
-    const recommendation = recRef.current?.isEmpty() ? null : recRef.current?.getHTML();
+  const onSubmit = useCallback(
+    (values: FormValues) => {
+      const description = descRef.current?.getHTML() ?? "";
+      if (descRef.current?.isEmpty()) {
+        descRef.current?.focus();
+        return;
+      }
+      const recommendation = recRef.current?.isEmpty() ? null : recRef.current?.getHTML();
 
-    // Build sortOrders from current attachment order
-    const sortOrders = attachments.map((a, idx) => ({ attachmentId: a.id, sortOrder: idx }));
-    const captions = attachments.filter((a) => !removedIds.includes(a.id)).map((a) => ({ attachmentId: a.id, caption: a.caption }));
+      // Build sortOrders from current attachment order
+      const sortOrders = attachments.map((a, idx) => ({ attachmentId: a.id, sortOrder: idx }));
+      const captions = attachments.filter((a) => !removedIds.includes(a.id)).map((a) => ({ attachmentId: a.id, caption: a.caption }));
 
-    updateMutation.mutate(
-      {
-        id: id!,
-        data: {
-          reportDate: values.reportDate,
-          activityType: values.activityType,
-          description,
-          recommendation,
-          removedAttachmentIds: removedIds,
-          captions,
-          sortOrders,
-          newFiles: localFiles.map((lf) => lf.file),
+      updateMutation.mutate(
+        {
+          id: id!,
+          data: {
+            reportDate: values.reportDate,
+            activityType: values.activityType,
+            description,
+            recommendation,
+            removedAttachmentIds: removedIds,
+            captions,
+            sortOrders,
+            newFiles: localFiles.map((lf) => lf.file),
+          },
         },
-      },
-      {
-        onSuccess: () => {
-          navigate(ROUTES.DAILY_REPORT_DETAIL.replace(":id", id!));
+        {
+          onSuccess: () => {
+            navigate(ROUTES.DAILY_REPORT_DETAIL.replace(":id", id!));
+          },
         },
-      },
-    );
-  }
+      );
+    },
+    [attachments, removedIds, localFiles, id, navigate, updateMutation],
+  );
 
   if (isLoading) return <LoadingState />;
   if (isError || !report) return <ErrorState message="Failed to load daily report." onRetry={() => refetch()} />;
@@ -282,13 +285,17 @@ export default function DailyReportEditPage() {
 
         {/* Description — rich editor */}
         <div className="space-y-1.5">
-          <Label className="text-sm font-medium">Uraian Kegiatan / Activity Description <span className="text-destructive">*</span></Label>
+          <Label className="text-sm font-medium">
+            Uraian Kegiatan / Activity Description <span className="text-destructive">*</span>
+          </Label>
           <RichTextEditor ref={descRef} initialContent={report.description ?? ""} placeholder="Uraian kegiatan inspeksi harian..." />
         </div>
 
         {/* Recommendation — rich editor */}
         <div className="space-y-1.5">
-          <Label className="text-sm font-medium">Rekomendasi / Recommendation <span className="text-muted-foreground font-normal">(opsional)</span></Label>
+          <Label className="text-sm font-medium">
+            Rekomendasi / Recommendation <span className="text-muted-foreground font-normal">(opsional)</span>
+          </Label>
           <RichTextEditor ref={recRef} initialContent={report.recommendation ?? ""} placeholder="Rekomendasi tindak lanjut (opsional)..." />
         </div>
 
