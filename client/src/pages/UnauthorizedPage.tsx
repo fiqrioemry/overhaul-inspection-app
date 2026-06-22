@@ -13,9 +13,7 @@ export default function UnauthorizedPage() {
       </div>
       <div className="space-y-2">
         <h1 className="text-3xl font-bold">Access Denied</h1>
-        <p className="text-muted-foreground max-w-sm">
-          You don't have permission to view this page. Contact your administrator if you think this is a mistake.
-        </p>
+        <p className="text-muted-foreground max-w-sm">You don't have permission to view this page. Contact your administrator if you think this is a mistake.</p>
       </div>
       <div className="flex gap-3">
         <Button variant="outline" onClick={() => navigate(-1)}>

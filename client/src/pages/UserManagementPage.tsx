@@ -96,7 +96,10 @@ export default function UserManagementPage() {
         <div className="ml-auto flex items-center gap-2">
           <FilterSelect
             value={role}
-            onChange={(v) => { setRole(v); setPage(1); }}
+            onChange={(v) => {
+              setRole(v);
+              setPage(1);
+            }}
             options={ROLE_OPTIONS}
             placeholder="Role"
             allLabel="All Roles"
@@ -105,7 +108,11 @@ export default function UserManagementPage() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => { setSearch(""); setRole(""); setPage(1); }}
+              onClick={() => {
+                setSearch("");
+                setRole("");
+                setPage(1);
+              }}
             >
               Reset
             </Button>

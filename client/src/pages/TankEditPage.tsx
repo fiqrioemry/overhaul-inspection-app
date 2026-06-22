@@ -30,10 +30,7 @@ export default function TankEditPage() {
       startDate: values.startDate || undefined,
       estimatedFinishDate: values.estimatedFinishDate || undefined,
     };
-    updateMutation.mutate(
-      { id: tankId!, data: payload },
-      { onSuccess: () => navigate(ROUTES.TANK_DETAIL.replace(":tankId", tankId!)) },
-    );
+    updateMutation.mutate({ id: tankId!, data: payload }, { onSuccess: () => navigate(ROUTES.TANK_DETAIL.replace(":tankId", tankId!)) });
   }
 
   if (isLoading) return <LoadingState />;
@@ -51,14 +48,7 @@ export default function TankEditPage() {
           </Button>
         }
       />
-      <TankForm
-        mode="edit"
-        tank={tank}
-        onSubmit={handleSubmit}
-        isPending={updateMutation.isPending}
-        contractors={contractors}
-        inspectionCompanies={inspectionCompanies}
-      />
+      <TankForm mode="edit" tank={tank} onSubmit={handleSubmit} isPending={updateMutation.isPending} contractors={contractors} inspectionCompanies={inspectionCompanies} />
     </div>
   );
 }

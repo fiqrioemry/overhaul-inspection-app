@@ -382,11 +382,7 @@ export default function TankProcessDetailPage() {
                     </thead>
                     <tbody className="divide-y">
                       {testRecords.map((rec) => (
-                        <tr
-                          key={rec.id}
-                          className="hover:bg-muted/20 cursor-pointer"
-                          onClick={() => rec.inspectionRequest && navigate(ROUTES.INSPECTION_REQUEST_DETAIL.replace(":id", rec.inspectionRequest.id))}
-                        >
+                        <tr key={rec.id} className="hover:bg-muted/20 cursor-pointer" onClick={() => rec.inspectionRequest && navigate(ROUTES.INSPECTION_REQUEST_DETAIL.replace(":id", rec.inspectionRequest.id))}>
                           <td className="px-4 py-3 text-xs">{rec.testDate ? format(new Date(rec.testDate), "dd MMM yyyy") : "—"}</td>
                           <td className="px-4 py-3 text-xs font-mono text-muted-foreground">{rec.inspectionRequest?.requestNo ?? "—"}</td>
                           <td className="px-4 py-3 text-xs">{rec.testPressure != null ? `${rec.testPressure} ${rec.pressureUnit ?? ""}` : "—"}</td>
