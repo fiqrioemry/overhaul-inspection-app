@@ -56,26 +56,33 @@ export interface FindingSummary {
 export interface TestSummary {
   testRecords: {
     passed: number;
-    failed: number;
-    pending: number;
+    repair: number;
+    notStarted: number;
     recent: {
       id: string;
-      tankProcessId: string;
+      tankProcessId: string | null;
       testDate: Date | null;
+      status: string;
       result: string;
       createdAt: Date;
-      tankProcess: { id: string; name: string; tank: { id: string; tankNo: string } };
+      inspectionRequest: { id: string; requestNo: string; testType: string } | null;
+      tankProcess: { id: string; name: string; tank: { id: string; tankNo: string } } | null;
       createdByUser: { id: string; name: string } | null;
     }[];
   };
-  radiography: {
+  inspectionRequests: {
+    notStarted: number;
+    inProcess: number;
+    repair: number;
+    passed: number;
+    byType: { testType: string; count: number }[];
     recent: {
       id: string;
-      tankProcessId: string;
-      testDate: Date | null;
-      result: string | null;
+      requestNo: string;
+      testType: string;
+      status: string;
       createdAt: Date;
-      tankProcess: { id: string; name: string; tank: { id: string; tankNo: string } };
+      tank: { id: string; tankNo: string } | null;
     }[];
   };
 }

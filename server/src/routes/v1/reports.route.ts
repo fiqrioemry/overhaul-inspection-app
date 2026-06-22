@@ -10,6 +10,5 @@ reports.get("/daily-reports/:id/print-data", protect, requirePermission(PERMISSI
 reports.get("/tanks/:tankId/daily-reports/print-data", protect, requirePermission(PERMISSIONS.REPORT_PRINT), ctrl.getDailyReportsByDatePrintData);
 reports.get("/inspection-requests/:id/print-data", protect, requirePermission(PERMISSIONS.REPORT_PRINT), ctrl.getInspectionRequestPrintData);
 reports.get("/test-records/:id/print-data", protect, requirePermission(PERMISSIONS.REPORT_PRINT), ctrl.getTestRecordPrintData);
-reports.get("/radiography-tests/:id/print-data", protect, requirePermission(PERMISSIONS.REPORT_PRINT), ctrl.getRadiographyPrintData);
 
 export default reports;

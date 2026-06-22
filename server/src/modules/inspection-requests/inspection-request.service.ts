@@ -1,94 +1,239 @@
 import { HTTPException } from "hono/http-exception";
+import { Context } from "hono";
 import { pgsql } from "@/lib/database";
-import { ProcessStatusEnum, InspectionRequestStatusEnum } from "generated/prisma";
-import { EligibilityService } from "@/services/eligibility.service";
-import { NotificationService } from "@/modules/notifications/notification.service";
-import { InspectionRequestRepository } from "./inspection-request.repository";
 import {
+  InspectionRequestStatusEnum,
+  InspectionRequestTypeEnum,
+  InspectionRequestAttachmentTypeEnum,
+} from "generated/prisma";
+import { FileService } from "@/modules/files/file.service";
+import { InspectionRequestRepository } from "./inspection-request.repository";
+import { InspectionRequestAttachmentRepository } from "./inspection-request-attachment.repository";
+import type {
   CreateInspectionRequestRequest,
+  UpdateInspectionRequestRequest,
   ListInspectionRequestsQuery,
-  ReviewInspectionRequestRequest,
+  UpdateStatusRequest,
+  InspectionRequestItemInput,
 } from "./inspection-request.schema";
-import type { InspectionRequestListItem, InspectionRequestListResult } from "./inspection-request.types";
+import type {
+  InspectionRequestListItem,
+  InspectionRequestListResult,
+  InspectionRequestSummaryCounts,
+} from "./inspection-request.types";
 
-function padSeq(n: number): string {
-  return String(n + 1).padStart(4, "0");
+const MAX_ATTACHMENTS = 15;
+const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15 MB
+const ALLOWED_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "application/pdf"]);
+
+// NDT test types use the User / Inspector / Head of SSIE signatory set.
+const NDT_TEST_TYPES = new Set<InspectionRequestTypeEnum>([
+  InspectionRequestTypeEnum.PENETRANT_TEST,
+  InspectionRequestTypeEnum.RADIOGRAPHY_TEST,
+]);
+
+const TEST_TYPE_LABELS: Record<string, string> = {
+  PENETRANT_TEST: "Penetrant Test",
+  RADIOGRAPHY_TEST: "Radiography Test",
+  OIL_LEAK_TEST: "Oil Leak Test",
+  PNEUMATIC_REINFORCEMENT_TEST: "Pneumatic Reinforcement Test",
+  HYDROTEST_SHELL: "Hydrotest Shell",
+  HYDROTEST_PIPE: "Hydrotest Pipe",
+  PNEUMATIC_BOTTOM_TEST: "Pneumatic Bottom Test",
+  PNEUMATIC_ROOF_TEST: "Pneumatic Roof Test",
+  MATERIAL_INSPECTION: "Material Inspection",
+  VISUAL_INSPECTION: "Visual Inspection",
+  COATING_INSPECTION: "Coating Inspection",
+  OTHER: "Inspection",
+};
+
+const OBJECT_TYPE_LABELS: Record<string, string> = {
+  MANHOLE: "Manhole",
+  COD: "COD",
+  NOZZLE: "Nozzle",
+  SHELL_PLATE: "Shell Plate",
+  BOTTOM_PLATE: "Bottom Plate",
+  ROOF_PLATE: "Roof Plate",
+  REINFORCEMENT_PAD: "Reinforcement Pad",
+  PIPE: "Pipe",
+  STEAM_COIL: "Steam Coil",
+  WELD_JOINT: "Weld Joint",
+  ANNULAR_PLATE: "Annular Plate",
+  FLOOR_PLATE: "Floor Plate",
+  VALVE: "Valve",
+  FLANGE: "Flange",
+  FITTING: "Fitting",
+  MATERIAL: "Material",
+  OTHER: "Object",
+};
+
+function validateFiles(files: File[]) {
+  for (const file of files) {
+    if (!ALLOWED_MIME_TYPES.has(file.type)) {
+      throw new HTTPException(400, {
+        message: `File "${file.name}" has unsupported type ${file.type}. Allowed: jpeg, png, webp, pdf.`,
+        cause: "INVALID_FILE_TYPE",
+      });
+    }
+    if (file.size > MAX_FILE_SIZE) {
+      throw new HTTPException(400, {
+        message: `File "${file.name}" exceeds the 15 MB size limit.`,
+        cause: "FILE_TOO_LARGE",
+      });
+    }
+  }
+}
+
+export function getSignatoryTemplate(testType: InspectionRequestTypeEnum): string[] {
+  return NDT_TEST_TYPES.has(testType)
+    ? ["User", "Inspector", "Head of SSIE"]
+    : ["Inspector", "Contractor", "User"];
+}
+
+function buildRequestDescription(
+  testType: InspectionRequestTypeEnum,
+  items: InspectionRequestItemInput[],
+  tankNo?: string | null,
+): string {
+  const label = TEST_TYPE_LABELS[testType] ?? "Inspection";
+  const head = tankNo ? `Lakukan ${label} pada tangki ${tankNo}:` : `Lakukan ${label} pada objek berikut:`;
+  const lines = items.map((item, idx) => {
+    const objectLabel = OBJECT_TYPE_LABELS[item.objectType] ?? item.objectType;
+    const name = item.objectName ? ` ${item.objectName}` : "";
+    const qty = `${item.quantity} ${item.unit ?? "Pcs"}`;
+    const loc = item.locationDetail ? ` (${item.locationDetail})` : "";
+    return `${idx + 1}. Lakukan ${label} pada ${objectLabel}${name} ${qty}${loc}.`;
+  });
+  return [head, ...lines].join("\n");
+}
+
+function computeSummary(
+  items: Array<unknown>,
+  testRecords: Array<{ status: string }>,
+): InspectionRequestSummaryCounts {
+  const totalObjects = items.length;
+  const totalTestRecords = testRecords.length;
+  const totalPassed = testRecords.filter((t) => t.status === "PASSED").length;
+  const totalRepair = testRecords.filter((t) => t.status === "REPAIR").length;
+  const totalNotStarted = testRecords.filter((t) => t.status === "NOT_STARTED").length;
+  const denominator = totalObjects > 0 ? totalObjects : totalTestRecords;
+  const progressPercent = denominator > 0 ? Math.round((totalPassed / denominator) * 100) : 0;
+  return { totalObjects, totalTestRecords, totalPassed, totalRepair, totalNotStarted, progressPercent };
+}
+
+function toItemRows(items: InspectionRequestItemInput[]) {
+  return items.map((item, idx) => ({
+    objectType: item.objectType,
+    objectName: item.objectName ?? null,
+    quantity: item.quantity,
+    unit: item.unit ?? null,
+    locationDetail: item.locationDetail ?? null,
+    remarks: item.remarks ?? null,
+    sortOrder: idx,
+  }));
 }
 
 export class InspectionRequestService {
-  static async createRequest(data: CreateInspectionRequestRequest, userId: string) {
-    const tankProcess = await pgsql.tankProcess.findUnique({
-      where: { id: data.tankProcessId },
-      include: { tank: { select: { id: true, tankNo: true } } },
-    });
+  private static async generateRequestNo(tankNo?: string | null): Promise<string> {
+    const prefix = `REQ-${tankNo ?? "GEN"}-`;
+    const count = await InspectionRequestRepository.countForRequestNo(prefix);
+    return `${prefix}${String(count + 1).padStart(4, "0")}`;
+  }
 
-    if (!tankProcess) {
-      throw new HTTPException(404, { message: "Tank process not found", cause: "PROCESS_NOT_FOUND" });
+  private static async assertTankAndProcess(tankId?: string | null, tankProcessId?: string | null) {
+    let tankNo: string | null = null;
+    if (tankId) {
+      const tank = await pgsql.tank.findFirst({ where: { id: tankId, deletedAt: null }, select: { tankNo: true } });
+      if (!tank) throw new HTTPException(404, { message: "Tank not found", cause: "TANK_NOT_FOUND" });
+      tankNo = tank.tankNo;
+    }
+    if (tankProcessId) {
+      if (!tankId) {
+        throw new HTTPException(400, { message: "tankId is required when tankProcessId is provided", cause: "TANK_REQUIRED_FOR_PROCESS" });
+      }
+      const tankProcess = await pgsql.tankProcess.findUnique({ where: { id: tankProcessId }, select: { tankId: true } });
+      if (!tankProcess) throw new HTTPException(404, { message: "Tank process not found", cause: "PROCESS_NOT_FOUND" });
+      if (tankProcess.tankId !== tankId) {
+        throw new HTTPException(422, { message: "Tank process does not belong to the provided tank", cause: "PROCESS_TANK_MISMATCH" });
+      }
+    }
+    return tankNo;
+  }
+
+  static async createRequest(c: Context, data: CreateInspectionRequestRequest, files: File[], userId: string) {
+    const tankNo = await this.assertTankAndProcess(data.tankId, data.tankProcessId);
+
+    if (files.length > MAX_ATTACHMENTS) {
+      throw new HTTPException(400, { message: `Maximum ${MAX_ATTACHMENTS} attachments are allowed`, cause: "ATTACHMENT_LIMIT_EXCEEDED" });
+    }
+    validateFiles(files);
+
+    const requestNo = await this.generateRequestNo(tankNo);
+    const description = data.description?.trim() || buildRequestDescription(data.testType, data.items, tankNo);
+
+    // Upload supporting files to MinIO outside the transaction
+    const fileRecords = files.length > 0
+      ? await Promise.all(files.map((f) => FileService.generateFileRecord(f, "INSPECTION_REQUEST")))
+      : [];
+    if (fileRecords.length > 0) {
+      await Promise.all(fileRecords.map((fr) => FileService.uploadFileToStorage(c, fr)));
     }
 
-    if (
-      tankProcess.status !== ProcessStatusEnum.IN_PROGRESS &&
-      tankProcess.status !== ProcessStatusEnum.REVIEWED
-    ) {
-      throw new HTTPException(422, {
-        message: "Inspection request can only be created when process is IN_PROGRESS or REVIEWED",
-        cause: "INVALID_PROCESS_STATE",
-      });
-    }
-
-    const eligibility = await EligibilityService.checkEligibility(data.tankProcessId);
-    if (!eligibility.eligible) {
-      throw new HTTPException(422, {
-        message: `Process not eligible: ${eligibility.reasons.join("; ")}`,
-        cause: "NOT_ELIGIBLE",
-      });
-    }
-
-    const count = await InspectionRequestRepository.countByTankNo(tankProcess.tank.tankNo);
-    const requestNo = `REQ-${tankProcess.tank.tankNo}-${padSeq(count)}`;
-
-    const request = await pgsql.$transaction(async (tx) => {
-      const newRequest = await tx.inspectionRequest.create({
-        data: {
-          tankProcessId: data.tankProcessId,
+    const created = await pgsql.$transaction(async (tx) => {
+      const request = await InspectionRequestRepository.createWithItems(
+        tx,
+        {
           requestNo,
-          requestedBy: userId,
-          status: InspectionRequestStatusEnum.SUBMITTED,
-          notes: data.notes,
-          requestedAt: new Date(),
+          testType: data.testType,
+          status: InspectionRequestStatusEnum.NOT_STARTED,
+          requestDate: new Date(data.requestDate),
+          assetHolder: data.assetHolder ?? null,
+          executionParty: data.executionParty ?? null,
+          standardAndCode: data.standardAndCode ?? null,
+          requestLocation: data.requestLocation ?? null,
+          description,
+          remarks: data.remarks ?? null,
+          tank: data.tankId ? { connect: { id: data.tankId } } : undefined,
+          tankProcess: data.tankProcessId ? { connect: { id: data.tankProcessId } } : undefined,
+          requestedByUser: { connect: { id: data.requestedBy ?? userId } },
         },
-      });
+        toItemRows(data.items),
+      );
 
-      await tx.tankProcess.update({
-        where: { id: data.tankProcessId },
-        data: { status: ProcessStatusEnum.WAITING_REVIEW },
-      });
+      if (fileRecords.length > 0) {
+        const storedFiles = await Promise.all(
+          fileRecords.map((fr) =>
+            tx.fileStorage.create({
+              data: {
+                url: fr.url!,
+                isUsed: true,
+                path: fr.path!,
+                meta: fr.metadata!,
+                module: "INSPECTION_REQUEST",
+                size: fr.size!,
+                createdBy: userId,
+                mimeType: fr.mimeType ?? null,
+              },
+              select: { id: true, url: true },
+            }),
+          ),
+        );
+        await InspectionRequestAttachmentRepository.createMany(
+          tx,
+          storedFiles.map((f, idx) => ({
+            inspectionRequestId: request.id,
+            fileStorageId: f.id,
+            attachmentUrl: f.url,
+            attachmentType: InspectionRequestAttachmentTypeEnum.SUPPORTING_DOCUMENT,
+            sortOrder: idx,
+          })),
+        );
+      }
 
-      return newRequest;
+      return request;
     });
 
-    const reviewers = await pgsql.user.findMany({
-      where: { role: "USER", status: "ACTIVE", deletedAt: null },
-      select: { id: true },
-    });
-
-    for (const reviewer of reviewers) {
-      await NotificationService.createNotificationForUser({
-        userId: reviewer.id,
-        title: "Inspection Review Requested",
-        description: `Request ${requestNo} for process "${tankProcess.name}" on tank ${tankProcess.tank.tankNo} requires your review.`,
-        type: "INSPECTION_REVIEW_REQUESTED",
-        metadata: {
-          targetType: "INSPECTION_REQUEST",
-          targetId: request.id,
-          tankId: tankProcess.tankId,
-          tankNo: tankProcess.tank.tankNo,
-          processName: tankProcess.name,
-        },
-      });
-    }
-
-    return InspectionRequestRepository.findById(request.id);
+    return this.getRequestById(created.id);
   }
 
   static async listRequests(query: ListInspectionRequestsQuery): Promise<InspectionRequestListResult> {
@@ -97,28 +242,18 @@ export class InspectionRequestService {
 
     const data: InspectionRequestListItem[] = requests.map((r) => ({
       id: r.id,
-      tankProcessId: r.tankProcessId,
       requestNo: r.requestNo,
+      testType: r.testType,
       status: r.status,
-      notes: r.notes,
-      requestedBy: r.requestedBy,
-      requestedAt: r.requestedAt,
-      reviewedBy: r.reviewedBy,
-      reviewNotes: r.reviewNotes,
-      reviewedAt: r.reviewedAt,
+      requestDate: r.requestDate,
+      tankId: r.tankId,
+      tankProcessId: r.tankProcessId,
       createdAt: r.createdAt,
       updatedAt: r.updatedAt,
-      tankProcess: {
-        id: r.tankProcess.id,
-        name: r.tankProcess.name,
-        type: r.tankProcess.type,
-        status: r.tankProcess.status,
-        tankId: r.tankProcess.tankId,
-        tank: r.tankProcess.tank,
-        processTemplate: r.tankProcess.processTemplate,
-      },
-      requestedByUser: r.requestedByUser,
-      reviewedByUser: r.reviewedByUser,
+      tank: r.tank ?? null,
+      tankProcess: r.tankProcess ?? null,
+      requestedByUser: r.requestedByUser ?? null,
+      summary: computeSummary(r.items, r.testRecords),
     }));
 
     return {
@@ -136,99 +271,199 @@ export class InspectionRequestService {
 
   static async getRequestById(id: string) {
     const request = await InspectionRequestRepository.findById(id);
-    if (!request) {
-      throw new HTTPException(404, { message: "Inspection request not found", cause: "REQUEST_NOT_FOUND" });
-    }
-    return request;
+    if (!request) throw new HTTPException(404, { message: "Inspection request not found", cause: "REQUEST_NOT_FOUND" });
+    return {
+      ...request,
+      signatoryTemplate: getSignatoryTemplate(request.testType),
+      summary: computeSummary(request.items, request.testRecords),
+    };
   }
 
-  static async cancelRequest(id: string, userId: string) {
+  static async updateRequest(id: string, data: UpdateInspectionRequestRequest) {
     const request = await InspectionRequestRepository.findById(id);
-    if (!request) {
-      throw new HTTPException(404, { message: "Inspection request not found", cause: "REQUEST_NOT_FOUND" });
-    }
+    if (!request) throw new HTTPException(404, { message: "Inspection request not found", cause: "REQUEST_NOT_FOUND" });
 
-    if (request.requestedBy !== userId) {
-      throw new HTTPException(403, { message: "Only the requester can cancel this request", cause: "FORBIDDEN" });
-    }
-
-    if (
-      request.status !== InspectionRequestStatusEnum.DRAFT &&
-      request.status !== InspectionRequestStatusEnum.SUBMITTED
-    ) {
+    if (request.status !== InspectionRequestStatusEnum.NOT_STARTED) {
       throw new HTTPException(422, {
-        message: "Only DRAFT or SUBMITTED requests can be cancelled",
-        cause: "INVALID_REQUEST_STATUS",
+        message: "Request can only be edited while it is NOT_STARTED",
+        cause: "REQUEST_NOT_EDITABLE",
       });
     }
 
-    await pgsql.$transaction(async (tx) => {
-      await tx.inspectionRequest.update({
-        where: { id },
-        data: { status: InspectionRequestStatusEnum.CANCELLED },
-      });
-      await tx.tankProcess.update({
-        where: { id: request.tankProcessId },
-        data: { status: ProcessStatusEnum.IN_PROGRESS },
-      });
-    });
-  }
-
-  static async reviewRequest(id: string, data: ReviewInspectionRequestRequest, userId: string) {
-    const request = await InspectionRequestRepository.findById(id);
-    if (!request) {
-      throw new HTTPException(404, { message: "Inspection request not found", cause: "REQUEST_NOT_FOUND" });
-    }
-
-    if (request.status !== InspectionRequestStatusEnum.SUBMITTED) {
-      throw new HTTPException(422, {
-        message: "Only SUBMITTED requests can be reviewed",
-        cause: "INVALID_REQUEST_STATUS",
-      });
-    }
-
-    const newStatus =
-      data.status === "REVIEWED"
-        ? InspectionRequestStatusEnum.REVIEWED
-        : InspectionRequestStatusEnum.RETURNED;
-
-    const newProcessStatus =
-      data.status === "REVIEWED" ? ProcessStatusEnum.REVIEWED : ProcessStatusEnum.IN_PROGRESS;
+    const nextTankId = data.tankId !== undefined ? data.tankId : request.tankId;
+    const nextProcessId = data.tankProcessId !== undefined ? data.tankProcessId : request.tankProcessId;
+    await this.assertTankAndProcess(nextTankId, nextProcessId);
 
     await pgsql.$transaction(async (tx) => {
       await tx.inspectionRequest.update({
         where: { id },
         data: {
-          status: newStatus,
-          reviewedBy: userId,
-          reviewNotes: data.reviewNotes,
-          reviewedAt: new Date(),
+          ...(data.testType && { testType: data.testType }),
+          ...(data.requestDate && { requestDate: new Date(data.requestDate) }),
+          ...(data.tankId !== undefined && { tank: data.tankId ? { connect: { id: data.tankId } } : { disconnect: true } }),
+          ...(data.tankProcessId !== undefined && {
+            tankProcess: data.tankProcessId ? { connect: { id: data.tankProcessId } } : { disconnect: true },
+          }),
+          ...(data.assetHolder !== undefined && { assetHolder: data.assetHolder }),
+          ...(data.executionParty !== undefined && { executionParty: data.executionParty }),
+          ...(data.standardAndCode !== undefined && { standardAndCode: data.standardAndCode }),
+          ...(data.requestLocation !== undefined && { requestLocation: data.requestLocation }),
+          ...(data.description !== undefined && { description: data.description }),
+          ...(data.remarks !== undefined && { remarks: data.remarks }),
         },
       });
-      await tx.tankProcess.update({
-        where: { id: request.tankProcessId },
-        data: { status: newProcessStatus },
-      });
+
+      if (data.items) {
+        await InspectionRequestRepository.replaceItems(tx, id, toItemRows(data.items));
+      }
     });
 
-    if (request.requestedBy) {
-      await NotificationService.createNotificationForUser({
-        userId: request.requestedBy,
-        title: data.status === "REVIEWED" ? "Inspection Request Reviewed" : "Inspection Request Returned",
-        description:
-          data.status === "REVIEWED"
-            ? `Your request ${request.requestNo} has been reviewed and approved.`
-            : `Your request ${request.requestNo} has been returned. Notes: ${data.reviewNotes ?? "-"}`,
-        type: "INSPECTION_REVIEWED",
-        metadata: {
-          targetType: "INSPECTION_REQUEST",
-          targetId: request.id,
-          tankNo: request.tankProcess.tank.tankNo,
-          processName: request.tankProcess.processTemplate.name,
-        },
+    return this.getRequestById(id);
+  }
+
+  static async submitConfirm(id: string) {
+    const request = await InspectionRequestRepository.findById(id);
+    if (!request) throw new HTTPException(404, { message: "Inspection request not found", cause: "REQUEST_NOT_FOUND" });
+
+    if (request.status !== InspectionRequestStatusEnum.NOT_STARTED) {
+      throw new HTTPException(422, {
+        message: "Only NOT_STARTED requests can be submitted",
+        cause: "INVALID_REQUEST_STATUS",
       });
     }
 
-    return InspectionRequestRepository.findById(id);
+    const signedCount = await InspectionRequestAttachmentRepository.countSignedForm(id);
+    if (signedCount === 0) {
+      throw new HTTPException(422, {
+        message: "A signed request form (attachmentType SIGNED_REQUEST_FORM) must be uploaded before confirming",
+        cause: "SIGNED_FORM_REQUIRED",
+      });
+    }
+
+    await InspectionRequestRepository.update(id, {
+      status: InspectionRequestStatusEnum.IN_PROCESS,
+      confirmedAt: new Date(),
+    });
+
+    return this.getRequestById(id);
+  }
+
+  static async updateStatus(id: string, data: UpdateStatusRequest) {
+    const request = await InspectionRequestRepository.findById(id);
+    if (!request) throw new HTTPException(404, { message: "Inspection request not found", cause: "REQUEST_NOT_FOUND" });
+
+    if (request.status === InspectionRequestStatusEnum.NOT_STARTED) {
+      throw new HTTPException(422, {
+        message: "Submit and confirm the signed request form before updating result status",
+        cause: "REQUEST_NOT_CONFIRMED",
+      });
+    }
+
+    // Allowed: IN_PROCESS -> REPAIR/PASSED, REPAIR -> PASSED
+    const allowed =
+      (request.status === InspectionRequestStatusEnum.IN_PROCESS &&
+        (data.status === InspectionRequestStatusEnum.REPAIR || data.status === InspectionRequestStatusEnum.PASSED)) ||
+      (request.status === InspectionRequestStatusEnum.REPAIR && data.status === InspectionRequestStatusEnum.PASSED);
+
+    if (!allowed) {
+      throw new HTTPException(422, {
+        message: `Cannot change status from ${request.status} to ${data.status}`,
+        cause: "INVALID_STATUS_TRANSITION",
+      });
+    }
+
+    await InspectionRequestRepository.update(id, {
+      status: data.status,
+      ...(data.remarks !== undefined && { remarks: data.remarks }),
+    });
+
+    return this.getRequestById(id);
+  }
+
+  static async uploadAttachment(
+    c: Context,
+    id: string,
+    attachmentType: InspectionRequestAttachmentTypeEnum,
+    caption: string | undefined,
+    files: File[],
+    userId: string,
+  ) {
+    const request = await InspectionRequestRepository.findById(id);
+    if (!request) throw new HTTPException(404, { message: "Inspection request not found", cause: "REQUEST_NOT_FOUND" });
+    if (files.length === 0) throw new HTTPException(400, { message: "At least one file is required" });
+    if (files.length > MAX_ATTACHMENTS) {
+      throw new HTTPException(400, { message: `Maximum ${MAX_ATTACHMENTS} attachments are allowed`, cause: "ATTACHMENT_LIMIT_EXCEEDED" });
+    }
+    validateFiles(files);
+
+    const fileRecords = await Promise.all(files.map((f) => FileService.generateFileRecord(f, "INSPECTION_REQUEST")));
+    await Promise.all(fileRecords.map((fr) => FileService.uploadFileToStorage(c, fr)));
+
+    const existing = await InspectionRequestAttachmentRepository.findActiveByRequestId(id);
+    const baseSort = existing.length;
+
+    await pgsql.$transaction(async (tx) => {
+      const storedFiles = await Promise.all(
+        fileRecords.map((fr) =>
+          tx.fileStorage.create({
+            data: {
+              url: fr.url!,
+              isUsed: true,
+              path: fr.path!,
+              meta: fr.metadata!,
+              module: "INSPECTION_REQUEST",
+              size: fr.size!,
+              createdBy: userId,
+              mimeType: fr.mimeType ?? null,
+            },
+            select: { id: true, url: true },
+          }),
+        ),
+      );
+      await InspectionRequestAttachmentRepository.createMany(
+        tx,
+        storedFiles.map((f, idx) => ({
+          inspectionRequestId: id,
+          fileStorageId: f.id,
+          attachmentUrl: f.url,
+          attachmentType,
+          caption: idx === 0 ? caption : undefined,
+          sortOrder: baseSort + idx,
+        })),
+      );
+    });
+
+    return this.getRequestById(id);
+  }
+
+  static async removeAttachment(id: string, attachmentId: string) {
+    const request = await InspectionRequestRepository.findById(id);
+    if (!request) throw new HTTPException(404, { message: "Inspection request not found", cause: "REQUEST_NOT_FOUND" });
+
+    const attachment = await InspectionRequestAttachmentRepository.findActiveById(attachmentId, id);
+    if (!attachment) throw new HTTPException(404, { message: "Attachment not found", cause: "ATTACHMENT_NOT_FOUND" });
+
+    await pgsql.$transaction(async (tx) => {
+      await InspectionRequestAttachmentRepository.softDeleteById(tx, attachmentId, id);
+      await tx.fileStorage.updateMany({ where: { id: attachment.fileStorageId }, data: { isUsed: false } });
+    });
+
+    return this.getRequestById(id);
+  }
+
+  static async deleteRequest(id: string) {
+    const request = await InspectionRequestRepository.findById(id);
+    if (!request) throw new HTTPException(404, { message: "Inspection request not found", cause: "REQUEST_NOT_FOUND" });
+    await InspectionRequestRepository.softDelete(id);
+  }
+
+  static async listTankOptions() {
+    return InspectionRequestRepository.findTankOptions();
+  }
+
+  static async listTankProcessOptions(tankId: string) {
+    const tank = await pgsql.tank.findFirst({ where: { id: tankId, deletedAt: null }, select: { id: true } });
+    if (!tank) throw new HTTPException(404, { message: "Tank not found", cause: "TANK_NOT_FOUND" });
+    return InspectionRequestRepository.findTankProcessOptions(tankId);
   }
 }

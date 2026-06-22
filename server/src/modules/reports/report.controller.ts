@@ -33,25 +33,18 @@ export class ReportController {
 
   static async getInspectionRequestPrintData(c: Context) {
     const id = c.req.param("id");
-    const request = await pgsql.inspectionRequest.findUnique({
-      where: { id },
+    const request = await pgsql.inspectionRequest.findFirst({
+      where: { id, deletedAt: null },
       include: {
-        tankProcess: {
-          include: {
-            tank: true,
-            processTemplate: true,
-            checklistResults: {
-              include: { criteria: true, checkedByUser: { select: { id: true, name: true } } },
-            },
-          },
-        },
+        tank: true,
+        tankProcess: { include: { processTemplate: true } },
         requestedByUser: { select: { id: true, name: true, email: true } },
-        reviewedByUser: { select: { id: true, name: true, email: true } },
+        items: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
+        attachments: { where: { deletedAt: null }, orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
       },
     });
     if (!request) throw new HTTPException(404, { message: "Inspection request not found", cause: "REQUEST_NOT_FOUND" });
-    const attachments = await FileRepository.getFileRecordsByTargetId(id, "INSPECTION_REQUEST");
-    return responseOK(c, "Print data retrieved successfully", { request, attachments });
+    return responseOK(c, "Print data retrieved successfully", { request });
   }
 
   static async getTestRecordPrintData(c: Context) {
@@ -71,25 +64,5 @@ export class ReportController {
     if (!record) throw new HTTPException(404, { message: "Test record not found", cause: "TEST_RECORD_NOT_FOUND" });
     const attachments = await FileRepository.getFileRecordsByTargetId(id, "TEST_RECORD");
     return responseOK(c, "Print data retrieved successfully", { record, attachments });
-  }
-
-  static async getRadiographyPrintData(c: Context) {
-    const id = c.req.param("id");
-    const test = await pgsql.radiographyTest.findUnique({
-      where: { id },
-      include: {
-        tankProcess: {
-          include: {
-            tank: true,
-            processTemplate: true,
-          },
-        },
-        createdByUser: { select: { id: true, name: true } },
-        jointResults: { orderBy: { jointNo: "asc" } },
-      },
-    });
-    if (!test) throw new HTTPException(404, { message: "Radiography test not found", cause: "RADIOGRAPHY_NOT_FOUND" });
-    const attachments = await FileRepository.getFileRecordsByTargetId(id, "RADIOGRAPHY_TEST");
-    return responseOK(c, "Print data retrieved successfully", { test, attachments });
   }
 }

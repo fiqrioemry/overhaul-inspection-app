@@ -1,34 +1,31 @@
-export interface TestRecordListItem {
+export interface TestRecordAttachmentItem {
   id: string;
-  tankProcessId: string;
-  testDate: Date | null;
-  testPressure: number | null;
-  pressureUnit: string | null;
-  holdingTime: string | null;
-  testMedium: string | null;
-  leakIndication: boolean | null;
-  result: string;
-  remarks: string | null;
-  createdBy: string | null;
+  fileStorageId: string;
+  attachmentUrl: string;
+  caption: string | null;
+  sortOrder: number;
   createdAt: Date;
-  updatedAt: Date;
-  createdByUser: { id: string; name: string } | null;
 }
 
-export interface TestRecordDetail {
+export interface TestRecordItem {
   id: string;
-  tankProcessId: string;
+  inspectionRequestId: string;
+  inspectionRequestItemId: string | null;
+  tankProcessId: string | null;
   testDate: Date | null;
   testPressure: number | null;
   pressureUnit: string | null;
   holdingTime: string | null;
   testMedium: string | null;
   leakIndication: boolean | null;
+  status: string;
   result: string;
   remarks: string | null;
   createdBy: string | null;
   createdAt: Date;
   updatedAt: Date;
+  inspectionRequest: { id: string; requestNo: string; testType: string; status: string } | null;
+  inspectionRequestItem: { id: string; objectType: string; objectName: string | null } | null;
   tankProcess: {
     id: string;
     name: string;
@@ -36,15 +33,7 @@ export interface TestRecordDetail {
     status: string;
     tankId: string;
     tank: { id: string; tankNo: string; tankName: string | null };
-    processTemplate: { code: string; name: string } | null;
   } | null;
   createdByUser: { id: string; name: string } | null;
-  attachments: {
-    id: string;
-    url: string;
-    path: string;
-    module: string;
-    isUsed: boolean;
-    createdAt: Date;
-  }[];
+  attachments: TestRecordAttachmentItem[];
 }

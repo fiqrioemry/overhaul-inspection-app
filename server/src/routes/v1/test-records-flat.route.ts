@@ -8,7 +8,6 @@ const testRecordsFlat = new Hono();
 
 testRecordsFlat.get("/:id", protect, requirePermission(PERMISSIONS.TEST_RECORD_READ), ctrl.getById);
 testRecordsFlat.patch("/:id", protect, requirePermission(PERMISSIONS.TEST_RECORD_UPDATE), ctrl.updateRecord);
-testRecordsFlat.patch("/:id/complete", protect, requirePermission(PERMISSIONS.TEST_RECORD_COMPLETE), ctrl.completeRecord);
 testRecordsFlat.delete("/:id", protect, requirePermission(PERMISSIONS.TEST_RECORD_DELETE), ctrl.deleteRecord);
 
 export default testRecordsFlat;

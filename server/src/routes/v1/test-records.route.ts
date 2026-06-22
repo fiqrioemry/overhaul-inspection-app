@@ -6,8 +6,8 @@ import { TestRecordController as ctrl } from "@/modules/test-records/test-record
 
 const testRecords = new Hono();
 
-// Nested under tank-processes (mounted at /tank-processes)
-testRecords.post("/:tankProcessId/test-records", protect, requirePermission(PERMISSIONS.TEST_RECORD_CREATE), ctrl.createRecord);
+// Nested under tank-processes (mounted at /tank-processes) — read-only.
+// Test records are created via the inspection request flow.
 testRecords.get("/:tankProcessId/test-records", protect, requirePermission(PERMISSIONS.TEST_RECORD_READ), ctrl.listByTankProcess);
 
 export default testRecords;

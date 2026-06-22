@@ -19,7 +19,7 @@ export class DashboardService {
       pgsql.tankProcess.count({ where: { status: ProcessStatusEnum.COMPLETED } }),
       pgsql.finding.count({ where: { status: FindingStatusEnum.OPEN, deletedAt: null } }),
       pgsql.finding.count({ where: { status: FindingStatusEnum.OPEN, severity: "CRITICAL", deletedAt: null } }),
-      pgsql.inspectionRequest.count({ where: { status: InspectionRequestStatusEnum.SUBMITTED } }),
+      pgsql.inspectionRequest.count({ where: { status: { not: InspectionRequestStatusEnum.PASSED }, deletedAt: null } }),
       pgsql.tankProcess.count({}),
       pgsql.tankProcess.count({ where: { status: ProcessStatusEnum.COMPLETED } }),
     ]);
@@ -100,37 +100,56 @@ export class DashboardService {
   }
 
   static async getTestSummary(): Promise<TestSummary> {
-    const [recentTestRecords, recentRadiography] = await Promise.all([
+    const [recentTestRecords, recentRequests, byType] = await Promise.all([
       pgsql.testRecord.findMany({
         orderBy: { createdAt: "desc" },
         take: 10,
         include: {
-          tankProcess: {
-            include: { tank: { select: { id: true, tankNo: true } } },
-          },
+          inspectionRequest: { select: { id: true, requestNo: true, testType: true } },
+          tankProcess: { include: { tank: { select: { id: true, tankNo: true } } } },
           createdByUser: { select: { id: true, name: true } },
         },
       }),
-      pgsql.radiographyTest.findMany({
+      pgsql.inspectionRequest.findMany({
+        where: { deletedAt: null },
         orderBy: { createdAt: "desc" },
         take: 10,
-        include: {
-          tankProcess: {
-            include: { tank: { select: { id: true, tankNo: true } } },
-          },
-        },
+        include: { tank: { select: { id: true, tankNo: true } } },
+      }),
+      pgsql.inspectionRequest.groupBy({
+        by: ["testType"],
+        where: { deletedAt: null },
+        _count: { id: true },
       }),
     ]);
 
-    const [passedTests, failedTests, pendingTests] = await Promise.all([
-      pgsql.testRecord.count({ where: { result: "PASSED" } }),
-      pgsql.testRecord.count({ where: { result: "FAILED" } }),
-      pgsql.testRecord.count({ where: { result: "PENDING" } }),
+    const [passedTests, repairTests, notStartedTests, reqNotStarted, reqInProcess, reqRepair, reqPassed] = await Promise.all([
+      pgsql.testRecord.count({ where: { status: "PASSED" } }),
+      pgsql.testRecord.count({ where: { status: "REPAIR" } }),
+      pgsql.testRecord.count({ where: { status: "NOT_STARTED" } }),
+      pgsql.inspectionRequest.count({ where: { status: "NOT_STARTED", deletedAt: null } }),
+      pgsql.inspectionRequest.count({ where: { status: "IN_PROCESS", deletedAt: null } }),
+      pgsql.inspectionRequest.count({ where: { status: "REPAIR", deletedAt: null } }),
+      pgsql.inspectionRequest.count({ where: { status: "PASSED", deletedAt: null } }),
     ]);
 
     return {
-      testRecords: { passed: passedTests, failed: failedTests, pending: pendingTests, recent: recentTestRecords },
-      radiography: { recent: recentRadiography },
+      testRecords: { passed: passedTests, repair: repairTests, notStarted: notStartedTests, recent: recentTestRecords },
+      inspectionRequests: {
+        notStarted: reqNotStarted,
+        inProcess: reqInProcess,
+        repair: reqRepair,
+        passed: reqPassed,
+        byType: byType.map((g) => ({ testType: g.testType, count: g._count.id })),
+        recent: recentRequests.map((r) => ({
+          id: r.id,
+          requestNo: r.requestNo,
+          testType: r.testType,
+          status: r.status,
+          createdAt: r.createdAt,
+          tank: r.tank,
+        })),
+      },
     };
   }
 }

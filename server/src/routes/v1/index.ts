@@ -16,9 +16,6 @@ import findings from "./findings.route";
 import dailyReports from "./daily-reports.route";
 import testRecordsNested from "./test-records.route";
 import testRecordsFlat from "./test-records-flat.route";
-import radiographyNested from "./radiography.route";
-import radiographyFlat from "./radiography-flat.route";
-import radiographyJoints from "./radiography-joints.route";
 import dashboard from "./dashboard.route";
 import reports from "./reports.route";
 
@@ -37,13 +34,10 @@ v1.route("/process-dependencies", processDependencies);
 v1.route("/tanks", tanks);
 v1.route("/processes", tankProcesses);
 v1.route("/processes", testRecordsNested);
-v1.route("/processes", radiographyNested);
 v1.route("/inspection-requests", inspectionRequests);
 v1.route("/findings", findings);
 v1.route("/daily-reports", dailyReports);
 v1.route("/test-records", testRecordsFlat);
-v1.route("/radiography-tests", radiographyFlat);
-v1.route("/radiography-joints", radiographyJoints);
 v1.route("/dashboard", dashboard);
 v1.route("/reports", reports);
 

@@ -10,7 +10,7 @@ import { FileRepository } from "@/modules/files/file.repository";
 import { processFile, processImage, processInspectionAttachment, type AspectRatio, type CropRect } from "@/utils/file-processing";
 import type { ImageProcessMode } from "@/modules/files/file.types";
 
-const INSPECTION_ATTACHMENT_MODULES = new Set(["DAILY_REPORT", "FINDING", "TEST_RECORD", "RADIOGRAPHY_TEST", "TANK"]);
+const INSPECTION_ATTACHMENT_MODULES = new Set(["DAILY_REPORT", "FINDING", "TEST_RECORD", "INSPECTION_REQUEST", "TANK"]);
 
 export class FileService {
   static async generateFileRecord(

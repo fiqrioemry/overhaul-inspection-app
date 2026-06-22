@@ -152,11 +152,59 @@ enum SeverityEnum {
 }
 
 enum InspectionRequestStatusEnum {
-  DRAFT
-  SUBMITTED
-  REVIEWED
-  RETURNED
-  CANCELLED
+  NOT_STARTED
+  IN_PROCESS
+  REPAIR
+  PASSED
+}
+
+enum InspectionRequestTypeEnum {
+  PENETRANT_TEST
+  RADIOGRAPHY_TEST
+  OIL_LEAK_TEST
+  PNEUMATIC_REINFORCEMENT_TEST
+  HYDROTEST_SHELL
+  HYDROTEST_PIPE
+  PNEUMATIC_BOTTOM_TEST
+  PNEUMATIC_ROOF_TEST
+  MATERIAL_INSPECTION
+  VISUAL_INSPECTION
+  COATING_INSPECTION
+  OTHER
+}
+
+enum InspectionObjectTypeEnum {
+  MANHOLE
+  COD
+  NOZZLE
+  SHELL_PLATE
+  BOTTOM_PLATE
+  ROOF_PLATE
+  REINFORCEMENT_PAD
+  PIPE
+  STEAM_COIL
+  WELD_JOINT
+  ANNULAR_PLATE
+  FLOOR_PLATE
+  VALVE
+  FLANGE
+  FITTING
+  MATERIAL
+  OTHER
+}
+
+enum InspectionRequestAttachmentTypeEnum {
+  SUPPORTING_DOCUMENT
+  GENERATED_REQUEST_FORM
+  SIGNED_REQUEST_FORM
+  SKETCH
+  OTHER
+}
+
+enum TestResultStatusEnum {
+  NOT_STARTED
+  REPAIR
+  PASSED
 }
 
 enum DailyActivityTypeEnum {
@@ -189,13 +237,6 @@ enum TankServiceEnum {
   OTHER
 }
 
-enum RadiographyJointResultEnum {
-  PENDING
-  ACCEPTED
-  REPAIR
-  RESHOOT
-  REJECTED
-}
 
 // ─── Auth Models ─────────────────────────────────────────────────────────────
 
@@ -226,13 +267,11 @@ model User {
   oauthAccounts        OAuthAccount[]
 
   createdTanks         Tank[]              @relation("TankCreatedBy")
-  reviewedRequests     InspectionRequest[] @relation("InspectionRequestReviewedBy")
   requestedReviews     InspectionRequest[] @relation("InspectionRequestRequestedBy")
   createdFindings      Finding[]           @relation("FindingCreatedBy")
   closedFindings       Finding[]           @relation("FindingClosedBy")
   checkedChecklists    ChecklistResult[]   @relation("ChecklistCheckedBy")
   createdTestRecords   TestRecord[]        @relation("TestRecordCreatedBy")
-  createdRadiography   RadiographyTest[]   @relation("RadiographyCreatedBy")
   dailyReports         DailyReport[]       @relation("DailyReportInspector")
   avatarFile           FileStorage? @relation("UserAvatar", fields: [avatarFileStorageId], references: [id], onDelete: SetNull)
 
@@ -323,6 +362,8 @@ model FileStorage {
   logoOfCompany            Company?                @relation("CompanyLogo")
   dailyReportAttachments   DailyReportAttachment[]
   tankAttachments          TankAttachment[]
+  inspectionRequestAttachments InspectionRequestAttachment[]
+  testRecordAttachments    TestRecordAttachment[]
   @@index([isUsed, createdAt])
   @@map("file_storages")
 }
@@ -558,11 +599,12 @@ model Tank {
   inspectionCompany Company?   @relation("TankInspectionCompany", fields: [inspectionCompanyId], references: [id])
   createdByUser     User?      @relation("TankCreatedBy", fields: [createdBy], references: [id])
 
-  shellCourses TankShellCourse[]
-  processes    TankProcess[]
-  findings     Finding[]
-  dailyReports DailyReport[]
-  attachments  TankAttachment[]
+  shellCourses       TankShellCourse[]
+  processes          TankProcess[]
+  findings           Finding[]
+  dailyReports       DailyReport[]
+  attachments        TankAttachment[]
+  inspectionRequests InspectionRequest[]
 
   @@index([status])
   @@index([deletedAt])
@@ -628,7 +670,6 @@ model TankProcess {
   findings           Finding[]
   inspectionRequests InspectionRequest[]
   testRecords        TestRecord[]
-  radiographyTests   RadiographyTest[]
   dailyReports       DailyReport[]
 
   @@unique([tankId, processTemplateId])
@@ -703,95 +744,135 @@ model Finding {
 }
 
 model InspectionRequest {
-  id            String                      @id @default(cuid())
-  tankProcessId String                      @map("tank_process_id")
-  requestNo     String                      @unique @map("request_no")
-  requestedBy   String?                     @map("requested_by")
-  reviewedBy    String?                     @map("reviewed_by")
-  status        InspectionRequestStatusEnum @default(DRAFT)
-  notes         String?
-  reviewNotes   String?                     @map("review_notes")
-  requestedAt   DateTime?                   @map("requested_at")
-  reviewedAt    DateTime?                   @map("reviewed_at")
-  createdAt     DateTime                    @default(now()) @map("created_at")
-  updatedAt     DateTime                    @updatedAt @map("updated_at")
+  id              String                      @id @default(cuid())
+  requestNo       String                      @unique @map("request_no")
+  tankId          String?                     @map("tank_id")
+  tankProcessId   String?                     @map("tank_process_id")
+  testType        InspectionRequestTypeEnum   @map("test_type")
+  status          InspectionRequestStatusEnum @default(NOT_STARTED)
+  requestDate     DateTime                    @map("request_date") @db.Date
+  requestedBy     String?                     @map("requested_by")
+  assetHolder     String?                     @map("asset_holder")
+  executionParty  String?                     @map("execution_party")
+  standardAndCode String?                     @map("standard_and_code")
+  requestLocation String?                     @map("request_location")
+  description     String?
+  remarks         String?
+  confirmedAt     DateTime?                   @map("confirmed_at")
+  createdAt       DateTime                    @default(now()) @map("created_at")
+  updatedAt       DateTime                    @updatedAt @map("updated_at")
+  deletedAt       DateTime?                   @map("deleted_at")
 
-  tankProcess     TankProcess @relation(fields: [tankProcessId], references: [id], onDelete: Cascade)
-  requestedByUser User?       @relation("InspectionRequestRequestedBy", fields: [requestedBy], references: [id])
-  reviewedByUser  User?       @relation("InspectionRequestReviewedBy", fields: [reviewedBy], references: [id])
+  tank            Tank?        @relation(fields: [tankId], references: [id], onDelete: SetNull)
+  tankProcess     TankProcess? @relation(fields: [tankProcessId], references: [id], onDelete: SetNull)
+  requestedByUser User?        @relation("InspectionRequestRequestedBy", fields: [requestedBy], references: [id])
 
+  items       InspectionRequestItem[]
+  attachments InspectionRequestAttachment[]
+  testRecords TestRecord[]
+
+  @@index([tankId])
   @@index([tankProcessId])
   @@index([status])
+  @@index([testType])
+  @@index([deletedAt])
   @@map("inspection_requests")
 }
 
+model InspectionRequestItem {
+  id                  String                   @id @default(cuid())
+  inspectionRequestId String                   @map("inspection_request_id")
+  objectType          InspectionObjectTypeEnum @map("object_type")
+  objectName          String?                  @map("object_name")
+  quantity            Int                      @default(1)
+  unit                String?
+  locationDetail      String?                  @map("location_detail")
+  remarks             String?
+  sortOrder           Int                      @default(0) @map("sort_order")
+  metadata            Json?
+  createdAt           DateTime                 @default(now()) @map("created_at")
+  updatedAt           DateTime                 @updatedAt @map("updated_at")
+
+  inspectionRequest InspectionRequest @relation(fields: [inspectionRequestId], references: [id], onDelete: Cascade)
+  testRecords       TestRecord[]
+
+  @@index([inspectionRequestId])
+  @@map("inspection_request_items")
+}
+
+model InspectionRequestAttachment {
+  id                  String                              @id @default(cuid())
+  inspectionRequestId String                              @map("inspection_request_id")
+  fileStorageId       String                              @map("file_storage_id")
+  attachmentUrl       String                              @map("attachment_url")
+  attachmentType      InspectionRequestAttachmentTypeEnum @default(SUPPORTING_DOCUMENT) @map("attachment_type")
+  caption             String?
+  sortOrder           Int                                 @default(0) @map("sort_order")
+  createdAt           DateTime                            @default(now()) @map("created_at")
+  updatedAt           DateTime                            @updatedAt @map("updated_at")
+  deletedAt           DateTime?                           @map("deleted_at")
+
+  inspectionRequest InspectionRequest @relation(fields: [inspectionRequestId], references: [id], onDelete: Cascade)
+  fileStorage       FileStorage       @relation(fields: [fileStorageId], references: [id], onDelete: Restrict)
+
+  @@unique([inspectionRequestId, fileStorageId])
+  @@index([inspectionRequestId])
+  @@index([fileStorageId])
+  @@index([attachmentType])
+  @@index([deletedAt])
+  @@map("inspection_request_attachments")
+}
+
 model TestRecord {
-  id            String            @id @default(cuid())
-  tankProcessId String            @map("tank_process_id")
-  testDate      DateTime?         @map("test_date") @db.Date
-  testPressure  Float?            @map("test_pressure")
-  pressureUnit  String?           @map("pressure_unit")
-  holdingTime   String?           @map("holding_time")
-  testMedium    String?           @map("test_medium")
-  leakIndication Boolean?         @map("leak_indication")
-  result        ProcessResultEnum @default(PENDING)
-  remarks       String?
-  createdBy     String?           @map("created_by")
-  createdAt     DateTime          @default(now()) @map("created_at")
-  updatedAt     DateTime          @updatedAt @map("updated_at")
+  id                      String               @id @default(cuid())
+  inspectionRequestId     String               @map("inspection_request_id")
+  inspectionRequestItemId String?              @map("inspection_request_item_id")
+  tankProcessId           String?              @map("tank_process_id")
+  testDate                DateTime?            @map("test_date") @db.Date
+  testPressure            Float?               @map("test_pressure")
+  pressureUnit            String?              @map("pressure_unit")
+  holdingTime             String?              @map("holding_time")
+  testMedium              String?              @map("test_medium")
+  leakIndication          Boolean?             @map("leak_indication")
+  status                  TestResultStatusEnum @default(NOT_STARTED)
+  result                  ProcessResultEnum    @default(PENDING)
+  remarks                 String?
+  createdBy               String?              @map("created_by")
+  createdAt               DateTime             @default(now()) @map("created_at")
+  updatedAt               DateTime             @updatedAt @map("updated_at")
 
-  tankProcess   TankProcess @relation(fields: [tankProcessId], references: [id], onDelete: Cascade)
-  createdByUser User?       @relation("TestRecordCreatedBy", fields: [createdBy], references: [id])
+  inspectionRequest     InspectionRequest      @relation(fields: [inspectionRequestId], references: [id], onDelete: Cascade)
+  inspectionRequestItem InspectionRequestItem? @relation(fields: [inspectionRequestItemId], references: [id], onDelete: SetNull)
+  tankProcess           TankProcess?           @relation(fields: [tankProcessId], references: [id], onDelete: SetNull)
+  createdByUser         User?                  @relation("TestRecordCreatedBy", fields: [createdBy], references: [id])
+  attachments           TestRecordAttachment[]
 
+  @@index([inspectionRequestId])
+  @@index([inspectionRequestItemId])
   @@index([tankProcessId])
-  @@index([result])
+  @@index([status])
   @@map("test_records")
 }
 
-model RadiographyTest {
-  id            String            @id @default(cuid())
-  tankProcessId String            @map("tank_process_id")
-  testDate      DateTime?         @map("test_date") @db.Date
-  area          String?
-  totalJoint    Int               @default(0) @map("total_joint")
-  totalShot     Int               @default(0) @map("total_shot")
-  totalAccepted Int               @default(0) @map("total_accepted")
-  totalRepair   Int               @default(0) @map("total_repair")
-  totalReshoot  Int               @default(0) @map("total_reshoot")
-  result        ProcessResultEnum @default(PENDING)
-  remarks       String?
-  createdBy     String?           @map("created_by")
-  createdAt     DateTime          @default(now()) @map("created_at")
-  updatedAt     DateTime          @updatedAt @map("updated_at")
+model TestRecordAttachment {
+  id            String    @id @default(cuid())
+  testRecordId  String    @map("test_record_id")
+  fileStorageId String    @map("file_storage_id")
+  attachmentUrl String    @map("attachment_url")
+  caption       String?
+  sortOrder     Int       @default(0) @map("sort_order")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  deletedAt     DateTime? @map("deleted_at")
 
-  tankProcess  TankProcess              @relation(fields: [tankProcessId], references: [id], onDelete: Cascade)
-  createdByUser User?                   @relation("RadiographyCreatedBy", fields: [createdBy], references: [id])
-  jointResults RadiographyJointResult[]
+  testRecord  TestRecord  @relation(fields: [testRecordId], references: [id], onDelete: Cascade)
+  fileStorage FileStorage @relation(fields: [fileStorageId], references: [id], onDelete: Restrict)
 
-  @@index([tankProcessId])
-  @@index([result])
-  @@map("radiography_tests")
-}
-
-model RadiographyJointResult {
-  id                String                    @id @default(cuid())
-  radiographyTestId String                    @map("radiography_test_id")
-  jointNo           String                    @map("joint_no")
-  location          String?
-  weldType          String?                   @map("weld_type")
-  welderNo          String?                   @map("welder_no")
-  filmNo            String?                   @map("film_no")
-  result            RadiographyJointResultEnum @default(PENDING)
-  defectType        String?                   @map("defect_type")
-  repairStatus      String?                   @map("repair_status")
-  remarks           String?
-  createdAt         DateTime                  @default(now()) @map("created_at")
-  updatedAt         DateTime                  @updatedAt @map("updated_at")
-
-  radiographyTest RadiographyTest @relation(fields: [radiographyTestId], references: [id], onDelete: Cascade)
-
-  @@index([radiographyTestId])
-  @@map("radiography_joint_results")
+  @@unique([testRecordId, fileStorageId])
+  @@index([testRecordId])
+  @@index([fileStorageId])
+  @@index([deletedAt])
+  @@map("test_record_attachments")
 }
 
 model DailyReport {

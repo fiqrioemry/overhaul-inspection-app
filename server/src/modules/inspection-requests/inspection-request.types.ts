@@ -7,30 +7,29 @@ export interface PaginationMeta {
   hasPreviousPage: boolean;
 }
 
+export interface InspectionRequestSummaryCounts {
+  totalObjects: number;
+  totalTestRecords: number;
+  totalPassed: number;
+  totalRepair: number;
+  totalNotStarted: number;
+  progressPercent: number;
+}
+
 export interface InspectionRequestListItem {
   id: string;
-  tankProcessId: string;
   requestNo: string;
+  testType: string;
   status: string;
-  notes: string | null;
-  requestedBy: string | null;
-  requestedAt: Date | null;
-  reviewedBy: string | null;
-  reviewNotes: string | null;
-  reviewedAt: Date | null;
+  requestDate: Date;
+  tankId: string | null;
+  tankProcessId: string | null;
   createdAt: Date;
   updatedAt: Date;
-  tankProcess: {
-    id: string;
-    name: string;
-    type: string;
-    status: string;
-    tankId: string;
-    tank: { id: string; tankNo: string };
-    processTemplate: { code: string; name: string };
-  };
+  tank: { id: string; tankNo: string; tankName: string | null } | null;
+  tankProcess: { id: string; name: string } | null;
   requestedByUser: { id: string; name: string } | null;
-  reviewedByUser: { id: string; name: string } | null;
+  summary: InspectionRequestSummaryCounts;
 }
 
 export interface InspectionRequestListResult {
