@@ -12,7 +12,7 @@ import EmptyState from "@/components/common/EmptyState";
 import Pagination from "@/components/common/Pagination";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 import PermissionGate from "@/components/common/PermissionGate";
-import DailyReportFormDialog, { ACTIVITY_OPTIONS, ACTIVITY_LABEL } from "@/features/daily-reports/components/DailyReportFormDialog";
+import { ACTIVITY_OPTIONS, ACTIVITY_LABEL } from "@/features/daily-reports/daily-report.constants";
 import { useDailyReports, useDeleteDailyReport } from "@/features/daily-reports/daily-reports.query";
 import { format } from "date-fns";
 import { PERMISSIONS } from "@/constants/permission.constant";
@@ -28,7 +28,6 @@ export default function DailyReportListPage() {
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
   const [deleteTarget, setDeleteTarget] = useState<DailyReportSummary | null>(null);
-  const [createOpen, setCreateOpen] = useState(false);
 
   const deleteMutation = useDeleteDailyReport();
 
@@ -64,7 +63,7 @@ export default function DailyReportListPage() {
         description="Inspector daily activity records — tank, process, or general activity"
         action={
           <PermissionGate permission={PERMISSIONS.DAILY_REPORT_CREATE}>
-            <Button onClick={() => setCreateOpen(true)}>
+            <Button onClick={() => navigate(ROUTES.DAILY_REPORT_CREATE)}>
               <Plus className="h-4 w-4 mr-1" /> Create Report
             </Button>
           </PermissionGate>
@@ -95,7 +94,10 @@ export default function DailyReportListPage() {
           type="date"
           className="w-38 text-sm"
           value={startDate}
-          onChange={(e) => { setStartDate(e.target.value); setPage(1); }}
+          onChange={(e) => {
+            setStartDate(e.target.value);
+            setPage(1);
+          }}
           title="Start date"
         />
         <span className="text-muted-foreground text-sm">—</span>
@@ -103,7 +105,10 @@ export default function DailyReportListPage() {
           type="date"
           className="w-38 text-sm"
           value={endDate}
-          onChange={(e) => { setEndDate(e.target.value); setPage(1); }}
+          onChange={(e) => {
+            setEndDate(e.target.value);
+            setPage(1);
+          }}
           title="End date"
         />
 
@@ -149,17 +154,19 @@ export default function DailyReportListPage() {
                         <span className="text-xs bg-muted px-2 py-0.5 rounded">{ACTIVITY_LABEL[report.activityType] ?? report.activityType.replace(/_/g, " ")}</span>
                       </td>
                       <td className="px-4 py-3 max-w-sm">
-                        <p className="line-clamp-2 text-xs">{report.description ? report.description.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim() : "—"}</p>
+                        <p className="line-clamp-2 text-xs">
+                          {report.description
+                            ? report.description
+                                .replace(/<[^>]+>/g, " ")
+                                .replace(/\s+/g, " ")
+                                .trim()
+                            : "—"}
+                        </p>
                       </td>
                       <td className="px-4 py-3 text-xs text-muted-foreground">{report.inspector?.name ?? "—"}</td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1 justify-end">
-                          <Button
-                            variant="ghost"
-                            size="icon-sm"
-                            onClick={() => navigate(ROUTES.DAILY_REPORT_DETAIL.replace(":id", report.id))}
-                            title="View Detail"
-                          >
+                          <Button variant="ghost" size="icon-sm" onClick={() => navigate(ROUTES.DAILY_REPORT_DETAIL.replace(":id", report.id))} title="View Detail">
                             <Eye className="h-3.5 w-3.5 text-muted-foreground" />
                           </Button>
                           <PermissionGate permission={PERMISSIONS.DAILY_REPORT_UPDATE}>
@@ -196,8 +203,6 @@ export default function DailyReportListPage() {
           deleteMutation.mutate(deleteTarget.id, { onSuccess: () => setDeleteTarget(null) });
         }}
       />
-
-      <DailyReportFormDialog open={createOpen} onOpenChange={setCreateOpen} />
     </div>
   );
 }

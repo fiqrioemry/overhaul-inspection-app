@@ -5,23 +5,10 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { ArrowLeft, X, GripVertical, ImageIcon, Plus, Loader2 } from "lucide-react";
-import { useEditor, EditorContent } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
-import Placeholder from "@tiptap/extension-placeholder";
-import {
-  DndContext,
-  closestCenter,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-} from "@dnd-kit/core";
-import {
-  SortableContext,
-  useSortable,
-  arrayMove,
-  rectSortingStrategy,
-} from "@dnd-kit/sortable";
+import RichTextEditor, { type RichTextEditorHandle } from "@/components/fields/RichTextEditor";
+import { ACTIVITY_OPTIONS } from "@/features/daily-reports/daily-report.constants";
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
+import { SortableContext, useSortable, arrayMove, rectSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -33,7 +20,6 @@ import { useDailyReport, useUpdateDailyReport } from "@/features/daily-reports/d
 import type { DailyReportAttachment } from "@/features/daily-reports/daily-reports.api";
 import { ROUTES } from "@/constants/route.constant";
 import { format } from "date-fns";
-import { cn } from "@/lib/utils";
 
 const schema = z.object({
   reportDate: z.string().min(1, "Report date required"),
@@ -41,11 +27,6 @@ const schema = z.object({
 });
 
 type FormValues = z.infer<typeof schema>;
-
-const ACTIVITY_OPTIONS = [
-  { label: "Monitoring", value: "MONITORING" },
-  { label: "Inspection", value: "INSPECTION" },
-];
 
 const MAX_FILE_SIZE = 8 * 1024 * 1024;
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
@@ -93,12 +74,7 @@ function SortableExistingCard({ attachment, onRemove, onCaptionChange }: Sortabl
         >
           <GripVertical className="h-4 w-4" />
         </button>
-        <button
-          type="button"
-          onClick={() => onRemove(attachment.id)}
-          className="absolute top-2 right-2 p-1.5 rounded-full bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500"
-          title="Remove photo"
-        >
+        <button type="button" onClick={() => onRemove(attachment.id)} className="absolute top-2 right-2 p-1.5 rounded-full bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500" title="Remove photo">
           <X className="h-3.5 w-3.5" />
         </button>
       </div>
@@ -131,12 +107,7 @@ function NewFileCard({ localFile, onRemove, onCaptionChange }: NewFileCardProps)
     <div className="flex flex-col rounded-lg border bg-card overflow-hidden shadow-sm">
       <div className="relative aspect-video bg-muted group">
         <img src={localFile.previewUrl} alt="" className="h-full w-full object-cover" />
-        <button
-          type="button"
-          onClick={() => onRemove(localFile.id)}
-          className="absolute top-2 right-2 p-1.5 rounded-full bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500"
-          title="Remove photo"
-        >
+        <button type="button" onClick={() => onRemove(localFile.id)} className="absolute top-2 right-2 p-1.5 rounded-full bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500" title="Remove photo">
           <X className="h-3.5 w-3.5" />
         </button>
         <span className="absolute top-2 left-2 bg-blue-500 text-white text-[10px] px-2 py-0.5 rounded-full font-medium">New</span>
@@ -157,44 +128,6 @@ function NewFileCard({ localFile, onRemove, onCaptionChange }: NewFileCardProps)
   );
 }
 
-// ── TipTap Toolbar ──────────────────────────────────────────────────────────
-
-function EditorToolbar({ editor }: { editor: ReturnType<typeof useEditor> }) {
-  if (!editor) return null;
-
-  return (
-    <div className="flex flex-wrap gap-1 border-b px-3 py-2 bg-muted/30">
-      <button
-        type="button"
-        onClick={() => editor.chain().focus().toggleBold().run()}
-        className={cn("px-2 py-1 rounded text-xs font-bold", editor.isActive("bold") ? "bg-primary text-primary-foreground" : "hover:bg-muted")}
-      >B</button>
-      <button
-        type="button"
-        onClick={() => editor.chain().focus().toggleItalic().run()}
-        className={cn("px-2 py-1 rounded text-xs italic", editor.isActive("italic") ? "bg-primary text-primary-foreground" : "hover:bg-muted")}
-      >I</button>
-      <button
-        type="button"
-        onClick={() => editor.chain().focus().toggleBulletList().run()}
-        className={cn("px-2 py-1 rounded text-xs", editor.isActive("bulletList") ? "bg-primary text-primary-foreground" : "hover:bg-muted")}
-        title="Bullet list"
-      >• List</button>
-      <button
-        type="button"
-        onClick={() => editor.chain().focus().toggleOrderedList().run()}
-        className={cn("px-2 py-1 rounded text-xs", editor.isActive("orderedList") ? "bg-primary text-primary-foreground" : "hover:bg-muted")}
-        title="Numbered list"
-      >1. List</button>
-      <button
-        type="button"
-        onClick={() => editor.chain().focus().setParagraph().run()}
-        className={cn("px-2 py-1 rounded text-xs", editor.isActive("paragraph") && !editor.isActive("heading") ? "bg-primary text-primary-foreground" : "hover:bg-muted")}
-      >¶ Normal</button>
-    </div>
-  );
-}
-
 // ── Main Page ───────────────────────────────────────────────────────────────
 
 export default function DailyReportEditPage() {
@@ -210,37 +143,25 @@ export default function DailyReportEditPage() {
   const [initialized, setInitialized] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const descRef = useRef<RichTextEditorHandle>(null);
+  const recRef = useRef<RichTextEditorHandle>(null);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: { reportDate: format(new Date(), "yyyy-MM-dd"), activityType: "MONITORING" },
   });
 
-  const editor = useEditor({
-    extensions: [
-      StarterKit,
-      Placeholder.configure({ placeholder: "Uraian kegiatan inspeksi harian..." }),
-    ],
-    content: "",
-    editorProps: {
-      attributes: { class: "min-h-40 px-3 py-2 text-sm focus:outline-none prose prose-sm dark:prose-invert max-w-none" },
-    },
-  });
-
-  // Initialize form + editor once report loads
+  // Initialize form + attachments once report loads
   useEffect(() => {
     if (!report || initialized) return;
     form.reset({
       reportDate: format(new Date(report.reportDate), "yyyy-MM-dd"),
       activityType: report.activityType,
     });
-    if (editor && report.description) {
-      editor.commands.setContent(report.description);
-    }
     const sorted = [...report.attachments].sort((a, b) => a.sortOrder - b.sortOrder);
     setAttachments(sorted.map((a) => ({ ...a, caption: a.caption ?? "" })));
     setInitialized(true);
-  }, [report, editor, initialized, form]);
+  }, [report, initialized, form]);
 
   // dnd-kit sensors
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
@@ -296,17 +217,16 @@ export default function DailyReportEditPage() {
   );
 
   function onSubmit(values: FormValues) {
-    const description = editor?.getHTML() ?? "";
-    if (!description || description === "<p></p>") {
-      editor?.commands.focus();
+    const description = descRef.current?.getHTML() ?? "";
+    if (descRef.current?.isEmpty()) {
+      descRef.current?.focus();
       return;
     }
+    const recommendation = recRef.current?.isEmpty() ? null : recRef.current?.getHTML();
 
     // Build sortOrders from current attachment order
     const sortOrders = attachments.map((a, idx) => ({ attachmentId: a.id, sortOrder: idx }));
-    const captions = attachments
-      .filter((a) => !removedIds.includes(a.id))
-      .map((a) => ({ attachmentId: a.id, caption: a.caption }));
+    const captions = attachments.filter((a) => !removedIds.includes(a.id)).map((a) => ({ attachmentId: a.id, caption: a.caption }));
 
     updateMutation.mutate(
       {
@@ -315,6 +235,7 @@ export default function DailyReportEditPage() {
           reportDate: values.reportDate,
           activityType: values.activityType,
           description,
+          recommendation,
           removedAttachmentIds: removedIds,
           captions,
           sortOrders,
@@ -338,12 +259,7 @@ export default function DailyReportEditPage() {
     <div className="max-w-4xl mx-auto space-y-6 pb-12">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate(ROUTES.DAILY_REPORT_DETAIL.replace(":id", id!))}
-          type="button"
-        >
+        <Button variant="ghost" size="sm" onClick={() => navigate(ROUTES.DAILY_REPORT_DETAIL.replace(":id", id!))} type="button">
           <ArrowLeft className="h-4 w-4 mr-1" /> Back
         </Button>
         <div>
@@ -364,16 +280,16 @@ export default function DailyReportEditPage() {
           </div>
         </div>
 
-        {/* Description — TipTap */}
-        <div className="rounded-lg border overflow-hidden space-y-0">
-          <div className="px-5 pt-4 pb-2">
-            <Label className="text-sm font-medium">Uraian Kegiatan / Activity Description</Label>
-          </div>
-          <EditorToolbar editor={editor} />
-          <EditorContent editor={editor} />
-          <div className="px-3 pb-2 text-xs text-muted-foreground text-right">
-            Rich text — supports bold, italic, bullet lists
-          </div>
+        {/* Description — rich editor */}
+        <div className="space-y-1.5">
+          <Label className="text-sm font-medium">Uraian Kegiatan / Activity Description <span className="text-destructive">*</span></Label>
+          <RichTextEditor ref={descRef} initialContent={report.description ?? ""} placeholder="Uraian kegiatan inspeksi harian..." />
+        </div>
+
+        {/* Recommendation — rich editor */}
+        <div className="space-y-1.5">
+          <Label className="text-sm font-medium">Rekomendasi / Recommendation <span className="text-muted-foreground font-normal">(opsional)</span></Label>
+          <RichTextEditor ref={recRef} initialContent={report.recommendation ?? ""} placeholder="Rekomendasi tindak lanjut (opsional)..." />
         </div>
 
         {/* Photos — drag to reorder */}
@@ -383,23 +299,10 @@ export default function DailyReportEditPage() {
               <h2 className="text-sm font-medium">Photos</h2>
               <p className="text-xs text-muted-foreground mt-0.5">Drag to reorder · {totalPhotos}/15</p>
             </div>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={totalPhotos >= 15}
-            >
+            <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={totalPhotos >= 15}>
               <Plus className="h-4 w-4 mr-1" /> Add Photos
             </Button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              multiple
-              className="hidden"
-              onChange={handleFileDrop}
-            />
+            <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" multiple className="hidden" onChange={handleFileDrop} />
           </div>
 
           {totalPhotos === 0 ? (
@@ -417,20 +320,10 @@ export default function DailyReportEditPage() {
               <SortableContext items={attachments.map((a) => a.id)} strategy={rectSortingStrategy}>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                   {attachments.map((a) => (
-                    <SortableExistingCard
-                      key={a.id}
-                      attachment={a}
-                      onRemove={handleRemoveExisting}
-                      onCaptionChange={handleCaptionChange}
-                    />
+                    <SortableExistingCard key={a.id} attachment={a} onRemove={handleRemoveExisting} onCaptionChange={handleCaptionChange} />
                   ))}
                   {localFiles.map((lf) => (
-                    <NewFileCard
-                      key={lf.id}
-                      localFile={lf}
-                      onRemove={handleRemoveLocal}
-                      onCaptionChange={handleLocalCaptionChange}
-                    />
+                    <NewFileCard key={lf.id} localFile={lf} onRemove={handleRemoveLocal} onCaptionChange={handleLocalCaptionChange} />
                   ))}
                 </div>
               </SortableContext>
@@ -440,12 +333,7 @@ export default function DailyReportEditPage() {
 
         {/* Actions */}
         <div className="flex items-center justify-end gap-3">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => navigate(ROUTES.DAILY_REPORT_DETAIL.replace(":id", id!))}
-            disabled={updateMutation.isPending}
-          >
+          <Button type="button" variant="outline" onClick={() => navigate(ROUTES.DAILY_REPORT_DETAIL.replace(":id", id!))} disabled={updateMutation.isPending}>
             Cancel
           </Button>
           <Button type="submit" disabled={updateMutation.isPending}>

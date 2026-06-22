@@ -103,11 +103,7 @@ export default function CompaniesPage() {
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2.5">
                           <div className="size-8 shrink-0 rounded-md border bg-muted flex items-center justify-center overflow-hidden">
-                            {company.logoUrl ? (
-                              <img src={company.logoUrl} alt={company.name} className="size-full object-cover" />
-                            ) : (
-                              <Building2 className="size-4 text-muted-foreground" />
-                            )}
+                            {company.logoUrl ? <img src={company.logoUrl} alt={company.name} className="size-full object-cover" /> : <Building2 className="size-4 text-muted-foreground" />}
                           </div>
                           <span className="font-medium">{company.name}</span>
                         </div>

@@ -1,10 +1,5 @@
 // src/features/inspection-requests/inspection-request.constants.ts
-import type {
-  InspectionRequestType,
-  InspectionObjectType,
-  InspectionRequestStatus,
-  AttachmentType,
-} from "./inspection-requests.api";
+import type { InspectionRequestType, InspectionObjectType, InspectionRequestStatus, AttachmentType } from "./inspection-requests.api";
 
 export const TEST_TYPE_LABELS: Record<InspectionRequestType, string> = {
   PENETRANT_TEST: "Penetrant Test",

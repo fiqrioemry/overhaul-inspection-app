@@ -72,6 +72,7 @@ export default function TestRecordFormDialog({ open, onOpenChange, inspectionReq
       });
     } else if (!open) {
       form.reset({ status: "NOT_STARTED", inspectionRequestItemId: "__none__", testDate: "", testPressure: "", pressureUnit: "bar", holdingTime: "", testMedium: "", remarks: "" });
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setFiles([]);
       setRemovedIds([]);
     }
@@ -97,15 +98,9 @@ export default function TestRecordFormDialog({ open, onOpenChange, inspectionReq
     };
 
     if (isEdit && record) {
-      updateMutation.mutate(
-        { id: record.id, data: { ...base, inspectionRequestItemId: itemId ?? null, removedAttachmentIds: removedIds } },
-        { onSuccess: () => onOpenChange(false) },
-      );
+      updateMutation.mutate({ id: record.id, data: { ...base, inspectionRequestItemId: itemId ?? null, removedAttachmentIds: removedIds } }, { onSuccess: () => onOpenChange(false) });
     } else {
-      createMutation.mutate(
-        { ...base, inspectionRequestItemId: itemId },
-        { onSuccess: () => onOpenChange(false) },
-      );
+      createMutation.mutate({ ...base, inspectionRequestItemId: itemId }, { onSuccess: () => onOpenChange(false) });
     }
   }
 
@@ -170,8 +165,12 @@ export default function TestRecordFormDialog({ open, onOpenChange, inspectionReq
             </div>
 
             <div className="flex justify-end gap-2 pt-2">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-              <Button type="submit" disabled={isPending}>{isPending ? "Saving..." : isEdit ? "Save Changes" : "Create Record"}</Button>
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isPending}>
+                {isPending ? "Saving..." : isEdit ? "Save Changes" : "Create Record"}
+              </Button>
             </div>
           </form>
         </div>

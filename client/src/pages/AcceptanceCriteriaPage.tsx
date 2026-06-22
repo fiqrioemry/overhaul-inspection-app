@@ -1,23 +1,23 @@
 // src/pages/AcceptanceCriteriaPage.tsx
 import { useState } from "react";
-import { ClipboardCheck, Plus, Pencil, Trash2, ChevronDown, ChevronRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { useDebounce } from "@/hooks/useDebounce";
 import PageHeader from "@/components/common/PageHeader";
-import LoadingState from "@/components/common/LoadingState";
 import ErrorState from "@/components/common/ErrorState";
 import EmptyState from "@/components/common/EmptyState";
-import StatusBadge from "@/components/common/StatusBadge";
-import ConfirmDialog from "@/components/common/ConfirmDialog";
 import Pagination from "@/components/common/Pagination";
-import PermissionGate from "@/components/common/PermissionGate";
-import AcceptanceCriteriaFormDialog from "@/features/acceptance-criteria/components/AcceptanceCriteriaFormDialog";
-import CriteriaDetailPanel from "@/features/acceptance-criteria/components/CriteriaDetailPanel";
-import { useAcceptanceCriteria, useDeleteAcceptanceCriteria } from "@/features/acceptance-criteria/acceptance-criteria.query";
-import type { AcceptanceCriteria } from "@/features/acceptance-criteria/acceptance-criteria.api";
+import StatusBadge from "@/components/common/StatusBadge";
+import LoadingState from "@/components/common/LoadingState";
+import ConfirmDialog from "@/components/common/ConfirmDialog";
 import { PERMISSIONS } from "@/constants/permission.constant";
-import { useDebounce } from "@/hooks/useDebounce";
+import PermissionGate from "@/components/common/PermissionGate";
+import { ClipboardCheck, Plus, Pencil, Trash2, ChevronDown, ChevronRight } from "lucide-react";
+import CriteriaDetailPanel from "@/features/acceptance-criteria/components/CriteriaDetailPanel";
+import type { AcceptanceCriteria } from "@/features/acceptance-criteria/acceptance-criteria.api";
+import AcceptanceCriteriaFormDialog from "@/features/acceptance-criteria/components/AcceptanceCriteriaFormDialog";
+import { useAcceptanceCriteria, useDeleteAcceptanceCriteria } from "@/features/acceptance-criteria/acceptance-criteria.query";
 
 export default function AcceptanceCriteriaPage() {
   const [page, setPage] = useState(1);
@@ -125,7 +125,9 @@ export default function AcceptanceCriteriaPage() {
                           ) : (
                             <div className="flex flex-wrap gap-1">
                               {criteria.criteriaRefs?.map((ref) => (
-                                <Badge key={ref.id} variant="outline" className="text-xs font-mono">{ref.referenceDocument.code}</Badge>
+                                <Badge key={ref.id} variant="outline" className="text-xs font-mono">
+                                  {ref.referenceDocument.code}
+                                </Badge>
                               ))}
                             </div>
                           )}

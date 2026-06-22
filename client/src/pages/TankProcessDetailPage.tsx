@@ -19,7 +19,7 @@ import FindingFormDialog from "@/features/findings/components/FindingFormDialog"
 import FindingEditDialog from "@/features/findings/components/FindingEditDialog";
 import FindingStatusDialog from "@/features/findings/components/FindingStatusDialog";
 import { FindingStatusBadge, FindingSeverityBadge } from "@/features/findings/components/FindingStatusBadge";
-import DailyReportFormDialog, { ACTIVITY_LABEL } from "@/features/daily-reports/components/DailyReportFormDialog";
+import { ACTIVITY_LABEL } from "@/features/daily-reports/daily-report.constants";
 import { useTankProcess, useUpdateProcessStatus } from "@/features/tank-processes/tank-processes.query";
 import { useFindings, useDeleteFinding, useBulkCloseFindings } from "@/features/findings/findings.query";
 import { useDailyReports, useDeleteDailyReport } from "@/features/daily-reports/daily-reports.query";
@@ -71,8 +71,6 @@ export default function TankProcessDetailPage() {
   const [bulkCloseFindingOpen, setBulkCloseFindingOpen] = useState(false);
   const [selectedFindingIds, setSelectedFindingIds] = useState<Set<string>>(new Set());
   const [deleteFindingTarget, setDeleteFindingTarget] = useState<FindingSummary | null>(null);
-  const [dailyReportDialogOpen, setDailyReportDialogOpen] = useState(false);
-  const [editDailyReport, setEditDailyReport] = useState<DailyReportSummary | null>(null);
   const [deleteDailyReportTarget, setDeleteDailyReportTarget] = useState<DailyReportSummary | null>(null);
 
   const { data: process, isLoading, isError, refetch } = useTankProcess(processId!);
@@ -313,7 +311,11 @@ export default function TankProcessDetailPage() {
               <span className="text-sm text-muted-foreground">{dailyReportsData?.meta?.total ?? 0} report(s)</span>
               {canAddDailyReport && (
                 <PermissionGate permission={PERMISSIONS.DAILY_REPORT_CREATE}>
-                  <Button size="sm" variant="outline" onClick={() => setDailyReportDialogOpen(true)}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => navigate(`${ROUTES.DAILY_REPORT_CREATE}?tankId=${process.tank?.id ?? tankId}&tankProcessId=${processId}`)}
+                  >
                     <Plus className="h-4 w-4 mr-1" /> Add Report
                   </Button>
                 </PermissionGate>
@@ -339,7 +341,7 @@ export default function TankProcessDetailPage() {
                           <Eye className="h-3.5 w-3.5 text-muted-foreground" />
                         </Button>
                         <PermissionGate permission={PERMISSIONS.DAILY_REPORT_UPDATE}>
-                          <Button variant="ghost" size="icon-sm" onClick={() => setEditDailyReport(report)} title="Edit">
+                          <Button variant="ghost" size="icon-sm" onClick={() => navigate(ROUTES.DAILY_REPORT_EDIT.replace(":id", report.id))} title="Edit">
                             <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
                           </Button>
                           <Button variant="ghost" size="icon-sm" onClick={() => setDeleteDailyReportTarget(report)} title="Delete" disabled={deleteDailyReport.isPending}>
@@ -475,12 +477,6 @@ export default function TankProcessDetailPage() {
           deleteFinding.mutate(deleteFindingTarget.id, { onSuccess: () => setDeleteFindingTarget(null) });
         }}
       />
-
-      <DailyReportFormDialog open={dailyReportDialogOpen} onOpenChange={setDailyReportDialogOpen} tankId={process.tank?.id ?? tankId!} tankProcessId={processId!} />
-
-      {editDailyReport && (
-        <DailyReportFormDialog open={Boolean(editDailyReport)} onOpenChange={(open) => !open && setEditDailyReport(null)} tankId={editDailyReport.tankId} tankProcessId={editDailyReport.tankProcessId ?? undefined} report={editDailyReport} />
-      )}
 
       <ConfirmDialog
         open={Boolean(deleteDailyReportTarget)}

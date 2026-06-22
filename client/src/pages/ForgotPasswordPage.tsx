@@ -29,9 +29,7 @@ export default function ForgotPasswordPage() {
             <div className="bg-card rounded-lg border border-border shadow-sm p-8">
               <ForgotPasswordForm />
             </div>
-            <p className="text-center text-xs text-muted-foreground/70">
-              Sistem ini untuk penggunaan internal project overhaul tangki PT. Pertamina Patra Niaga.
-            </p>
+            <p className="text-center text-xs text-muted-foreground/70">Sistem ini untuk penggunaan internal project overhaul tangki PT. Pertamina Patra Niaga.</p>
           </div>
         </main>
 

@@ -143,7 +143,9 @@ export default function InspectionRequestDetailPage() {
                     <tr key={it.id}>
                       <td className="px-2 py-1.5">{OBJECT_TYPE_LABELS[it.objectType as InspectionObjectType] ?? it.objectType}</td>
                       <td className="px-2 py-1.5">{it.objectName ?? "—"}</td>
-                      <td className="px-2 py-1.5">{it.quantity} {it.unit ?? ""}</td>
+                      <td className="px-2 py-1.5">
+                        {it.quantity} {it.unit ?? ""}
+                      </td>
                       <td className="px-2 py-1.5 text-muted-foreground">{it.locationDetail ?? "—"}</td>
                     </tr>
                   ))}
@@ -154,13 +156,7 @@ export default function InspectionRequestDetailPage() {
 
           {/* Test records */}
           <div className="rounded-lg border p-5">
-            <TestRecordSection
-              requestId={req.id}
-              requestStatus={req.status}
-              items={req.items}
-              canManage={can(PERMISSIONS.TEST_RECORD_CREATE)}
-              isAdmin={isAdmin}
-            />
+            <TestRecordSection requestId={req.id} requestStatus={req.status} items={req.items} canManage={can(PERMISSIONS.TEST_RECORD_CREATE)} isAdmin={isAdmin} />
           </div>
         </div>
 
@@ -173,12 +169,7 @@ export default function InspectionRequestDetailPage() {
               <>
                 <p className="text-xs text-muted-foreground">Print the form, collect signatures, upload the signed scan, then confirm to start processing.</p>
                 <PermissionGate permission={PERMISSIONS.INSPECTION_REQUEST_UPDATE}>
-                  <Button
-                    className="w-full"
-                    size="sm"
-                    disabled={!hasSignedForm || submitConfirm.isPending}
-                    onClick={() => submitConfirm.mutate(req.id)}
-                  >
+                  <Button className="w-full" size="sm" disabled={!hasSignedForm || submitConfirm.isPending} onClick={() => submitConfirm.mutate(req.id)}>
                     <CheckCircle2 className="h-4 w-4 mr-1" /> Submit &amp; Confirm
                   </Button>
                 </PermissionGate>
@@ -200,7 +191,9 @@ export default function InspectionRequestDetailPage() {
             {req.status === "PASSED" && <p className="text-xs text-green-700">This request has passed.</p>}
             <div className="text-[11px] text-muted-foreground space-y-0.5 pt-2 border-t">
               <p>Objects: {req.summary.totalObjects}</p>
-              <p>Test records: {req.summary.totalTestRecords} · Passed: {req.summary.totalPassed} · Repair: {req.summary.totalRepair}</p>
+              <p>
+                Test records: {req.summary.totalTestRecords} · Passed: {req.summary.totalPassed} · Repair: {req.summary.totalRepair}
+              </p>
               <p>Progress: {req.summary.progressPercent}%</p>
             </div>
           </div>
@@ -229,11 +222,7 @@ export default function InspectionRequestDetailPage() {
               <div className="space-y-2">
                 {req.attachments.map((a) => (
                   <div key={a.id} className="flex items-center gap-2 rounded border px-2 py-1.5">
-                    {/\.(jpg|jpeg|png|webp)$/i.test(a.attachmentUrl) ? (
-                      <img src={a.attachmentUrl} alt="" className="h-9 w-9 rounded object-cover shrink-0" />
-                    ) : (
-                      <FileText className="h-5 w-5 text-muted-foreground shrink-0" />
-                    )}
+                    {/\.(jpg|jpeg|png|webp)$/i.test(a.attachmentUrl) ? <img src={a.attachmentUrl} alt="" className="h-9 w-9 rounded object-cover shrink-0" /> : <FileText className="h-5 w-5 text-muted-foreground shrink-0" />}
                     <div className="flex-1 min-w-0">
                       <a href={a.attachmentUrl} target="_blank" rel="noreferrer" className="text-xs font-medium hover:underline block truncate">
                         {ATTACHMENT_TYPE_LABELS[a.attachmentType]}
@@ -255,7 +244,9 @@ export default function InspectionRequestDetailPage() {
           <div className="rounded-lg border p-5">
             <h2 className="text-sm font-medium mb-2">Signatories</h2>
             <ul className="text-xs text-muted-foreground space-y-1">
-              {req.signatoryTemplate.map((s) => <li key={s}>• {s}</li>)}
+              {req.signatoryTemplate.map((s) => (
+                <li key={s}>• {s}</li>
+              ))}
             </ul>
           </div>
         </div>

@@ -39,19 +39,25 @@ export default function ProcessTemplateCriteriaTab({ processTemplateId }: Proces
   });
 
   function onAdd(values: AddCriteriaToTemplateFormValues) {
-    addMutation.mutate({ processTemplateId, data: values }, {
-      onSuccess: () => {
-        form.reset(DEFAULT_FORM);
-        setShowAdd(false);
+    addMutation.mutate(
+      { processTemplateId, data: values },
+      {
+        onSuccess: () => {
+          form.reset(DEFAULT_FORM);
+          setShowAdd(false);
+        },
       },
-    });
+    );
   }
 
   function handleRemove() {
     if (!deleteTarget) return;
-    removeMutation.mutate({ id: deleteTarget.id, templateId: processTemplateId }, {
-      onSuccess: () => setDeleteTarget(undefined),
-    });
+    removeMutation.mutate(
+      { id: deleteTarget.id, templateId: processTemplateId },
+      {
+        onSuccess: () => setDeleteTarget(undefined),
+      },
+    );
   }
 
   if (isLoading) return <LoadingState />;
@@ -73,8 +79,20 @@ export default function ProcessTemplateCriteriaTab({ processTemplateId }: Proces
           <SelectField control={form.control} name="criteriaId" label="Acceptance Criteria" options={criteriaOptions} placeholder="Select criteria..." />
           <SwitchField control={form.control} name="isRequired" label="Required" />
           <div className="flex gap-2 justify-end">
-            <Button type="button" variant="ghost" size="sm" onClick={() => { setShowAdd(false); form.reset(DEFAULT_FORM); }}>Cancel</Button>
-            <Button type="submit" size="sm" disabled={addMutation.isPending}>{addMutation.isPending ? "Adding..." : "Add"}</Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setShowAdd(false);
+                form.reset(DEFAULT_FORM);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" size="sm" disabled={addMutation.isPending}>
+              {addMutation.isPending ? "Adding..." : "Add"}
+            </Button>
           </div>
         </form>
       )}
@@ -103,7 +121,9 @@ export default function ProcessTemplateCriteriaTab({ processTemplateId }: Proces
                   <td className="px-4 py-3 text-xs text-muted-foreground">{item.criteria.acceptanceType}</td>
                   <td className="px-4 py-3">
                     {item.isRequired ? (
-                      <Badge variant="secondary" className="text-xs">Required</Badge>
+                      <Badge variant="secondary" className="text-xs">
+                        Required
+                      </Badge>
                     ) : (
                       <span className="text-muted-foreground text-xs">Optional</span>
                     )}
@@ -122,7 +142,9 @@ export default function ProcessTemplateCriteriaTab({ processTemplateId }: Proces
 
       <ConfirmDialog
         open={Boolean(deleteTarget)}
-        onOpenChange={(open) => { if (!open) setDeleteTarget(undefined); }}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(undefined);
+        }}
         title="Remove Criteria"
         description={`Remove "${deleteTarget?.criteria.name}" from this template?`}
         confirmLabel="Remove"

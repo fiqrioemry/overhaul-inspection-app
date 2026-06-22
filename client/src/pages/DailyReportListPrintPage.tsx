@@ -6,7 +6,7 @@ import LoadingState from "@/components/common/LoadingState";
 import ErrorState from "@/components/common/ErrorState";
 import EmptyState from "@/components/common/EmptyState";
 import { useDailyReports } from "@/features/daily-reports/daily-reports.query";
-import { ACTIVITY_LABEL } from "@/features/daily-reports/components/DailyReportFormDialog";
+import { ACTIVITY_LABEL } from "@/features/daily-reports/daily-report.constants";
 import { ROUTES } from "@/constants/route.constant";
 import { format } from "date-fns";
 import type { DailyActivityType } from "@/features/daily-reports/daily-reports.api";
@@ -72,26 +72,17 @@ export default function DailyReportListPrintPage() {
 
       {/* Document */}
       <div className="print-doc bg-white border rounded-lg shadow-sm mx-auto max-w-5xl p-10 space-y-6">
-
         {/* Document Header */}
         <div className="text-center space-y-1 border-b pb-5">
-          {companyName && (
-            <p className="text-[11px] text-gray-500 uppercase tracking-widest">{companyName}</p>
-          )}
+          {companyName && <p className="text-[11px] text-gray-500 uppercase tracking-widest">{companyName}</p>}
           <h1 className="text-lg font-bold uppercase tracking-wide">Laporan Harian Bulanan</h1>
           <p className="text-sm font-medium text-gray-600">Monthly Daily Activity</p>
           {periodLabel && <p className="text-xs text-gray-500 mt-1">{periodLabel}</p>}
-          {activityType && (
-            <p className="text-xs text-gray-400">Jenis Kegiatan: {ACTIVITY_LABEL[activityType] ?? activityType}</p>
-          )}
+          {activityType && <p className="text-xs text-gray-400">Jenis Kegiatan: {ACTIVITY_LABEL[activityType] ?? activityType}</p>}
         </div>
 
         {reports.length === 0 ? (
-          <EmptyState
-            title="No data to print"
-            description="No daily reports match the selected filter."
-            icon={FileText}
-          />
+          <EmptyState title="No data to print" description="No daily reports match the selected filter." icon={FileText} />
         ) : (
           <>
             {/* Table */}
@@ -110,20 +101,10 @@ export default function DailyReportListPrintPage() {
                   {reports.map((report, idx) => (
                     <tr key={report.id} className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}>
                       <td className="border border-gray-300 px-3 py-2 text-center text-gray-500">{idx + 1}</td>
-                      <td className="border border-gray-300 px-3 py-2 whitespace-nowrap">
-                        {format(new Date(report.reportDate), "dd MMM yyyy")}
-                      </td>
-                      <td className="border border-gray-300 px-3 py-2 font-mono font-medium">
-                        {report.tank?.tankNo ?? "—"}
-                      </td>
-                      <td className="border border-gray-300 px-3 py-2">
-                        {ACTIVITY_LABEL[report.activityType] ?? report.activityType.replace(/_/g, " ")}
-                      </td>
-                      <td className="border border-gray-300 px-3 py-2 text-gray-700">
-                        {report.description ? (
-                          <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: report.description }} />
-                        ) : "—"}
-                      </td>
+                      <td className="border border-gray-300 px-3 py-2 whitespace-nowrap">{format(new Date(report.reportDate), "dd MMM yyyy")}</td>
+                      <td className="border border-gray-300 px-3 py-2 font-mono font-medium">{report.tank?.tankNo ?? "—"}</td>
+                      <td className="border border-gray-300 px-3 py-2">{ACTIVITY_LABEL[report.activityType] ?? report.activityType.replace(/_/g, " ")}</td>
+                      <td className="border border-gray-300 px-3 py-2 text-gray-700">{report.description ? <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: report.description }} /> : "—"}</td>
                     </tr>
                   ))}
                 </tbody>

@@ -38,6 +38,7 @@ import InspectionRequestDetailPage from "@/pages/InspectionRequestDetailPage";
 import InspectionRequestPrintPage from "@/pages/InspectionRequestPrintPage";
 import FindingListPage from "@/pages/FindingListPage";
 import DailyReportListPage from "@/pages/DailyReportListPage";
+import DailyReportCreatePage from "@/pages/DailyReportCreatePage";
 import DailyReportDetailPage from "@/pages/DailyReportDetailPage";
 import DailyReportEditPage from "@/pages/DailyReportEditPage";
 import DailyReportListPrintPage from "@/pages/DailyReportListPrintPage";
@@ -135,6 +136,9 @@ export default function AppRouter() {
             </Route>
 
             {/* Daily Reports */}
+            <Route element={<PermissionRoute permission={PERMISSIONS.DAILY_REPORT_CREATE} />}>
+              <Route path={ROUTES.DAILY_REPORT_CREATE} element={<DailyReportCreatePage />} />
+            </Route>
             <Route element={<PermissionRoute permission={PERMISSIONS.DAILY_REPORT_READ} />}>
               <Route path={ROUTES.DAILY_REPORTS} element={<DailyReportListPage />} />
               <Route path={ROUTES.DAILY_REPORT_LIST_PRINT} element={<DailyReportListPrintPage />} />

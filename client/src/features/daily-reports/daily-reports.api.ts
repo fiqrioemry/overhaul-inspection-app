@@ -7,6 +7,9 @@ export interface AIGeneratePayload {
   tankId?: string;
   activityType: DailyActivityType;
   processName?: string;
+  location?: string;
+  descriptionDraft?: string;
+  recommendationDraft?: string;
   files: File[];
 }
 
@@ -25,8 +28,11 @@ export interface TankProcessOption {
 
 export interface AIGenerateResult {
   description: string;
+  recommendation: string | null;
   captions: string[];
   relevanceWarning: boolean;
+  confidence?: number;
+  notes?: string[];
 }
 
 export type DailyActivityType = "MONITORING" | "INSPECTION";
@@ -47,6 +53,7 @@ export interface DailyReportSummary {
   reportDate: string;
   activityType: DailyActivityType;
   description: string | null;
+  recommendation: string | null;
   inspectorId: string | null;
   pertaminaPicId: string | null;
   aiSuggestedDescription: string | null;
@@ -84,6 +91,7 @@ export interface CreateDailyReportPayload {
   reportDate: string;
   activityType: DailyActivityType;
   description: string;
+  recommendation?: string;
   inspectorId?: string;
   pertaminaPicId?: string;
   files: File[];
@@ -94,6 +102,7 @@ export interface UpdateDailyReportPayload {
   reportDate?: string;
   activityType?: DailyActivityType;
   description?: string;
+  recommendation?: string | null;
   inspectorId?: string;
   pertaminaPicId?: string;
   newFiles?: File[];
@@ -119,6 +128,7 @@ export async function createDailyReport(payload: CreateDailyReportPayload): Prom
   formData.append("reportDate", payload.reportDate);
   formData.append("activityType", payload.activityType);
   formData.append("description", payload.description);
+  if (payload.recommendation) formData.append("recommendation", payload.recommendation);
   if (payload.inspectorId) formData.append("inspectorId", payload.inspectorId);
   if (payload.pertaminaPicId) formData.append("pertaminaPicId", payload.pertaminaPicId);
   payload.files.forEach((file) => formData.append("attachments", file));
@@ -134,6 +144,7 @@ export async function updateDailyReport(id: string, payload: UpdateDailyReportPa
   if (payload.reportDate) formData.append("reportDate", payload.reportDate);
   if (payload.activityType) formData.append("activityType", payload.activityType);
   if (payload.description !== undefined) formData.append("description", payload.description);
+  if (payload.recommendation !== undefined) formData.append("recommendation", payload.recommendation ?? "");
   if (payload.inspectorId) formData.append("inspectorId", payload.inspectorId);
   if (payload.pertaminaPicId) formData.append("pertaminaPicId", payload.pertaminaPicId);
   (payload.newFiles ?? []).forEach((file) => formData.append("attachments", file));
@@ -155,6 +166,9 @@ export async function generateAIDailyReport(payload: AIGeneratePayload): Promise
   if (payload.tankId) formData.append("tankId", payload.tankId);
   formData.append("activityType", payload.activityType);
   if (payload.processName) formData.append("processName", payload.processName);
+  if (payload.location) formData.append("location", payload.location);
+  if (payload.descriptionDraft) formData.append("descriptionDraft", payload.descriptionDraft);
+  if (payload.recommendationDraft) formData.append("recommendationDraft", payload.recommendationDraft);
   payload.files.forEach((file) => formData.append("attachments", file));
   const res = await api.post<ResponseSuccess<AIGenerateResult>>("/daily-reports/ai/generate", formData);
   return res.data.data!;

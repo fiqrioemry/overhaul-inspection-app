@@ -51,10 +51,7 @@ export default function FindingListPage() {
 
   const filtered = debouncedSearch
     ? (data?.items ?? []).filter(
-        (f) =>
-          f.title.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-          f.findingNo.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-          f.tank.tankNo.toLowerCase().includes(debouncedSearch.toLowerCase()),
+        (f) => f.title.toLowerCase().includes(debouncedSearch.toLowerCase()) || f.findingNo.toLowerCase().includes(debouncedSearch.toLowerCase()) || f.tank.tankNo.toLowerCase().includes(debouncedSearch.toLowerCase()),
       )
     : (data?.items ?? []);
 
@@ -96,10 +93,7 @@ export default function FindingListPage() {
 
   function handleQuickCloseConfirm() {
     if (!quickCloseFinding) return;
-    bulkClose.mutate(
-      { ids: [quickCloseFinding.id] },
-      { onSuccess: () => setQuickCloseFinding(null) },
-    );
+    bulkClose.mutate({ ids: [quickCloseFinding.id] }, { onSuccess: () => setQuickCloseFinding(null) });
   }
 
   return (
@@ -158,12 +152,7 @@ export default function FindingListPage() {
                 <thead className="border-b bg-muted/40">
                   <tr>
                     <th className="px-4 py-3 w-10">
-                      <Checkbox
-                        checked={allCloseableSelected}
-                        onCheckedChange={toggleSelectAll}
-                        aria-label="Select all"
-                        disabled={closeableIds.length === 0}
-                      />
+                      <Checkbox checked={allCloseableSelected} onCheckedChange={toggleSelectAll} aria-label="Select all" disabled={closeableIds.length === 0} />
                     </th>
                     <th className="px-4 py-3 text-left font-medium">Finding No.</th>
                     <th className="px-4 py-3 text-left font-medium">Title</th>
@@ -182,15 +171,7 @@ export default function FindingListPage() {
                     const isSelected = selectedIds.has(finding.id);
                     return (
                       <tr key={finding.id} className={`hover:bg-muted/20 ${isSelected ? "bg-muted/30" : ""}`}>
-                        <td className="px-4 py-3">
-                          {!isTerminal && (
-                            <Checkbox
-                              checked={isSelected}
-                              onCheckedChange={() => toggleSelect(finding.id)}
-                              aria-label={`Select ${finding.findingNo}`}
-                            />
-                          )}
-                        </td>
+                        <td className="px-4 py-3">{!isTerminal && <Checkbox checked={isSelected} onCheckedChange={() => toggleSelect(finding.id)} aria-label={`Select ${finding.findingNo}`} />}</td>
                         <td className="px-4 py-3 font-mono text-xs font-medium">{finding.findingNo}</td>
                         <td className="px-4 py-3 max-w-xs">
                           <span className="line-clamp-2">{finding.title}</span>

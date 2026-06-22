@@ -30,29 +30,11 @@ export default function EligibilityPanel({ processId }: EligibilityPanelProps) {
 
   return (
     <div className="space-y-4">
-      <div className={cn(
-        "flex items-center gap-3 rounded-lg p-4 border",
-        data.eligible
-          ? "bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-900"
-          : "bg-red-50 border-red-200 dark:bg-red-950/20 dark:border-red-900",
-      )}>
-        {data.eligible ? (
-          <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400 shrink-0" />
-        ) : (
-          <XCircle className="h-5 w-5 text-red-600 dark:text-red-400 shrink-0" />
-        )}
+      <div className={cn("flex items-center gap-3 rounded-lg p-4 border", data.eligible ? "bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-900" : "bg-red-50 border-red-200 dark:bg-red-950/20 dark:border-red-900")}>
+        {data.eligible ? <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400 shrink-0" /> : <XCircle className="h-5 w-5 text-red-600 dark:text-red-400 shrink-0" />}
         <div>
-          <p className={cn(
-            "font-semibold text-sm",
-            data.eligible ? "text-green-700 dark:text-green-400" : "text-red-700 dark:text-red-400",
-          )}>
-            {data.eligible ? "Eligible for Inspection Request" : "Not Eligible"}
-          </p>
-          {!data.eligible && (
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Resolve the issues below before submitting an inspection request.
-            </p>
-          )}
+          <p className={cn("font-semibold text-sm", data.eligible ? "text-green-700 dark:text-green-400" : "text-red-700 dark:text-red-400")}>{data.eligible ? "Eligible for Inspection Request" : "Not Eligible"}</p>
+          {!data.eligible && <p className="text-xs text-muted-foreground mt-0.5">Resolve the issues below before submitting an inspection request.</p>}
         </div>
         <Button variant="ghost" size="sm" className="ml-auto" onClick={() => refetch()}>
           <RefreshCw className="h-3 w-3" />

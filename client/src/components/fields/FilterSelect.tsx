@@ -13,10 +13,7 @@ type FilterSelectProps = {
 
 export default function FilterSelect({ value, onChange, options, placeholder = "Filter...", allLabel = "All", className }: FilterSelectProps) {
   return (
-    <Select
-      value={value || "__all__"}
-      onValueChange={(v) => onChange(v === "__all__" ? "" : v)}
-    >
+    <Select value={value || "__all__"} onValueChange={(v) => onChange(v === "__all__" ? "" : v)}>
       <SelectTrigger className={className ?? "w-40"}>
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>

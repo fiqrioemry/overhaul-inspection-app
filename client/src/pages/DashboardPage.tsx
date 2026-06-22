@@ -1,25 +1,11 @@
 // src/pages/DashboardPage.tsx
 import { useNavigate } from "react-router-dom";
-import {
-  Container,
-  AlertTriangle,
-  CheckCircle,
-  Clock,
-  Activity,
-  TrendingUp,
-  Flame,
-  ChevronRight,
-  Layers,
-} from "lucide-react";
+import { Container, AlertTriangle, CheckCircle, Clock, Activity, TrendingUp, Flame, ChevronRight, Layers } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import PageHeader from "@/components/common/PageHeader";
 import LoadingState from "@/components/common/LoadingState";
 import StatusBadge from "@/components/common/StatusBadge";
-import {
-  useDashboardSummary,
-  useTankProgress,
-  useDashboardFindings,
-} from "@/features/dashboard/dashboard.query";
+import { useDashboardSummary, useTankProgress, useDashboardFindings } from "@/features/dashboard/dashboard.query";
 import { ROUTES } from "@/constants/route.constant";
 import { formatDistanceToNow } from "date-fns";
 
@@ -38,23 +24,7 @@ const FINDING_STATUS_CONFIG: Record<string, { label: string; color: string }> = 
   CLOSED: { label: "Closed", color: "bg-green-100 text-green-700" },
 };
 
-function SummaryCard({
-  title,
-  value,
-  sub,
-  icon: Icon,
-  iconBg,
-  iconColor,
-  highlight,
-}: {
-  title: string;
-  value: number;
-  sub?: string;
-  icon: React.ElementType;
-  iconBg: string;
-  iconColor: string;
-  highlight?: boolean;
-}) {
+function SummaryCard({ title, value, sub, icon: Icon, iconBg, iconColor, highlight }: { title: string; value: number; sub?: string; icon: React.ElementType; iconBg: string; iconColor: string; highlight?: boolean }) {
   return (
     <Card className={highlight ? "border-red-200 bg-red-50/30" : ""}>
       <CardContent className="p-5">
@@ -72,21 +42,11 @@ function SummaryCard({
 }
 
 function ProgressBar({ value }: { value: number }) {
-  const color =
-    value >= 100
-      ? "bg-green-500"
-      : value >= 60
-        ? "bg-blue-500"
-        : value >= 30
-          ? "bg-amber-500"
-          : "bg-red-400";
+  const color = value >= 100 ? "bg-green-500" : value >= 60 ? "bg-blue-500" : value >= 30 ? "bg-amber-500" : "bg-red-400";
   return (
     <div className="flex items-center gap-2">
       <div className="h-1.5 w-32 rounded-full bg-muted overflow-hidden">
-        <div
-          className={`h-full rounded-full transition-all ${color}`}
-          style={{ width: `${Math.min(value, 100)}%` }}
-        />
+        <div className={`h-full rounded-full transition-all ${color}`} style={{ width: `${Math.min(value, 100)}%` }} />
       </div>
       <span className="text-xs tabular-nums text-muted-foreground w-9 text-right">{value}%</span>
     </div>
@@ -102,53 +62,19 @@ export default function DashboardPage() {
   if (summaryLoading || tanksLoading || findingsLoading) return <LoadingState />;
 
   const completedTanks = tanks?.filter((t) => t.status === "COMPLETED").length ?? 0;
-  const processCompletionRate = summary
-    ? Math.round((summary.processes.completed / Math.max(summary.processes.total, 1)) * 100)
-    : 0;
+  const processCompletionRate = summary ? Math.round((summary.processes.completed / Math.max(summary.processes.total, 1)) * 100) : 0;
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Dashboard"
-        description="Tank overhaul progress overview — SSIE Internal Monitoring"
-      />
+      <PageHeader title="Dashboard" description="Tank overhaul progress overview — SSIE Internal Monitoring" />
 
       {/* Summary Cards */}
       {summary && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <SummaryCard
-            title="Total Tanks"
-            value={summary.tanks.total}
-            sub={`${summary.tanks.inProgress} in progress · ${completedTanks} completed`}
-            icon={Container}
-            iconBg="bg-blue-100"
-            iconColor="text-blue-600"
-          />
-          <SummaryCard
-            title="Process Completion"
-            value={summary.processes.completed}
-            sub={`${processCompletionRate}% of ${summary.processes.total} total processes`}
-            icon={CheckCircle}
-            iconBg="bg-green-100"
-            iconColor="text-green-600"
-          />
-          <SummaryCard
-            title="Open Findings"
-            value={summary.findings.open}
-            sub={`${summary.findings.critical} critical`}
-            icon={AlertTriangle}
-            iconBg="bg-red-100"
-            iconColor="text-red-600"
-            highlight={summary.findings.critical > 0}
-          />
-          <SummaryCard
-            title="Pending Reviews"
-            value={summary.inspectionRequests.pending}
-            sub="awaiting inspector review"
-            icon={Clock}
-            iconBg="bg-amber-100"
-            iconColor="text-amber-600"
-          />
+          <SummaryCard title="Total Tanks" value={summary.tanks.total} sub={`${summary.tanks.inProgress} in progress · ${completedTanks} completed`} icon={Container} iconBg="bg-blue-100" iconColor="text-blue-600" />
+          <SummaryCard title="Process Completion" value={summary.processes.completed} sub={`${processCompletionRate}% of ${summary.processes.total} total processes`} icon={CheckCircle} iconBg="bg-green-100" iconColor="text-green-600" />
+          <SummaryCard title="Open Findings" value={summary.findings.open} sub={`${summary.findings.critical} critical`} icon={AlertTriangle} iconBg="bg-red-100" iconColor="text-red-600" highlight={summary.findings.critical > 0} />
+          <SummaryCard title="Pending Reviews" value={summary.inspectionRequests.pending} sub="awaiting inspector review" icon={Clock} iconBg="bg-amber-100" iconColor="text-amber-600" />
         </div>
       )}
 
@@ -171,49 +97,23 @@ export default function DashboardPage() {
                 <table className="w-full text-sm">
                   <thead className="border-y bg-muted/30">
                     <tr>
-                      <th className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground">
-                        Tank
-                      </th>
-                      <th className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground">
-                        Status
-                      </th>
-                      <th className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground hidden md:table-cell">
-                        Active Process
-                      </th>
-                      <th className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground w-44">
-                        Progress
-                      </th>
-                      <th className="px-4 py-2.5 text-right text-xs font-medium text-muted-foreground">
-                        Findings
-                      </th>
+                      <th className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground">Tank</th>
+                      <th className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground">Status</th>
+                      <th className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground hidden md:table-cell">Active Process</th>
+                      <th className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground w-44">Progress</th>
+                      <th className="px-4 py-2.5 text-right text-xs font-medium text-muted-foreground">Findings</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y">
                     {tanks.map((tank) => {
-                      const activeProcess = tank.processes?.find(
-                        (p) => p.status === "IN_PROGRESS" || p.status === "ACTIVE",
-                      );
+                      const activeProcess = tank.processes?.find((p) => p.status === "IN_PROGRESS" || p.status === "ACTIVE");
                       return (
-                        <tr
-                          key={tank.id}
-                          className="hover:bg-muted/20 cursor-pointer transition-colors"
-                          onClick={() =>
-                            navigate(ROUTES.TANK_DETAIL.replace(":tankId", tank.id))
-                          }
-                        >
+                        <tr key={tank.id} className="hover:bg-muted/20 cursor-pointer transition-colors" onClick={() => navigate(ROUTES.TANK_DETAIL.replace(":tankId", tank.id))}>
                           <td className="px-4 py-3">
                             <div>
                               <span className="font-mono font-semibold text-xs">{tank.tankNo}</span>
-                              {tank.tankName && (
-                                <p className="text-muted-foreground text-xs leading-none mt-0.5">
-                                  {tank.tankName}
-                                </p>
-                              )}
-                              {tank.contractorCompany && (
-                                <p className="text-muted-foreground text-xs leading-none mt-0.5 hidden sm:block">
-                                  {tank.contractorCompany.name}
-                                </p>
-                              )}
+                              {tank.tankName && <p className="text-muted-foreground text-xs leading-none mt-0.5">{tank.tankName}</p>}
+                              {tank.contractorCompany && <p className="text-muted-foreground text-xs leading-none mt-0.5 hidden sm:block">{tank.contractorCompany.name}</p>}
                             </div>
                           </td>
                           <td className="px-4 py-3">
@@ -223,9 +123,7 @@ export default function DashboardPage() {
                             {activeProcess ? (
                               <div className="flex items-center gap-1.5">
                                 <Activity className="h-3 w-3 text-blue-500 shrink-0" />
-                                <span className="text-xs text-muted-foreground line-clamp-1">
-                                  {activeProcess.name}
-                                </span>
+                                <span className="text-xs text-muted-foreground line-clamp-1">{activeProcess.name}</span>
                               </div>
                             ) : (
                               <span className="text-xs text-muted-foreground">—</span>
@@ -290,10 +188,7 @@ export default function DashboardPage() {
                           </span>
                         </div>
                         <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                          <div
-                            className={`h-full rounded-full ${cfg.dot}`}
-                            style={{ width: `${pct}%` }}
-                          />
+                          <div className={`h-full rounded-full ${cfg.dot}`} style={{ width: `${pct}%` }} />
                         </div>
                       </div>
                     );
@@ -319,10 +214,7 @@ export default function DashboardPage() {
                         color: "bg-muted text-muted-foreground",
                       };
                       return (
-                        <div
-                          key={item.status}
-                          className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${cfg.color}`}
-                        >
+                        <div key={item.status} className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${cfg.color}`}>
                           <span>{cfg.label}</span>
                           <span className="font-bold">{item.count}</span>
                         </div>
@@ -345,10 +237,7 @@ export default function DashboardPage() {
                 <AlertTriangle className="h-4 w-4 text-muted-foreground" />
                 Recent Findings
               </CardTitle>
-              <button
-                onClick={() => navigate(ROUTES.FINDINGS)}
-                className="text-xs text-primary hover:underline flex items-center gap-0.5"
-              >
+              <button onClick={() => navigate(ROUTES.FINDINGS)} className="text-xs text-primary hover:underline flex items-center gap-0.5">
                 View all
                 <ChevronRight className="h-3 w-3" />
               </button>
@@ -383,18 +272,12 @@ export default function DashboardPage() {
                             </p>
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
-                            <span
-                              className={`rounded-full px-2 py-0.5 text-xs font-medium ${fsc.color}`}
-                            >
-                              {fsc.label}
-                            </span>
+                            <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${fsc.color}`}>{fsc.label}</span>
                             <span className={`text-xs font-medium ${sev.color}`}>{sev.label}</span>
                           </div>
                         </div>
                       </div>
-                      <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0 mt-0.5">
-                        {formatDistanceToNow(new Date(f.createdAt), { addSuffix: true })}
-                      </span>
+                      <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0 mt-0.5">{formatDistanceToNow(new Date(f.createdAt), { addSuffix: true })}</span>
                     </div>
                     {idx < findingsData.recent.length - 1 && null}
                   </div>

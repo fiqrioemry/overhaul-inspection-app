@@ -52,7 +52,7 @@ export interface CreateProcessTemplatePayload {
   isActive?: boolean;
 }
 
-export interface UpdateProcessTemplatePayload extends Partial<CreateProcessTemplatePayload> {}
+export type UpdateProcessTemplatePayload = Partial<CreateProcessTemplatePayload>;
 
 export interface AddCriteriaToTemplatePayload {
   criteriaId: string;

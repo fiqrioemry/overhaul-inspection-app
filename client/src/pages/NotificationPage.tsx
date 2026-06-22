@@ -36,12 +36,7 @@ export default function NotificationPage() {
           </div>
         </div>
         {hasUnread && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => markAllRead.mutate()}
-            disabled={markAllRead.isPending}
-          >
+          <Button variant="outline" size="sm" onClick={() => markAllRead.mutate()} disabled={markAllRead.isPending}>
             Mark all as read
           </Button>
         )}
@@ -65,23 +60,16 @@ export default function NotificationPage() {
           notifications.map((notif) => (
             <button
               key={notif.id}
-              className={cn(
-                "w-full text-left px-5 py-4 hover:bg-muted/50 transition-colors flex items-start gap-3",
-                !notif.isRead && "bg-primary/5",
-              )}
-              onClick={() => { if (!notif.isRead) markRead.mutate(notif.id); }}
+              className={cn("w-full text-left px-5 py-4 hover:bg-muted/50 transition-colors flex items-start gap-3", !notif.isRead && "bg-primary/5")}
+              onClick={() => {
+                if (!notif.isRead) markRead.mutate(notif.id);
+              }}
             >
-              {!notif.isRead && (
-                <span className="mt-1.5 size-2 shrink-0 rounded-full bg-primary" />
-              )}
+              {!notif.isRead && <span className="mt-1.5 size-2 shrink-0 rounded-full bg-primary" />}
               <div className={cn("flex-1 min-w-0", notif.isRead && "pl-5")}>
-                <p className="text-xs font-medium text-muted-foreground">
-                  {notificationLabel(notif.type)}
-                </p>
+                <p className="text-xs font-medium text-muted-foreground">{notificationLabel(notif.type)}</p>
                 <p className="text-sm mt-0.5">{notif.message}</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {formatDistanceToNow(new Date(notif.createdAt), { addSuffix: true })}
-                </p>
+                <p className="text-xs text-muted-foreground mt-1">{formatDistanceToNow(new Date(notif.createdAt), { addSuffix: true })}</p>
               </div>
             </button>
           ))

@@ -19,10 +19,7 @@ import { PERMISSIONS } from "@/constants/permission.constant";
 import { ROUTES } from "@/constants/route.constant";
 import type { InspectionRequestListRow, InspectionRequestStatus, InspectionRequestType } from "@/features/inspection-requests/inspection-requests.api";
 
-const STATUS_FILTER = [
-  { label: "All Status", value: "ALL" },
-  ...(Object.keys(STATUS_LABELS) as InspectionRequestStatus[]).map((v) => ({ label: STATUS_LABELS[v], value: v })),
-];
+const STATUS_FILTER = [{ label: "All Status", value: "ALL" }, ...(Object.keys(STATUS_LABELS) as InspectionRequestStatus[]).map((v) => ({ label: STATUS_LABELS[v], value: v }))];
 const TYPE_FILTER = [{ label: "All Types", value: "ALL" }, ...TEST_TYPE_OPTIONS];
 
 export default function InspectionRequestListPage() {
@@ -56,13 +53,41 @@ export default function InspectionRequestListPage() {
       />
 
       <div className="flex flex-wrap items-center gap-3">
-        <Select value={status} onValueChange={(v) => { setStatus(v); setPage(1); }}>
-          <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
-          <SelectContent>{STATUS_FILTER.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+        <Select
+          value={status}
+          onValueChange={(v) => {
+            setStatus(v);
+            setPage(1);
+          }}
+        >
+          <SelectTrigger className="w-44">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {STATUS_FILTER.map((o) => (
+              <SelectItem key={o.value} value={o.value}>
+                {o.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
         </Select>
-        <Select value={testType} onValueChange={(v) => { setTestType(v); setPage(1); }}>
-          <SelectTrigger className="w-56"><SelectValue /></SelectTrigger>
-          <SelectContent>{TYPE_FILTER.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+        <Select
+          value={testType}
+          onValueChange={(v) => {
+            setTestType(v);
+            setPage(1);
+          }}
+        >
+          <SelectTrigger className="w-56">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {TYPE_FILTER.map((o) => (
+              <SelectItem key={o.value} value={o.value}>
+                {o.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
         </Select>
       </div>
 
@@ -92,10 +117,17 @@ export default function InspectionRequestListPage() {
                     <tr key={r.id} className="hover:bg-muted/20 cursor-pointer" onClick={() => navigate(ROUTES.INSPECTION_REQUEST_DETAIL.replace(":id", r.id))}>
                       <td className="px-4 py-3 font-mono text-xs font-medium">{r.requestNo}</td>
                       <td className="px-4 py-3 text-xs">{TEST_TYPE_LABELS[r.testType] ?? r.testType}</td>
-                      <td className="px-4 py-3 text-xs text-muted-foreground">{r.tank?.tankNo ?? "—"}{r.tankProcess ? ` · ${r.tankProcess.name}` : ""}</td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground">
+                        {r.tank?.tankNo ?? "—"}
+                        {r.tankProcess ? ` · ${r.tankProcess.name}` : ""}
+                      </td>
                       <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">{format(new Date(r.requestDate), "dd MMM yyyy")}</td>
-                      <td className="px-4 py-3"><RequestStatusBadge status={r.status} /></td>
-                      <td className="px-4 py-3 text-xs text-muted-foreground">{r.summary.totalPassed}/{r.summary.totalObjects} ({r.summary.progressPercent}%)</td>
+                      <td className="px-4 py-3">
+                        <RequestStatusBadge status={r.status} />
+                      </td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground">
+                        {r.summary.totalPassed}/{r.summary.totalObjects} ({r.summary.progressPercent}%)
+                      </td>
                       <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center gap-1 justify-end">
                           <Button variant="ghost" size="icon-sm" title="View" onClick={() => navigate(ROUTES.INSPECTION_REQUEST_DETAIL.replace(":id", r.id))}>

@@ -37,9 +37,7 @@ export default function NotificationBell() {
         <Button variant="ghost" size="icon" className="relative" aria-label="Notifications">
           <Bell className="size-5" />
           {unreadCount > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
-              {unreadCount > 99 ? "99+" : unreadCount}
-            </span>
+            <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">{unreadCount > 99 ? "99+" : unreadCount}</span>
           )}
         </Button>
       </PopoverTrigger>
@@ -48,13 +46,7 @@ export default function NotificationBell() {
         <div className="flex items-center justify-between px-4 py-3 border-b">
           <span className="font-semibold text-sm">Notifications</span>
           {unreadCount > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-xs h-auto py-0.5 px-2"
-              onClick={() => markAllRead.mutate()}
-              disabled={markAllRead.isPending}
-            >
+            <Button variant="ghost" size="sm" className="text-xs h-auto py-0.5 px-2" onClick={() => markAllRead.mutate()} disabled={markAllRead.isPending}>
               Mark all read
             </Button>
           )}
@@ -70,26 +62,17 @@ export default function NotificationBell() {
               {notifications.map((notif) => (
                 <button
                   key={notif.id}
-                  className={cn(
-                    "w-full text-left px-4 py-3 hover:bg-muted/50 transition-colors",
-                    !notif.isRead && "bg-primary/5",
-                  )}
+                  className={cn("w-full text-left px-4 py-3 hover:bg-muted/50 transition-colors", !notif.isRead && "bg-primary/5")}
                   onClick={() => {
                     if (!notif.isRead) markRead.mutate(notif.id);
                   }}
                 >
                   <div className="flex items-start gap-2">
-                    {!notif.isRead && (
-                      <span className="mt-1.5 size-2 shrink-0 rounded-full bg-primary" />
-                    )}
+                    {!notif.isRead && <span className="mt-1.5 size-2 shrink-0 rounded-full bg-primary" />}
                     <div className={cn("flex-1 min-w-0", notif.isRead && "pl-4")}>
-                      <p className="text-xs font-medium text-muted-foreground truncate">
-                        {notificationLabel(notif.type)}
-                      </p>
+                      <p className="text-xs font-medium text-muted-foreground truncate">{notificationLabel(notif.type)}</p>
                       <p className="text-sm leading-snug mt-0.5 line-clamp-2">{notif.message}</p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {formatDistanceToNow(new Date(notif.createdAt), { addSuffix: true })}
-                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">{formatDistanceToNow(new Date(notif.createdAt), { addSuffix: true })}</p>
                     </div>
                   </div>
                 </button>
@@ -99,11 +82,7 @@ export default function NotificationBell() {
         </ScrollArea>
 
         <div className="border-t px-4 py-2">
-          <Link
-            to={ROUTES.NOTIFICATIONS}
-            className="text-xs text-primary hover:underline"
-            onClick={() => setOpen(false)}
-          >
+          <Link to={ROUTES.NOTIFICATIONS} className="text-xs text-primary hover:underline" onClick={() => setOpen(false)}>
             View all notifications
           </Link>
         </div>

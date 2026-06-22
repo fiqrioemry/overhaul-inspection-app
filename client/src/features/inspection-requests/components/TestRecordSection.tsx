@@ -47,7 +47,14 @@ export default function TestRecordSection({ requestId, requestStatus, items, can
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-medium">Test Records {records.length > 0 && <span className="text-muted-foreground">({records.length})</span>}</h3>
         {!readOnly && (
-          <Button size="sm" variant="outline" onClick={() => { setEditRecord(null); setFormOpen(true); }}>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              setEditRecord(null);
+              setFormOpen(true);
+            }}
+          >
             <Plus className="h-4 w-4 mr-1" /> Add Result
           </Button>
         )}
@@ -59,9 +66,7 @@ export default function TestRecordSection({ requestId, requestStatus, items, can
           Test record can only be added after the signed request form has been uploaded and the request status is IN_PROCESS.
         </div>
       )}
-      {lockedPassed && (
-        <p className="text-xs text-muted-foreground">This request is PASSED — test records are read-only.</p>
-      )}
+      {lockedPassed && <p className="text-xs text-muted-foreground">This request is PASSED — test records are read-only.</p>}
 
       {isLoading ? (
         <p className="text-xs text-muted-foreground">Loading…</p>
@@ -86,14 +91,28 @@ export default function TestRecordSection({ requestId, requestStatus, items, can
                   <td className="px-3 py-2">
                     <span className={cn("text-xs px-2 py-0.5 rounded", STATUS_CLASS[r.status])}>{TEST_RESULT_STATUS_LABELS[r.status] ?? r.status}</span>
                   </td>
-                  <td className="px-3 py-2 text-xs">{r.inspectionRequestItem ? `${OBJECT_TYPE_LABELS[r.inspectionRequestItem.objectType as InspectionObjectType] ?? r.inspectionRequestItem.objectType}${r.inspectionRequestItem.objectName ? ` — ${r.inspectionRequestItem.objectName}` : ""}` : "—"}</td>
+                  <td className="px-3 py-2 text-xs">
+                    {r.inspectionRequestItem
+                      ? `${OBJECT_TYPE_LABELS[r.inspectionRequestItem.objectType as InspectionObjectType] ?? r.inspectionRequestItem.objectType}${r.inspectionRequestItem.objectName ? ` — ${r.inspectionRequestItem.objectName}` : ""}`
+                      : "—"}
+                  </td>
                   <td className="px-3 py-2 text-xs text-muted-foreground whitespace-nowrap">{r.testDate ? format(new Date(r.testDate), "dd MMM yyyy") : "—"}</td>
-                  <td className="px-3 py-2 text-xs max-w-xs"><span className="line-clamp-2">{r.remarks ?? "—"}</span></td>
+                  <td className="px-3 py-2 text-xs max-w-xs">
+                    <span className="line-clamp-2">{r.remarks ?? "—"}</span>
+                  </td>
                   <td className="px-3 py-2 text-xs text-muted-foreground">{r.attachments.length}</td>
                   {!readOnly && (
                     <td className="px-3 py-2">
                       <div className="flex items-center gap-1 justify-end">
-                        <Button variant="ghost" size="icon-sm" onClick={() => { setEditRecord(r); setFormOpen(true); }} title="Edit">
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          onClick={() => {
+                            setEditRecord(r);
+                            setFormOpen(true);
+                          }}
+                          title="Edit"
+                        >
                           <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
                         </Button>
                         <Button variant="ghost" size="icon-sm" onClick={() => setDeleteTarget(r)} title="Delete">
@@ -111,7 +130,10 @@ export default function TestRecordSection({ requestId, requestStatus, items, can
 
       <TestRecordFormDialog
         open={formOpen}
-        onOpenChange={(o) => { setFormOpen(o); if (!o) setEditRecord(null); }}
+        onOpenChange={(o) => {
+          setFormOpen(o);
+          if (!o) setEditRecord(null);
+        }}
         inspectionRequestId={requestId}
         objectOptions={objectOptions}
         record={editRecord ?? undefined}

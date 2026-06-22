@@ -24,12 +24,7 @@ const MAX_SIZE = 15 * 1024 * 1024; // 15 MB
 // Only these can be read by the AI OCR model.
 const EXTRACTABLE_TYPES = new Set(["application/pdf", "image/jpeg", "image/png", "image/webp"]);
 
-const AI_STEPS = [
-  "Membaca dokumen...",
-  "Menjalankan OCR...",
-  "Mengekstrak spesifikasi tangki...",
-  "Menyusun data formulir...",
-];
+const AI_STEPS = ["Membaca dokumen...", "Menjalankan OCR...", "Mengekstrak spesifikasi tangki...", "Menyusun data formulir..."];
 
 function fileIcon(type: string) {
   if (type.startsWith("image/")) return <ImageIcon className="size-4 text-blue-500 shrink-0" />;
@@ -124,25 +119,15 @@ export default function TankDocumentSection({ files, onFilesChange, onApplyExtra
           variant="outline"
           disabled={!canExtract}
           onClick={handleExtract}
-          className={cn(
-            "h-7 gap-1.5 text-xs transition-all",
-            canExtract && "border-violet-300 text-violet-700 hover:bg-violet-100",
-          )}
-          title={
-            extractableFiles.length === 0
-              ? "Unggah PDF atau gambar untuk mengekstrak data otomatis"
-              : "Ekstrak data spesifikasi dari dokumen"
-          }
+          className={cn("h-7 gap-1.5 text-xs transition-all", canExtract && "border-violet-300 text-violet-700 hover:bg-violet-100")}
+          title={extractableFiles.length === 0 ? "Unggah PDF atau gambar untuk mengekstrak data otomatis" : "Ekstrak data spesifikasi dari dokumen"}
         >
           {isExtracting ? <Loader2 className="size-3.5 animate-spin" /> : <Sparkles className="size-3.5" />}
           {isExtracting ? "Mengekstrak..." : "Ekstrak dengan AI"}
         </Button>
       </div>
 
-      <p className="text-[11px] text-violet-600/80">
-        Unggah datasheet/spesifikasi tangki (PDF, Word, Excel, atau gambar). PDF & gambar dapat diekstrak otomatis untuk
-        mengisi formulir.
-      </p>
+      <p className="text-[11px] text-violet-600/80">Unggah datasheet/spesifikasi tangki (PDF, Word, Excel, atau gambar). PDF & gambar dapat diekstrak otomatis untuk mengisi formulir.</p>
 
       {/* Dropzone */}
       {files.length < MAX_FILES && (
@@ -155,9 +140,7 @@ export default function TankDocumentSection({ files, onFilesChange, onApplyExtra
         >
           <input {...getInputProps()} />
           <UploadCloud className={cn("size-6 text-violet-500 transition-transform", isDragActive && "scale-110")} />
-          <p className="text-xs font-medium text-violet-700">
-            {isDragActive ? "Lepaskan dokumen di sini" : "Seret & lepas dokumen, atau klik untuk memilih"}
-          </p>
+          <p className="text-xs font-medium text-violet-700">{isDragActive ? "Lepaskan dokumen di sini" : "Seret & lepas dokumen, atau klik untuk memilih"}</p>
           <p className="text-[10px] text-violet-500">PDF, Word, Excel, JPG, PNG · Maks. 15MB · {MAX_FILES - files.length} slot tersisa</p>
         </div>
       )}
@@ -168,10 +151,7 @@ export default function TankDocumentSection({ files, onFilesChange, onApplyExtra
           {files.map((file, idx) => {
             const extractable = EXTRACTABLE_TYPES.has(file.type);
             return (
-              <li
-                key={`${file.name}-${idx}`}
-                className="flex items-center gap-2 rounded-md border border-violet-100 bg-white px-2.5 py-1.5"
-              >
+              <li key={`${file.name}-${idx}`} className="flex items-center gap-2 rounded-md border border-violet-100 bg-white px-2.5 py-1.5">
                 {fileIcon(file.type)}
                 <span className="flex-1 truncate text-xs text-foreground">{file.name}</span>
                 {!extractable && (
@@ -180,11 +160,7 @@ export default function TankDocumentSection({ files, onFilesChange, onApplyExtra
                   </span>
                 )}
                 <span className="text-[10px] text-muted-foreground">{(file.size / 1024 / 1024).toFixed(1)}MB</span>
-                <button
-                  type="button"
-                  onClick={() => removeFile(idx)}
-                  className="flex size-5 items-center justify-center rounded-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                >
+                <button type="button" onClick={() => removeFile(idx)} className="flex size-5 items-center justify-center rounded-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive">
                   <X className="size-3" />
                 </button>
               </li>
@@ -202,10 +178,7 @@ export default function TankDocumentSection({ files, onFilesChange, onApplyExtra
           </div>
           <div className="flex gap-1">
             {AI_STEPS.map((_, i) => (
-              <div
-                key={i}
-                className={cn("h-1 flex-1 rounded-full transition-all duration-500", i <= aiStep ? "bg-violet-500" : "bg-violet-100")}
-              />
+              <div key={i} className={cn("h-1 flex-1 rounded-full transition-all duration-500", i <= aiStep ? "bg-violet-500" : "bg-violet-100")} />
             ))}
           </div>
           <p className="text-[11px] text-violet-500">AI sedang membaca dokumen dan mengekstrak data spesifikasi tangki...</p>
@@ -225,8 +198,7 @@ export default function TankDocumentSection({ files, onFilesChange, onApplyExtra
         <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
           <AlertTriangle className="size-3.5 shrink-0 mt-0.5" />
           <span>
-            <strong>Perhatian:</strong> Dokumen yang diunggah tampaknya bukan spesifikasi tangki. Periksa kembali isian
-            formulir karena hasil ekstraksi mungkin tidak akurat.
+            <strong>Perhatian:</strong> Dokumen yang diunggah tampaknya bukan spesifikasi tangki. Periksa kembali isian formulir karena hasil ekstraksi mungkin tidak akurat.
           </span>
         </div>
       )}

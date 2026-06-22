@@ -13,9 +13,7 @@ export default function NotFoundPage() {
       </div>
       <div className="space-y-2">
         <h1 className="text-3xl font-bold">Page not found</h1>
-        <p className="text-muted-foreground max-w-sm">
-          The page you're looking for doesn't exist or has been moved.
-        </p>
+        <p className="text-muted-foreground max-w-sm">The page you're looking for doesn't exist or has been moved.</p>
       </div>
       <div className="flex gap-3">
         <Button variant="outline" onClick={() => navigate(-1)}>

@@ -6,11 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button";
 import ShortTextField from "@/components/fields/ShortTextField";
 import SelectField from "@/components/fields/SelectField";
-import {
-  createReferenceDocumentSchema,
-  DOCUMENT_TYPE_OPTIONS,
-  REFERENCE_DOCUMENT_STATUS_OPTIONS,
-} from "@/schemas/reference-documents.schema";
+import { createReferenceDocumentSchema, DOCUMENT_TYPE_OPTIONS, REFERENCE_DOCUMENT_STATUS_OPTIONS } from "@/schemas/reference-documents.schema";
 import type { CreateReferenceDocumentFormValues } from "@/schemas/reference-documents.schema";
 import { useCreateReferenceDocument, useUpdateReferenceDocument } from "@/features/reference-documents/reference-documents.query";
 import type { ReferenceDocument } from "@/features/reference-documents/reference-documents.api";
@@ -79,8 +75,12 @@ export default function ReferenceDocumentFormDialog({ open, onOpenChange, docume
           <ShortTextField control={form.control} name="issuer" label="Issuer" placeholder="Issuing organization" />
           <SelectField control={form.control} name="status" label="Status" options={REFERENCE_DOCUMENT_STATUS_OPTIONS} />
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isPending}>Cancel</Button>
-            <Button type="submit" disabled={isPending}>{isPending ? "Saving..." : isEdit ? "Save Changes" : "Add Document"}</Button>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isPending}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={isPending}>
+              {isPending ? "Saving..." : isEdit ? "Save Changes" : "Add Document"}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

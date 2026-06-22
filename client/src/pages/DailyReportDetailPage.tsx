@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import LoadingState from "@/components/common/LoadingState";
 import ErrorState from "@/components/common/ErrorState";
 import { useDailyReport } from "@/features/daily-reports/daily-reports.query";
-import { ACTIVITY_LABEL } from "@/features/daily-reports/components/DailyReportFormDialog";
+import { ACTIVITY_LABEL } from "@/features/daily-reports/daily-report.constants";
 import { ROUTES } from "@/constants/route.constant";
 import { format } from "date-fns";
 
@@ -138,13 +138,25 @@ export default function DailyReportDetailPage() {
           </div>
 
           {/* Description */}
-          <div className="space-y-3 flex-1">
+          <div className="space-y-3">
             <SectionTitle>Uraian Kegiatan / Activity Description</SectionTitle>
             {report.description ? (
-              <div className="min-h-48 leading-relaxed pt-2 prose prose-sm max-w-none" style={{ fontSize: "10px" }} dangerouslySetInnerHTML={{ __html: report.description }} />
+              <div className="leading-relaxed pt-2 prose prose-sm max-w-none" style={{ fontSize: "10px" }} dangerouslySetInnerHTML={{ __html: report.description }} />
             ) : (
-              <div className="min-h-48 pt-2" style={{ fontSize: "10px" }}>
+              <div className="pt-2" style={{ fontSize: "10px" }}>
                 <span className="text-gray-400 italic">Tidak ada deskripsi.</span>
+              </div>
+            )}
+          </div>
+
+          {/* Recommendation */}
+          <div className="space-y-3 flex-1">
+            <SectionTitle>Rekomendasi / Recommendation</SectionTitle>
+            {report.recommendation ? (
+              <div className="leading-relaxed pt-2 prose prose-sm max-w-none" style={{ fontSize: "10px" }} dangerouslySetInnerHTML={{ __html: report.recommendation }} />
+            ) : (
+              <div className="pt-2" style={{ fontSize: "10px" }}>
+                <span className="text-gray-400 italic">Belum ada rekomendasi.</span>
               </div>
             )}
           </div>
