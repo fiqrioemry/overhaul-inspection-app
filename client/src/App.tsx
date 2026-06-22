@@ -33,7 +33,9 @@ import TankEditPage from "@/pages/TankEditPage";
 import TankDetailPage from "@/pages/TankDetailPage";
 import TankProcessDetailPage from "@/pages/TankProcessDetailPage";
 import InspectionRequestListPage from "@/pages/InspectionRequestListPage";
+import InspectionRequestCreatePage from "@/pages/InspectionRequestCreatePage";
 import InspectionRequestDetailPage from "@/pages/InspectionRequestDetailPage";
+import InspectionRequestPrintPage from "@/pages/InspectionRequestPrintPage";
 import FindingListPage from "@/pages/FindingListPage";
 import DailyReportListPage from "@/pages/DailyReportListPage";
 import DailyReportDetailPage from "@/pages/DailyReportDetailPage";
@@ -63,6 +65,11 @@ export default function AppRouter() {
 
         {/* Protected routes */}
         <Route element={<ProtectedRoute />}>
+          {/* Print pages render without the app shell */}
+          <Route element={<PermissionRoute permission={PERMISSIONS.INSPECTION_REQUEST_READ} />}>
+            <Route path={ROUTES.INSPECTION_REQUEST_PRINT} element={<InspectionRequestPrintPage />} />
+          </Route>
+
           <Route element={<AppLayout />}>
             {/* Dashboard */}
             <Route element={<PermissionRoute permission={PERMISSIONS.DASHBOARD_READ} />}>
@@ -114,6 +121,9 @@ export default function AppRouter() {
             </Route>
 
             {/* Inspection Requests */}
+            <Route element={<PermissionRoute permission={PERMISSIONS.INSPECTION_REQUEST_CREATE} />}>
+              <Route path={ROUTES.INSPECTION_REQUEST_CREATE} element={<InspectionRequestCreatePage />} />
+            </Route>
             <Route element={<PermissionRoute permission={PERMISSIONS.INSPECTION_REQUEST_READ} />}>
               <Route path={ROUTES.INSPECTION_REQUESTS} element={<InspectionRequestListPage />} />
               <Route path={ROUTES.INSPECTION_REQUEST_DETAIL} element={<InspectionRequestDetailPage />} />

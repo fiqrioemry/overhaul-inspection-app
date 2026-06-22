@@ -42,11 +42,6 @@ export const PERMISSIONS = {
   TEST_RECORD_COMPLETE: "test_record.complete",
   TEST_RECORD_DELETE: "test_record.delete",
 
-  RADIOGRAPHY_CREATE: "radiography.create",
-  RADIOGRAPHY_READ: "radiography.read",
-  RADIOGRAPHY_UPDATE: "radiography.update",
-  RADIOGRAPHY_DELETE: "radiography.delete",
-
   FILE_UPLOAD: "file.upload",
   FILE_READ: "file.read",
 

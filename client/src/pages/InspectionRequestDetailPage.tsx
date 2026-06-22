@@ -1,125 +1,267 @@
 // src/pages/InspectionRequestDetailPage.tsx
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, X } from "lucide-react";
+import { ArrowLeft, Printer, Upload, X, CheckCircle2, FileText, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import PageHeader from "@/components/common/PageHeader";
 import LoadingState from "@/components/common/LoadingState";
 import ErrorState from "@/components/common/ErrorState";
-import StatusBadge from "@/components/common/StatusBadge";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 import PermissionGate from "@/components/common/PermissionGate";
-import ReviewDialog from "@/features/inspection-requests/components/ReviewDialog";
-import { useInspectionRequest, useCancelInspectionRequest } from "@/features/inspection-requests/inspection-requests.query";
+import RequestStatusBadge from "@/features/inspection-requests/components/RequestStatusBadge";
+import TestRecordSection from "@/features/inspection-requests/components/TestRecordSection";
+import {
+  useInspectionRequest,
+  useSubmitConfirmInspectionRequest,
+  useUpdateInspectionRequestStatus,
+  useUploadInspectionRequestAttachment,
+  useRemoveInspectionRequestAttachment,
+  useDeleteInspectionRequest,
+} from "@/features/inspection-requests/inspection-requests.query";
+import { TEST_TYPE_LABELS, OBJECT_TYPE_LABELS, ATTACHMENT_TYPE_LABELS } from "@/features/inspection-requests/inspection-request.constants";
+import type { AttachmentType, InspectionObjectType } from "@/features/inspection-requests/inspection-requests.api";
 import { PERMISSIONS } from "@/constants/permission.constant";
 import { ROUTES } from "@/constants/route.constant";
+import { useAuthStore } from "@/stores/auth.store";
 import { format } from "date-fns";
 
-function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
+function MetaRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="flex gap-2 text-sm">
-      <span className="text-muted-foreground w-44 shrink-0">{label}</span>
-      <span className="flex-1">{value ?? "—"}</span>
+    <div className="flex justify-between gap-4 py-1.5 border-b last:border-0">
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <span className="text-xs font-medium text-right">{value || "—"}</span>
     </div>
   );
 }
 
 export default function InspectionRequestDetailPage() {
-  const { requestId } = useParams<{ requestId: string }>();
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [reviewOpen, setReviewOpen] = useState(false);
-  const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
+  const can = useAuthStore((s) => s.can);
+  const role = useAuthStore((s) => s.user?.role ?? "USER");
+  const isAdmin = role === "ADMIN" || role === "SUPER_ADMIN";
 
-  const { data: req, isLoading, isError, refetch } = useInspectionRequest(requestId!);
-  const cancelMutation = useCancelInspectionRequest();
+  const { data: req, isLoading, isError, refetch } = useInspectionRequest(id!);
+  const submitConfirm = useSubmitConfirmInspectionRequest();
+  const updateStatus = useUpdateInspectionRequestStatus();
+  const uploadAttachment = useUploadInspectionRequestAttachment();
+  const removeAttachment = useRemoveInspectionRequestAttachment();
+  const deleteMutation = useDeleteInspectionRequest();
+
+  const [uploadType, setUploadType] = useState<AttachmentType>("SIGNED_REQUEST_FORM");
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (isLoading) return <LoadingState />;
   if (isError || !req) return <ErrorState message="Failed to load inspection request." onRetry={() => refetch()} />;
 
-  const canCancel = req.status === "SUBMITTED";
-  const canReview = req.status === "SUBMITTED";
-  const tankPath = ROUTES.TANK_DETAIL.replace(":tankId", req.tankProcess.tank.id);
+  const canUpdate = can(PERMISSIONS.INSPECTION_REQUEST_UPDATE);
+  const hasSignedForm = req.attachments.some((a) => a.attachmentType === "SIGNED_REQUEST_FORM");
+
+  function triggerUpload(type: AttachmentType) {
+    setUploadType(type);
+    fileInputRef.current?.click();
+  }
+
+  function handleFiles(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []);
+    if (files.length && id) uploadAttachment.mutate({ id, attachmentType: uploadType, files });
+    e.target.value = "";
+  }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-2">
-        <Button variant="ghost" size="sm" onClick={() => navigate(ROUTES.INSPECTION_REQUESTS)}>
-          <ArrowLeft className="h-4 w-4 mr-1" /> Back to Requests
-        </Button>
+    <div className="max-w-5xl mx-auto space-y-6 pb-12">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="sm" onClick={() => navigate(ROUTES.INSPECTION_REQUESTS)}>
+            <ArrowLeft className="h-4 w-4 mr-1" /> Back
+          </Button>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-lg font-semibold font-mono">{req.requestNo}</h1>
+              <RequestStatusBadge status={req.status} />
+            </div>
+            <p className="text-xs text-muted-foreground">{TEST_TYPE_LABELS[req.testType] ?? req.testType}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => navigate(ROUTES.INSPECTION_REQUEST_PRINT.replace(":id", req.id))}>
+            <Printer className="h-4 w-4 mr-1" /> Print Request Form
+          </Button>
+          {canUpdate && req.status === "NOT_STARTED" && (
+            <Button variant="ghost" size="sm" onClick={() => setDeleteOpen(true)} title="Delete">
+              <Trash2 className="h-4 w-4 text-destructive" />
+            </Button>
+          )}
+        </div>
       </div>
 
-      <PageHeader
-        title={req.title}
-        description={`Request No. ${req.requestNo}`}
-        action={
-          <div className="flex items-center gap-2">
-            {canReview && (
-              <PermissionGate permission={PERMISSIONS.INSPECTION_REQUEST_REVIEW}>
-                <Button onClick={() => setReviewOpen(true)}>Mark as Reviewed</Button>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left: meta + description + items */}
+        <div className="lg:col-span-2 space-y-6">
+          <div className="rounded-lg border p-5">
+            <h2 className="text-sm font-medium mb-3">Request Information</h2>
+            <MetaRow label="Tank" value={req.tank?.tankNo ?? "General"} />
+            <MetaRow label="Process" value={req.tankProcess?.name} />
+            <MetaRow label="Request Date" value={format(new Date(req.requestDate), "dd MMM yyyy")} />
+            <MetaRow label="Requested By" value={req.requestedByUser?.name} />
+            <MetaRow label="Customer / Asset Holder" value={req.assetHolder} />
+            <MetaRow label="Execution / 3rd Party" value={req.executionParty} />
+            <MetaRow label="Standard & Code" value={req.standardAndCode} />
+            <MetaRow label="Remarks / Location" value={req.requestLocation} />
+          </div>
+
+          {req.description && (
+            <div className="rounded-lg border p-5">
+              <h2 className="text-sm font-medium mb-2">Description</h2>
+              <pre className="text-xs whitespace-pre-wrap font-sans text-muted-foreground">{req.description}</pre>
+            </div>
+          )}
+
+          <div className="rounded-lg border p-5">
+            <h2 className="text-sm font-medium mb-3">Inspection Objects ({req.items.length})</h2>
+            <div className="rounded border overflow-hidden">
+              <table className="w-full text-xs">
+                <thead className="border-b bg-muted/40">
+                  <tr>
+                    <th className="px-2 py-1.5 text-left font-medium">Type</th>
+                    <th className="px-2 py-1.5 text-left font-medium">Name</th>
+                    <th className="px-2 py-1.5 text-left font-medium">Qty</th>
+                    <th className="px-2 py-1.5 text-left font-medium">Location</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {req.items.map((it) => (
+                    <tr key={it.id}>
+                      <td className="px-2 py-1.5">{OBJECT_TYPE_LABELS[it.objectType as InspectionObjectType] ?? it.objectType}</td>
+                      <td className="px-2 py-1.5">{it.objectName ?? "—"}</td>
+                      <td className="px-2 py-1.5">{it.quantity} {it.unit ?? ""}</td>
+                      <td className="px-2 py-1.5 text-muted-foreground">{it.locationDetail ?? "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Test records */}
+          <div className="rounded-lg border p-5">
+            <TestRecordSection
+              requestId={req.id}
+              requestStatus={req.status}
+              items={req.items}
+              canManage={can(PERMISSIONS.TEST_RECORD_CREATE)}
+              isAdmin={isAdmin}
+            />
+          </div>
+        </div>
+
+        {/* Right: workflow + attachments */}
+        <div className="space-y-6">
+          {/* Workflow */}
+          <div className="rounded-lg border p-5 space-y-3">
+            <h2 className="text-sm font-medium">Workflow</h2>
+            {req.status === "NOT_STARTED" && (
+              <>
+                <p className="text-xs text-muted-foreground">Print the form, collect signatures, upload the signed scan, then confirm to start processing.</p>
+                <PermissionGate permission={PERMISSIONS.INSPECTION_REQUEST_UPDATE}>
+                  <Button
+                    className="w-full"
+                    size="sm"
+                    disabled={!hasSignedForm || submitConfirm.isPending}
+                    onClick={() => submitConfirm.mutate(req.id)}
+                  >
+                    <CheckCircle2 className="h-4 w-4 mr-1" /> Submit &amp; Confirm
+                  </Button>
+                </PermissionGate>
+                {!hasSignedForm && <p className="text-[11px] text-amber-600">Upload a signed request form to enable confirmation.</p>}
+              </>
+            )}
+            {(req.status === "IN_PROCESS" || req.status === "REPAIR") && (
+              <PermissionGate permission={PERMISSIONS.INSPECTION_REQUEST_UPDATE}>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" className="flex-1" disabled={updateStatus.isPending} onClick={() => updateStatus.mutate({ id: req.id, status: "REPAIR" })}>
+                    Mark Repair
+                  </Button>
+                  <Button size="sm" className="flex-1" disabled={updateStatus.isPending} onClick={() => updateStatus.mutate({ id: req.id, status: "PASSED" })}>
+                    Mark Passed
+                  </Button>
+                </div>
               </PermissionGate>
             )}
-            {canCancel && (
-              <PermissionGate permission={PERMISSIONS.INSPECTION_REQUEST_UPDATE}>
-                <Button variant="outline" onClick={() => setCancelConfirmOpen(true)}>
-                  <X className="h-4 w-4 mr-1" /> Cancel Request
+            {req.status === "PASSED" && <p className="text-xs text-green-700">This request has passed.</p>}
+            <div className="text-[11px] text-muted-foreground space-y-0.5 pt-2 border-t">
+              <p>Objects: {req.summary.totalObjects}</p>
+              <p>Test records: {req.summary.totalTestRecords} · Passed: {req.summary.totalPassed} · Repair: {req.summary.totalRepair}</p>
+              <p>Progress: {req.summary.progressPercent}%</p>
+            </div>
+          </div>
+
+          {/* Attachments */}
+          <div className="rounded-lg border p-5 space-y-3">
+            <h2 className="text-sm font-medium">Attachments</h2>
+            <input ref={fileInputRef} type="file" multiple accept="image/jpeg,image/png,image/webp,application/pdf" className="hidden" onChange={handleFiles} />
+            <PermissionGate permission={PERMISSIONS.INSPECTION_REQUEST_UPDATE}>
+              <div className="flex flex-wrap gap-2">
+                <Button variant="outline" size="sm" onClick={() => triggerUpload("SIGNED_REQUEST_FORM")} disabled={uploadAttachment.isPending}>
+                  <Upload className="h-3.5 w-3.5 mr-1" /> Signed Form
                 </Button>
-              </PermissionGate>
+                <Button variant="outline" size="sm" onClick={() => triggerUpload("SKETCH")} disabled={uploadAttachment.isPending}>
+                  <Upload className="h-3.5 w-3.5 mr-1" /> Sketch
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => triggerUpload("SUPPORTING_DOCUMENT")} disabled={uploadAttachment.isPending}>
+                  <Upload className="h-3.5 w-3.5 mr-1" /> Document
+                </Button>
+              </div>
+            </PermissionGate>
+
+            {req.attachments.length === 0 ? (
+              <p className="text-xs text-muted-foreground">No attachments yet.</p>
+            ) : (
+              <div className="space-y-2">
+                {req.attachments.map((a) => (
+                  <div key={a.id} className="flex items-center gap-2 rounded border px-2 py-1.5">
+                    {/\.(jpg|jpeg|png|webp)$/i.test(a.attachmentUrl) ? (
+                      <img src={a.attachmentUrl} alt="" className="h-9 w-9 rounded object-cover shrink-0" />
+                    ) : (
+                      <FileText className="h-5 w-5 text-muted-foreground shrink-0" />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <a href={a.attachmentUrl} target="_blank" rel="noreferrer" className="text-xs font-medium hover:underline block truncate">
+                        {ATTACHMENT_TYPE_LABELS[a.attachmentType]}
+                      </a>
+                      <span className="text-[10px] text-muted-foreground">{format(new Date(a.createdAt), "dd MMM yyyy")}</span>
+                    </div>
+                    <PermissionGate permission={PERMISSIONS.INSPECTION_REQUEST_UPDATE}>
+                      <button onClick={() => id && removeAttachment.mutate({ id, attachmentId: a.id })} title="Remove">
+                        <X className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
+                      </button>
+                    </PermissionGate>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
-        }
-      />
 
-      <div className="flex items-center gap-2">
-        <StatusBadge status={req.status} />
+          {/* Signatories */}
+          <div className="rounded-lg border p-5">
+            <h2 className="text-sm font-medium mb-2">Signatories</h2>
+            <ul className="text-xs text-muted-foreground space-y-1">
+              {req.signatoryTemplate.map((s) => <li key={s}>• {s}</li>)}
+            </ul>
+          </div>
+        </div>
       </div>
-
-      <div className="rounded-lg border p-4 space-y-3">
-        <InfoRow label="Request No." value={<span className="font-mono">{req.requestNo}</span>} />
-        <InfoRow label="Title" value={req.title} />
-        <InfoRow label="Description" value={req.description} />
-        <InfoRow
-          label="Tank"
-          value={
-            <button onClick={() => navigate(tankPath)} className="text-primary underline text-sm">
-              {req.tankProcess.tank.tankNo}
-            </button>
-          }
-        />
-        <InfoRow label="Process" value={req.tankProcess.processTemplate.name} />
-        <InfoRow label="Process Code" value={<span className="font-mono">{req.tankProcess.processTemplate.code}</span>} />
-        <InfoRow label="Status" value={<StatusBadge status={req.status} />} />
-        <InfoRow label="Submitted By" value={req.submittedBy?.name} />
-        <InfoRow
-          label="Submitted At"
-          value={req.submittedAt ? format(new Date(req.submittedAt), "dd MMM yyyy HH:mm") : "—"}
-        />
-        {req.reviewedAt && (
-          <>
-            <InfoRow label="Reviewed By" value={req.reviewedBy?.name} />
-            <InfoRow
-              label="Reviewed At"
-              value={format(new Date(req.reviewedAt), "dd MMM yyyy HH:mm")}
-            />
-          </>
-        )}
-        {req.notes && (
-          <InfoRow label="Review Notes" value={<span className="whitespace-pre-wrap">{req.notes}</span>} />
-        )}
-      </div>
-
-      <ReviewDialog open={reviewOpen} onOpenChange={setReviewOpen} requestId={requestId!} />
 
       <ConfirmDialog
-        open={cancelConfirmOpen}
-        onOpenChange={setCancelConfirmOpen}
-        title="Cancel Inspection Request"
-        description="Cancel this inspection request? This action cannot be undone."
-        confirmLabel="Cancel Request"
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title="Delete Inspection Request"
+        description={`Delete request "${req.requestNo}"? This cannot be undone.`}
+        confirmLabel="Delete"
         variant="destructive"
-        loading={cancelMutation.isPending}
-        onConfirm={() => {
-          cancelMutation.mutate(requestId!, { onSuccess: () => setCancelConfirmOpen(false) });
-        }}
+        loading={deleteMutation.isPending}
+        onConfirm={() => deleteMutation.mutate(req.id, { onSuccess: () => navigate(ROUTES.INSPECTION_REQUESTS) })}
       />
     </div>
   );

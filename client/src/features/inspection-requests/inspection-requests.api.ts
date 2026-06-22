@@ -3,51 +3,191 @@ import api from "@/lib/axios";
 import type { PaginatedResponse } from "@/types/pagination.type";
 import type { ResponseSuccess, ResponseList } from "@/types/response.type";
 
-export type InspectionRequestStatus = "SUBMITTED" | "REVIEWED" | "RETURNED" | "CANCELLED";
+export type InspectionRequestStatus = "NOT_STARTED" | "IN_PROCESS" | "REPAIR" | "PASSED";
 
-export interface InspectionRequestProcess {
+export type InspectionRequestType =
+  | "PENETRANT_TEST"
+  | "RADIOGRAPHY_TEST"
+  | "OIL_LEAK_TEST"
+  | "PNEUMATIC_REINFORCEMENT_TEST"
+  | "HYDROTEST_SHELL"
+  | "HYDROTEST_PIPE"
+  | "PNEUMATIC_BOTTOM_TEST"
+  | "PNEUMATIC_ROOF_TEST"
+  | "MATERIAL_INSPECTION"
+  | "VISUAL_INSPECTION"
+  | "COATING_INSPECTION"
+  | "OTHER";
+
+export type InspectionObjectType =
+  | "MANHOLE"
+  | "COD"
+  | "NOZZLE"
+  | "SHELL_PLATE"
+  | "BOTTOM_PLATE"
+  | "ROOF_PLATE"
+  | "REINFORCEMENT_PAD"
+  | "PIPE"
+  | "STEAM_COIL"
+  | "WELD_JOINT"
+  | "ANNULAR_PLATE"
+  | "FLOOR_PLATE"
+  | "VALVE"
+  | "FLANGE"
+  | "FITTING"
+  | "MATERIAL"
+  | "OTHER";
+
+export type AttachmentType =
+  | "SUPPORTING_DOCUMENT"
+  | "GENERATED_REQUEST_FORM"
+  | "SIGNED_REQUEST_FORM"
+  | "SKETCH"
+  | "OTHER";
+
+export interface InspectionRequestItem {
   id: string;
-  tank: { id: string; tankNo: string; tankName: string | null };
-  processTemplate: { id: string; code: string; name: string };
+  objectType: InspectionObjectType;
+  objectName: string | null;
+  quantity: number;
+  unit: string | null;
+  locationDetail: string | null;
+  remarks: string | null;
+  sortOrder: number;
+}
+
+export interface InspectionRequestItemInput {
+  objectType: InspectionObjectType;
+  objectName?: string;
+  quantity: number;
+  unit?: string;
+  locationDetail?: string;
+  remarks?: string;
+}
+
+export interface InspectionRequestAttachment {
+  id: string;
+  fileStorageId: string;
+  attachmentUrl: string;
+  attachmentType: AttachmentType;
+  caption: string | null;
+  sortOrder: number;
+  createdAt: string;
 }
 
 export interface InspectionRequestSummary {
-  id: string;
-  requestNo: string;
-  title: string;
-  description: string | null;
-  status: InspectionRequestStatus;
-  submittedAt: string;
-  reviewedAt: string | null;
-  tankProcess: InspectionRequestProcess;
-  submittedBy: { id: string; name: string } | null;
-  reviewedBy: { id: string; name: string } | null;
+  totalObjects: number;
+  totalTestRecords: number;
+  totalPassed: number;
+  totalRepair: number;
+  totalNotStarted: number;
+  progressPercent: number;
 }
 
-export interface InspectionRequestDetail extends InspectionRequestSummary {
-  notes: string | null;
+interface TankRef {
+  id: string;
+  tankNo: string;
+  tankName: string | null;
+  location?: string | null;
+  inspectionCompany?: { id: string; name: string; logoFile: { url: string } | null } | null;
+  contractorCompany?: { id: string; name: string; logoFile: { url: string } | null } | null;
+}
+
+export interface InspectionRequestListRow {
+  id: string;
+  requestNo: string;
+  testType: InspectionRequestType;
+  status: InspectionRequestStatus;
+  requestDate: string;
+  tankId: string | null;
+  tankProcessId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  tank: { id: string; tankNo: string; tankName: string | null } | null;
+  tankProcess: { id: string; name: string } | null;
+  requestedByUser: { id: string; name: string } | null;
+  summary: InspectionRequestSummary;
+}
+
+export interface InspectionRequestDetail {
+  id: string;
+  requestNo: string;
+  testType: InspectionRequestType;
+  status: InspectionRequestStatus;
+  requestDate: string;
+  assetHolder: string | null;
+  executionParty: string | null;
+  standardAndCode: string | null;
+  requestLocation: string | null;
+  description: string | null;
+  remarks: string | null;
+  confirmedAt: string | null;
+  tankId: string | null;
+  tankProcessId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  tank: TankRef | null;
+  tankProcess: { id: string; name: string; type: string } | null;
+  requestedByUser: { id: string; name: string; email: string } | null;
+  items: InspectionRequestItem[];
+  attachments: InspectionRequestAttachment[];
+  signatoryTemplate: string[];
+  summary: InspectionRequestSummary;
 }
 
 export interface ListInspectionRequestsParams {
   page?: number;
   limit?: number;
   status?: InspectionRequestStatus;
+  testType?: InspectionRequestType;
   tankId?: string;
+  tankProcessId?: string;
 }
 
 export interface CreateInspectionRequestPayload {
-  tankProcessId: string;
-  title: string;
+  testType: InspectionRequestType;
+  tankId?: string;
+  tankProcessId?: string;
+  requestDate: string;
+  assetHolder?: string;
+  executionParty?: string;
+  standardAndCode?: string;
+  requestLocation?: string;
   description?: string;
+  remarks?: string;
+  items: InspectionRequestItemInput[];
+  files?: File[];
 }
 
-export interface ReviewInspectionRequestPayload {
-  action: "REVIEWED" | "RETURNED";
-  notes?: string;
+export interface UpdateInspectionRequestPayload {
+  testType?: InspectionRequestType;
+  tankId?: string | null;
+  tankProcessId?: string | null;
+  requestDate?: string;
+  assetHolder?: string | null;
+  executionParty?: string | null;
+  standardAndCode?: string | null;
+  requestLocation?: string | null;
+  description?: string | null;
+  remarks?: string | null;
+  items?: InspectionRequestItemInput[];
 }
 
-export async function listInspectionRequests(params: ListInspectionRequestsParams): Promise<PaginatedResponse<InspectionRequestSummary>> {
-  const res = await api.get<ResponseList<InspectionRequestSummary>>("/inspection-requests", { params });
+export interface TankOption {
+  id: string;
+  tankNo: string;
+  tankName: string | null;
+}
+
+export interface TankProcessOption {
+  id: string;
+  name: string;
+  type: string;
+  status: string;
+}
+
+export async function listInspectionRequests(params: ListInspectionRequestsParams): Promise<PaginatedResponse<InspectionRequestListRow>> {
+  const res = await api.get<ResponseList<InspectionRequestListRow>>("/inspection-requests", { params });
   return { items: res.data.data, meta: res.data.meta };
 }
 
@@ -56,17 +196,68 @@ export async function getInspectionRequestById(id: string): Promise<InspectionRe
   return res.data.data!;
 }
 
-export async function createInspectionRequest(data: CreateInspectionRequestPayload): Promise<InspectionRequestDetail> {
-  const res = await api.post<ResponseSuccess<InspectionRequestDetail>>("/inspection-requests", data);
+export async function createInspectionRequest(payload: CreateInspectionRequestPayload): Promise<InspectionRequestDetail> {
+  const formData = new FormData();
+  formData.append("testType", payload.testType);
+  if (payload.tankId) formData.append("tankId", payload.tankId);
+  if (payload.tankProcessId) formData.append("tankProcessId", payload.tankProcessId);
+  formData.append("requestDate", payload.requestDate);
+  if (payload.assetHolder) formData.append("assetHolder", payload.assetHolder);
+  if (payload.executionParty) formData.append("executionParty", payload.executionParty);
+  if (payload.standardAndCode) formData.append("standardAndCode", payload.standardAndCode);
+  if (payload.requestLocation) formData.append("requestLocation", payload.requestLocation);
+  if (payload.description) formData.append("description", payload.description);
+  if (payload.remarks) formData.append("remarks", payload.remarks);
+  formData.append("items", JSON.stringify(payload.items));
+  (payload.files ?? []).forEach((file) => formData.append("attachments", file));
+  const res = await api.post<ResponseSuccess<InspectionRequestDetail>>("/inspection-requests", formData);
   return res.data.data!;
 }
 
-export async function reviewInspectionRequest(id: string, data: ReviewInspectionRequestPayload): Promise<InspectionRequestDetail> {
-  const res = await api.patch<ResponseSuccess<InspectionRequestDetail>>(`/inspection-requests/${id}/review`, data);
+export async function updateInspectionRequest(id: string, payload: UpdateInspectionRequestPayload): Promise<InspectionRequestDetail> {
+  const res = await api.patch<ResponseSuccess<InspectionRequestDetail>>(`/inspection-requests/${id}`, payload);
   return res.data.data!;
 }
 
-export async function cancelInspectionRequest(id: string): Promise<InspectionRequestDetail> {
-  const res = await api.patch<ResponseSuccess<InspectionRequestDetail>>(`/inspection-requests/${id}/cancel`, {});
+export async function submitConfirmInspectionRequest(id: string): Promise<InspectionRequestDetail> {
+  const res = await api.post<ResponseSuccess<InspectionRequestDetail>>(`/inspection-requests/${id}/submit-confirm`, {});
+  return res.data.data!;
+}
+
+export async function updateInspectionRequestStatus(id: string, status: "REPAIR" | "PASSED", remarks?: string): Promise<InspectionRequestDetail> {
+  const res = await api.patch<ResponseSuccess<InspectionRequestDetail>>(`/inspection-requests/${id}/status`, { status, remarks });
+  return res.data.data!;
+}
+
+export async function uploadInspectionRequestAttachment(
+  id: string,
+  attachmentType: AttachmentType,
+  files: File[],
+  caption?: string,
+): Promise<InspectionRequestDetail> {
+  const formData = new FormData();
+  formData.append("attachmentType", attachmentType);
+  if (caption) formData.append("caption", caption);
+  files.forEach((file) => formData.append("attachments", file));
+  const res = await api.post<ResponseSuccess<InspectionRequestDetail>>(`/inspection-requests/${id}/attachments`, formData);
+  return res.data.data!;
+}
+
+export async function removeInspectionRequestAttachment(id: string, attachmentId: string): Promise<InspectionRequestDetail> {
+  const res = await api.delete<ResponseSuccess<InspectionRequestDetail>>(`/inspection-requests/${id}/attachments/${attachmentId}`);
+  return res.data.data!;
+}
+
+export async function deleteInspectionRequest(id: string): Promise<void> {
+  await api.delete(`/inspection-requests/${id}`);
+}
+
+export async function listRequestTankOptions(): Promise<TankOption[]> {
+  const res = await api.get<ResponseSuccess<TankOption[]>>("/inspection-requests/options/tanks");
+  return res.data.data!;
+}
+
+export async function listRequestTankProcessOptions(tankId: string): Promise<TankProcessOption[]> {
+  const res = await api.get<ResponseSuccess<TankProcessOption[]>>("/inspection-requests/options/tank-processes", { params: { tankId } });
   return res.data.data!;
 }

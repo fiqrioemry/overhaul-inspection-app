@@ -137,6 +137,16 @@ export default function DailyReportFormDialog({
     ? tankProcessOptions.find((p) => p.id === selectedProcessValue)?.name
     : processName;
 
+  // Human-readable context badge for the selectable form.
+  const hasTankChoice = selectedTankValue !== "";
+  const contextLabel = !hasTankChoice
+    ? null
+    : !effectiveTankId
+      ? "General activity"
+      : effectiveTankProcessId
+        ? "Tank + process"
+        : "Tank only";
+
   // Reset the selected process whenever the tank changes (process belongs to a tank).
   const prevTankRef = useRef(selectedTankValue);
   useEffect(() => {
@@ -324,7 +334,7 @@ export default function DailyReportFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="xl:w-130! max-h-[90vh] overflow-y-auto">
+      <DialogContent className="xl:w-205! max-h-[90vh] overflow-y-auto">
         <div className="p-4">
           <DialogHeader>
             <DialogTitle>{isEdit ? "Edit Daily Report" : "Add Daily Report"}</DialogTitle>
@@ -332,22 +342,46 @@ export default function DailyReportFormDialog({
           <form onSubmit={form.handleSubmit(onSubmit)} className="mt-4 space-y-4">
             {/* Tank / process selectors — only when not bound to a page context */}
             {selectable && (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <SelectField
-                  control={form.control}
-                  name="tankId"
-                  label="Tank (optional)"
-                  placeholder="Select tank..."
-                  options={tankSelectOptions}
-                  description="Leave as general for activity not tied to a tank."
-                />
-                <SelectField
-                  control={form.control}
-                  name="tankProcessId"
-                  label="Process (optional)"
-                  placeholder={effectiveTankId ? "Select process..." : "Select a tank first"}
-                  options={effectiveTankId ? processSelectOptions : []}
-                />
+              <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">Report Context</span>
+                  {contextLabel && (
+                    <span className="inline-flex items-center rounded-full bg-background border px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                      {contextLabel}
+                    </span>
+                  )}
+                </div>
+
+                <div className={cn("grid grid-cols-1 gap-4", effectiveTankId && "sm:grid-cols-2")}>
+                  <SelectField
+                    control={form.control}
+                    name="tankId"
+                    label="Tank"
+                    placeholder="Select tank..."
+                    options={tankSelectOptions}
+                  />
+
+                  {/* Process selector reveals only after a real tank is selected */}
+                  {effectiveTankId && (
+                    <div className="animate-in fade-in slide-in-from-top-1 duration-200">
+                      <SelectField
+                        control={form.control}
+                        name="tankProcessId"
+                        label="Process"
+                        placeholder="Select process..."
+                        options={processSelectOptions}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <p className="text-[11px] text-muted-foreground">
+                  {!hasTankChoice
+                    ? "Choose a tank, or select “General — no tank” for activity not tied to a specific tank."
+                    : !effectiveTankId
+                      ? "General report — not linked to any tank or process."
+                      : "Optionally narrow this report down to a specific process of the selected tank."}
+                </p>
               </div>
             )}
 
@@ -458,7 +492,7 @@ export default function DailyReportFormDialog({
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
                   Existing Attachments
                 </p>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
                   {existingAttachments.map((att) => (
                     <div key={att.id} className="space-y-1">
                       <div className="relative w-full aspect-square rounded-lg overflow-hidden border border-border group bg-muted">
@@ -497,7 +531,7 @@ export default function DailyReportFormDialog({
                     </span>
                   )}
                 </div>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
                   {localFiles.map((lf, idx) => (
                     <div key={lf.previewUrl} className="space-y-1">
                       <div className="relative w-full aspect-square rounded-lg overflow-hidden border border-border group bg-muted">

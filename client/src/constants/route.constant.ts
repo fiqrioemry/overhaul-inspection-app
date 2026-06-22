@@ -20,11 +20,11 @@ export const ROUTES = {
   DAILY_REPORT_LIST_PRINT: "/daily-reports/print",
   DAILY_REPORT_DETAIL: "/daily-reports/:id",
   DAILY_REPORT_EDIT: "/daily-reports/:id/edit",
-  TEST_RECORDS: "/test-records",
-  RADIOGRAPHY: "/radiography",
 
   INSPECTION_REQUESTS: "/inspection-requests",
-  INSPECTION_REQUEST_DETAIL: "/inspection-requests/:requestId",
+  INSPECTION_REQUEST_CREATE: "/inspection-requests/create",
+  INSPECTION_REQUEST_DETAIL: "/inspection-requests/:id",
+  INSPECTION_REQUEST_PRINT: "/inspection-requests/:id/print",
   NOTIFICATIONS: "/notifications",
   USERS: "/users",
 
