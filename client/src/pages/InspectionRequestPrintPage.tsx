@@ -11,15 +11,6 @@ import type { InspectionObjectType } from "@/features/inspection-requests/inspec
 import { ROUTES } from "@/constants/route.constant";
 import { format } from "date-fns";
 
-function InfoCell({ label, value }: { label: string; value: React.ReactNode }) {
-  return (
-    <div className="flex text-[11px]">
-      <span className="w-32 shrink-0 font-semibold uppercase">{label}</span>
-      <span className="mr-1">:</span>
-      <span className="flex-1">{value || "-"}</span>
-    </div>
-  );
-}
 
 export default function InspectionRequestPrintPage() {
   const { id } = useParams<{ id: string }>();
@@ -79,15 +70,33 @@ export default function InspectionRequestPrintPage() {
 
             {/* Info table */}
             <div className="grid grid-cols-2 border-b-2 border-black">
-              <div className="space-y-1 border-r-2 border-black p-3">
-                <InfoCell label="User" value={req.requestedByUser?.name} />
-                <InfoCell label="Customer / Asset Holder" value={req.assetHolder} />
-                <InfoCell label="Execution / 3rd Party" value={req.executionParty} />
+              <div className="border-r-2 border-black">
+                <div className="flex border-b border-black text-[11px]">
+                  <span className="w-44 shrink-0 border-r border-black px-2 py-1 font-semibold uppercase">User</span>
+                  <span className="flex-1 px-2 py-1">{req.requestedByUser?.name || "-"}</span>
+                </div>
+                <div className="flex border-b border-black text-[11px]">
+                  <span className="w-44 shrink-0 border-r border-black px-2 py-1 font-semibold uppercase">Customer / Asset Holder</span>
+                  <span className="flex-1 px-2 py-1">{req.assetHolder || "-"}</span>
+                </div>
+                <div className="flex text-[11px]">
+                  <span className="w-44 shrink-0 border-r border-black px-2 py-1 font-semibold uppercase">Executor</span>
+                  <span className="flex-1 px-2 py-1">{req.executionParty || "-"}</span>
+                </div>
               </div>
-              <div className="space-y-1 p-3">
-                <InfoCell label="Request No." value={req.requestNo} />
-                <InfoCell label="NDT Type" value={TEST_TYPE_LABELS[req.testType] ?? req.testType} />
-                <InfoCell label="Standard & Code" value={req.standardAndCode} />
+              <div>
+                <div className="flex border-b border-black text-[11px]">
+                  <span className="w-36 shrink-0 border-r border-black px-2 py-1 font-semibold uppercase">Request No.</span>
+                  <span className="flex-1 px-2 py-1">{req.requestNo || "-"}</span>
+                </div>
+                <div className="flex border-b border-black text-[11px]">
+                  <span className="w-36 shrink-0 border-r border-black px-2 py-1 font-semibold uppercase">NDT Type</span>
+                  <span className="flex-1 px-2 py-1">{TEST_TYPE_LABELS[req.testType] ?? req.testType}</span>
+                </div>
+                <div className="flex text-[11px]">
+                  <span className="w-36 shrink-0 border-r border-black px-2 py-1 font-semibold uppercase">Standard & Code</span>
+                  <span className="flex-1 px-2 py-1">{req.standardAndCode || "-"}</span>
+                </div>
               </div>
             </div>
 
