@@ -93,6 +93,19 @@ interface TankRef {
   contractorCompany?: { id: string; name: string; logoFile: { url: string } | null } | null;
 }
 
+export interface CompanyRef {
+  id: string;
+  name: string;
+  type: "OWNER" | "INSPECTOR_COMPANY" | "CONTRACTOR";
+}
+
+export interface PersonnelRef {
+  id: string;
+  name: string;
+  position: string | null;
+  company: CompanyRef | null;
+}
+
 export interface InspectionRequestListRow {
   id: string;
   requestNo: string;
@@ -117,6 +130,10 @@ export interface InspectionRequestDetail {
   requestDate: string;
   assetHolder: string | null;
   executionParty: string | null;
+  executionCompanyId: string | null;
+  receivedById: string | null;
+  preparedById: string | null;
+  approvedById: string | null;
   standardAndCode: string | null;
   requestLocation: string | null;
   description: string | null;
@@ -129,6 +146,10 @@ export interface InspectionRequestDetail {
   tank: TankRef | null;
   tankProcess: { id: string; name: string; type: string } | null;
   requestedByUser: { id: string; name: string; email: string } | null;
+  executionCompany: CompanyRef | null;
+  receivedByUser: PersonnelRef | null;
+  preparedByUser: PersonnelRef | null;
+  approvedByUser: PersonnelRef | null;
   items: InspectionRequestItem[];
   attachments: InspectionRequestAttachment[];
   signatoryTemplate: string[];
@@ -151,6 +172,10 @@ export interface CreateInspectionRequestPayload {
   requestDate: string;
   assetHolder?: string;
   executionParty?: string;
+  executionCompanyId?: string;
+  receivedById?: string;
+  preparedById?: string;
+  approvedById?: string;
   standardAndCode?: string;
   requestLocation?: string;
   description?: string;
@@ -166,6 +191,10 @@ export interface UpdateInspectionRequestPayload {
   requestDate?: string;
   assetHolder?: string | null;
   executionParty?: string | null;
+  executionCompanyId?: string | null;
+  receivedById?: string | null;
+  preparedById?: string | null;
+  approvedById?: string | null;
   standardAndCode?: string | null;
   requestLocation?: string | null;
   description?: string | null;
@@ -204,6 +233,10 @@ export async function createInspectionRequest(payload: CreateInspectionRequestPa
   formData.append("requestDate", payload.requestDate);
   if (payload.assetHolder) formData.append("assetHolder", payload.assetHolder);
   if (payload.executionParty) formData.append("executionParty", payload.executionParty);
+  if (payload.executionCompanyId) formData.append("executionCompanyId", payload.executionCompanyId);
+  if (payload.receivedById) formData.append("receivedById", payload.receivedById);
+  if (payload.preparedById) formData.append("preparedById", payload.preparedById);
+  if (payload.approvedById) formData.append("approvedById", payload.approvedById);
   if (payload.standardAndCode) formData.append("standardAndCode", payload.standardAndCode);
   if (payload.requestLocation) formData.append("requestLocation", payload.requestLocation);
   if (payload.description) formData.append("description", payload.description);

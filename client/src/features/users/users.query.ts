@@ -1,14 +1,24 @@
 // src/features/users/users.query.ts
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { listUsers, getUserById, createUser, updateUser, updateUserStatus, deleteUser } from "@/features/users/users.api";
-import type { ListUsersParams, CreateUserPayload, UpdateUserPayload, UpdateUserStatusPayload } from "@/features/users/users.api";
+import { listUsers, getUserById, createUser, updateUser, updateUserStatus, deleteUser, getUserOptions } from "@/features/users/users.api";
+import type { ListUsersParams, CreateUserPayload, UpdateUserPayload, UpdateUserStatusPayload, UserOptionsParams } from "@/features/users/users.api";
 
 export const USER_KEYS = {
   all: ["users"] as const,
   list: (params: ListUsersParams) => ["users", "list", params] as const,
+  options: (params: UserOptionsParams) => ["users", "options", params] as const,
   detail: (id: string) => ["users", "detail", id] as const,
 };
+
+export function useUserOptions(params: UserOptionsParams, enabled = true) {
+  return useQuery({
+    queryKey: USER_KEYS.options(params),
+    queryFn: () => getUserOptions(params),
+    staleTime: 1000 * 60 * 5,
+    enabled,
+  });
+}
 
 export function useUsers(params: ListUsersParams) {
   return useQuery({

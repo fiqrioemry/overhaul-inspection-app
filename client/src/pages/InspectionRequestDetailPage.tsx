@@ -18,11 +18,16 @@ import {
   useDeleteInspectionRequest,
 } from "@/features/inspection-requests/inspection-requests.query";
 import { TEST_TYPE_LABELS, OBJECT_TYPE_LABELS, ATTACHMENT_TYPE_LABELS } from "@/features/inspection-requests/inspection-request.constants";
-import type { AttachmentType, InspectionObjectType } from "@/features/inspection-requests/inspection-requests.api";
+import type { AttachmentType, InspectionObjectType, PersonnelRef } from "@/features/inspection-requests/inspection-requests.api";
 import { PERMISSIONS } from "@/constants/permission.constant";
 import { ROUTES } from "@/constants/route.constant";
 import { useAuthStore } from "@/stores/auth.store";
 import { format } from "date-fns";
+
+function personnelLabel(p: PersonnelRef | null): string {
+  if (!p) return "";
+  return [p.name, p.position, p.company?.name].filter(Boolean).join(" · ");
+}
 
 function MetaRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
@@ -106,9 +111,12 @@ export default function InspectionRequestDetailPage() {
             <MetaRow label="Request Date" value={format(new Date(req.requestDate), "dd MMM yyyy")} />
             <MetaRow label="Requested By" value={req.requestedByUser?.name} />
             <MetaRow label="Customer / Asset Holder" value={req.assetHolder} />
-            <MetaRow label="Execution / 3rd Party" value={req.executionParty} />
+            <MetaRow label="Execution / 3rd Party" value={req.executionCompany?.name ?? req.executionParty} />
             <MetaRow label="Standard & Code" value={req.standardAndCode} />
             <MetaRow label="Remarks / Location" value={req.requestLocation} />
+            <MetaRow label="Received By" value={personnelLabel(req.receivedByUser)} />
+            <MetaRow label="Prepared By" value={personnelLabel(req.preparedByUser)} />
+            <MetaRow label="Approved By" value={personnelLabel(req.approvedByUser)} />
           </div>
 
           {req.description && (

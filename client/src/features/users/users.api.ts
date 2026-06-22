@@ -78,3 +78,26 @@ export async function deleteUser(id: string): Promise<ResponseOK> {
   const res = await api.delete<ResponseOK>(`/users/${id}`);
   return res.data;
 }
+
+export type CompanyTypeFilter = "OWNER" | "INSPECTOR_COMPANY" | "CONTRACTOR";
+
+export interface UserOption {
+  id: string;
+  name: string;
+  email: string;
+  role: RoleEnum;
+  position: string | null;
+  companyId: string | null;
+  company: { id: string; name: string; type: CompanyTypeFilter } | null;
+}
+
+export interface UserOptionsParams {
+  companyType?: CompanyTypeFilter;
+  role?: string;
+  search?: string;
+}
+
+export async function getUserOptions(params: UserOptionsParams): Promise<UserOption[]> {
+  const res = await api.get<ResponseSuccess<UserOption[]>>("/users/options", { params });
+  return res.data.data!;
+}

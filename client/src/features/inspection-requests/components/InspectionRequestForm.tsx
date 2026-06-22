@@ -8,8 +8,6 @@ import { useNavigate } from "react-router-dom";
 import { Plus, Trash2, Copy, X, FileText } from "lucide-react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import SelectField from "@/components/fields/SelectField";
 import DateField from "@/components/fields/DateField";
 import LongTextField from "@/components/fields/LongTextField";
@@ -19,9 +17,17 @@ import { ROUTES } from "@/constants/route.constant";
 import { useCreateInspectionRequest, useRequestTankOptions, useRequestTankProcessOptions } from "../inspection-requests.query";
 import { TEST_TYPE_OPTIONS, OBJECT_TYPE_OPTIONS } from "../inspection-request.constants";
 import type { CreateInspectionRequestPayload, InspectionRequestType, InspectionObjectType } from "../inspection-requests.api";
+import { useCompanyOptions } from "@/features/companies/companies.query";
+import { useUserOptions } from "@/features/users/users.query";
+import type { UserOption } from "@/features/users/users.api";
 
 const NO_TANK_VALUE = "__none__";
 const NO_PROCESS_VALUE = "__none__";
+const NONE_VALUE = "__none__";
+
+function userOptionLabel(u: UserOption): string {
+  return [u.name, u.position, u.company?.name].filter(Boolean).join(" - ");
+}
 
 const itemSchema = z.object({
   objectType: z.string().min(1, "Object type required"),
@@ -38,7 +44,10 @@ const schema = z.object({
   tankProcessId: z.string().optional(),
   requestDate: z.string().min(1, "Request date required"),
   assetHolder: z.string().optional(),
-  executionParty: z.string().optional(),
+  executionCompanyId: z.string().optional(),
+  receivedById: z.string().optional(),
+  preparedById: z.string().optional(),
+  approvedById: z.string().optional(),
   standardAndCode: z.string().optional(),
   requestLocation: z.string().optional(),
   description: z.string().optional(),
@@ -64,7 +73,10 @@ export default function InspectionRequestForm() {
       tankProcessId: "",
       requestDate: format(new Date(), "yyyy-MM-dd"),
       assetHolder: "",
-      executionParty: "",
+      executionCompanyId: "",
+      receivedById: "",
+      preparedById: "",
+      approvedById: "",
       standardAndCode: "",
       requestLocation: "",
       description: "",
@@ -85,6 +97,21 @@ export default function InspectionRequestForm() {
   const tankSelectOptions = [{ label: "General — no tank", value: NO_TANK_VALUE }, ...tankOptions.map((t) => ({ label: t.tankName ? `${t.tankNo} — ${t.tankName}` : t.tankNo, value: t.id }))];
   const processSelectOptions = [{ label: "No specific process", value: NO_PROCESS_VALUE }, ...processOptions.map((p) => ({ label: p.name, value: p.id }))];
 
+  // Personnel + execution company options
+  const selectedExecutionCompany = form.watch("executionCompanyId") ?? "";
+  const effectiveExecutionCompanyId = selectedExecutionCompany && selectedExecutionCompany !== NONE_VALUE ? selectedExecutionCompany : undefined;
+  const { data: executionCompanies = [], isLoading: loadingCompanies } = useCompanyOptions("INSPECTOR_COMPANY");
+  const { data: inspectorUsers = [], isLoading: loadingInspectorUsers } = useUserOptions({ companyType: "INSPECTOR_COMPANY" });
+  const { data: ownerUsers = [], isLoading: loadingOwnerUsers } = useUserOptions({ companyType: "OWNER" });
+
+  // Received By is scoped to the chosen execution company when one is selected
+  const receivedByUsers = effectiveExecutionCompanyId ? inspectorUsers.filter((u) => u.companyId === effectiveExecutionCompanyId) : inspectorUsers;
+
+  const executionCompanyOptions = [{ label: "— None —", value: NONE_VALUE }, ...executionCompanies.map((co) => ({ label: co.name, value: co.id }))];
+  const receivedByOptions = [{ label: "— None —", value: NONE_VALUE }, ...receivedByUsers.map((u) => ({ label: userOptionLabel(u), value: u.id }))];
+  const preparedByOptions = [{ label: "— None —", value: NONE_VALUE }, ...ownerUsers.map((u) => ({ label: userOptionLabel(u), value: u.id }))];
+  const approvedByOptions = [{ label: "— None —", value: NONE_VALUE }, ...ownerUsers.map((u) => ({ label: userOptionLabel(u), value: u.id }))];
+
   // Reset process when tank changes
   const prevTankRef = useRef(selectedTankValue);
   useEffect(() => {
@@ -103,6 +130,7 @@ export default function InspectionRequestForm() {
 
   function onSubmit(values: FormValues) {
     const effectiveProcessId = selectedProcessValue && selectedProcessValue !== NO_PROCESS_VALUE ? selectedProcessValue : undefined;
+    const pick = (v?: string) => (v && v !== NONE_VALUE ? v : undefined);
 
     const payload: CreateInspectionRequestPayload = {
       testType: values.testType as InspectionRequestType,
@@ -110,7 +138,10 @@ export default function InspectionRequestForm() {
       tankProcessId: effectiveProcessId,
       requestDate: values.requestDate,
       assetHolder: values.assetHolder || undefined,
-      executionParty: values.executionParty || undefined,
+      executionCompanyId: pick(values.executionCompanyId),
+      receivedById: pick(values.receivedById),
+      preparedById: pick(values.preparedById),
+      approvedById: pick(values.approvedById),
       standardAndCode: values.standardAndCode || undefined,
       requestLocation: values.requestLocation || undefined,
       description: values.description || undefined,
@@ -152,9 +183,43 @@ export default function InspectionRequestForm() {
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <ShortTextField control={form.control} name="assetHolder" label="Customer / Asset Holder" placeholder="e.g. MA" />
-          <ShortTextField control={form.control} name="executionParty" label="Execution / 3rd Party" placeholder="e.g. PT. BKI" />
           <ShortTextField control={form.control} name="standardAndCode" label="Standard & Code" placeholder="e.g. ASME Sec. V" />
           <ShortTextField control={form.control} name="requestLocation" label="Remarks / NDT Location" placeholder="e.g. Lokasi NDT: Tank A2" />
+        </div>
+
+        {/* Execution & signatories */}
+        <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
+          <span className="text-sm font-medium">Execution &amp; Signatories</span>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {loadingCompanies ? (
+              <p className="text-xs text-muted-foreground">Loading companies…</p>
+            ) : executionCompanies.length === 0 ? (
+              <p className="text-xs text-muted-foreground">No inspector company available</p>
+            ) : (
+              <SelectField control={form.control} name="executionCompanyId" label="Execution / 3rd Party" placeholder="Select inspector company..." options={executionCompanyOptions} />
+            )}
+            {loadingInspectorUsers ? (
+              <p className="text-xs text-muted-foreground">Loading inspectors…</p>
+            ) : receivedByUsers.length === 0 ? (
+              <p className="text-xs text-muted-foreground">No inspector company user available</p>
+            ) : (
+              <SelectField control={form.control} name="receivedById" label="Received By" placeholder="Select inspector..." options={receivedByOptions} />
+            )}
+            {loadingOwnerUsers ? (
+              <p className="text-xs text-muted-foreground">Loading owner users…</p>
+            ) : ownerUsers.length === 0 ? (
+              <p className="text-xs text-muted-foreground">No owner user available</p>
+            ) : (
+              <SelectField control={form.control} name="preparedById" label="Prepared By" placeholder="Select preparer..." options={preparedByOptions} />
+            )}
+            {loadingOwnerUsers ? (
+              <p className="text-xs text-muted-foreground">Loading owner users…</p>
+            ) : ownerUsers.length === 0 ? (
+              <p className="text-xs text-muted-foreground">No owner user available</p>
+            ) : (
+              <SelectField control={form.control} name="approvedById" label="Approved By" placeholder="Select approver..." options={approvedByOptions} />
+            )}
+          </div>
         </div>
 
         <LongTextField control={form.control} name="description" label="Description (optional)" placeholder="Leave empty to auto-generate from objects" rows={4} />

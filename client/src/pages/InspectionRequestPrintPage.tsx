@@ -11,7 +11,6 @@ import type { InspectionObjectType } from "@/features/inspection-requests/inspec
 import { ROUTES } from "@/constants/route.constant";
 import { format } from "date-fns";
 
-
 export default function InspectionRequestPrintPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -55,13 +54,13 @@ export default function InspectionRequestPrintPage() {
           <div className="border-2 border-black">
             {/* Header */}
             <div className="flex items-stretch border-b-2 border-black">
-              <div className="flex-1 border-r-2 border-black p-3">
+              <div className="flex-1 border-black p-3 flex flex-col items-center justify-center text-center">
                 <p className="text-sm font-bold uppercase leading-tight">Stationary Inspection Engineer</p>
                 <p className="text-xs font-semibold uppercase">PT. Pertamina RU-III</p>
               </div>
-              <div className="w-56 p-3 text-right">
-                {inspectionLogo ? <img src={inspectionLogo} alt="logo" className="ml-auto h-8 object-contain" /> : <p className="text-base font-bold text-red-600">PERTAMINA</p>}
-                <p className="mt-1 text-[11px]">
+              <div className="w-56 p-3 flex flex-col items-center justify-center text-center">
+                {inspectionLogo ? <img src={inspectionLogo} alt="logo" className="h-8 object-contain" /> : <p className="text-base font-bold text-red-600">PERTAMINA</p>}
+                <p className="mt-1 text-[9px]">
                   {req.tank?.location ? `${req.tank.location}, ` : "Plaju, "}
                   {format(new Date(req.requestDate), "dd MMMM yyyy")}
                 </p>
@@ -70,33 +69,29 @@ export default function InspectionRequestPrintPage() {
 
             {/* Info table */}
             <div className="grid grid-cols-2 border-b-2 border-black">
-              <div className="border-r-2 border-black">
-                <div className="flex border-b border-black text-[11px]">
-                  <span className="w-44 shrink-0 border-r border-black px-2 py-1 font-semibold uppercase">User</span>
-                  <span className="flex-1 px-2 py-1">{req.requestedByUser?.name || "-"}</span>
-                </div>
-                <div className="flex border-b border-black text-[11px]">
-                  <span className="w-44 shrink-0 border-r border-black px-2 py-1 font-semibold uppercase">Customer / Asset Holder</span>
-                  <span className="flex-1 px-2 py-1">{req.assetHolder || "-"}</span>
-                </div>
-                <div className="flex text-[11px]">
-                  <span className="w-44 shrink-0 border-r border-black px-2 py-1 font-semibold uppercase">Executor</span>
-                  <span className="flex-1 px-2 py-1">{req.executionParty || "-"}</span>
-                </div>
+              <div className="flex border-b border-r-2 border-black text-[10px]">
+                <span className="w-44 shrink-0 border-r border-black px-2 py-1 font-semibold uppercase">User</span>
+                <span className="flex-1 px-2 py-1">{req.requestedByUser?.name || "-"}</span>
               </div>
-              <div>
-                <div className="flex border-b border-black text-[11px]">
-                  <span className="w-36 shrink-0 border-r border-black px-2 py-1 font-semibold uppercase">Request No.</span>
-                  <span className="flex-1 px-2 py-1">{req.requestNo || "-"}</span>
-                </div>
-                <div className="flex border-b border-black text-[11px]">
-                  <span className="w-36 shrink-0 border-r border-black px-2 py-1 font-semibold uppercase">NDT Type</span>
-                  <span className="flex-1 px-2 py-1">{TEST_TYPE_LABELS[req.testType] ?? req.testType}</span>
-                </div>
-                <div className="flex text-[11px]">
-                  <span className="w-36 shrink-0 border-r border-black px-2 py-1 font-semibold uppercase">Standard & Code</span>
-                  <span className="flex-1 px-2 py-1">{req.standardAndCode || "-"}</span>
-                </div>
+              <div className="flex border-b border-black text-[10px]">
+                <span className="w-36 shrink-0 border-r border-black px-2 py-1 font-semibold uppercase">Request No.</span>
+                <span className="flex-1 px-2 py-1">{req.requestNo || "-"}</span>
+              </div>
+              <div className="flex border-b border-r-2 border-black text-[10px]">
+                <span className="w-44 shrink-0 border-r border-black px-2 py-1 font-semibold uppercase">Customer / Asset Holder</span>
+                <span className="flex-1 px-2 py-1">{req.assetHolder || "-"}</span>
+              </div>
+              <div className="flex border-b border-black text-[10px]">
+                <span className="w-36 shrink-0 border-r border-black px-2 py-1 font-semibold uppercase">NDT Type</span>
+                <span className="flex-1 px-2 py-1">{TEST_TYPE_LABELS[req.testType] ?? req.testType}</span>
+              </div>
+              <div className="flex border-r-2 border-black text-[10px]">
+                <span className="w-44 shrink-0 border-r border-black px-2 py-1 font-semibold uppercase">Executor / 3rd Party</span>
+                <span className="flex-1 px-2 py-1 uppercase">{req.executionCompany?.name || req.executionParty || "-"}</span>
+              </div>
+              <div className="flex text-[10px]">
+                <span className="w-36 shrink-0 border-r border-black px-2 py-1 font-semibold uppercase">Standard & Code</span>
+                <span className="flex-1 px-2 py-1">{req.standardAndCode || "-"}</span>
               </div>
             </div>
 
@@ -133,13 +128,24 @@ export default function InspectionRequestPrintPage() {
 
             {/* Signatures */}
             <div className="grid grid-cols-3 border-t-2 border-black">
-              {req.signatoryTemplate.map((role, idx) => (
-                <div key={role} className={`p-3 text-center ${idx < 2 ? "border-r-2 border-black" : ""}`}>
-                  <p className="text-[11px] font-semibold uppercase">{role}</p>
-                  <div className="h-16" />
-                  <div className="mx-auto w-3/4 border-t border-black pt-1 text-[10px] text-gray-500">Name &amp; Signature</div>
-                </div>
-              ))}
+              <div className="border-r-2 border-black text-center">
+                <p className="px-2 py-1 text-start text-[11px] border-b font-semibold uppercase">Received By :</p>
+                {req.receivedByUser?.position && <p className="px-2 py-1 text-start text-[9px] text-black">{req.receivedByUser.position}</p>}
+                <div className="h-14" />
+                <div className="mx-auto w-3/4 border-t border-black pt-1 text-[10px] text-black">{req.receivedByUser?.name}</div>
+              </div>
+              <div className="border-r-2 border-black text-center">
+                <p className="px-2 py-1 text-[11px] text-start font-semibold uppercase border-b border-black">Prepared By :</p>
+                {req.preparedByUser?.position && <p className="px-2 py-1 text-start text-[9px] text-black">{req.preparedByUser.position}</p>}
+                <div className="h-14" />
+                <div className="mx-auto w-3/4 border-t border-black pt-1 text-[10px] text-black">{req.preparedByUser?.name}</div>
+              </div>
+              <div className=" text-center">
+                <p className="px-2 py-1 text-[11px] text-start font-semibold uppercase border-b border-black">Approved By :</p>
+                {req.approvedByUser?.position && <p className="px-2 py-1 text-start text-[9px] text-black">{req.approvedByUser.position}</p>}
+                <div className="h-14" />
+                <div className="mx-auto w-3/4 border-t border-black pt-1 text-[10px] text-black">{req.approvedByUser?.name}</div>
+              </div>
             </div>
           </div>
         </div>
