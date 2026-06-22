@@ -134,6 +134,7 @@ export default function UserManagementPage() {
                   <tr>
                     <th className="px-4 py-3 text-left font-medium">Name</th>
                     <th className="px-4 py-3 text-left font-medium">Email</th>
+                    <th className="px-4 py-3 text-left font-medium">Company</th>
                     <th className="px-4 py-3 text-left font-medium">Role</th>
                     <th className="px-4 py-3 text-left font-medium">Status</th>
                     <th className="px-4 py-3 text-left font-medium">Verified</th>
@@ -146,6 +147,10 @@ export default function UserManagementPage() {
                     <tr key={user.id} className="hover:bg-muted/20">
                       <td className="px-4 py-3 font-medium">{user.name}</td>
                       <td className="px-4 py-3 text-muted-foreground">{user.email}</td>
+                      <td className="px-4 py-3 text-muted-foreground">
+                        {user.company?.name ?? "—"}
+                        {user.position && <span className="block text-xs text-muted-foreground/70">{user.position}</span>}
+                      </td>
                       <td className="px-4 py-3">
                         <Badge variant="outline" className="text-xs">
                           {ROLE_LABEL[user.role] ?? user.role}

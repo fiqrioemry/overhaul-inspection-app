@@ -11,6 +11,9 @@ export interface UserListItem {
   role: RoleEnum;
   status: StatusEnum;
   avatar: string | null;
+  position: string | null;
+  companyId: string | null;
+  company: { id: string; name: string; type: "OWNER" | "INSPECTOR_COMPANY" | "CONTRACTOR" } | null;
   verifiedAt: string | null;
   createdAt: string;
   lastLogin: string | null;
@@ -31,6 +34,8 @@ export interface CreateUserPayload {
   email: string;
   role: RoleEnum;
   status: StatusEnum;
+  position?: string;
+  companyId?: string;
   password?: string;
   isVerified?: boolean;
 }
@@ -38,6 +43,8 @@ export interface CreateUserPayload {
 export interface UpdateUserPayload {
   name?: string;
   role?: RoleEnum;
+  position?: string | null;
+  companyId?: string | null;
   avatar?: File;
 }
 
@@ -64,6 +71,8 @@ export async function updateUser(id: string, data: UpdateUserPayload): Promise<U
   const formData = new FormData();
   if (data.name !== undefined) formData.append("name", data.name);
   if (data.role !== undefined) formData.append("role", data.role);
+  if (data.position !== undefined) formData.append("position", data.position ?? "");
+  if (data.companyId !== undefined) formData.append("companyId", data.companyId ?? "");
   if (data.avatar instanceof File) formData.append("avatar", data.avatar);
   const res = await api.patch<ResponseSuccess<UserDetail>>(`/users/${id}`, formData);
   return res.data.data!;

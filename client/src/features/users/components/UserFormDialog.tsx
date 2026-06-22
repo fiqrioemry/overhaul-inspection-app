@@ -13,6 +13,7 @@ import SwitchField from "@/components/fields/SwitchField";
 import { createUserSchema, updateUserSchema } from "@/schemas/users.schema";
 import type { CreateUserFormValues, UpdateUserFormValues } from "@/schemas/users.schema";
 import { useCreateUser, useUpdateUser } from "@/features/users/users.query";
+import { useCompanyOptions } from "@/features/companies/companies.query";
 import type { UserDetail } from "@/features/users/users.api";
 
 const ROLE_OPTIONS = [
@@ -21,6 +22,8 @@ const ROLE_OPTIONS = [
   { label: "Admin", value: "ADMIN" },
   { label: "Super Admin", value: "SUPER_ADMIN" },
 ];
+
+const NO_COMPANY_VALUE = "__none__";
 
 const STATUS_OPTIONS = [
   { label: "Active", value: "ACTIVE" },
@@ -43,27 +46,32 @@ export default function UserFormDialog({ open, onOpenChange, user }: UserFormDia
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
+  const { data: companies = [] } = useCompanyOptions();
+  const companyOptions = [{ label: "— No company —", value: NO_COMPANY_VALUE }, ...companies.map((co) => ({ label: co.name, value: co.id }))];
+
   const createForm = useForm<CreateUserFormValues>({
     resolver: zodResolver(createUserSchema),
-    defaultValues: { name: "", email: "", role: "USER", status: "ACTIVE", password: "", isVerified: false },
+    defaultValues: { name: "", email: "", role: "USER", status: "ACTIVE", position: "", companyId: NO_COMPANY_VALUE, password: "", isVerified: false },
   });
 
   const editForm = useForm<UpdateUserFormValues>({
     resolver: zodResolver(updateUserSchema),
-    defaultValues: { name: "", role: "USER" },
+    defaultValues: { name: "", role: "USER", position: "", companyId: NO_COMPANY_VALUE },
   });
 
   useEffect(() => {
     if (!open) return;
 
     if (user && isEdit) {
-      editForm.reset({ name: user.name, role: user.role });
+      editForm.reset({ name: user.name, role: user.role, position: user.position ?? "", companyId: user.companyId ?? NO_COMPANY_VALUE });
     } else {
       createForm.reset({
         name: "",
         email: "",
         role: "USER",
         status: "ACTIVE",
+        position: "",
+        companyId: NO_COMPANY_VALUE,
         password: "",
         isVerified: false,
       });
@@ -85,12 +93,20 @@ export default function UserFormDialog({ open, onOpenChange, user }: UserFormDia
   }
 
   function onCreateSubmit(values: CreateUserFormValues) {
-    createMutation.mutate({ ...values, password: values.password || undefined }, { onSuccess: () => onOpenChange(false) });
+    const companyId = values.companyId && values.companyId !== NO_COMPANY_VALUE ? values.companyId : undefined;
+    createMutation.mutate(
+      { ...values, position: values.position || undefined, companyId, password: values.password || undefined },
+      { onSuccess: () => onOpenChange(false) },
+    );
   }
 
   function onEditSubmit(values: UpdateUserFormValues) {
     if (!user) return;
-    updateMutation.mutate({ id: user.id, data: { ...values, avatar: avatarFile ?? undefined } }, { onSuccess: () => onOpenChange(false) });
+    const companyId = values.companyId && values.companyId !== NO_COMPANY_VALUE ? values.companyId : null;
+    updateMutation.mutate(
+      { id: user.id, data: { ...values, position: values.position ?? "", companyId, avatar: avatarFile ?? undefined } },
+      { onSuccess: () => onOpenChange(false) },
+    );
   }
 
   const isPending = createMutation.isPending || updateMutation.isPending;
@@ -122,6 +138,8 @@ export default function UserFormDialog({ open, onOpenChange, user }: UserFormDia
 
             <ShortTextField control={editForm.control} name="name" label="Name" placeholder="Full name" />
             <SelectField control={editForm.control} name="role" label="Role" options={ROLE_OPTIONS} />
+            <SelectField control={editForm.control} name="companyId" label="Company" options={companyOptions} />
+            <ShortTextField control={editForm.control} name="position" label="Position" placeholder="e.g. Welding Inspector" />
 
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isPending}>
@@ -148,6 +166,8 @@ export default function UserFormDialog({ open, onOpenChange, user }: UserFormDia
           <ShortTextField control={createForm.control} name="email" label="Email" type="email" placeholder="email@example.com" />
           <SelectField control={createForm.control} name="role" label="Role" options={ROLE_OPTIONS} />
           <SelectField control={createForm.control} name="status" label="Status" options={STATUS_OPTIONS} />
+          <SelectField control={createForm.control} name="companyId" label="Company" options={companyOptions} />
+          <ShortTextField control={createForm.control} name="position" label="Position" placeholder="e.g. Welding Inspector" />
           <PasswordField control={createForm.control} name="password" label="Password" placeholder="Min 6 characters" autoComplete="new-password" />
           <SwitchField control={createForm.control} name="isVerified" label="Mark as verified" description="User email will be pre-verified" />
           <DialogFooter>

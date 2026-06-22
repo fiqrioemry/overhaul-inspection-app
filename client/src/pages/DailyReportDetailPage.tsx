@@ -44,7 +44,7 @@ export default function DailyReportDetailPage() {
   const contractorLogoUrl = contractorCompany?.logoFile?.url ?? null;
 
   const attachments = report.attachments;
-  const photoPages: typeof attachments[] = [];
+  const photoPages: (typeof attachments)[] = [];
   for (let i = 0; i < attachments.length; i += PHOTOS_PER_PAGE) {
     photoPages.push(attachments.slice(i, i + PHOTOS_PER_PAGE));
   }
@@ -109,7 +109,6 @@ export default function DailyReportDetailPage() {
       <div className="report-viewer bg-gray-300 rounded-lg p-8 flex flex-col items-center gap-6">
         {/* ── PAGE 1: report content ── */}
         <div className="report-page bg-white shadow-lg w-full max-w-198.5 min-h-280.75 p-16 flex flex-col gap-8">
-
           {/* Header — logos left/right, title centered */}
           <div className="border-b pb-6">
             <div className="flex items-center justify-between gap-4">
@@ -120,13 +119,8 @@ export default function DailyReportDetailPage() {
               <div className="flex-1 text-center space-y-0.5">
                 <h1 className="text-base font-bold uppercase tracking-wide">Laporan Harian Inspeksi</h1>
                 <p className="text-[10px] text-gray-500">Daily Inspection Report</p>
-                {inspectionCompany && (
-                  <p className="text-[9px] text-gray-400 uppercase tracking-widest mt-1">{inspectionCompany.name}</p>
-                )}
+                {inspectionCompany && <p className="text-[9px] text-gray-400 uppercase tracking-widest mt-1">{inspectionCompany.name}</p>}
               </div>
-
-              {/* Right: Contractor/owner company logo */}
-              <CompanyLogo url={contractorLogoUrl} name={contractorCompany?.name} />
             </div>
           </div>
 
@@ -147,30 +141,18 @@ export default function DailyReportDetailPage() {
           <div className="space-y-3 flex-1">
             <SectionTitle>Uraian Kegiatan / Activity Description</SectionTitle>
             {report.description ? (
-              <div
-                className="min-h-48 leading-relaxed pt-2 prose prose-sm max-w-none"
-                style={{ fontSize: "10px" }}
-                dangerouslySetInnerHTML={{ __html: report.description }}
-              />
+              <div className="min-h-48 leading-relaxed pt-2 prose prose-sm max-w-none" style={{ fontSize: "10px" }} dangerouslySetInnerHTML={{ __html: report.description }} />
             ) : (
               <div className="min-h-48 pt-2" style={{ fontSize: "10px" }}>
                 <span className="text-gray-400 italic">Tidak ada deskripsi.</span>
               </div>
             )}
           </div>
-
-          {/* Footer */}
-          <div className="border-t pt-4 text-center text-[10px] text-gray-400 mt-auto">
-            <p>Dicetak pada {format(new Date(), "dd MMMM yyyy HH:mm")}</p>
-          </div>
         </div>
 
         {/* ── PHOTO PAGES: 6 photos per page, 2 columns ── */}
         {photoPages.map((pagePhotos, pageIdx) => (
-          <div
-            key={pageIdx}
-            className="photo-page report-page bg-white shadow-lg w-full max-w-198.5 min-h-280.75 p-16 flex flex-col gap-6"
-          >
+          <div key={pageIdx} className="photo-page report-page bg-white shadow-lg w-full max-w-198.5 min-h-280.75 p-16 flex flex-col gap-6">
             {/* Page header */}
             <div className="border-b pb-4">
               <div className="flex items-center justify-between gap-4">
@@ -192,11 +174,7 @@ export default function DailyReportDetailPage() {
                 return (
                   <div key={att.id} className="space-y-1">
                     <div className="border rounded overflow-hidden aspect-4/3 bg-gray-100">
-                      <img
-                        src={att.attachmentUrl}
-                        alt={att.caption ?? `Foto ${globalIdx}`}
-                        className="w-full h-full object-cover"
-                      />
+                      <img src={att.attachmentUrl} alt={att.caption ?? `Foto ${globalIdx}`} className="w-full h-full object-cover" />
                     </div>
                     <p style={{ fontSize: "8px" }} className="text-center text-gray-500 leading-snug">
                       {att.caption ? att.caption : <span className="italic text-gray-300">Foto {globalIdx}</span>}
@@ -217,25 +195,9 @@ export default function DailyReportDetailPage() {
   );
 }
 
-function CompanyLogo({
-  url,
-  name,
-  size = "md",
-}: {
-  url: string | null;
-  name: string | undefined;
-  size?: "sm" | "md";
-}) {
+function CompanyLogo({ url, name, size = "md" }: { url: string | null; name: string | undefined; size?: "sm" | "md" }) {
   const dim = size === "sm" ? "h-10 w-10" : "h-14 w-14";
-  return (
-    <div className={`${dim} shrink-0 flex items-center justify-center`}>
-      {url ? (
-        <img src={url} alt={name ?? "logo"} className="h-full w-full object-contain" />
-      ) : (
-        <Building2 className="size-6 text-gray-300" />
-      )}
-    </div>
-  );
+  return <div className={`${dim} shrink-0 flex items-center justify-center`}>{url ? <img src={url} alt={name ?? "logo"} className="h-full w-full object-contain" /> : <Building2 className="size-6 text-gray-300" />}</div>;
 }
 
 function MetaRow({ label, value }: { label: string; value: React.ReactNode }) {
@@ -248,9 +210,5 @@ function MetaRow({ label, value }: { label: string; value: React.ReactNode }) {
 }
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
-  return (
-    <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-500 border-b pb-1.5">
-      {children}
-    </h2>
-  );
+  return <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-500 border-b pb-1.5">{children}</h2>;
 }
