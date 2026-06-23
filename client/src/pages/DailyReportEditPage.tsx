@@ -27,7 +27,6 @@ const schema = z.object({
 });
 
 type FormValues = z.infer<typeof schema>;
-
 type DailyReport = NonNullable<ReturnType<typeof useDailyReport>["data"]>;
 
 const MAX_FILE_SIZE = 8 * 1024 * 1024;
@@ -94,6 +93,7 @@ function SortableExistingCard({ attachment, onRemove, onCaptionChange }: Sortabl
 
       <div className="p-3">
         <label className="text-xs text-muted-foreground font-medium mb-1.5 block">Caption</label>
+
         <textarea
           value={attachment.caption}
           onChange={(e) => onCaptionChange(attachment.id, e.target.value)}
@@ -102,6 +102,7 @@ function SortableExistingCard({ attachment, onRemove, onCaptionChange }: Sortabl
           maxLength={300}
           className="w-full resize-none rounded-md border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
         />
+
         <p className="text-right text-[10px] text-muted-foreground mt-1">{attachment.caption.length}/300</p>
       </div>
     </div>
@@ -131,6 +132,7 @@ function NewFileCard({ localFile, onRemove, onCaptionChange }: NewFileCardProps)
 
       <div className="p-3">
         <label className="text-xs text-muted-foreground font-medium mb-1.5 block">Caption</label>
+
         <textarea
           value={localFile.caption}
           onChange={(e) => onCaptionChange(localFile.id, e.target.value)}
@@ -139,6 +141,7 @@ function NewFileCard({ localFile, onRemove, onCaptionChange }: NewFileCardProps)
           maxLength={300}
           className="w-full resize-none rounded-md border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
         />
+
         <p className="text-right text-[10px] text-muted-foreground mt-1">{localFile.caption.length}/300</p>
       </div>
     </div>
@@ -182,7 +185,6 @@ function DailyReportEditContent({ report, reportId }: { report: DailyReport; rep
     },
   });
 
-  // dnd-kit sensors
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
   function handleDragEnd(event: DragEndEvent) {
@@ -252,52 +254,53 @@ function DailyReportEditContent({ report, reportId }: { report: DailyReport; rep
     [attachments.length, localFiles.length],
   );
 
-  const onSubmit = useCallback(
-    (values: FormValues) => {
-      const description = descRef.current?.getHTML() ?? "";
+  function submitDailyReport(values: FormValues) {
+    const description = descRef.current?.getHTML() ?? "";
 
-      if (descRef.current?.isEmpty()) {
-        descRef.current?.focus();
-        return;
-      }
+    if (descRef.current?.isEmpty()) {
+      descRef.current?.focus();
+      return;
+    }
 
-      const recommendation = recRef.current?.isEmpty() ? null : recRef.current?.getHTML();
+    const recommendation = recRef.current?.isEmpty() ? null : recRef.current?.getHTML();
 
-      const sortOrders = attachments.map((a, idx) => ({
+    const sortOrders = attachments.map((a, idx) => ({
+      attachmentId: a.id,
+      sortOrder: idx,
+    }));
+
+    const captions = attachments
+      .filter((a) => !removedIds.includes(a.id))
+      .map((a) => ({
         attachmentId: a.id,
-        sortOrder: idx,
+        caption: a.caption,
       }));
 
-      const captions = attachments
-        .filter((a) => !removedIds.includes(a.id))
-        .map((a) => ({
-          attachmentId: a.id,
-          caption: a.caption,
-        }));
+    updateMutation.mutate(
+      {
+        id: reportId,
+        data: {
+          reportDate: values.reportDate,
+          activityType: values.activityType,
+          description,
+          recommendation,
+          removedAttachmentIds: removedIds,
+          captions,
+          sortOrders,
+          newFiles: localFiles.map((lf) => lf.file),
+        },
+      },
+      {
+        onSuccess: () => {
+          navigate(ROUTES.DAILY_REPORT_DETAIL.replace(":id", reportId));
+        },
+      },
+    );
+  }
 
-      updateMutation.mutate(
-        {
-          id: reportId,
-          data: {
-            reportDate: values.reportDate,
-            activityType: values.activityType,
-            description,
-            recommendation,
-            removedAttachmentIds: removedIds,
-            captions,
-            sortOrders,
-            newFiles: localFiles.map((lf) => lf.file),
-          },
-        },
-        {
-          onSuccess: () => {
-            navigate(ROUTES.DAILY_REPORT_DETAIL.replace(":id", reportId));
-          },
-        },
-      );
-    },
-    [attachments, removedIds, localFiles, reportId, navigate, updateMutation],
-  );
+  function handleFormSubmit(event: React.FormEvent<HTMLFormElement>) {
+    void form.handleSubmit(submitDailyReport)(event);
+  }
 
   const totalPhotos = attachments.length + localFiles.length;
 
@@ -317,7 +320,7 @@ function DailyReportEditContent({ report, reportId }: { report: DailyReport; rep
         </div>
       </div>
 
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={handleFormSubmit} className="space-y-6">
         {/* Basic fields */}
         <div className="rounded-lg border p-5 space-y-4">
           <h2 className="text-sm font-medium">Report Details</h2>
