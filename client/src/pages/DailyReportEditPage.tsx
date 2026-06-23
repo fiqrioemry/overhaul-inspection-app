@@ -1,5 +1,5 @@
 // src/pages/DailyReportEditPage.tsx
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -28,6 +28,8 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
+type DailyReport = NonNullable<ReturnType<typeof useDailyReport>["data"]>;
+
 const MAX_FILE_SIZE = 8 * 1024 * 1024;
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
@@ -42,7 +44,16 @@ interface SortableAttachment extends DailyReportAttachment {
   caption: string;
 }
 
-// ── Sortable photo card (existing) ─────────────────────────────────────────
+function getInitialAttachments(report: DailyReport): SortableAttachment[] {
+  return [...report.attachments]
+    .sort((a, b) => a.sortOrder - b.sortOrder)
+    .map((a) => ({
+      ...a,
+      caption: a.caption ?? "",
+    }));
+}
+
+// ── Sortable photo card existing ─────────────────────────────────────────
 
 interface SortableExistingCardProps {
   attachment: SortableAttachment;
@@ -65,6 +76,7 @@ function SortableExistingCard({ attachment, onRemove, onCaptionChange }: Sortabl
     <div ref={setNodeRef} style={style} className="flex flex-col rounded-lg border bg-card overflow-hidden shadow-sm">
       <div className="relative aspect-video bg-muted group">
         <img src={attachment.attachmentUrl} alt="" className="h-full w-full object-cover" loading="lazy" />
+
         <button
           type="button"
           {...attributes}
@@ -74,10 +86,12 @@ function SortableExistingCard({ attachment, onRemove, onCaptionChange }: Sortabl
         >
           <GripVertical className="h-4 w-4" />
         </button>
+
         <button type="button" onClick={() => onRemove(attachment.id)} className="absolute top-2 right-2 p-1.5 rounded-full bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500" title="Remove photo">
           <X className="h-3.5 w-3.5" />
         </button>
       </div>
+
       <div className="p-3">
         <label className="text-xs text-muted-foreground font-medium mb-1.5 block">Caption</label>
         <textarea
@@ -107,11 +121,14 @@ function NewFileCard({ localFile, onRemove, onCaptionChange }: NewFileCardProps)
     <div className="flex flex-col rounded-lg border bg-card overflow-hidden shadow-sm">
       <div className="relative aspect-video bg-muted group">
         <img src={localFile.previewUrl} alt="" className="h-full w-full object-cover" />
+
         <button type="button" onClick={() => onRemove(localFile.id)} className="absolute top-2 right-2 p-1.5 rounded-full bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500" title="Remove photo">
           <X className="h-3.5 w-3.5" />
         </button>
+
         <span className="absolute top-2 left-2 bg-blue-500 text-white text-[10px] px-2 py-0.5 rounded-full font-medium">New</span>
       </div>
+
       <div className="p-3">
         <label className="text-xs text-muted-foreground font-medium mb-1.5 block">Caption</label>
         <textarea
@@ -128,19 +145,30 @@ function NewFileCard({ localFile, onRemove, onCaptionChange }: NewFileCardProps)
   );
 }
 
-// ── Main Page ───────────────────────────────────────────────────────────────
+// ── Page loader ─────────────────────────────────────────────────────────────
 
 export default function DailyReportEditPage() {
   const { id } = useParams<{ id: string }>();
+  const { data: report, isLoading, isError, refetch } = useDailyReport(id!);
+
+  if (isLoading) return <LoadingState />;
+
+  if (isError || !report) {
+    return <ErrorState message="Failed to load daily report." onRetry={() => refetch()} />;
+  }
+
+  return <DailyReportEditContent key={report.id} report={report} reportId={id!} />;
+}
+
+// ── Main edit content ───────────────────────────────────────────────────────
+
+function DailyReportEditContent({ report, reportId }: { report: DailyReport; reportId: string }) {
   const navigate = useNavigate();
   const updateMutation = useUpdateDailyReport();
 
-  const { data: report, isLoading, isError, refetch } = useDailyReport(id!);
-
-  const [attachments, setAttachments] = useState<SortableAttachment[]>([]);
+  const [attachments, setAttachments] = useState<SortableAttachment[]>(() => getInitialAttachments(report));
   const [removedIds, setRemovedIds] = useState<string[]>([]);
   const [localFiles, setLocalFiles] = useState<LocalFile[]>([]);
-  const [initialized, setInitialized] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const descRef = useRef<RichTextEditorHandle>(null);
@@ -148,30 +176,26 @@ export default function DailyReportEditPage() {
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { reportDate: format(new Date(), "yyyy-MM-dd"), activityType: "MONITORING" },
-  });
-
-  // Initialize form + attachments once report loads
-  useEffect(() => {
-    if (!report || initialized) return;
-    form.reset({
+    defaultValues: {
       reportDate: format(new Date(report.reportDate), "yyyy-MM-dd"),
       activityType: report.activityType,
-    });
-    const sorted = [...report.attachments].sort((a, b) => a.sortOrder - b.sortOrder);
-    setAttachments(sorted.map((a) => ({ ...a, caption: a.caption ?? "" })));
-    setInitialized(true);
-  }, [report, initialized, form]);
+    },
+  });
 
   // dnd-kit sensors
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
+
     if (!over || active.id === over.id) return;
+
     setAttachments((prev) => {
       const oldIdx = prev.findIndex((a) => a.id === active.id);
       const newIdx = prev.findIndex((a) => a.id === over.id);
+
+      if (oldIdx === -1 || newIdx === -1) return prev;
+
       return arrayMove(prev, oldIdx, newIdx);
     });
   }
@@ -188,7 +212,11 @@ export default function DailyReportEditPage() {
   function handleRemoveLocal(localId: string) {
     setLocalFiles((prev) => {
       const f = prev.find((lf) => lf.id === localId);
-      if (f) URL.revokeObjectURL(f.previewUrl);
+
+      if (f) {
+        URL.revokeObjectURL(f.previewUrl);
+      }
+
       return prev.filter((lf) => lf.id !== localId);
     });
   }
@@ -201,16 +229,24 @@ export default function DailyReportEditPage() {
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const files = Array.from(e.target.files ?? []);
       const valid = files.filter((f) => ALLOWED_TYPES.has(f.type) && f.size <= MAX_FILE_SIZE);
-      const total = attachments.length + localFiles.length + valid.length;
-      const take = Math.min(valid.length, 15 - (attachments.length + localFiles.length));
+
+      const currentTotal = attachments.length + localFiles.length;
+      const remainingSlots = 15 - currentTotal;
+      const take = Math.min(valid.length, remainingSlots);
+
       const newFiles: LocalFile[] = valid.slice(0, take).map((f) => ({
         id: crypto.randomUUID(),
         file: f,
         previewUrl: URL.createObjectURL(f),
         caption: "",
       }));
+
       setLocalFiles((prev) => [...prev, ...newFiles]);
-      if (total > 15) alert("Maximum 15 photos per report.");
+
+      if (valid.length > remainingSlots) {
+        alert("Maximum 15 photos per report.");
+      }
+
       e.target.value = "";
     },
     [attachments.length, localFiles.length],
@@ -219,19 +255,29 @@ export default function DailyReportEditPage() {
   const onSubmit = useCallback(
     (values: FormValues) => {
       const description = descRef.current?.getHTML() ?? "";
+
       if (descRef.current?.isEmpty()) {
         descRef.current?.focus();
         return;
       }
+
       const recommendation = recRef.current?.isEmpty() ? null : recRef.current?.getHTML();
 
-      // Build sortOrders from current attachment order
-      const sortOrders = attachments.map((a, idx) => ({ attachmentId: a.id, sortOrder: idx }));
-      const captions = attachments.filter((a) => !removedIds.includes(a.id)).map((a) => ({ attachmentId: a.id, caption: a.caption }));
+      const sortOrders = attachments.map((a, idx) => ({
+        attachmentId: a.id,
+        sortOrder: idx,
+      }));
+
+      const captions = attachments
+        .filter((a) => !removedIds.includes(a.id))
+        .map((a) => ({
+          attachmentId: a.id,
+          caption: a.caption,
+        }));
 
       updateMutation.mutate(
         {
-          id: id!,
+          id: reportId,
           data: {
             reportDate: values.reportDate,
             activityType: values.activityType,
@@ -245,16 +291,13 @@ export default function DailyReportEditPage() {
         },
         {
           onSuccess: () => {
-            navigate(ROUTES.DAILY_REPORT_DETAIL.replace(":id", id!));
+            navigate(ROUTES.DAILY_REPORT_DETAIL.replace(":id", reportId));
           },
         },
       );
     },
-    [attachments, removedIds, localFiles, id, navigate, updateMutation],
+    [attachments, removedIds, localFiles, reportId, navigate, updateMutation],
   );
-
-  if (isLoading) return <LoadingState />;
-  if (isError || !report) return <ErrorState message="Failed to load daily report." onRetry={() => refetch()} />;
 
   const totalPhotos = attachments.length + localFiles.length;
 
@@ -262,9 +305,10 @@ export default function DailyReportEditPage() {
     <div className="max-w-4xl mx-auto space-y-6 pb-12">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="sm" onClick={() => navigate(ROUTES.DAILY_REPORT_DETAIL.replace(":id", id!))} type="button">
+        <Button variant="ghost" size="sm" onClick={() => navigate(ROUTES.DAILY_REPORT_DETAIL.replace(":id", reportId))} type="button">
           <ArrowLeft className="h-4 w-4 mr-1" /> Back
         </Button>
+
         <div>
           <h1 className="text-lg font-semibold">Edit Daily Report</h1>
           <p className="text-xs text-muted-foreground">
@@ -277,38 +321,43 @@ export default function DailyReportEditPage() {
         {/* Basic fields */}
         <div className="rounded-lg border p-5 space-y-4">
           <h2 className="text-sm font-medium">Report Details</h2>
+
           <div className="grid grid-cols-2 gap-4">
             <DateField control={form.control} name="reportDate" label="Report Date" />
             <SelectField control={form.control} name="activityType" label="Activity Type" options={ACTIVITY_OPTIONS} />
           </div>
         </div>
 
-        {/* Description — rich editor */}
+        {/* Description rich editor */}
         <div className="space-y-1.5">
           <Label className="text-sm font-medium">
             Uraian Kegiatan / Activity Description <span className="text-destructive">*</span>
           </Label>
+
           <RichTextEditor ref={descRef} initialContent={report.description ?? ""} placeholder="Uraian kegiatan inspeksi harian..." />
         </div>
 
-        {/* Recommendation — rich editor */}
+        {/* Recommendation rich editor */}
         <div className="space-y-1.5">
           <Label className="text-sm font-medium">
             Rekomendasi / Recommendation <span className="text-muted-foreground font-normal">(opsional)</span>
           </Label>
+
           <RichTextEditor ref={recRef} initialContent={report.recommendation ?? ""} placeholder="Rekomendasi tindak lanjut (opsional)..." />
         </div>
 
-        {/* Photos — drag to reorder */}
+        {/* Photos drag to reorder */}
         <div className="rounded-lg border p-5 space-y-4">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-sm font-medium">Photos</h2>
               <p className="text-xs text-muted-foreground mt-0.5">Drag to reorder · {totalPhotos}/15</p>
             </div>
+
             <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={totalPhotos >= 15}>
               <Plus className="h-4 w-4 mr-1" /> Add Photos
             </Button>
+
             <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" multiple className="hidden" onChange={handleFileDrop} />
           </div>
 
@@ -329,6 +378,7 @@ export default function DailyReportEditPage() {
                   {attachments.map((a) => (
                     <SortableExistingCard key={a.id} attachment={a} onRemove={handleRemoveExisting} onCaptionChange={handleCaptionChange} />
                   ))}
+
                   {localFiles.map((lf) => (
                     <NewFileCard key={lf.id} localFile={lf} onRemove={handleRemoveLocal} onCaptionChange={handleLocalCaptionChange} />
                   ))}
@@ -340,9 +390,10 @@ export default function DailyReportEditPage() {
 
         {/* Actions */}
         <div className="flex items-center justify-end gap-3">
-          <Button type="button" variant="outline" onClick={() => navigate(ROUTES.DAILY_REPORT_DETAIL.replace(":id", id!))} disabled={updateMutation.isPending}>
+          <Button type="button" variant="outline" onClick={() => navigate(ROUTES.DAILY_REPORT_DETAIL.replace(":id", reportId))} disabled={updateMutation.isPending}>
             Cancel
           </Button>
+
           <Button type="submit" disabled={updateMutation.isPending}>
             {updateMutation.isPending && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />}
             Save Changes
