@@ -565,12 +565,6 @@ async function main() {
     include: { processCriteria: true },
   });
 
-  const requiredDepIds = new Set(
-    (await prisma.processDependency.findMany({ where: { isRequired: true }, select: { processTemplateId: true } })).map(
-      (d) => d.processTemplateId,
-    ),
-  );
-
   for (const proj of projectsToSeed) {
     const projectTank = await prisma.tank.findFirst({ where: { tankNo: proj.tankNo, deletedAt: null } });
     if (!projectTank) continue;
@@ -612,7 +606,7 @@ async function main() {
           name: template.name,
           type: template.type,
           sequenceOrder: template.sequenceOrder,
-          status: requiredDepIds.has(template.id) ? ProcessStatusEnum.LOCKED : ProcessStatusEnum.NOT_STARTED,
+          status: ProcessStatusEnum.NOT_STARTED,
         },
       });
 

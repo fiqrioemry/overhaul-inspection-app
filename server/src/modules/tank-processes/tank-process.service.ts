@@ -1,6 +1,6 @@
 import { HTTPException } from "hono/http-exception";
 import { pgsql } from "@/lib/database";
-import { ProcessStatusEnum, FindingStatusEnum, ChecklistStatusEnum, ChecklistSourceEnum } from "generated/prisma";
+import { ProcessStatusEnum, TankProjectStatusEnum, FindingStatusEnum, ChecklistStatusEnum, ChecklistSourceEnum } from "generated/prisma";
 import { TankProcessRepository } from "./tank-process.repository";
 import { ChecklistResultRepository } from "@/modules/checklist-results/checklist-result.repository";
 import { UpdateProcessStatusRequest } from "./tank-process.schema";
@@ -11,7 +11,6 @@ const ALLOWED_STATUS_TRANSITIONS: Partial<Record<ProcessStatusEnum, ProcessStatu
   [ProcessStatusEnum.WAITING_REVIEW]: [ProcessStatusEnum.REVIEWED, ProcessStatusEnum.IN_PROGRESS],
   [ProcessStatusEnum.REVIEWED]: [ProcessStatusEnum.IN_PROGRESS, ProcessStatusEnum.COMPLETED],
   [ProcessStatusEnum.COMPLETED]: [],
-  [ProcessStatusEnum.LOCKED]: [],
 };
 
 // Findings with these statuses + isBlocking=true block review/completion
@@ -58,13 +57,6 @@ export class TankProcessService {
     const process = await TankProcessRepository.findById(id);
     if (!process) {
       throw new HTTPException(404, { message: "Process not found", cause: "PROCESS_NOT_FOUND" });
-    }
-
-    if (process.status === ProcessStatusEnum.LOCKED) {
-      throw new HTTPException(422, {
-        message: "Process is locked. Complete required dependencies first",
-        cause: "PROCESS_LOCKED",
-      });
     }
 
     const allowed = ALLOWED_STATUS_TRANSITIONS[process.status] ?? [];
@@ -123,8 +115,12 @@ export class TankProcessService {
         },
       });
 
-      if (data.status === ProcessStatusEnum.COMPLETED) {
-        await TankProcessRepository.unlockEligibleProcesses(tx, process.projectId, process.processTemplateId);
+      // When the first process starts, move the owning project PLANNED → IN_PROGRESS.
+      if (data.status === ProcessStatusEnum.IN_PROGRESS && process.project?.status === TankProjectStatusEnum.PLANNED) {
+        await tx.tankProject.update({
+          where: { id: process.projectId },
+          data: { status: TankProjectStatusEnum.IN_PROGRESS },
+        });
       }
 
       return updated;

@@ -1,5 +1,5 @@
 import { pgsql } from "@/lib/database";
-import { Prisma, ProcessStatusEnum } from "generated/prisma";
+import { Prisma } from "generated/prisma";
 
 export class TankProcessRepository {
   static async findById(id: string) {
@@ -70,42 +70,5 @@ export class TankProcessRepository {
       where: { requiredProcessTemplateId },
       select: { processTemplateId: true, requiredStatus: true },
     });
-  }
-
-  // Unlock dependants ONLY within the same project — never across projects of the same tank.
-  static async unlockEligibleProcesses(tx: Prisma.TransactionClient, projectId: string, completedProcessTemplateId: string) {
-    const dependants = await tx.processDependency.findMany({
-      where: { requiredProcessTemplateId: completedProcessTemplateId },
-      select: { processTemplateId: true },
-    });
-
-    for (const dep of dependants) {
-      const process = await tx.tankProcess.findUnique({
-        where: { projectId_processTemplateId: { projectId, processTemplateId: dep.processTemplateId } },
-      });
-      if (!process || process.status !== ProcessStatusEnum.LOCKED) continue;
-
-      const allDeps = await tx.processDependency.findMany({
-        where: { processTemplateId: dep.processTemplateId },
-      });
-
-      let allMet = true;
-      for (const d of allDeps) {
-        const requiredProcess = await tx.tankProcess.findUnique({
-          where: { projectId_processTemplateId: { projectId, processTemplateId: d.requiredProcessTemplateId } },
-        });
-        if (!requiredProcess || requiredProcess.status !== d.requiredStatus) {
-          allMet = false;
-          break;
-        }
-      }
-
-      if (allMet) {
-        await tx.tankProcess.update({
-          where: { id: process.id },
-          data: { status: ProcessStatusEnum.NOT_STARTED },
-        });
-      }
-    }
   }
 }

@@ -12,17 +12,21 @@ function isApplicable(applicabilityRule: string | null, hasSteamCoil: boolean): 
 
 export class ProcessGenerationService {
   /**
-   * Generate TankProcess rows (and their default checklist results) for a project
-   * from the active ProcessTemplate set. Idempotent: templates already present on
-   * the project are skipped, so it can be safely re-run.
+   * Generate TankProcess rows (and their default checklist results) for a project.
+   * Idempotent: templates already present on the project are skipped.
    *
-   * Dependency-free processes start as NOT_STARTED; processes that have a required
-   * dependency start LOCKED and are unlocked later by the dependency resolver.
+   * - templateIds omitted/empty → generate the full applicable set (steam-coil rule applied).
+   * - templateIds provided      → generate exactly the selected active templates (explicit
+   *   operator choice; applicability rule is not auto-filtered).
+   *
+   * All generated processes start as NOT_STARTED — there is no LOCKED gating; dependency
+   * checks are enforced later at review/completion via the eligibility service.
    */
   static async generateProcessesForProject(
     tx: Prisma.TransactionClient,
     projectId: string,
     hasSteamCoil: boolean,
+    templateIds?: string[],
   ): Promise<number> {
     const templates = await tx.processTemplate.findMany({
       where: { isActive: true, deletedAt: null },
@@ -30,7 +34,10 @@ export class ProcessGenerationService {
       include: { processCriteria: { include: { criteria: true } } },
     });
 
-    const applicableTemplates = templates.filter((t) => isApplicable(t.applicabilityRule, hasSteamCoil));
+    const selectedIds = templateIds && templateIds.length > 0 ? new Set(templateIds) : null;
+    const targetTemplates = selectedIds
+      ? templates.filter((t) => selectedIds.has(t.id))
+      : templates.filter((t) => isApplicable(t.applicabilityRule, hasSteamCoil));
 
     const existing = await tx.tankProcess.findMany({
       where: { projectId },
@@ -38,20 +45,9 @@ export class ProcessGenerationService {
     });
     const existingTemplateIds = new Set(existing.map((p) => p.processTemplateId));
 
-    const requiredDepTemplateIds = new Set(
-      (
-        await tx.processDependency.findMany({
-          where: { isRequired: true },
-          select: { processTemplateId: true },
-        })
-      ).map((d) => d.processTemplateId),
-    );
-
     let created = 0;
-    for (const template of applicableTemplates) {
+    for (const template of targetTemplates) {
       if (existingTemplateIds.has(template.id)) continue;
-
-      const hasRequiredDeps = requiredDepTemplateIds.has(template.id);
 
       const tankProcess = await tx.tankProcess.create({
         data: {
@@ -60,7 +56,7 @@ export class ProcessGenerationService {
           name: template.name,
           type: template.type,
           sequenceOrder: template.sequenceOrder,
-          status: hasRequiredDeps ? ProcessStatusEnum.LOCKED : ProcessStatusEnum.NOT_STARTED,
+          status: ProcessStatusEnum.NOT_STARTED,
         },
       });
 

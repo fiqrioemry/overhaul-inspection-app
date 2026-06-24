@@ -117,14 +117,11 @@ enum ProcessResultEnum {
 }
 
 enum ProcessStatusEnum {
-  LOCKED
   NOT_STARTED
   WAITING_REVIEW
   REVIEWED
   IN_PROGRESS
   COMPLETED
-  // REJECTED
-  // NOT_APPLICABLE
 }
 
 enum ChecklistStatusEnum {
@@ -723,7 +720,7 @@ model TankProcess {
   name              String
   type              ProcessType
   sequenceOrder     Int               @map("sequence_order")
-  status            ProcessStatusEnum @default(LOCKED)
+  status            ProcessStatusEnum @default(NOT_STARTED)
   startDate         DateTime?         @map("start_date")
   finishDate        DateTime?         @map("finish_date")
   remarks           String?

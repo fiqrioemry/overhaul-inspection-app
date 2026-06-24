@@ -14,6 +14,9 @@ export const createTankProjectRequest = z.object({
   description: z.string().max(2000).optional(),
   remarks: z.string().max(2000).optional(),
   generateProcesses: z.boolean().optional(),
+  // Optional explicit selection of process templates. When omitted/empty the full
+  // applicable set is generated; when provided, only these templates are generated.
+  processTemplateIds: z.array(z.string()).optional(),
 });
 export type CreateTankProjectRequest = z.infer<typeof createTankProjectRequest>;
 

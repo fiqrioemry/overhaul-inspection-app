@@ -1,12 +1,19 @@
 import { HTTPException } from "hono/http-exception";
 import { pgsql } from "@/lib/database";
-import { TankProjectStatusEnum, TankProjectTypeEnum, ProcessStatusEnum } from "generated/prisma";
+import { TankAssetStatusEnum, TankProjectStatusEnum, TankProjectTypeEnum, ProcessStatusEnum } from "generated/prisma";
 import { ProcessGenerationService } from "@/services/process-generation.service";
 import { recalculateTankAssetStatus } from "@/services/tank-asset-status.service";
 import { TankProjectRepository } from "./tank-project.repository";
 import { CreateTankProjectRequest, ListTankProjectsQuery, UpdateTankProjectRequest } from "./tank-project.schema";
 import { TANK_PROJECT_NO_PREFIX, DEFAULT_GENERATE_PROCESS_TYPES } from "@/config/constant/tank-project.constant";
 import type { TankProjectListItem, TankProjectListResult, TankProjectProgress } from "./tank-project.types";
+
+/** A project in one of these statuses keeps the tank "busy" (only one allowed per tank). */
+const ACTIVE_PROJECT_STATUSES: TankProjectStatusEnum[] = [
+  TankProjectStatusEnum.PLANNED,
+  TankProjectStatusEnum.IN_PROGRESS,
+  TankProjectStatusEnum.ON_HOLD,
+];
 
 function toDate(value?: string | null): Date | null | undefined {
   if (value === undefined) return undefined;
@@ -54,10 +61,31 @@ export class TankProjectService {
   static async createProject(data: CreateTankProjectRequest, createdBy: string) {
     const tank = await pgsql.tank.findFirst({
       where: { id: data.tankId, deletedAt: null },
-      select: { id: true, tankNo: true, hasSteamCoil: true },
+      select: { id: true, tankNo: true, hasSteamCoil: true, assetStatus: true },
     });
     if (!tank) {
       throw new HTTPException(404, { message: "Tank not found", cause: "TANK_NOT_FOUND" });
+    }
+
+    // A decommissioned tank is permanently retired — no new engagement of any type.
+    if (tank.assetStatus === TankAssetStatusEnum.DECOMMISSIONED) {
+      throw new HTTPException(422, {
+        message: "Cannot create project for a decommissioned tank.",
+        cause: "TANK_DECOMMISSIONED",
+      });
+    }
+
+    // One active project per tank: block a second engagement while one is still open,
+    // so progress tracking stays unambiguous.
+    const activeProject = await pgsql.tankProject.findFirst({
+      where: { tankId: data.tankId, deletedAt: null, status: { in: ACTIVE_PROJECT_STATUSES } },
+      select: { id: true, projectNo: true },
+    });
+    if (activeProject) {
+      throw new HTTPException(409, {
+        message: "Tank already has an active project. Complete or cancel the existing project before creating a new one.",
+        cause: "TANK_HAS_ACTIVE_PROJECT",
+      });
     }
 
     if (data.projectNo) {
@@ -90,7 +118,7 @@ export class TankProjectService {
       });
 
       if (generateProcesses) {
-        await ProcessGenerationService.generateProcessesForProject(tx, created.id, tank.hasSteamCoil);
+        await ProcessGenerationService.generateProcessesForProject(tx, created.id, tank.hasSteamCoil, data.processTemplateIds);
       }
 
       await recalculateTankAssetStatus(data.tankId, tx);
@@ -158,10 +186,18 @@ export class TankProjectService {
     return computeProgress(processes);
   }
 
+  // Populates missing processes for an EXISTING project only — never a way to start a
+  // new overhaul cycle. Idempotent (unique [projectId, processTemplateId]).
   static async generateProcesses(id: string) {
     const project = await TankProjectRepository.findById(id);
     if (!project) {
       throw new HTTPException(404, { message: "Tank project not found", cause: "PROJECT_NOT_FOUND" });
+    }
+    if (project.status === TankProjectStatusEnum.COMPLETED || project.status === TankProjectStatusEnum.CANCELLED) {
+      throw new HTTPException(422, {
+        message: "Cannot generate processes for a completed or cancelled project.",
+        cause: "PROJECT_NOT_ACTIVE",
+      });
     }
     const created = await pgsql.$transaction((tx) =>
       ProcessGenerationService.generateProcessesForProject(tx, id, project.tank?.hasSteamCoil ?? false),
