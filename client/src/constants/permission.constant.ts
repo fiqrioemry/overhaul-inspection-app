@@ -13,6 +13,11 @@ export const PERMISSIONS = {
   TANK_UPDATE: "tank.update",
   TANK_DELETE: "tank.delete",
 
+  TANK_PROJECT_CREATE: "tank_project.create",
+  TANK_PROJECT_READ: "tank_project.read",
+  TANK_PROJECT_UPDATE: "tank_project.update",
+  TANK_PROJECT_DELETE: "tank_project.delete",
+
   PROCESS_READ: "process.read",
   PROCESS_UPDATE: "process.update",
 

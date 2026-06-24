@@ -58,10 +58,25 @@ export interface TankSummary {
   _count: { projects: number; findings: number };
 }
 
+export interface TankProjectSummary {
+  id: string;
+  projectNo: string;
+  type: string;
+  status: string;
+  startDate: string | null;
+  estimatedFinishDate: string | null;
+  actualFinishDate: string | null;
+  contractorCompany: { id: string; name: string } | null;
+  inspectionCompany: { id: string; name: string } | null;
+  processes: Array<{ id: string; status: string }>;
+  _count: { findings: number };
+}
+
 export interface TankDetail extends TankSummary {
   bottomPlateDimension: string | null;
   shellCourses: ShellCourse[];
   attachments: TankAttachment[];
+  projects: TankProjectSummary[];
   _count: { projects: number; findings: number; dailyReports: number };
 }
 

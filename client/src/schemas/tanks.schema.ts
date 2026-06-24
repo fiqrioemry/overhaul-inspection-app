@@ -26,9 +26,18 @@ export const TANK_SERVICE_OPTIONS = [
   { label: "Other", value: "OTHER" },
 ] as const;
 
+// Full set — used for list filtering (UNDER_OVERHAUL is filterable).
 export const TANK_ASSET_STATUS_OPTIONS = [
   { label: "Operational", value: "OPERATIONAL" },
   { label: "Under Overhaul", value: "UNDER_OVERHAUL" },
+  { label: "Idle (Out of Service)", value: "OUT_OF_SERVICE" },
+  { label: "Decommissioned", value: "DECOMMISSIONED" },
+] as const;
+
+// Manual set — selectable in create/edit forms. UNDER_OVERHAUL is system-managed
+// (set automatically when an overhaul project is active) and is intentionally excluded.
+export const TANK_ASSET_STATUS_MANUAL_OPTIONS = [
+  { label: "Operational", value: "OPERATIONAL" },
   { label: "Idle (Out of Service)", value: "OUT_OF_SERVICE" },
   { label: "Decommissioned", value: "DECOMMISSIONED" },
 ] as const;
@@ -72,7 +81,8 @@ const shellCourseSchema = z.object({
   remarks: z.string().optional(),
 });
 
-const ASSET_STATUS_ENUM = z.enum(["OPERATIONAL", "UNDER_OVERHAUL", "OUT_OF_SERVICE", "DECOMMISSIONED"]);
+// Manual asset status only — UNDER_OVERHAUL is system-managed and not user-settable.
+const ASSET_STATUS_ENUM = z.enum(["OPERATIONAL", "OUT_OF_SERVICE", "DECOMMISSIONED"]);
 const SERVICE_ENUM = z.enum(["AVTUR","NAPTHA","PREMIUM","PERTALITE","PERTAMAX","PERTAMAX_TURBO","SOLAR","DEXLITE","PERTAMINA_DEX","KEROSENE","CRUDE_OIL","FUEL_OIL","LUBRICATING_OIL","LPG","CONDENSATE","SLOP_OIL","OTHER"]);
 
 // Tank is a physical asset only. Contractor, inspection company and overhaul

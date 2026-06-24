@@ -1,6 +1,6 @@
 // src/features/tanks/components/TankProcessList.tsx
 import { Link } from "react-router-dom";
-import { ChevronRight, Lock } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import ProcessStatusBadge from "@/components/common/ProcessStatusBadge";
 import LoadingState from "@/components/common/LoadingState";
 import ErrorState from "@/components/common/ErrorState";
@@ -40,7 +40,6 @@ export default function TankProcessList({ tankId }: TankProcessListProps) {
         <tbody className="divide-y">
           {processes.map((proc) => {
             const detailPath = ROUTES.PROCESS_DETAIL.replace(":tankId", tankId).replace(":processId", proc.id);
-            const isLocked = proc.status === "LOCKED";
             return (
               <tr key={proc.id} className="hover:bg-muted/20">
                 <td className="px-4 py-3 text-muted-foreground">{proc.sequenceOrder}</td>
@@ -58,13 +57,9 @@ export default function TankProcessList({ tankId }: TankProcessListProps) {
                 <td className="px-4 py-3 text-xs text-muted-foreground">{proc.startDate ? format(new Date(proc.startDate), "dd MMM yyyy") : "—"}</td>
                 <td className="px-4 py-3 text-xs text-muted-foreground">{proc.finishDate ? format(new Date(proc.finishDate), "dd MMM yyyy") : "—"}</td>
                 <td className="px-4 py-3 text-right">
-                  {isLocked ? (
-                    <Lock className="h-4 w-4 text-muted-foreground inline-block" />
-                  ) : (
-                    <Link to={detailPath} className="inline-flex items-center text-xs text-primary hover:underline">
-                      View <ChevronRight className="h-3 w-3" />
-                    </Link>
-                  )}
+                  <Link to={detailPath} className="inline-flex items-center text-xs text-primary hover:underline">
+                    View <ChevronRight className="h-3 w-3" />
+                  </Link>
                 </td>
               </tr>
             );

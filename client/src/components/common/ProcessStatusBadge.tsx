@@ -4,7 +4,6 @@ import { cn } from "@/lib/utils";
 import type { ProcessStatus } from "@/features/tank-processes/tank-processes.api";
 
 const statusConfig: Record<ProcessStatus, { label: string; className: string }> = {
-  LOCKED: { label: "Locked", className: "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400" },
   NOT_STARTED: { label: "Not Started", className: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400" },
   IN_PROGRESS: { label: "In Progress", className: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" },
   WAITING_REVIEW: { label: "Waiting Review", className: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" },

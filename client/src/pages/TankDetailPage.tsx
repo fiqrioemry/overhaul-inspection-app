@@ -1,17 +1,21 @@
 // src/pages/TankDetailPage.tsx
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Pencil } from "lucide-react";
+import { ArrowLeft, Pencil, Plus, ClipboardList } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PageHeader from "@/components/common/PageHeader";
 import LoadingState from "@/components/common/LoadingState";
 import ErrorState from "@/components/common/ErrorState";
+import EmptyState from "@/components/common/EmptyState";
 import StatusBadge from "@/components/common/StatusBadge";
 import PermissionGate from "@/components/common/PermissionGate";
 import TankProcessList from "@/features/tanks/components/TankProcessList";
+import CreateOverhaulProjectDialog from "@/features/tank-projects/components/CreateOverhaulProjectDialog";
 import { useTank } from "@/features/tanks/tanks.query";
 import { PERMISSIONS } from "@/constants/permission.constant";
 import { ROUTES } from "@/constants/route.constant";
+import { format } from "date-fns";
 import { TANK_LOCATION_LABEL, TANK_SERVICE_LABEL } from "@/schemas/tanks.schema";
 
 function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
@@ -27,11 +31,21 @@ export default function TankDetailPage() {
   const { tankId } = useParams<{ tankId: string }>();
   const navigate = useNavigate();
   const { data: tank, isLoading, isError, refetch } = useTank(tankId!);
+  const [projectDialogOpen, setProjectDialogOpen] = useState(false);
 
   if (isLoading) return <LoadingState />;
   if (isError || !tank) return <ErrorState message="Failed to load tank." onRetry={() => refetch()} />;
 
   const editPath = ROUTES.TANK_EDIT.replace(":tankId", tankId!);
+
+  const isDecommissioned = tank.assetStatus === "DECOMMISSIONED";
+  const hasActiveProject = Boolean(tank.activeProject) || tank.assetStatus === "UNDER_OVERHAUL";
+  const canCreateProject = !isDecommissioned && !hasActiveProject;
+  const createBlockedReason = isDecommissioned
+    ? "Decommissioned tanks cannot start new projects."
+    : hasActiveProject
+      ? "This tank already has an active project. Complete or cancel it before creating a new overhaul project."
+      : "";
 
   return (
     <div className="space-y-6">
@@ -48,6 +62,11 @@ export default function TankDetailPage() {
                 <Pencil /> Edit Tank
               </Button>
             </PermissionGate>
+            <PermissionGate permission={PERMISSIONS.TANK_PROJECT_CREATE}>
+              <Button onClick={() => setProjectDialogOpen(true)} disabled={!canCreateProject} title={createBlockedReason || undefined}>
+                <Plus /> Start Overhaul Project
+              </Button>
+            </PermissionGate>
           </div>
         }
       />
@@ -55,6 +74,7 @@ export default function TankDetailPage() {
       <Tabs defaultValue="overview">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="projects">Projects</TabsTrigger>
           <TabsTrigger value="processes">Processes</TabsTrigger>
           <TabsTrigger value="shell-courses">Shell Courses</TabsTrigger>
         </TabsList>
@@ -80,6 +100,48 @@ export default function TankDetailPage() {
             <InfoRow label="Steam Coil" value={tank.hasSteamCoil ? "Yes" : "No"} />
             <InfoRow label="Overhaul Projects" value={tank._count.projects} />
           </div>
+        </TabsContent>
+
+        <TabsContent value="projects" className="mt-4">
+          {createBlockedReason && (
+            <p className="mb-3 text-xs text-muted-foreground">{createBlockedReason}</p>
+          )}
+          {tank.projects.length === 0 ? (
+            <EmptyState
+              title="No projects yet"
+              description="This tank has no overhaul/repair project. Start one to generate the workflow."
+              icon={ClipboardList}
+            />
+          ) : (
+            <div className="rounded-lg border overflow-hidden">
+              <table className="w-full text-sm">
+                <thead className="border-b bg-muted/40">
+                  <tr>
+                    <th className="px-4 py-3 text-left font-medium">Project No.</th>
+                    <th className="px-4 py-3 text-left font-medium">Type</th>
+                    <th className="px-4 py-3 text-left font-medium">Status</th>
+                    <th className="px-4 py-3 text-left font-medium">Start</th>
+                    <th className="px-4 py-3 text-left font-medium">Est. Finish</th>
+                    <th className="px-4 py-3 text-left font-medium">Contractor</th>
+                    <th className="px-4 py-3 text-left font-medium">Processes</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {tank.projects.map((p) => (
+                    <tr key={p.id} className="hover:bg-muted/20">
+                      <td className="px-4 py-3 font-mono font-medium">{p.projectNo}</td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground">{p.type.replace(/_/g, " ")}</td>
+                      <td className="px-4 py-3"><StatusBadge status={p.status} /></td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground">{p.startDate ? format(new Date(p.startDate), "dd MMM yyyy") : "—"}</td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground">{p.estimatedFinishDate ? format(new Date(p.estimatedFinishDate), "dd MMM yyyy") : "—"}</td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground">{p.contractorCompany?.name ?? "—"}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{p.processes.length}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="processes" className="mt-4">
@@ -115,6 +177,13 @@ export default function TankDetailPage() {
           )}
         </TabsContent>
       </Tabs>
+
+      <CreateOverhaulProjectDialog
+        open={projectDialogOpen}
+        onOpenChange={setProjectDialogOpen}
+        tankId={tank.id}
+        tankNo={tank.tankNo}
+      />
     </div>
   );
 }

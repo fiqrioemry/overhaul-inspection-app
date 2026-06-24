@@ -10,12 +10,13 @@ import ShortTextField from "@/components/fields/ShortTextField";
 import SelectField from "@/components/fields/SelectField";
 import SwitchField from "@/components/fields/SwitchField";
 import { Field, FieldLabel } from "@/components/ui/field";
+import StatusBadge from "@/components/common/StatusBadge";
 import {
   createTankSchema,
   updateTankSchema,
   TANK_LOCATION_OPTIONS,
   TANK_SERVICE_OPTIONS,
-  TANK_ASSET_STATUS_OPTIONS,
+  TANK_ASSET_STATUS_MANUAL_OPTIONS,
 } from "@/schemas/tanks.schema";
 import type { CreateTankFormValues, UpdateTankFormValues } from "@/schemas/tanks.schema";
 import TankDocumentSection from "./TankDocumentSection";
@@ -62,7 +63,8 @@ export default function TankForm(props: TankFormProps) {
           service: (props.tank.service ?? undefined) as UpdateTankFormValues["service"],
           diameterMm: props.tank.diameterMm ?? undefined,
           heightMm: props.tank.heightMm ?? undefined,
-          assetStatus: props.tank.assetStatus,
+          // UNDER_OVERHAUL is system-managed: shown read-only, never submitted.
+          assetStatus: props.tank.assetStatus === "UNDER_OVERHAUL" ? undefined : props.tank.assetStatus,
         }
       : {},
   });
@@ -134,13 +136,24 @@ export default function TankForm(props: TankFormProps) {
           <ShortTextField control={editForm.control} name="diameterMm" label="Diameter (mm)" type="text" placeholder="e.g. 18000" />
           <ShortTextField control={editForm.control} name="heightMm" label="Height (mm)" type="text" placeholder="e.g. 12000" />
         </div>
-        <SelectField
-          control={editForm.control}
-          name="assetStatus"
-          label="Asset Status"
-          options={[...TANK_ASSET_STATUS_OPTIONS]}
-          placeholder="Select asset status"
-        />
+        {props.tank.assetStatus === "UNDER_OVERHAUL" ? (
+          <Field>
+            <FieldLabel>Asset Status</FieldLabel>
+            <div className="flex items-center gap-2">
+              <StatusBadge status="UNDER_OVERHAUL" />
+              <span className="text-xs text-muted-foreground">System-managed while an overhaul project is active</span>
+            </div>
+          </Field>
+        ) : (
+          <SelectField
+            control={editForm.control}
+            name="assetStatus"
+            label="Asset Status"
+            options={[...TANK_ASSET_STATUS_MANUAL_OPTIONS]}
+            placeholder="Select asset status"
+            description="Under Overhaul is set automatically when a tank project is active."
+          />
+        )}
         <Button type="submit" disabled={props.isPending} className="w-full">
           {props.isPending ? "Saving..." : "Save Changes"}
         </Button>
@@ -173,9 +186,9 @@ export default function TankForm(props: TankFormProps) {
         control={createForm.control}
         name="assetStatus"
         label="Asset Status"
-        options={[...TANK_ASSET_STATUS_OPTIONS]}
+        options={[...TANK_ASSET_STATUS_MANUAL_OPTIONS]}
         placeholder="Select asset status"
-        description="Use Operational for an existing tank. Overhaul scheduling is managed under Tank Projects."
+        description="Use Operational for an existing tank. Under Overhaul is set automatically when you start a tank project."
       />
 
       {fields.length > 0 && (

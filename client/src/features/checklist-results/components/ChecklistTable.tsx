@@ -33,7 +33,6 @@ const STATUS_MESSAGE: Partial<Record<ProcessStatus, string>> = {
   WAITING_REVIEW: "Process is under review. Checklist is read-only.",
   REVIEWED: "Process is reviewed. Checklist is read-only.",
   COMPLETED: "Process is completed. Checklist is read-only.",
-  LOCKED: "Process is locked.",
 };
 
 interface ChecklistTableProps {

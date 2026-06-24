@@ -2,7 +2,7 @@
 import api from "@/lib/axios";
 import type { ResponseSuccess } from "@/types/response.type";
 
-export type ProcessStatus = "LOCKED" | "NOT_STARTED" | "WAITING_REVIEW" | "REVIEWED" | "IN_PROGRESS" | "COMPLETED";
+export type ProcessStatus = "NOT_STARTED" | "WAITING_REVIEW" | "REVIEWED" | "IN_PROGRESS" | "COMPLETED";
 
 export type ProcessType = "WORK" | "INSPECTION" | "TEST" | "NDT" | "COATING" | "COMMISSIONING";
 
