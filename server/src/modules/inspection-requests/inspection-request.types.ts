@@ -23,10 +23,12 @@ export interface InspectionRequestListItem {
   status: string;
   requestDate: Date;
   tankId: string | null;
+  projectId: string | null;
   tankProcessId: string | null;
   createdAt: Date;
   updatedAt: Date;
   tank: { id: string; tankNo: string; tankName: string | null } | null;
+  project: { id: string; projectNo: string; type: string; status: string } | null;
   tankProcess: { id: string; name: string } | null;
   requestedByUser: { id: string; name: string } | null;
   summary: InspectionRequestSummaryCounts;

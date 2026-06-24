@@ -20,6 +20,7 @@ export const createInspectionRequestRequest = z
   .object({
     testType: z.nativeEnum(InspectionRequestTypeEnum),
     tankId: z.string().optional(),
+    projectId: z.string().optional(),
     tankProcessId: z.string().optional(),
     requestDate: z.string().min(1),
     requestedBy: z.string().optional(),
@@ -46,6 +47,7 @@ export const updateInspectionRequestRequest = z
   .object({
     testType: z.nativeEnum(InspectionRequestTypeEnum).optional(),
     tankId: z.string().nullable().optional(),
+    projectId: z.string().nullable().optional(),
     tankProcessId: z.string().nullable().optional(),
     requestDate: z.string().optional(),
     requestedBy: z.string().nullable().optional(),
@@ -81,6 +83,7 @@ export type UploadAttachmentRequest = z.infer<typeof uploadAttachmentRequest>;
 
 export const listInspectionRequestsQuery = z.object({
   tankId: z.string().optional(),
+  projectId: z.string().optional(),
   tankProcessId: z.string().optional(),
   testType: z.nativeEnum(InspectionRequestTypeEnum).optional(),
   status: z.nativeEnum(InspectionRequestStatusEnum).optional(),

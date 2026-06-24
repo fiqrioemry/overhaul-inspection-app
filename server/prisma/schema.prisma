@@ -236,6 +236,28 @@ enum TankServiceEnum {
   OTHER
 }
 
+enum TankAssetStatusEnum {
+  OPERATIONAL
+  UNDER_OVERHAUL
+  OUT_OF_SERVICE
+  DECOMMISSIONED
+}
+
+enum TankProjectTypeEnum {
+  NEW_BUILD
+  OVERHAUL
+  REPAIR
+  ROUTINE_INSPECTION
+}
+
+enum TankProjectStatusEnum {
+  PLANNED
+  IN_PROGRESS
+  ON_HOLD
+  COMPLETED
+  CANCELLED
+}
+
 // ─── Auth Models ─────────────────────────────────────────────────────────────
 
 model User {
@@ -266,18 +288,19 @@ model User {
   activities           UserActivityLog[]
   oauthAccounts        OAuthAccount[]
 
-  createdTanks       Tank[]              @relation("TankCreatedBy")
-  requestedReviews   InspectionRequest[] @relation("InspectionRequestRequestedBy")
-  receivedRequests   InspectionRequest[] @relation("InspectionRequestReceivedBy")
-  preparedRequests   InspectionRequest[] @relation("InspectionRequestPreparedBy")
-  approvedRequests   InspectionRequest[] @relation("InspectionRequestApprovedBy")
-  createdFindings    Finding[]           @relation("FindingCreatedBy")
-  closedFindings     Finding[]           @relation("FindingClosedBy")
-  checkedChecklists  ChecklistResult[]   @relation("ChecklistCheckedBy")
-  createdTestRecords TestRecord[]        @relation("TestRecordCreatedBy")
-  dailyReports       DailyReport[]       @relation("DailyReportInspector")
-  avatarFile         FileStorage?        @relation("UserAvatar", fields: [avatarFileStorageId], references: [id], onDelete: SetNull)
-  company            Company?            @relation("CompanyUsers", fields: [companyId], references: [id], onDelete: SetNull)
+  createdTanks        Tank[]              @relation("TankCreatedBy")
+  createdTankProjects TankProject[]       @relation("TankProjectCreatedBy")
+  requestedReviews    InspectionRequest[] @relation("InspectionRequestRequestedBy")
+  receivedRequests    InspectionRequest[] @relation("InspectionRequestReceivedBy")
+  preparedRequests    InspectionRequest[] @relation("InspectionRequestPreparedBy")
+  approvedRequests    InspectionRequest[] @relation("InspectionRequestApprovedBy")
+  createdFindings     Finding[]           @relation("FindingCreatedBy")
+  closedFindings      Finding[]           @relation("FindingClosedBy")
+  checkedChecklists   ChecklistResult[]   @relation("ChecklistCheckedBy")
+  createdTestRecords  TestRecord[]        @relation("TestRecordCreatedBy")
+  dailyReports        DailyReport[]       @relation("DailyReportInspector")
+  avatarFile          FileStorage?        @relation("UserAvatar", fields: [avatarFileStorageId], references: [id], onDelete: SetNull)
+  company             Company?            @relation("CompanyUsers", fields: [companyId], references: [id], onDelete: SetNull)
 
   @@index([email])
   @@index([role])
@@ -425,11 +448,11 @@ model Company {
   updatedAt         DateTime    @updatedAt @map("updated_at")
   deletedAt         DateTime?   @map("deleted_at")
 
-  logoFile          FileStorage?        @relation("CompanyLogo", fields: [logoFileStorageId], references: [id], onDelete: SetNull)
-  contractorTanks   Tank[]              @relation("TankContractor")
-  inspectionTanks   Tank[]              @relation("TankInspectionCompany")
-  users             User[]              @relation("CompanyUsers")
-  executionRequests InspectionRequest[] @relation("InspectionRequestExecutionCompany")
+  logoFile           FileStorage?        @relation("CompanyLogo", fields: [logoFileStorageId], references: [id], onDelete: SetNull)
+  contractorProjects TankProject[]       @relation("TankProjectContractor")
+  inspectionProjects TankProject[]       @relation("TankProjectInspectionCompany")
+  users              User[]              @relation("CompanyUsers")
+  executionRequests  InspectionRequest[] @relation("InspectionRequestExecutionCompany")
 
   @@index([type])
   @@index([isActive])
@@ -577,45 +600,82 @@ model ProcessDependency {
 // ─── Tank Domain ──────────────────────────────────────────────────────────────
 
 model Tank {
-  id                   String            @id @default(cuid())
-  tankNo               String            @unique @map("tank_no")
-  tankName             String?           @map("tank_name")
-  diameterMm           Float?            @map("diameter_mm")
-  heightMm             Float?            @map("height_mm")
-  shellCourseCount     Int?              @map("shell_course_count")
-  bottomPlateDimension String?           @map("bottom_plate_dimension")
-  hasSteamCoil         Boolean           @default(false) @map("has_steam_coil")
-  location             TankLocationEnum? @map("location")
-  capacityM3           Float?            @map("capacity_m3")
-  service              TankServiceEnum?  @map("service")
-  contractorCompanyId  String?           @map("contractor_company_id")
-  inspectionCompanyId  String?           @map("inspection_company_id")
-  startDate            DateTime?         @map("start_date") @db.Date
-  estimatedFinishDate  DateTime?         @map("estimated_finish_date") @db.Date
-  actualFinishDate     DateTime?         @map("actual_finish_date") @db.Date
-  status               StatusEnum        @default(ACTIVE)
-  createdBy            String?           @map("created_by")
-  createdAt            DateTime          @default(now()) @map("created_at")
-  updatedAt            DateTime          @updatedAt @map("updated_at")
-  deletedAt            DateTime?         @map("deleted_at")
+  id                   String              @id @default(cuid())
+  tankNo               String              @unique @map("tank_no")
+  tankName             String?             @map("tank_name")
+  diameterMm           Float?              @map("diameter_mm")
+  heightMm             Float?              @map("height_mm")
+  shellCourseCount     Int?                @map("shell_course_count")
+  bottomPlateDimension String?             @map("bottom_plate_dimension")
+  hasSteamCoil         Boolean             @default(false) @map("has_steam_coil")
+  location             TankLocationEnum?   @map("location")
+  capacityM3           Float?              @map("capacity_m3")
+  service              TankServiceEnum?    @map("service")
+  assetStatus          TankAssetStatusEnum @default(OPERATIONAL) @map("asset_status")
+  createdBy            String?             @map("created_by")
+  createdAt            DateTime            @default(now()) @map("created_at")
+  updatedAt            DateTime            @updatedAt @map("updated_at")
+  deletedAt            DateTime?           @map("deleted_at")
 
   aiExtractedAt    DateTime? @map("ai_extracted_at")
   aiExtractionMeta Json?     @map("ai_extraction_meta")
 
-  contractorCompany Company? @relation("TankContractor", fields: [contractorCompanyId], references: [id])
-  inspectionCompany Company? @relation("TankInspectionCompany", fields: [inspectionCompanyId], references: [id])
-  createdByUser     User?    @relation("TankCreatedBy", fields: [createdBy], references: [id])
+  createdByUser User? @relation("TankCreatedBy", fields: [createdBy], references: [id])
 
   shellCourses       TankShellCourse[]
-  processes          TankProcess[]
+  projects           TankProject[]
   findings           Finding[]
   dailyReports       DailyReport[]
   attachments        TankAttachment[]
   inspectionRequests InspectionRequest[]
 
-  @@index([status])
+  @@index([assetStatus])
   @@index([deletedAt])
   @@map("tanks")
+}
+
+model TankProject {
+  id        String                @id @default(cuid())
+  projectNo String                @unique @map("project_no")
+  tankId    String                @map("tank_id")
+  type      TankProjectTypeEnum   @default(OVERHAUL)
+  status    TankProjectStatusEnum @default(PLANNED)
+
+  contractorCompanyId String? @map("contractor_company_id")
+  inspectionCompanyId String? @map("inspection_company_id")
+
+  startDate           DateTime? @map("start_date") @db.Date
+  estimatedFinishDate DateTime? @map("estimated_finish_date") @db.Date
+  actualFinishDate    DateTime? @map("actual_finish_date") @db.Date
+
+  description String?
+  remarks     String?
+
+  aiExtractedAt    DateTime? @map("ai_extracted_at")
+  aiExtractionMeta Json?     @map("ai_extraction_meta")
+
+  createdBy String?   @map("created_by")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  tank              Tank     @relation(fields: [tankId], references: [id], onDelete: Cascade)
+  contractorCompany Company? @relation("TankProjectContractor", fields: [contractorCompanyId], references: [id], onDelete: SetNull)
+  inspectionCompany Company? @relation("TankProjectInspectionCompany", fields: [inspectionCompanyId], references: [id], onDelete: SetNull)
+  createdByUser     User?    @relation("TankProjectCreatedBy", fields: [createdBy], references: [id])
+
+  processes          TankProcess[]
+  findings           Finding[]
+  inspectionRequests InspectionRequest[]
+  dailyReports       DailyReport[]
+
+  @@index([tankId])
+  @@index([type])
+  @@index([status])
+  @@index([contractorCompanyId])
+  @@index([inspectionCompanyId])
+  @@index([deletedAt])
+  @@map("tank_projects")
 }
 
 model TankShellCourse {
@@ -658,7 +718,7 @@ model TankAttachment {
 
 model TankProcess {
   id                String            @id @default(cuid())
-  tankId            String            @map("tank_id")
+  projectId         String            @map("project_id")
   processTemplateId String            @map("process_template_id")
   name              String
   type              ProcessType
@@ -670,7 +730,7 @@ model TankProcess {
   createdAt         DateTime          @default(now()) @map("created_at")
   updatedAt         DateTime          @updatedAt @map("updated_at")
 
-  tank            Tank            @relation(fields: [tankId], references: [id], onDelete: Cascade)
+  project         TankProject     @relation(fields: [projectId], references: [id], onDelete: Cascade)
   processTemplate ProcessTemplate @relation(fields: [processTemplateId], references: [id], onDelete: Restrict)
 
   checklistResults   ChecklistResult[]
@@ -679,8 +739,8 @@ model TankProcess {
   testRecords        TestRecord[]
   dailyReports       DailyReport[]
 
-  @@unique([tankId, processTemplateId])
-  @@index([tankId])
+  @@unique([projectId, processTemplateId])
+  @@index([projectId])
   @@index([status])
   @@map("tank_processes")
 }
@@ -721,7 +781,8 @@ model ChecklistResult {
 model Finding {
   id             String            @id @default(cuid())
   tankId         String            @map("tank_id")
-  tankProcessId  String            @map("tank_process_id")
+  projectId      String?           @map("project_id")
+  tankProcessId  String?           @map("tank_process_id")
   criteriaId     String?           @map("criteria_id")
   findingNo      String            @unique @map("finding_no")
   title          String
@@ -738,12 +799,14 @@ model Finding {
   deletedAt      DateTime?         @map("deleted_at")
 
   tank          Tank                @relation(fields: [tankId], references: [id], onDelete: Cascade)
-  tankProcess   TankProcess         @relation(fields: [tankProcessId], references: [id], onDelete: Cascade)
+  project       TankProject?        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tankProcess   TankProcess?        @relation(fields: [tankProcessId], references: [id], onDelete: SetNull)
   criteria      AcceptanceCriteria? @relation(fields: [criteriaId], references: [id], onDelete: SetNull)
   createdByUser User?               @relation("FindingCreatedBy", fields: [createdBy], references: [id])
   closedByUser  User?               @relation("FindingClosedBy", fields: [closedBy], references: [id])
 
   @@index([tankId])
+  @@index([projectId])
   @@index([tankProcessId])
   @@index([status])
   @@index([deletedAt])
@@ -754,6 +817,7 @@ model InspectionRequest {
   id                 String                      @id @default(cuid())
   requestNo          String                      @unique @map("request_no")
   tankId             String?                     @map("tank_id")
+  projectId          String?                     @map("project_id")
   tankProcessId      String?                     @map("tank_process_id")
   testType           InspectionRequestTypeEnum   @map("test_type")
   status             InspectionRequestStatusEnum @default(NOT_STARTED)
@@ -775,6 +839,7 @@ model InspectionRequest {
   deletedAt          DateTime?                   @map("deleted_at")
 
   tank             Tank?        @relation(fields: [tankId], references: [id], onDelete: SetNull)
+  project          TankProject? @relation(fields: [projectId], references: [id], onDelete: SetNull)
   tankProcess      TankProcess? @relation(fields: [tankProcessId], references: [id], onDelete: SetNull)
   requestedByUser  User?        @relation("InspectionRequestRequestedBy", fields: [requestedBy], references: [id])
   executionCompany Company?     @relation("InspectionRequestExecutionCompany", fields: [executionCompanyId], references: [id], onDelete: SetNull)
@@ -787,6 +852,7 @@ model InspectionRequest {
   testRecords TestRecord[]
 
   @@index([tankId])
+  @@index([projectId])
   @@index([tankProcessId])
   @@index([status])
   @@index([testType])
@@ -894,6 +960,7 @@ model TestRecordAttachment {
 model DailyReport {
   id             String                @id @default(cuid())
   tankId         String?               @map("tank_id")
+  projectId      String?               @map("project_id")
   tankProcessId  String?               @map("tank_process_id")
   reportDate     DateTime              @map("report_date") @db.Date
   activityType   DailyActivityTypeEnum @map("activity_type")
@@ -911,11 +978,13 @@ model DailyReport {
 
   attachments DailyReportAttachment[]
 
-  tank        Tank?        @relation(fields: [tankId], references: [id], onDelete: Cascade)
+  tank        Tank?        @relation(fields: [tankId], references: [id], onDelete: SetNull)
+  project     TankProject? @relation(fields: [projectId], references: [id], onDelete: SetNull)
   tankProcess TankProcess? @relation(fields: [tankProcessId], references: [id], onDelete: SetNull)
   inspector   User?        @relation("DailyReportInspector", fields: [inspectorId], references: [id])
 
   @@index([tankId])
+  @@index([projectId])
   @@index([tankProcessId])
   @@index([reportDate])
   @@map("daily_reports")

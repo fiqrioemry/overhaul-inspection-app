@@ -2,7 +2,7 @@ import { pgsql } from "@/lib/database";
 import { ChecklistStatusEnum, FindingStatusEnum } from "generated/prisma";
 
 export interface ChecklistDetail {
-  criteriaId: string;
+  criteriaId: string | null;
   name: string;
   status: string;
   required: boolean;
@@ -34,7 +34,7 @@ export class EligibilityService {
   static async checkEligibility(tankProcessId: string): Promise<EligibilityResult> {
     const tankProcess = await pgsql.tankProcess.findUnique({
       where: { id: tankProcessId },
-      include: { tank: { select: { id: true, tankNo: true } } },
+      include: { project: { select: { id: true, tank: { select: { id: true, tankNo: true } } } } },
     });
 
     if (!tankProcess) {
@@ -69,19 +69,16 @@ export class EligibilityService {
 
     const reasons: string[] = [];
 
-    // 1. Checklist check
+    // 1. Checklist check — criteria is null for CUSTOM items; fall back to row fields.
     const checklistDetails: ChecklistDetail[] = checklistItems.map((item) => ({
       criteriaId: item.criteriaId,
-      name: item.criteria.name,
+      name: item.criteria?.name ?? item.customName ?? "Checklist item",
       status: item.status,
-      required: item.criteria.isRequired,
+      required: item.isRequired,
     }));
 
     const failedRequired = checklistItems.filter(
-      (item) =>
-        item.criteria.isRequired &&
-        item.status !== ChecklistStatusEnum.PASSED &&
-        item.status !== ChecklistStatusEnum.NOT_APPLICABLE,
+      (item) => item.isRequired && item.status !== ChecklistStatusEnum.PASSED,
     );
     if (failedRequired.length > 0) {
       reasons.push(`${failedRequired.length} required checklist item(s) not passed`);
@@ -102,8 +99,8 @@ export class EligibilityService {
     for (const dep of processDeps) {
       const dependedProcess = await pgsql.tankProcess.findUnique({
         where: {
-          tankId_processTemplateId: {
-            tankId: tankProcess.tankId,
+          projectId_processTemplateId: {
+            projectId: tankProcess.projectId,
             processTemplateId: dep.requiredProcessTemplateId,
           },
         },

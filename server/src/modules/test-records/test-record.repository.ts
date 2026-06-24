@@ -19,8 +19,14 @@ const baseInclude = {
       name: true,
       type: true,
       status: true,
-      tankId: true,
-      tank: { select: { id: true, tankNo: true, tankName: true } },
+      projectId: true,
+      project: {
+        select: {
+          id: true,
+          projectNo: true,
+          tank: { select: { id: true, tankNo: true, tankName: true } },
+        },
+      },
     },
   },
   createdByUser: { select: { id: true, name: true } },

@@ -11,6 +11,7 @@ export class FindingRepository {
       where: { id, deletedAt: null },
       include: {
         tank: { select: { id: true, tankNo: true, tankName: true } },
+        project: { select: { id: true, projectNo: true, type: true, status: true } },
         tankProcess: { select: { id: true, name: true, type: true, status: true } },
         criteria: { select: { id: true, code: true, name: true } },
         createdByUser: { select: { id: true, name: true } },
@@ -19,12 +20,13 @@ export class FindingRepository {
     });
   }
 
-  static async findMany(query: { tankId?: string; tankProcessId?: string; status?: FindingStatusEnum; severity?: string; isBlocking?: boolean; page: number; limit: number }) {
-    const { tankId, tankProcessId, status, severity, isBlocking, page, limit } = query;
+  static async findMany(query: { tankId?: string; projectId?: string; tankProcessId?: string; status?: FindingStatusEnum; severity?: string; isBlocking?: boolean; page: number; limit: number }) {
+    const { tankId, projectId, tankProcessId, status, severity, isBlocking, page, limit } = query;
     const skip = (page - 1) * limit;
     const where: Prisma.FindingWhereInput = {
       deletedAt: null,
       ...(tankId && { tankId }),
+      ...(projectId && { projectId }),
       ...(tankProcessId && { tankProcessId }),
       ...(status && { status }),
       ...(severity && { severity: severity as any }),
@@ -38,6 +40,7 @@ export class FindingRepository {
         orderBy: { createdAt: "desc" },
         include: {
           tank: { select: { id: true, tankNo: true } },
+          project: { select: { id: true, projectNo: true, type: true, status: true } },
           tankProcess: { select: { id: true, name: true } },
           criteria: { select: { id: true, code: true, name: true } },
           createdByUser: { select: { id: true, name: true } },

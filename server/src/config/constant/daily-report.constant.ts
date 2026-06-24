@@ -6,6 +6,7 @@ const dailyReportSuccessMessage = {
   DELETE_REPORT: "Daily report deleted successfully",
   GET_TANK_OPTIONS: "Tank options retrieved successfully",
   GET_TANK_PROCESS_OPTIONS: "Tank process options retrieved successfully",
+  GET_PROJECT_OPTIONS: "Tank project options retrieved successfully",
 };
 
 export { dailyReportSuccessMessage };

@@ -28,7 +28,8 @@ export class DailyReportController {
     const files = extractFiles(body as Record<string, unknown>);
 
     const data = createDailyReportRequest.parse({
-      tankId: body["tankId"],
+      tankId: body["tankId"] || undefined,
+      projectId: body["projectId"] || undefined,
       tankProcessId: body["tankProcessId"] || undefined,
       reportDate: body["reportDate"],
       activityType: body["activityType"],
@@ -117,5 +118,11 @@ export class DailyReportController {
     const { tankId } = tankProcessOptionsQuery.parse(c.req.query());
     const options = await DailyReportService.listTankProcessOptions(tankId);
     return responseOK(c, dailyReportSuccessMessage.GET_TANK_PROCESS_OPTIONS, options);
+  }
+
+  static async listProjectOptions(c: Context) {
+    const { tankId } = tankProcessOptionsQuery.parse(c.req.query());
+    const options = await DailyReportService.listProjectOptions(tankId);
+    return responseOK(c, dailyReportSuccessMessage.GET_PROJECT_OPTIONS, options);
   }
 }

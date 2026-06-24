@@ -1,6 +1,6 @@
 export interface TankProcessDetail {
   id: string;
-  tankId: string;
+  projectId: string;
   processTemplateId: string;
   name: string;
   type: string;
@@ -11,7 +11,13 @@ export interface TankProcessDetail {
   remarks: string | null;
   createdAt: Date;
   updatedAt: Date;
-  tank: { id: string; tankNo: string; tankName: string; hasSteamCoil: boolean };
+  project: {
+    id: string;
+    projectNo: string;
+    type: string;
+    status: string;
+    tank: { id: string; tankNo: string; tankName: string | null; hasSteamCoil: boolean };
+  };
   processTemplate: {
     id: string;
     code: string;

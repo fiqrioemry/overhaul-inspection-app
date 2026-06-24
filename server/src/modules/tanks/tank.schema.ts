@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { StatusEnum, TankLocationEnum, TankServiceEnum } from "generated/prisma";
+import { TankAssetStatusEnum, TankLocationEnum, TankServiceEnum } from "generated/prisma";
 
 export const shellCourseInput = z.object({
   courseNo: z.number().int().min(1),
@@ -9,6 +9,8 @@ export const shellCourseInput = z.object({
 });
 export type ShellCourseInput = z.infer<typeof shellCourseInput>;
 
+// Tank is now a physical asset registry only. Project/engagement fields
+// (contractor, inspection company, schedule dates, workflow) live on TankProject.
 export const createTankRequest = z.object({
   tankNo: z.string().min(1).max(50),
   tankName: z.string().max(200).optional(),
@@ -20,10 +22,7 @@ export const createTankRequest = z.object({
   shellCourseCount: z.number().int().min(1).optional(),
   bottomPlateDimension: z.string().max(100).optional(),
   hasSteamCoil: z.boolean().default(false),
-  contractorCompanyId: z.string().optional(),
-  inspectionCompanyId: z.string().optional(),
-  startDate: z.string().optional(),
-  estimatedFinishDate: z.string().optional(),
+  assetStatus: z.nativeEnum(TankAssetStatusEnum).optional(),
   shellCourses: z.array(shellCourseInput).optional(),
   newFileCaptions: z.array(z.string().max(300)).optional(),
 });
@@ -34,7 +33,7 @@ export type UpdateTankRequest = z.infer<typeof updateTankRequest>;
 
 export const listTanksQuery = z.object({
   search: z.string().optional(),
-  status: z.nativeEnum(StatusEnum).optional(),
+  assetStatus: z.nativeEnum(TankAssetStatusEnum).optional(),
   page: z.string().default("1").transform(Number),
   limit: z.string().default("10").transform(Number),
 });

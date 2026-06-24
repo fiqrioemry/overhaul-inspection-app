@@ -50,8 +50,8 @@ export class TankProcessService {
     return process;
   }
 
-  static async getProcessesByTank(tankId: string) {
-    return TankProcessRepository.findByTankId(tankId);
+  static async getProcessesByProject(projectId: string) {
+    return TankProcessRepository.findByProjectId(projectId);
   }
 
   static async updateStatus(id: string, data: UpdateProcessStatusRequest) {
@@ -124,7 +124,7 @@ export class TankProcessService {
       });
 
       if (data.status === ProcessStatusEnum.COMPLETED) {
-        await TankProcessRepository.unlockEligibleProcesses(tx, process.tankId, process.processTemplateId);
+        await TankProcessRepository.unlockEligibleProcesses(tx, process.projectId, process.processTemplateId);
       }
 
       return updated;

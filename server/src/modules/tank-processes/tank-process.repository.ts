@@ -6,16 +6,24 @@ export class TankProcessRepository {
     return pgsql.tankProcess.findUnique({
       where: { id },
       include: {
-        tank: { select: { id: true, tankNo: true, tankName: true, hasSteamCoil: true } },
+        project: {
+          select: {
+            id: true,
+            projectNo: true,
+            type: true,
+            status: true,
+            tank: { select: { id: true, tankNo: true, tankName: true, hasSteamCoil: true } },
+          },
+        },
         processTemplate: true,
         _count: { select: { checklistResults: true, findings: true, inspectionRequests: true } },
       },
     });
   }
 
-  static async findByTankId(tankId: string) {
+  static async findByProjectId(projectId: string) {
     return pgsql.tankProcess.findMany({
-      where: { tankId },
+      where: { projectId },
       orderBy: { sequenceOrder: "asc" },
       include: {
         processTemplate: { select: { code: true, name: true, isOptional: true } },
@@ -24,9 +32,9 @@ export class TankProcessRepository {
     });
   }
 
-  static async findByTankAndTemplate(tankId: string, processTemplateId: string) {
+  static async findByProjectAndTemplate(projectId: string, processTemplateId: string) {
     return pgsql.tankProcess.findUnique({
-      where: { tankId_processTemplateId: { tankId, processTemplateId } },
+      where: { projectId_processTemplateId: { projectId, processTemplateId } },
     });
   }
 
@@ -64,7 +72,8 @@ export class TankProcessRepository {
     });
   }
 
-  static async unlockEligibleProcesses(tx: Prisma.TransactionClient, tankId: string, completedProcessTemplateId: string) {
+  // Unlock dependants ONLY within the same project — never across projects of the same tank.
+  static async unlockEligibleProcesses(tx: Prisma.TransactionClient, projectId: string, completedProcessTemplateId: string) {
     const dependants = await tx.processDependency.findMany({
       where: { requiredProcessTemplateId: completedProcessTemplateId },
       select: { processTemplateId: true },
@@ -72,7 +81,7 @@ export class TankProcessRepository {
 
     for (const dep of dependants) {
       const process = await tx.tankProcess.findUnique({
-        where: { tankId_processTemplateId: { tankId, processTemplateId: dep.processTemplateId } },
+        where: { projectId_processTemplateId: { projectId, processTemplateId: dep.processTemplateId } },
       });
       if (!process || process.status !== ProcessStatusEnum.LOCKED) continue;
 
@@ -83,7 +92,7 @@ export class TankProcessRepository {
       let allMet = true;
       for (const d of allDeps) {
         const requiredProcess = await tx.tankProcess.findUnique({
-          where: { tankId_processTemplateId: { tankId, processTemplateId: d.requiredProcessTemplateId } },
+          where: { projectId_processTemplateId: { projectId, processTemplateId: d.requiredProcessTemplateId } },
         });
         if (!requiredProcess || requiredProcess.status !== d.requiredStatus) {
           allMet = false;

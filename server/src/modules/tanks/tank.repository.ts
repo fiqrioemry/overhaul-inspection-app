@@ -1,5 +1,11 @@
 import { pgsql } from "@/lib/database";
-import { Prisma } from "generated/prisma";
+import { Prisma, TankProjectStatusEnum } from "generated/prisma";
+
+const ACTIVE_PROJECT_STATUSES: TankProjectStatusEnum[] = [
+  TankProjectStatusEnum.PLANNED,
+  TankProjectStatusEnum.IN_PROGRESS,
+  TankProjectStatusEnum.ON_HOLD,
+];
 
 export class TankRepository {
   static async create(data: Prisma.TankCreateInput) {
@@ -10,8 +16,6 @@ export class TankRepository {
     return pgsql.tank.findFirst({
       where: { id, deletedAt: null },
       include: {
-        contractorCompany: { select: { id: true, name: true, type: true } },
-        inspectionCompany: { select: { id: true, name: true, type: true } },
         createdByUser: { select: { id: true, name: true } },
         shellCourses: { orderBy: { courseNo: "asc" } },
         attachments: {
@@ -19,7 +23,17 @@ export class TankRepository {
           orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
           select: { id: true, fileStorageId: true, attachmentUrl: true, caption: true, sortOrder: true, createdAt: true },
         },
-        _count: { select: { processes: true, findings: true } },
+        projects: {
+          where: { deletedAt: null },
+          orderBy: { createdAt: "desc" },
+          include: {
+            contractorCompany: { select: { id: true, name: true } },
+            inspectionCompany: { select: { id: true, name: true } },
+            processes: { orderBy: { sequenceOrder: "asc" }, select: { id: true, status: true } },
+            _count: { select: { findings: true } },
+          },
+        },
+        _count: { select: { projects: true, findings: true, dailyReports: true } },
       },
     });
   }
@@ -28,12 +42,12 @@ export class TankRepository {
     return pgsql.tank.findFirst({ where: { tankNo, deletedAt: null } });
   }
 
-  static async findMany(query: { search?: string; status?: string; page: number; limit: number }) {
-    const { search, status, page, limit } = query;
+  static async findMany(query: { search?: string; assetStatus?: string; page: number; limit: number }) {
+    const { search, assetStatus, page, limit } = query;
     const skip = (page - 1) * limit;
     const where: Prisma.TankWhereInput = {
       deletedAt: null,
-      ...(status && { status: status as any }),
+      ...(assetStatus && { assetStatus: assetStatus as any }),
       ...(search && {
         OR: [
           { tankNo: { contains: search, mode: "insensitive" } },
@@ -48,9 +62,13 @@ export class TankRepository {
         take: limit,
         orderBy: { createdAt: "desc" },
         include: {
-          contractorCompany: { select: { id: true, name: true } },
-          inspectionCompany: { select: { id: true, name: true } },
-          _count: { select: { processes: true, findings: true } },
+          projects: {
+            where: { deletedAt: null, status: { in: ACTIVE_PROJECT_STATUSES } },
+            orderBy: { createdAt: "desc" },
+            take: 1,
+            select: { id: true, projectNo: true, type: true, status: true },
+          },
+          _count: { select: { projects: true, findings: true } },
         },
       }),
       pgsql.tank.count({ where }),
@@ -66,18 +84,23 @@ export class TankRepository {
     return pgsql.tank.update({ where: { id }, data: { deletedAt: new Date() } });
   }
 
-  static async findWithProcesses(id: string) {
-    return pgsql.tank.findFirst({
-      where: { id, deletedAt: null },
+  /** Resolve processes via the tank's most recent active project (legacy /tanks/:id/processes). */
+  static async findActiveProjectProcesses(tankId: string) {
+    const project = await pgsql.tankProject.findFirst({
+      where: { tankId, deletedAt: null, status: { in: ACTIVE_PROJECT_STATUSES } },
+      orderBy: { createdAt: "desc" },
+      select: { id: true },
+    });
+    if (!project) return { projectId: null, processes: [] };
+
+    const processes = await pgsql.tankProcess.findMany({
+      where: { projectId: project.id },
+      orderBy: { sequenceOrder: "asc" },
       include: {
-        processes: {
-          orderBy: { sequenceOrder: "asc" },
-          include: {
-            processTemplate: { select: { code: true, isOptional: true, applicabilityRule: true } },
-            _count: { select: { checklistResults: true, findings: true } },
-          },
-        },
+        processTemplate: { select: { code: true, isOptional: true, applicabilityRule: true } },
+        _count: { select: { checklistResults: true, findings: true } },
       },
     });
+    return { projectId: project.id, processes };
   }
 }

@@ -1,7 +1,6 @@
 import { HTTPException } from "hono/http-exception";
 import { Context } from "hono";
 import { pgsql } from "@/lib/database";
-import { ProcessStatusEnum, ChecklistStatusEnum } from "generated/prisma";
 import { TankRepository } from "./tank.repository";
 import { TankAttachmentRepository } from "./tank-attachment.repository";
 import { FileService } from "@/modules/files/file.service";
@@ -44,13 +43,9 @@ function validateDocumentFiles(files: File[]) {
   }
 }
 
-function isApplicable(applicabilityRule: string | null, hasSteamCoil: boolean): boolean {
-  if (!applicabilityRule) return true;
-  if (applicabilityRule === "STEAM_COIL") return hasSteamCoil;
-  return true;
-}
-
 export class TankService {
+  // Creates the physical asset only. Overhaul workflow (TankProcess) is generated
+  // when a TankProject is created against this tank, not here.
   static async createTank(data: CreateTankRequest, createdBy: string, c?: Context, files: File[] = []) {
     const existing = await TankRepository.findByTankNo(data.tankNo);
     if (existing) {
@@ -67,12 +62,6 @@ export class TankService {
       await Promise.all(fileRecords.map((fr) => FileService.uploadFileToStorage(c, fr)));
     }
 
-    const templates = await pgsql.processTemplate.findMany({
-      where: { isActive: true, deletedAt: null },
-      orderBy: { sequenceOrder: "asc" },
-      include: { processCriteria: { include: { criteria: true } } },
-    });
-
     const tank = await pgsql.$transaction(async (tx) => {
       const newTank = await tx.tank.create({
         data: {
@@ -86,10 +75,7 @@ export class TankService {
           shellCourseCount: data.shellCourseCount,
           bottomPlateDimension: data.bottomPlateDimension,
           hasSteamCoil: data.hasSteamCoil,
-          contractorCompanyId: data.contractorCompanyId,
-          inspectionCompanyId: data.inspectionCompanyId,
-          startDate: data.startDate ? new Date(data.startDate) : undefined,
-          estimatedFinishDate: data.estimatedFinishDate ? new Date(data.estimatedFinishDate) : undefined,
+          assetStatus: data.assetStatus,
           createdBy,
         },
       });
@@ -137,42 +123,6 @@ export class TankService {
         });
       }
 
-      const applicableTemplates = templates.filter((t) =>
-        isApplicable(t.applicabilityRule, data.hasSteamCoil),
-      );
-
-      const requiredDepTemplateIds = new Set(
-        (await tx.processDependency.findMany({
-          where: { isRequired: true },
-          select: { processTemplateId: true },
-        })).map((d) => d.processTemplateId),
-      );
-
-      for (const template of applicableTemplates) {
-        const hasRequiredDeps = requiredDepTemplateIds.has(template.id);
-
-        const tankProcess = await tx.tankProcess.create({
-          data: {
-            tankId: newTank.id,
-            processTemplateId: template.id,
-            name: template.name,
-            type: template.type,
-            sequenceOrder: template.sequenceOrder,
-            status: hasRequiredDeps ? ProcessStatusEnum.LOCKED : ProcessStatusEnum.NOT_STARTED,
-          },
-        });
-
-        if (template.processCriteria.length > 0) {
-          await tx.checklistResult.createMany({
-            data: template.processCriteria.map((pc) => ({
-              tankProcessId: tankProcess.id,
-              criteriaId: pc.criteriaId,
-              status: ChecklistStatusEnum.NOT_CHECKED,
-            })),
-          });
-        }
-      }
-
       return newTank;
     });
 
@@ -187,7 +137,7 @@ export class TankService {
       id: t.id,
       tankNo: t.tankNo,
       tankName: t.tankName,
-      status: t.status,
+      assetStatus: t.assetStatus,
       location: t.location,
       capacityM3: t.capacityM3,
       service: t.service,
@@ -195,12 +145,9 @@ export class TankService {
       heightMm: t.heightMm,
       shellCourseCount: t.shellCourseCount,
       hasSteamCoil: t.hasSteamCoil,
-      startDate: t.startDate,
-      estimatedFinishDate: t.estimatedFinishDate,
       createdAt: t.createdAt,
       updatedAt: t.updatedAt,
-      contractorCompany: t.contractorCompany,
-      inspectionCompany: t.inspectionCompany,
+      activeProject: t.projects[0] ?? null,
       _count: t._count,
     }));
 
@@ -225,12 +172,14 @@ export class TankService {
     return tank;
   }
 
+  // Legacy endpoint: resolves processes via the tank's active project, if any.
   static async getTankProcesses(id: string) {
-    const tank = await TankRepository.findWithProcesses(id);
+    const tank = await TankRepository.findById(id);
     if (!tank) {
       throw new HTTPException(404, { message: "Tank not found", cause: "TANK_NOT_FOUND" });
     }
-    return tank.processes;
+    const { processes } = await TankRepository.findActiveProjectProcesses(id);
+    return processes;
   }
 
   static async updateTank(id: string, data: UpdateTankRequest) {
@@ -246,11 +195,7 @@ export class TankService {
       }
     }
 
-    return TankRepository.update(id, {
-      ...data,
-      startDate: data.startDate ? new Date(data.startDate) : undefined,
-      estimatedFinishDate: data.estimatedFinishDate ? new Date(data.estimatedFinishDate) : undefined,
-    });
+    return TankRepository.update(id, { ...data });
   }
 
   static async deleteTank(id: string) {

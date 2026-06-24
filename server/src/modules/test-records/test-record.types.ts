@@ -31,8 +31,12 @@ export interface TestRecordItem {
     name: string;
     type: string;
     status: string;
-    tankId: string;
-    tank: { id: string; tankNo: string; tankName: string | null };
+    projectId: string;
+    project: {
+      id: string;
+      projectNo: string;
+      tank: { id: string; tankNo: string; tankName: string | null };
+    };
   } | null;
   createdByUser: { id: string; name: string } | null;
   attachments: TestRecordAttachmentItem[];

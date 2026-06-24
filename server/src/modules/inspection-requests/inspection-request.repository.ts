@@ -28,6 +28,14 @@ const tankSelect = {
   tankNo: true,
   tankName: true,
   location: true,
+} as const;
+
+// Contractor / inspection companies are project-level now.
+const projectSelect = {
+  id: true,
+  projectNo: true,
+  type: true,
+  status: true,
   inspectionCompany: { select: { id: true, name: true, logoFile: { select: { url: true } } } },
   contractorCompany: { select: { id: true, name: true, logoFile: { select: { url: true } } } },
 } as const;
@@ -41,6 +49,7 @@ const personnelSelect = {
 
 const detailInclude = {
   tank: { select: tankSelect },
+  project: { select: projectSelect },
   tankProcess: { select: { id: true, name: true, type: true } },
   requestedByUser: { select: { id: true, name: true, email: true } },
   executionCompany: { select: { id: true, name: true, type: true } },
@@ -68,18 +77,20 @@ export class InspectionRequestRepository {
 
   static async findMany(query: {
     tankId?: string;
+    projectId?: string;
     tankProcessId?: string;
     testType?: InspectionRequestTypeEnum;
     status?: InspectionRequestStatusEnum;
     page: number;
     limit: number;
   }) {
-    const { tankId, tankProcessId, testType, status, page, limit } = query;
+    const { tankId, projectId, tankProcessId, testType, status, page, limit } = query;
     const skip = (page - 1) * limit;
 
     const where: Prisma.InspectionRequestWhereInput = {
       deletedAt: null,
       ...(tankId && { tankId }),
+      ...(projectId && { projectId }),
       ...(tankProcessId && { tankProcessId }),
       ...(testType && { testType }),
       ...(status && { status }),
@@ -93,6 +104,7 @@ export class InspectionRequestRepository {
         orderBy: { createdAt: "desc" },
         include: {
           tank: { select: { id: true, tankNo: true, tankName: true } },
+          project: { select: { id: true, projectNo: true, type: true, status: true } },
           tankProcess: { select: { id: true, name: true } },
           requestedByUser: { select: { id: true, name: true } },
           items: { select: { id: true } },
@@ -156,9 +168,17 @@ export class InspectionRequestRepository {
 
   static async findTankProcessOptions(tankId: string) {
     return pgsql.tankProcess.findMany({
-      where: { tankId },
-      select: { id: true, name: true, type: true, status: true },
-      orderBy: { sequenceOrder: "asc" },
+      where: { project: { tankId, deletedAt: null } },
+      select: { id: true, name: true, type: true, status: true, projectId: true },
+      orderBy: [{ project: { createdAt: "desc" } }, { sequenceOrder: "asc" }],
+    });
+  }
+
+  static async findProjectOptions(tankId: string) {
+    return pgsql.tankProject.findMany({
+      where: { tankId, deletedAt: null },
+      select: { id: true, projectNo: true, type: true, status: true },
+      orderBy: { createdAt: "desc" },
     });
   }
 }

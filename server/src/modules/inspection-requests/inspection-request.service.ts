@@ -114,24 +114,47 @@ export class InspectionRequestService {
     return `${prefix}${String(count + 1).padStart(4, "0")}`;
   }
 
-  private static async assertTankAndProcess(tankId?: string | null, tankProcessId?: string | null) {
+  // Resolves and validates the tank / project / process triple. project + tank are
+  // derived from the process when present; otherwise from the project.
+  private static async resolveContext(
+    tankId?: string | null,
+    projectId?: string | null,
+    tankProcessId?: string | null,
+  ): Promise<{ tankNo: string | null; tankId: string | null; projectId: string | null }> {
+    let resolvedTankId = tankId ?? null;
+    let resolvedProjectId = projectId ?? null;
+
+    if (tankProcessId) {
+      const tankProcess = await pgsql.tankProcess.findUnique({
+        where: { id: tankProcessId },
+        include: { project: { select: { id: true, tankId: true } } },
+      });
+      if (!tankProcess) throw new HTTPException(404, { message: "Tank process not found", cause: "PROCESS_NOT_FOUND" });
+      if (resolvedProjectId && resolvedProjectId !== tankProcess.projectId) {
+        throw new HTTPException(422, { message: "Tank process does not belong to the provided project", cause: "PROCESS_PROJECT_MISMATCH" });
+      }
+      if (resolvedTankId && resolvedTankId !== tankProcess.project.tankId) {
+        throw new HTTPException(422, { message: "Tank process does not belong to the provided tank", cause: "PROCESS_TANK_MISMATCH" });
+      }
+      resolvedProjectId = tankProcess.projectId;
+      resolvedTankId = tankProcess.project.tankId;
+    } else if (resolvedProjectId) {
+      const project = await pgsql.tankProject.findFirst({ where: { id: resolvedProjectId, deletedAt: null }, select: { tankId: true } });
+      if (!project) throw new HTTPException(404, { message: "Tank project not found", cause: "PROJECT_NOT_FOUND" });
+      if (resolvedTankId && resolvedTankId !== project.tankId) {
+        throw new HTTPException(422, { message: "Project does not belong to the provided tank", cause: "PROJECT_TANK_MISMATCH" });
+      }
+      resolvedTankId = project.tankId;
+    }
+
     let tankNo: string | null = null;
-    if (tankId) {
-      const tank = await pgsql.tank.findFirst({ where: { id: tankId, deletedAt: null }, select: { tankNo: true } });
+    if (resolvedTankId) {
+      const tank = await pgsql.tank.findFirst({ where: { id: resolvedTankId, deletedAt: null }, select: { tankNo: true } });
       if (!tank) throw new HTTPException(404, { message: "Tank not found", cause: "TANK_NOT_FOUND" });
       tankNo = tank.tankNo;
     }
-    if (tankProcessId) {
-      if (!tankId) {
-        throw new HTTPException(400, { message: "tankId is required when tankProcessId is provided", cause: "TANK_REQUIRED_FOR_PROCESS" });
-      }
-      const tankProcess = await pgsql.tankProcess.findUnique({ where: { id: tankProcessId }, select: { tankId: true } });
-      if (!tankProcess) throw new HTTPException(404, { message: "Tank process not found", cause: "PROCESS_NOT_FOUND" });
-      if (tankProcess.tankId !== tankId) {
-        throw new HTTPException(422, { message: "Tank process does not belong to the provided tank", cause: "PROCESS_TANK_MISMATCH" });
-      }
-    }
-    return tankNo;
+
+    return { tankNo, tankId: resolvedTankId, projectId: resolvedProjectId };
   }
 
   private static async assertUserInCompanyType(userId: string, companyType: CompanyType, errorMessage: string) {
@@ -168,7 +191,8 @@ export class InspectionRequestService {
   }
 
   static async createRequest(c: Context, data: CreateInspectionRequestRequest, files: File[], userId: string) {
-    const tankNo = await this.assertTankAndProcess(data.tankId, data.tankProcessId);
+    const ctx = await this.resolveContext(data.tankId, data.projectId, data.tankProcessId);
+    const tankNo = ctx.tankNo;
     await this.assertPersonnel(data);
 
     if (files.length > MAX_ATTACHMENTS) {
@@ -199,7 +223,8 @@ export class InspectionRequestService {
           requestLocation: data.requestLocation ?? null,
           description,
           remarks: data.remarks ?? null,
-          tank: data.tankId ? { connect: { id: data.tankId } } : undefined,
+          tank: ctx.tankId ? { connect: { id: ctx.tankId } } : undefined,
+          project: ctx.projectId ? { connect: { id: ctx.projectId } } : undefined,
           tankProcess: data.tankProcessId ? { connect: { id: data.tankProcessId } } : undefined,
           requestedByUser: { connect: { id: data.requestedBy ?? userId } },
           executionCompany: data.executionCompanyId ? { connect: { id: data.executionCompanyId } } : undefined,
@@ -257,10 +282,12 @@ export class InspectionRequestService {
       status: r.status,
       requestDate: r.requestDate,
       tankId: r.tankId,
+      projectId: r.projectId,
       tankProcessId: r.tankProcessId,
       createdAt: r.createdAt,
       updatedAt: r.updatedAt,
       tank: r.tank ?? null,
+      project: r.project ?? null,
       tankProcess: r.tankProcess ?? null,
       requestedByUser: r.requestedByUser ?? null,
       summary: computeSummary(r.items, r.testRecords),
@@ -301,8 +328,9 @@ export class InspectionRequestService {
     }
 
     const nextTankId = data.tankId !== undefined ? data.tankId : request.tankId;
+    const nextProjectId = data.projectId !== undefined ? data.projectId : request.projectId;
     const nextProcessId = data.tankProcessId !== undefined ? data.tankProcessId : request.tankProcessId;
-    await this.assertTankAndProcess(nextTankId, nextProcessId);
+    const ctx = await this.resolveContext(nextTankId, nextProjectId, nextProcessId);
     await this.assertPersonnel(data);
 
     await pgsql.$transaction(async (tx) => {
@@ -311,7 +339,8 @@ export class InspectionRequestService {
         data: {
           ...(data.testType && { testType: data.testType }),
           ...(data.requestDate && { requestDate: new Date(data.requestDate) }),
-          ...(data.tankId !== undefined && { tank: data.tankId ? { connect: { id: data.tankId } } : { disconnect: true } }),
+          tank: ctx.tankId ? { connect: { id: ctx.tankId } } : { disconnect: true },
+          project: ctx.projectId ? { connect: { id: ctx.projectId } } : { disconnect: true },
           ...(data.tankProcessId !== undefined && {
             tankProcess: data.tankProcessId ? { connect: { id: data.tankProcessId } } : { disconnect: true },
           }),

@@ -1,13 +1,29 @@
 import { pgsql } from "@/lib/database";
-import { FindingStatusEnum, InspectionRequestStatusEnum, ProcessStatusEnum, StatusEnum } from "generated/prisma";
+import {
+  FindingStatusEnum,
+  InspectionRequestStatusEnum,
+  ProcessStatusEnum,
+  TankAssetStatusEnum,
+  TankProjectStatusEnum,
+} from "generated/prisma";
 import type { DashboardSummary, FindingSummary, TankProgressItem, TestSummary } from "./dashboard.types";
+
+const ACTIVE_PROJECT_STATUSES: TankProjectStatusEnum[] = [
+  TankProjectStatusEnum.PLANNED,
+  TankProjectStatusEnum.IN_PROGRESS,
+  TankProjectStatusEnum.ON_HOLD,
+];
 
 export class DashboardService {
   static async getSummary(): Promise<DashboardSummary> {
     const [
       totalTanks,
-      activeTanks,
-      completedTanks,
+      operationalTanks,
+      underOverhaulTanks,
+      totalProjects,
+      activeProjects,
+      completedProjects,
+      overdueProjects,
       openFindings,
       criticalFindings,
       pendingRequests,
@@ -15,8 +31,18 @@ export class DashboardService {
       completedProcesses,
     ] = await Promise.all([
       pgsql.tank.count({ where: { deletedAt: null } }),
-      pgsql.tank.count({ where: { deletedAt: null, status: StatusEnum.ACTIVE } }),
-      pgsql.tankProcess.count({ where: { status: ProcessStatusEnum.COMPLETED } }),
+      pgsql.tank.count({ where: { deletedAt: null, assetStatus: TankAssetStatusEnum.OPERATIONAL } }),
+      pgsql.tank.count({ where: { deletedAt: null, assetStatus: TankAssetStatusEnum.UNDER_OVERHAUL } }),
+      pgsql.tankProject.count({ where: { deletedAt: null } }),
+      pgsql.tankProject.count({ where: { deletedAt: null, status: { in: ACTIVE_PROJECT_STATUSES } } }),
+      pgsql.tankProject.count({ where: { deletedAt: null, status: TankProjectStatusEnum.COMPLETED } }),
+      pgsql.tankProject.count({
+        where: {
+          deletedAt: null,
+          estimatedFinishDate: { lt: new Date() },
+          status: { notIn: [TankProjectStatusEnum.COMPLETED, TankProjectStatusEnum.CANCELLED] },
+        },
+      }),
       pgsql.finding.count({ where: { status: FindingStatusEnum.OPEN, deletedAt: null } }),
       pgsql.finding.count({ where: { status: FindingStatusEnum.OPEN, severity: "CRITICAL", deletedAt: null } }),
       pgsql.inspectionRequest.count({ where: { status: { not: InspectionRequestStatusEnum.PASSED }, deletedAt: null } }),
@@ -24,15 +50,9 @@ export class DashboardService {
       pgsql.tankProcess.count({ where: { status: ProcessStatusEnum.COMPLETED } }),
     ]);
 
-    const inProgressTanks = await pgsql.tank.count({
-      where: {
-        deletedAt: null,
-        processes: { some: { status: { in: [ProcessStatusEnum.IN_PROGRESS, ProcessStatusEnum.WAITING_REVIEW] } } },
-      },
-    });
-
     return {
-      tanks: { total: totalTanks, active: activeTanks, inProgress: inProgressTanks },
+      tanks: { total: totalTanks, operational: operationalTanks, underOverhaul: underOverhaulTanks },
+      projects: { total: totalProjects, active: activeProjects, completed: completedProjects, overdue: overdueProjects },
       processes: { total: totalProcesses, completed: completedProcesses },
       findings: { open: openFindings, critical: criticalFindings },
       inspectionRequests: { pending: pendingRequests },
@@ -40,32 +60,41 @@ export class DashboardService {
   }
 
   static async getTankProgress(): Promise<TankProgressItem[]> {
-    const tanks = await pgsql.tank.findMany({
-      where: { deletedAt: null },
+    const projects = await pgsql.tankProject.findMany({
+      where: { deletedAt: null, status: { in: ACTIVE_PROJECT_STATUSES } },
       orderBy: { createdAt: "desc" },
       take: 50,
       include: {
+        tank: { select: { id: true, tankNo: true, tankName: true } },
         contractorCompany: { select: { id: true, name: true } },
         inspectionCompany: { select: { id: true, name: true } },
         processes: {
           orderBy: { sequenceOrder: "asc" },
-          select: {
-            id: true,
-            name: true,
-            type: true,
-            sequenceOrder: true,
-            status: true,
-          },
+          select: { id: true, name: true, type: true, sequenceOrder: true, status: true },
         },
         _count: { select: { findings: true } },
       },
     });
 
-    return tanks.map((tank) => {
-      const total = tank.processes.length;
-      const completed = tank.processes.filter((p) => p.status === ProcessStatusEnum.COMPLETED).length;
+    return projects.map((project) => {
+      const total = project.processes.length;
+      const completed = project.processes.filter((p) => p.status === ProcessStatusEnum.COMPLETED).length;
       const progress = total > 0 ? Math.round((completed / total) * 100) : 0;
-      return { ...tank, progress };
+      return {
+        id: project.id,
+        projectNo: project.projectNo,
+        type: project.type,
+        status: project.status,
+        startDate: project.startDate,
+        estimatedFinishDate: project.estimatedFinishDate,
+        createdAt: project.createdAt,
+        tank: project.tank,
+        contractorCompany: project.contractorCompany,
+        inspectionCompany: project.inspectionCompany,
+        processes: project.processes,
+        _count: project._count,
+        progress,
+      };
     });
   }
 
@@ -106,7 +135,13 @@ export class DashboardService {
         take: 10,
         include: {
           inspectionRequest: { select: { id: true, requestNo: true, testType: true } },
-          tankProcess: { include: { tank: { select: { id: true, tankNo: true } } } },
+          tankProcess: {
+            select: {
+              id: true,
+              name: true,
+              project: { select: { id: true, tank: { select: { id: true, tankNo: true } } } },
+            },
+          },
           createdByUser: { select: { id: true, name: true } },
         },
       }),

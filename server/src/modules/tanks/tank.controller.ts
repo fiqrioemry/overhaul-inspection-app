@@ -58,10 +58,7 @@ export class TankController {
         shellCourseCount: num(body["shellCourseCount"]),
         bottomPlateDimension: str(body["bottomPlateDimension"]),
         hasSteamCoil: bool(body["hasSteamCoil"]) ?? false,
-        contractorCompanyId: str(body["contractorCompanyId"]),
-        inspectionCompanyId: str(body["inspectionCompanyId"]),
-        startDate: str(body["startDate"]),
-        estimatedFinishDate: str(body["estimatedFinishDate"]),
+        assetStatus: str(body["assetStatus"]),
         shellCourses: parseJsonField<unknown[]>(body["shellCourses"], []),
         newFileCaptions: parseJsonField<string[]>(body["newFileCaptions"], []),
       });

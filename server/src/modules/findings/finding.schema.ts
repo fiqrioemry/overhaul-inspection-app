@@ -3,7 +3,8 @@ import { FindingStatusEnum, SeverityEnum } from "generated/prisma";
 
 export const createFindingRequest = z.object({
   tankId: z.string().min(1),
-  tankProcessId: z.string().min(1),
+  projectId: z.string().optional(),
+  tankProcessId: z.string().optional(),
   criteriaId: z.string().optional(),
   title: z.string().min(2).max(300),
   description: z.string().optional(),
@@ -38,6 +39,7 @@ export type BulkCloseFindingsRequest = z.infer<typeof bulkCloseFindingsRequest>;
 
 export const listFindingsQuery = z.object({
   tankId: z.string().optional(),
+  projectId: z.string().optional(),
   tankProcessId: z.string().optional(),
   status: z.nativeEnum(FindingStatusEnum).optional(),
   severity: z.nativeEnum(SeverityEnum).optional(),

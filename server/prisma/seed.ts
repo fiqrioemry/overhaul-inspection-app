@@ -14,6 +14,9 @@ import {
   ChecklistStatusEnum,
   TankLocationEnum,
   TankServiceEnum,
+  TankAssetStatusEnum,
+  TankProjectTypeEnum,
+  TankProjectStatusEnum,
 } from "../generated/prisma";
 import { hashPassword } from "../src/utils/hash";
 
@@ -448,13 +451,14 @@ async function main() {
     console.log(`  ✅ ${processCode} depends on: [${requiredCodes.join(", ")}]`);
   }
 
-  // ── Batch 3: Tank TK-170 ─────────────────────────────────────────────────────
-  console.log("\n🛢️  Seeding tank TK-170...");
+  // ── Batch 3: Tank assets + projects ──────────────────────────────────────────
+  console.log("\n🛢️  Seeding tank assets and projects...");
 
   const inspectorUser = await prisma.user.findFirst({ where: { role: RoleEnum.INSPECTOR, deletedAt: null } });
   const contractorCo = await prisma.company.findFirst({ where: { name: "PT Jasa Karya Teknik", deletedAt: null } });
   const inspectionCo = await prisma.company.findFirst({ where: { name: "PT Biro Klasifikasi Indonesia", deletedAt: null } });
 
+  // Tank = physical asset only. Overhaul scheduling/companies live on the project.
   const tanksToSeed = [
     {
       tankNo: "TK-170",
@@ -466,8 +470,7 @@ async function main() {
       heightMm: 12778,
       shellCourseCount: 6,
       hasSteamCoil: true,
-      startDate: new Date("2026-06-01"),
-      estimatedFinishDate: new Date("2026-09-30"),
+      assetStatus: TankAssetStatusEnum.UNDER_OVERHAUL,
     },
     {
       tankNo: "TK-101",
@@ -479,26 +482,29 @@ async function main() {
       heightMm: 11000,
       shellCourseCount: 5,
       hasSteamCoil: false,
-      startDate: new Date("2026-07-01"),
-      estimatedFinishDate: new Date("2026-10-31"),
+      assetStatus: TankAssetStatusEnum.UNDER_OVERHAUL,
+    },
+    // A10: existing operational tank — only routine monitoring, NO project / workflow.
+    {
+      tankNo: "A10",
+      tankName: "Tangki Timbun A10",
+      location: TankLocationEnum.PLADJU,
+      capacityM3: 8000,
+      service: TankServiceEnum.PERTALITE,
+      diameterMm: 28000,
+      heightMm: 12000,
+      shellCourseCount: 5,
+      hasSteamCoil: false,
+      assetStatus: TankAssetStatusEnum.OPERATIONAL,
     },
   ];
-
-  let tank = await prisma.tank.findFirst({ where: { tankNo: "TK-170", deletedAt: null } });
 
   for (const tankData of tanksToSeed) {
     // tankNo is globally unique, so match regardless of soft-delete to keep seed idempotent
     const existingTank = await prisma.tank.findFirst({ where: { tankNo: tankData.tankNo } });
     if (!existingTank) {
-      await prisma.tank.create({
-        data: {
-          ...tankData,
-          contractorCompanyId: contractorCo?.id,
-          inspectionCompanyId: inspectionCo?.id,
-          createdBy: inspectorUser?.id,
-        },
-      });
-      console.log(`  ✅ Tank created: ${tankData.tankNo}`);
+      await prisma.tank.create({ data: { ...tankData, createdBy: inspectorUser?.id } });
+      console.log(`  ✅ Tank created: ${tankData.tankNo} (${tankData.assetStatus})`);
     } else {
       await prisma.tank.update({
         where: { id: existingTank.id },
@@ -506,17 +512,18 @@ async function main() {
           location: tankData.location,
           capacityM3: tankData.capacityM3,
           service: tankData.service,
+          assetStatus: tankData.assetStatus,
           deletedAt: null,
         },
       });
-      console.log(`  ℹ️  Tank updated: ${tankData.tankNo} (location, capacity, service)`);
+      console.log(`  ℹ️  Tank updated: ${tankData.tankNo}`);
     }
   }
 
-  tank = await prisma.tank.findFirst({ where: { tankNo: "TK-170", deletedAt: null } });
+  const tank = await prisma.tank.findFirst({ where: { tankNo: "TK-170", deletedAt: null } });
   if (!tank) throw new Error("TK-170 not found after seeding");
 
-  // Shell courses
+  // Shell courses (asset spec)
   const shellCourses = [
     { courseNo: 1, thicknessMm: 24, plateDimension: "2000x8000 mm" },
     { courseNo: 2, thicknessMm: 21, plateDimension: "2000x8000 mm" },
@@ -536,20 +543,27 @@ async function main() {
   }
   console.log(`  ✅ Shell courses: ${shellCourses.length} courses seeded`);
 
-  // Generate TankProcess records from active templates
+  // ── Overhaul projects (each carries its own workflow) ────────────────────────
+  const projectsToSeed = [
+    {
+      tankNo: "TK-170",
+      projectNo: "OVH-TK-170-2026",
+      startDate: new Date("2026-06-01"),
+      estimatedFinishDate: new Date("2026-09-30"),
+    },
+    {
+      tankNo: "TK-101",
+      projectNo: "OVH-TK-101-2026",
+      startDate: new Date("2026-07-01"),
+      estimatedFinishDate: new Date("2026-10-31"),
+    },
+  ];
+
   const activeTemplates = await prisma.processTemplate.findMany({
     where: { isActive: true, deletedAt: null },
     orderBy: { sequenceOrder: "asc" },
     include: { processCriteria: true },
   });
-
-  const applicableTemplates = activeTemplates.filter((t) => {
-    if (!t.applicabilityRule) return true;
-    if (t.applicabilityRule === "STEAM_COIL") return tank!.hasSteamCoil;
-    return true;
-  });
-
-  console.log(`  ℹ️  Applicable process templates: ${applicableTemplates.length}`);
 
   const requiredDepIds = new Set(
     (await prisma.processDependency.findMany({ where: { isRequired: true }, select: { processTemplateId: true } })).map(
@@ -557,16 +571,43 @@ async function main() {
     ),
   );
 
-  for (const template of applicableTemplates) {
-    const existing = await prisma.tankProcess.findUnique({
-      where: { tankId_processTemplateId: { tankId: tank.id, processTemplateId: template.id } },
+  for (const proj of projectsToSeed) {
+    const projectTank = await prisma.tank.findFirst({ where: { tankNo: proj.tankNo, deletedAt: null } });
+    if (!projectTank) continue;
+
+    let project = await prisma.tankProject.findFirst({ where: { projectNo: proj.projectNo } });
+    if (!project) {
+      project = await prisma.tankProject.create({
+        data: {
+          tankId: projectTank.id,
+          projectNo: proj.projectNo,
+          type: TankProjectTypeEnum.OVERHAUL,
+          status: TankProjectStatusEnum.IN_PROGRESS,
+          contractorCompanyId: contractorCo?.id,
+          inspectionCompanyId: inspectionCo?.id,
+          startDate: proj.startDate,
+          estimatedFinishDate: proj.estimatedFinishDate,
+          createdBy: inspectorUser?.id,
+        },
+      });
+      console.log(`  ✅ Project created: ${proj.projectNo}`);
+    }
+
+    const applicableTemplates = activeTemplates.filter((t) => {
+      if (!t.applicabilityRule) return true;
+      if (t.applicabilityRule === "STEAM_COIL") return projectTank.hasSteamCoil;
+      return true;
     });
 
-    let tankProcess = existing;
-    if (!existing) {
-      tankProcess = await prisma.tankProcess.create({
+    for (const template of applicableTemplates) {
+      const existing = await prisma.tankProcess.findUnique({
+        where: { projectId_processTemplateId: { projectId: project.id, processTemplateId: template.id } },
+      });
+      if (existing) continue;
+
+      const tankProcess = await prisma.tankProcess.create({
         data: {
-          tankId: tank.id,
+          projectId: project.id,
           processTemplateId: template.id,
           name: template.name,
           type: template.type,
@@ -575,11 +616,10 @@ async function main() {
         },
       });
 
-      // Generate checklist results
       if (template.processCriteria.length > 0) {
         await prisma.checklistResult.createMany({
           data: template.processCriteria.map((pc) => ({
-            tankProcessId: tankProcess!.id,
+            tankProcessId: tankProcess.id,
             criteriaId: pc.criteriaId,
             status: ChecklistStatusEnum.NOT_CHECKED,
           })),
@@ -587,9 +627,8 @@ async function main() {
         });
       }
     }
+    console.log(`  ✅ Workflow generated for ${proj.projectNo}`);
   }
-
-  console.log(`  ✅ Tank processes and checklists generated for TK-170`);
 
   console.log("\n✨ Seeding complete.");
   console.log(`\n📌 Default password for all users: ${DEFAULT_PASSWORD}`);

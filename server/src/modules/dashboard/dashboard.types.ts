@@ -1,5 +1,6 @@
 export interface DashboardSummary {
-  tanks: { total: number; active: number; inProgress: number };
+  tanks: { total: number; operational: number; underOverhaul: number };
+  projects: { total: number; active: number; completed: number; overdue: number };
   processes: { total: number; completed: number };
   findings: { open: number; critical: number };
   inspectionRequests: { pending: number };
@@ -13,14 +14,16 @@ export interface TankProgressProcess {
   status: string;
 }
 
+// One progress row = one TankProject (engagement), not a tank.
 export interface TankProgressItem {
   id: string;
-  tankNo: string;
-  tankName: string | null;
+  projectNo: string;
+  type: string;
   status: string;
   startDate: Date | null;
   estimatedFinishDate: Date | null;
   createdAt: Date;
+  tank: { id: string; tankNo: string; tankName: string | null } | null;
   contractorCompany: { id: string; name: string } | null;
   inspectionCompany: { id: string; name: string } | null;
   processes: TankProgressProcess[];
@@ -49,7 +52,7 @@ export interface FindingSummary {
     severity: string;
     createdAt: Date;
     tank: { id: string; tankNo: string };
-    tankProcess: { id: string; name: string };
+    tankProcess: { id: string; name: string } | null;
   }[];
 }
 
@@ -66,7 +69,7 @@ export interface TestSummary {
       result: string;
       createdAt: Date;
       inspectionRequest: { id: string; requestNo: string; testType: string } | null;
-      tankProcess: { id: string; name: string; tank: { id: string; tankNo: string } } | null;
+      tankProcess: { id: string; name: string; project: { id: string; tank: { id: string; tankNo: string } } } | null;
       createdByUser: { id: string; name: string } | null;
     }[];
   };

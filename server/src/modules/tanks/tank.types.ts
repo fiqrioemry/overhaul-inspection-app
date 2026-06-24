@@ -7,11 +7,18 @@ export interface PaginationMeta {
   hasPreviousPage: boolean;
 }
 
+export interface TankActiveProjectRef {
+  id: string;
+  projectNo: string;
+  type: string;
+  status: string;
+}
+
 export interface TankListItem {
   id: string;
   tankNo: string;
   tankName: string | null;
-  status: string;
+  assetStatus: string;
   location: string | null;
   capacityM3: number | null;
   service: string | null;
@@ -19,13 +26,10 @@ export interface TankListItem {
   heightMm: number | null;
   shellCourseCount: number | null;
   hasSteamCoil: boolean;
-  startDate: Date | null;
-  estimatedFinishDate: Date | null;
   createdAt: Date;
   updatedAt: Date;
-  contractorCompany: { id: string; name: string } | null;
-  inspectionCompany: { id: string; name: string } | null;
-  _count: { processes: number; findings: number };
+  activeProject: TankActiveProjectRef | null;
+  _count: { projects: number; findings: number };
 }
 
 export interface TankShellCourse {
@@ -49,7 +53,7 @@ export interface TankDetail {
   id: string;
   tankNo: string;
   tankName: string | null;
-  status: string;
+  assetStatus: string;
   location: string | null;
   capacityM3: number | null;
   service: string | null;
@@ -58,16 +62,12 @@ export interface TankDetail {
   shellCourseCount: number | null;
   bottomPlateDimension: string | null;
   hasSteamCoil: boolean;
-  startDate: Date | null;
-  estimatedFinishDate: Date | null;
   createdAt: Date;
   updatedAt: Date;
-  contractorCompany: { id: string; name: string; type: string } | null;
-  inspectionCompany: { id: string; name: string; type: string } | null;
   createdByUser: { id: string; name: string } | null;
   shellCourses: TankShellCourse[];
   attachments: TankAttachment[];
-  _count: { processes: number; findings: number };
+  _count: { projects: number; findings: number; dailyReports: number };
 }
 
 export interface TankProcessSummaryItem {

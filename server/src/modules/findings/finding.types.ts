@@ -2,7 +2,8 @@ export interface FindingListItem {
   id: string;
   findingNo: string;
   tankId: string;
-  tankProcessId: string;
+  projectId: string | null;
+  tankProcessId: string | null;
   criteriaId: string | null;
   title: string;
   description: string | null;
@@ -13,7 +14,8 @@ export interface FindingListItem {
   createdAt: Date;
   updatedAt: Date;
   tank: { id: string; tankNo: string };
-  tankProcess: { id: string; name: string };
+  project: { id: string; projectNo: string; type: string; status: string } | null;
+  tankProcess: { id: string; name: string } | null;
   criteria: { id: string; code: string; name: string } | null;
   createdByUser: { id: string; name: string } | null;
 }

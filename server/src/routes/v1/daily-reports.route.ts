@@ -9,6 +9,7 @@ const dailyReports = new Hono();
 dailyReports.post("/ai/generate", protect, requirePermission(PERMISSIONS.DAILY_REPORT_CREATE), ctrl.generateAI);
 dailyReports.get("/options/tanks", protect, requirePermission(PERMISSIONS.DAILY_REPORT_CREATE), ctrl.listTankOptions);
 dailyReports.get("/options/tank-processes", protect, requirePermission(PERMISSIONS.DAILY_REPORT_CREATE), ctrl.listTankProcessOptions);
+dailyReports.get("/options/projects", protect, requirePermission(PERMISSIONS.DAILY_REPORT_CREATE), ctrl.listProjectOptions);
 dailyReports.post("/", protect, requirePermission(PERMISSIONS.DAILY_REPORT_CREATE), ctrl.createReport);
 dailyReports.get("/", protect, requirePermission(PERMISSIONS.DAILY_REPORT_READ), ctrl.listReports);
 dailyReports.get("/:id", protect, requirePermission(PERMISSIONS.DAILY_REPORT_READ), ctrl.getReportById);

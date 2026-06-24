@@ -19,27 +19,51 @@ const ALLOWED_STATUS_TRANSITIONS: Partial<Record<FindingStatusEnum, FindingStatu
 
 export class FindingService {
   static async createFinding(data: CreateFindingRequest, userId: string) {
-    console.log("Creating finding with data:", userId);
     const tank = await pgsql.tank.findFirst({ where: { id: data.tankId, deletedAt: null } });
     if (!tank) {
       throw new HTTPException(404, { message: "Tank not found", cause: "TANK_NOT_FOUND" });
     }
 
-    const tankProcess = await pgsql.tankProcess.findUnique({ where: { id: data.tankProcessId } });
-    if (!tankProcess) {
-      throw new HTTPException(404, { message: "Tank process not found", cause: "PROCESS_NOT_FOUND" });
-    }
+    // Three shapes are valid:
+    //  - routine asset finding: tankId only (no project/process)
+    //  - project finding: tankId + projectId
+    //  - process finding: tankProcessId (project + tank derived from it)
+    let projectId = data.projectId ?? null;
+    const tankProcessId = data.tankProcessId ?? null;
 
-    const blockedStatuses: ProcessStatusEnum[] = [
-      ProcessStatusEnum.NOT_STARTED,
-      ProcessStatusEnum.COMPLETED,
-      ProcessStatusEnum.REVIEWED,
-    ];
-    if (blockedStatuses.includes(tankProcess.status as ProcessStatusEnum)) {
-      throw new HTTPException(422, {
-        message: `Cannot add findings when process is ${tankProcess.status}`,
-        cause: "INVALID_PROCESS_STATUS_FOR_FINDING",
+    if (tankProcessId) {
+      const tankProcess = await pgsql.tankProcess.findUnique({
+        where: { id: tankProcessId },
+        include: { project: { select: { id: true, tankId: true } } },
       });
+      if (!tankProcess) {
+        throw new HTTPException(404, { message: "Tank process not found", cause: "PROCESS_NOT_FOUND" });
+      }
+      if (projectId && projectId !== tankProcess.projectId) {
+        throw new HTTPException(422, { message: "Tank process does not belong to the provided project", cause: "PROCESS_PROJECT_MISMATCH" });
+      }
+      if (tankProcess.project.tankId !== data.tankId) {
+        throw new HTTPException(422, { message: "Tank process does not belong to the provided tank", cause: "PROCESS_TANK_MISMATCH" });
+      }
+      projectId = tankProcess.projectId;
+
+      const blockedStatuses: ProcessStatusEnum[] = [
+        ProcessStatusEnum.NOT_STARTED,
+        ProcessStatusEnum.COMPLETED,
+        ProcessStatusEnum.REVIEWED,
+      ];
+      if (blockedStatuses.includes(tankProcess.status as ProcessStatusEnum)) {
+        throw new HTTPException(422, {
+          message: `Cannot add findings when process is ${tankProcess.status}`,
+          cause: "INVALID_PROCESS_STATUS_FOR_FINDING",
+        });
+      }
+    } else if (projectId) {
+      const project = await pgsql.tankProject.findFirst({ where: { id: projectId, deletedAt: null }, select: { tankId: true } });
+      if (!project) throw new HTTPException(404, { message: "Tank project not found", cause: "PROJECT_NOT_FOUND" });
+      if (project.tankId !== data.tankId) {
+        throw new HTTPException(422, { message: "Project does not belong to the provided tank", cause: "PROJECT_TANK_MISMATCH" });
+      }
     }
 
     const count = await FindingRepository.countByTankNo(tank.tankNo);
@@ -49,7 +73,8 @@ export class FindingService {
       const created = await tx.finding.create({
         data: {
           tankId: data.tankId,
-          tankProcessId: data.tankProcessId,
+          projectId,
+          tankProcessId,
           criteriaId: data.criteriaId,
           findingNo,
           title: data.title,
@@ -99,6 +124,7 @@ export class FindingService {
       id: f.id,
       findingNo: f.findingNo,
       tankId: f.tankId,
+      projectId: f.projectId,
       tankProcessId: f.tankProcessId,
       criteriaId: f.criteriaId,
       title: f.title,
@@ -110,6 +136,7 @@ export class FindingService {
       createdAt: f.createdAt,
       updatedAt: f.updatedAt,
       tank: f.tank,
+      project: f.project,
       tankProcess: f.tankProcess,
       criteria: f.criteria,
       createdByUser: f.createdByUser,

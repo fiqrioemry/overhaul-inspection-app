@@ -15,6 +15,14 @@ const tankSelect = {
   tankNo: true,
   tankName: true,
   location: true,
+} as const;
+
+// Contractor / inspection companies are project-level now; expose them via the linked project.
+const projectSelect = {
+  id: true,
+  projectNo: true,
+  type: true,
+  status: true,
   inspectionCompany: { select: { id: true, name: true, logoFile: { select: { url: true } } } },
   contractorCompany: { select: { id: true, name: true, logoFile: { select: { url: true } } } },
 } as const;
@@ -25,6 +33,7 @@ export class DailyReportRepository {
       where: { id, deletedAt: null },
       include: {
         tank: { select: tankSelect },
+        project: { select: projectSelect },
         tankProcess: { select: { id: true, name: true, type: true } },
         inspector: { select: { id: true, name: true } },
         attachments: {
@@ -38,6 +47,7 @@ export class DailyReportRepository {
 
   static async findMany(query: {
     tankId?: string;
+    projectId?: string;
     tankProcessId?: string;
     reportDate?: string;
     startDate?: string;
@@ -46,11 +56,12 @@ export class DailyReportRepository {
     page: number;
     limit: number;
   }) {
-    const { tankId, tankProcessId, reportDate, startDate, endDate, activityType, page, limit } = query;
+    const { tankId, projectId, tankProcessId, reportDate, startDate, endDate, activityType, page, limit } = query;
     const skip = (page - 1) * limit;
     const where: Prisma.DailyReportWhereInput = {
       deletedAt: null,
       ...(tankId && { tankId }),
+      ...(projectId && { projectId }),
       ...(tankProcessId && { tankProcessId }),
       ...(activityType && { activityType }),
       ...(reportDate && { reportDate: new Date(reportDate) }),
@@ -69,6 +80,7 @@ export class DailyReportRepository {
         orderBy: [{ reportDate: "desc" }, { createdAt: "desc" }],
         include: {
           tank: { select: tankSelect },
+          project: { select: projectSelect },
           tankProcess: { select: { id: true, name: true } },
           inspector: { select: { id: true, name: true } },
           attachments: {
@@ -88,6 +100,7 @@ export class DailyReportRepository {
       where: { tankId, reportDate: new Date(date), deletedAt: null },
       include: {
         tank: { select: tankSelect },
+        project: { select: projectSelect },
         tankProcess: { select: { id: true, name: true, type: true } },
         inspector: { select: { id: true, name: true } },
         attachments: {
@@ -118,9 +131,17 @@ export class DailyReportRepository {
 
   static async findTankProcessOptions(tankId: string) {
     return pgsql.tankProcess.findMany({
-      where: { tankId },
-      select: { id: true, name: true, type: true, status: true },
-      orderBy: { sequenceOrder: "asc" },
+      where: { project: { tankId, deletedAt: null } },
+      select: { id: true, name: true, type: true, status: true, projectId: true },
+      orderBy: [{ project: { createdAt: "desc" } }, { sequenceOrder: "asc" }],
+    });
+  }
+
+  static async findProjectOptions(tankId: string) {
+    return pgsql.tankProject.findMany({
+      where: { tankId, deletedAt: null },
+      select: { id: true, projectNo: true, type: true, status: true },
+      orderBy: { createdAt: "desc" },
     });
   }
 }
