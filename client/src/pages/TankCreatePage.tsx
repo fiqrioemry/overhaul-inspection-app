@@ -3,15 +3,12 @@ import { useNavigate } from "react-router-dom";
 import PageHeader from "@/components/common/PageHeader";
 import TankForm from "@/features/tanks/components/TankForm";
 import { useCreateTank } from "@/features/tanks/tanks.query";
-import { useCompanyOptions } from "@/features/companies/companies.query";
 import { ROUTES } from "@/constants/route.constant";
 import type { CreateTankFormValues } from "@/schemas/tanks.schema";
 
 export default function TankCreatePage() {
   const navigate = useNavigate();
   const createMutation = useCreateTank();
-  const { data: contractors = [] } = useCompanyOptions("CONTRACTOR");
-  const { data: inspectionCompanies = [] } = useCompanyOptions("INSPECTOR_COMPANY");
 
   function handleSubmit(values: CreateTankFormValues, files: File[]) {
     const payload = {
@@ -19,10 +16,6 @@ export default function TankCreatePage() {
       diameterMm: values.diameterMm ? Number(values.diameterMm) : undefined,
       heightMm: values.heightMm ? Number(values.heightMm) : undefined,
       capacityM3: values.capacityM3 ? Number(values.capacityM3) : undefined,
-      contractorCompanyId: values.contractorCompanyId && values.contractorCompanyId !== "NONE" ? values.contractorCompanyId : undefined,
-      inspectionCompanyId: values.inspectionCompanyId && values.inspectionCompanyId !== "NONE" ? values.inspectionCompanyId : undefined,
-      startDate: values.startDate || undefined,
-      estimatedFinishDate: values.estimatedFinishDate || undefined,
       files: files.length > 0 ? files : undefined,
     };
     createMutation.mutate(payload, {
@@ -32,8 +25,8 @@ export default function TankCreatePage() {
 
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
-      <PageHeader title="Create Tank" description="Register a new tank for inspection workflow" />
-      <TankForm mode="create" onSubmit={handleSubmit} isPending={createMutation.isPending} contractors={contractors} inspectionCompanies={inspectionCompanies} />
+      <PageHeader title="Create Tank" description="Register a physical tank asset. Overhaul projects are created separately." />
+      <TankForm mode="create" onSubmit={handleSubmit} isPending={createMutation.isPending} />
     </div>
   );
 }

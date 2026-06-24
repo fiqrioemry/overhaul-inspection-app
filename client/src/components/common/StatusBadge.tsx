@@ -18,6 +18,11 @@ const statusConfig: Record<string, { label: string; className: string }> = {
   REVIEWED: { label: "Reviewed", className: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" },
   RETURNED: { label: "Returned", className: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400" },
   CANCELLED: { label: "Cancelled", className: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" },
+  // Tank asset lifecycle
+  OPERATIONAL: { label: "Operational", className: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" },
+  UNDER_OVERHAUL: { label: "Under Overhaul", className: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" },
+  OUT_OF_SERVICE: { label: "Idle", className: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300" },
+  DECOMMISSIONED: { label: "Decommissioned", className: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" },
 };
 
 export default function StatusBadge({ status }: StatusBadgeProps) {

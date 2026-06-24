@@ -32,6 +32,15 @@ export type TankService =
   | "SOLAR" | "DEXLITE" | "PERTAMINA_DEX" | "KEROSENE" | "CRUDE_OIL"
   | "FUEL_OIL" | "LUBRICATING_OIL" | "LPG" | "CONDENSATE" | "SLOP_OIL" | "OTHER";
 
+export type TankAssetStatus = "OPERATIONAL" | "UNDER_OVERHAUL" | "OUT_OF_SERVICE" | "DECOMMISSIONED";
+
+export interface TankActiveProject {
+  id: string;
+  projectNo: string;
+  type: string;
+  status: string;
+}
+
 export interface TankSummary {
   id: string;
   tankNo: string;
@@ -43,18 +52,17 @@ export interface TankSummary {
   heightMm: number | null;
   shellCourseCount: number;
   hasSteamCoil: boolean;
-  startDate: string | null;
-  estimatedFinishDate: string | null;
-  status: string;
+  assetStatus: TankAssetStatus;
   createdAt: string;
-  contractorCompany: TankCompany | null;
-  inspectionCompany: TankCompany | null;
-  _count: { tankProcesses: number };
+  activeProject: TankActiveProject | null;
+  _count: { projects: number; findings: number };
 }
 
 export interface TankDetail extends TankSummary {
+  bottomPlateDimension: string | null;
   shellCourses: ShellCourse[];
   attachments: TankAttachment[];
+  _count: { projects: number; findings: number; dailyReports: number };
 }
 
 export interface TankExtractResult {
@@ -68,8 +76,6 @@ export interface TankExtractResult {
   shellCourseCount: number | null;
   bottomPlateDimension: string | null;
   hasSteamCoil: boolean | null;
-  startDate: string | null;
-  estimatedFinishDate: string | null;
   shellCourses: Array<{ courseNo: number; thicknessMm?: number; plateDimension?: string; remarks?: string }>;
   relevanceWarning: boolean;
 }
@@ -78,7 +84,7 @@ export interface ListTanksParams {
   page?: number;
   limit?: number;
   search?: string;
-  status?: string;
+  assetStatus?: string;
 }
 
 export interface ShellCourseInput {
@@ -98,10 +104,7 @@ export interface CreateTankPayload {
   heightMm?: number;
   shellCourseCount: number;
   hasSteamCoil?: boolean;
-  contractorCompanyId?: string;
-  inspectionCompanyId?: string;
-  startDate?: string;
-  estimatedFinishDate?: string;
+  assetStatus?: TankAssetStatus;
   shellCourses?: ShellCourseInput[];
   files?: File[];
   newFileCaptions?: string[];
@@ -115,10 +118,7 @@ export interface UpdateTankPayload {
   service?: TankService;
   diameterMm?: number;
   heightMm?: number;
-  contractorCompanyId?: string;
-  inspectionCompanyId?: string;
-  startDate?: string;
-  estimatedFinishDate?: string;
+  assetStatus?: TankAssetStatus;
 }
 
 export async function listTanks(params: ListTanksParams): Promise<PaginatedResponse<TankSummary>> {
@@ -146,10 +146,7 @@ export async function createTank(data: CreateTankPayload): Promise<TankDetail> {
     if (rest.heightMm !== undefined) formData.append("heightMm", String(rest.heightMm));
     formData.append("shellCourseCount", String(rest.shellCourseCount));
     if (rest.hasSteamCoil !== undefined) formData.append("hasSteamCoil", String(rest.hasSteamCoil));
-    if (rest.contractorCompanyId) formData.append("contractorCompanyId", rest.contractorCompanyId);
-    if (rest.inspectionCompanyId) formData.append("inspectionCompanyId", rest.inspectionCompanyId);
-    if (rest.startDate) formData.append("startDate", rest.startDate);
-    if (rest.estimatedFinishDate) formData.append("estimatedFinishDate", rest.estimatedFinishDate);
+    if (rest.assetStatus) formData.append("assetStatus", rest.assetStatus);
     if (rest.shellCourses && rest.shellCourses.length > 0) {
       formData.append("shellCourses", JSON.stringify(rest.shellCourses));
     }

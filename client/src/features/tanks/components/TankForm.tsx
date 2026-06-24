@@ -7,22 +7,24 @@ import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import ShortTextField from "@/components/fields/ShortTextField";
-import DateField from "@/components/fields/DateField";
 import SelectField from "@/components/fields/SelectField";
 import SwitchField from "@/components/fields/SwitchField";
 import { Field, FieldLabel } from "@/components/ui/field";
-import { createTankSchema, updateTankSchema, TANK_LOCATION_OPTIONS, TANK_SERVICE_OPTIONS } from "@/schemas/tanks.schema";
+import {
+  createTankSchema,
+  updateTankSchema,
+  TANK_LOCATION_OPTIONS,
+  TANK_SERVICE_OPTIONS,
+  TANK_ASSET_STATUS_OPTIONS,
+} from "@/schemas/tanks.schema";
 import type { CreateTankFormValues, UpdateTankFormValues } from "@/schemas/tanks.schema";
 import TankDocumentSection from "./TankDocumentSection";
 import type { TankDetail, TankExtractResult } from "../tanks.api";
-import type { CompanyOption } from "@/features/companies/companies.api";
 
 interface TankFormCreateProps {
   mode: "create";
   onSubmit: (values: CreateTankFormValues, files: File[]) => void;
   isPending: boolean;
-  contractors: CompanyOption[];
-  inspectionCompanies: CompanyOption[];
 }
 
 interface TankFormEditProps {
@@ -30,8 +32,6 @@ interface TankFormEditProps {
   tank: TankDetail;
   onSubmit: (values: UpdateTankFormValues) => void;
   isPending: boolean;
-  contractors: CompanyOption[];
-  inspectionCompanies: CompanyOption[];
 }
 
 type TankFormProps = TankFormCreateProps | TankFormEditProps;
@@ -46,6 +46,7 @@ export default function TankForm(props: TankFormProps) {
       tankName: "",
       shellCourseCount: 1,
       hasSteamCoil: false,
+      assetStatus: "OPERATIONAL",
       shellCourses: [{ courseNo: 1, thicknessMm: 0 }],
     },
   });
@@ -61,10 +62,7 @@ export default function TankForm(props: TankFormProps) {
           service: (props.tank.service ?? undefined) as UpdateTankFormValues["service"],
           diameterMm: props.tank.diameterMm ?? undefined,
           heightMm: props.tank.heightMm ?? undefined,
-          contractorCompanyId: props.tank.contractorCompany?.id ?? "NONE",
-          inspectionCompanyId: props.tank.inspectionCompany?.id ?? "NONE",
-          startDate: props.tank.startDate?.slice(0, 10) ?? "",
-          estimatedFinishDate: props.tank.estimatedFinishDate?.slice(0, 10) ?? "",
+          assetStatus: props.tank.assetStatus,
         }
       : {},
   });
@@ -90,8 +88,6 @@ export default function TankForm(props: TankFormProps) {
     setIf("diameterMm", result.diameterMm);
     setIf("heightMm", result.heightMm);
     if (typeof result.hasSteamCoil === "boolean") setIf("hasSteamCoil", result.hasSteamCoil);
-    setIf("startDate", result.startDate);
-    setIf("estimatedFinishDate", result.estimatedFinishDate);
 
     // Shell courses: prefer explicit rows; otherwise fall back to count.
     if (result.shellCourses && result.shellCourses.length > 0) {
@@ -122,10 +118,6 @@ export default function TankForm(props: TankFormProps) {
     replace(newCourses);
   }, [shellCourseCount]);
 
-  const contractorOptions = [{ label: "None", value: "NONE" }, ...props.contractors.map((c) => ({ label: c.name, value: c.id }))];
-
-  const inspectionOptions = [{ label: "None", value: "NONE" }, ...props.inspectionCompanies.map((c) => ({ label: c.name, value: c.id }))];
-
   if (isEdit) {
     return (
       <form onSubmit={editForm.handleSubmit(props.onSubmit as (v: UpdateTankFormValues) => void)} className="space-y-4">
@@ -142,14 +134,13 @@ export default function TankForm(props: TankFormProps) {
           <ShortTextField control={editForm.control} name="diameterMm" label="Diameter (mm)" type="text" placeholder="e.g. 18000" />
           <ShortTextField control={editForm.control} name="heightMm" label="Height (mm)" type="text" placeholder="e.g. 12000" />
         </div>
-        <div className="grid grid-cols-2 gap-4">
-          <DateField control={editForm.control} name="startDate" label="Start Date" />
-          <DateField control={editForm.control} name="estimatedFinishDate" label="Est. Finish Date" />
-        </div>
-        <div className="grid grid-cols-2 gap-4">
-          <SelectField control={editForm.control} name="contractorCompanyId" label="Contractor" options={contractorOptions} />
-          <SelectField control={editForm.control} name="inspectionCompanyId" label="Inspection Company" options={inspectionOptions} />
-        </div>
+        <SelectField
+          control={editForm.control}
+          name="assetStatus"
+          label="Asset Status"
+          options={[...TANK_ASSET_STATUS_OPTIONS]}
+          placeholder="Select asset status"
+        />
         <Button type="submit" disabled={props.isPending} className="w-full">
           {props.isPending ? "Saving..." : "Save Changes"}
         </Button>
@@ -178,14 +169,14 @@ export default function TankForm(props: TankFormProps) {
         <ShortTextField control={createForm.control} name="shellCourseCount" label="Shell Course Count" type="text" placeholder="e.g. 6" />
         <SwitchField control={createForm.control} name="hasSteamCoil" label="Has Steam Coil" description="Tank has internal steam coil" />
       </div>
-      <div className="grid grid-cols-2 gap-4">
-        <DateField control={createForm.control} name="startDate" label="Start Date" />
-        <DateField control={createForm.control} name="estimatedFinishDate" label="Est. Finish Date" />
-      </div>
-      <div className="grid grid-cols-2 gap-4">
-        <SelectField control={createForm.control} name="contractorCompanyId" label="Contractor" options={contractorOptions} />
-        <SelectField control={createForm.control} name="inspectionCompanyId" label="Inspection Company" options={inspectionOptions} />
-      </div>
+      <SelectField
+        control={createForm.control}
+        name="assetStatus"
+        label="Asset Status"
+        options={[...TANK_ASSET_STATUS_OPTIONS]}
+        placeholder="Select asset status"
+        description="Use Operational for an existing tank. Overhaul scheduling is managed under Tank Projects."
+      />
 
       {fields.length > 0 && (
         <div className="space-y-2">

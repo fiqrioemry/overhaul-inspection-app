@@ -26,6 +26,20 @@ export const TANK_SERVICE_OPTIONS = [
   { label: "Other", value: "OTHER" },
 ] as const;
 
+export const TANK_ASSET_STATUS_OPTIONS = [
+  { label: "Operational", value: "OPERATIONAL" },
+  { label: "Under Overhaul", value: "UNDER_OVERHAUL" },
+  { label: "Idle (Out of Service)", value: "OUT_OF_SERVICE" },
+  { label: "Decommissioned", value: "DECOMMISSIONED" },
+] as const;
+
+export const TANK_ASSET_STATUS_LABEL: Record<string, string> = {
+  OPERATIONAL: "Operational",
+  UNDER_OVERHAUL: "Under Overhaul",
+  OUT_OF_SERVICE: "Idle (Out of Service)",
+  DECOMMISSIONED: "Decommissioned",
+};
+
 export const TANK_LOCATION_LABEL: Record<string, string> = {
   SUNGAI_GERONG: "Sungai Gerong",
   PLADJU: "Pladju",
@@ -58,20 +72,22 @@ const shellCourseSchema = z.object({
   remarks: z.string().optional(),
 });
 
+const ASSET_STATUS_ENUM = z.enum(["OPERATIONAL", "UNDER_OVERHAUL", "OUT_OF_SERVICE", "DECOMMISSIONED"]);
+const SERVICE_ENUM = z.enum(["AVTUR","NAPTHA","PREMIUM","PERTALITE","PERTAMAX","PERTAMAX_TURBO","SOLAR","DEXLITE","PERTAMINA_DEX","KEROSENE","CRUDE_OIL","FUEL_OIL","LUBRICATING_OIL","LPG","CONDENSATE","SLOP_OIL","OTHER"]);
+
+// Tank is a physical asset only. Contractor, inspection company and overhaul
+// schedule are now part of TankProject, not the tank.
 export const createTankSchema = z.object({
   tankNo: z.string().min(1, "Tank number is required"),
   tankName: z.string().optional(),
   location: z.enum(["SUNGAI_GERONG", "PLADJU"]).optional(),
   capacityM3: z.coerce.number().positive().optional().or(z.literal("")),
-  service: z.enum(["AVTUR","NAPTHA","PREMIUM","PERTALITE","PERTAMAX","PERTAMAX_TURBO","SOLAR","DEXLITE","PERTAMINA_DEX","KEROSENE","CRUDE_OIL","FUEL_OIL","LUBRICATING_OIL","LPG","CONDENSATE","SLOP_OIL","OTHER"]).optional(),
+  service: SERVICE_ENUM.optional(),
   diameterMm: z.coerce.number().positive().optional().or(z.literal("")),
   heightMm: z.coerce.number().positive().optional().or(z.literal("")),
   shellCourseCount: z.coerce.number().int().min(1, "At least 1 shell course required"),
   hasSteamCoil: z.boolean().default(false),
-  contractorCompanyId: z.string().optional(),
-  inspectionCompanyId: z.string().optional(),
-  startDate: z.string().optional(),
-  estimatedFinishDate: z.string().optional(),
+  assetStatus: ASSET_STATUS_ENUM.optional(),
   shellCourses: z.array(shellCourseSchema).optional(),
 });
 
@@ -82,13 +98,10 @@ export const updateTankSchema = z.object({
   tankName: z.string().optional(),
   location: z.enum(["SUNGAI_GERONG", "PLADJU"]).optional(),
   capacityM3: z.coerce.number().positive().optional().or(z.literal("")),
-  service: z.enum(["AVTUR","NAPTHA","PREMIUM","PERTALITE","PERTAMAX","PERTAMAX_TURBO","SOLAR","DEXLITE","PERTAMINA_DEX","KEROSENE","CRUDE_OIL","FUEL_OIL","LUBRICATING_OIL","LPG","CONDENSATE","SLOP_OIL","OTHER"]).optional(),
+  service: SERVICE_ENUM.optional(),
   diameterMm: z.coerce.number().positive().optional().or(z.literal("")),
   heightMm: z.coerce.number().positive().optional().or(z.literal("")),
-  contractorCompanyId: z.string().optional(),
-  inspectionCompanyId: z.string().optional(),
-  startDate: z.string().optional(),
-  estimatedFinishDate: z.string().optional(),
+  assetStatus: ASSET_STATUS_ENUM.optional(),
 });
 
 export type UpdateTankFormValues = z.infer<typeof updateTankSchema>;

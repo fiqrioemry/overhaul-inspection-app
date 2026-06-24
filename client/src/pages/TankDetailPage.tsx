@@ -12,7 +12,6 @@ import TankProcessList from "@/features/tanks/components/TankProcessList";
 import { useTank } from "@/features/tanks/tanks.query";
 import { PERMISSIONS } from "@/constants/permission.constant";
 import { ROUTES } from "@/constants/route.constant";
-import { format } from "date-fns";
 import { TANK_LOCATION_LABEL, TANK_SERVICE_LABEL } from "@/schemas/tanks.schema";
 
 function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
@@ -63,7 +62,12 @@ export default function TankDetailPage() {
         <TabsContent value="overview" className="mt-4">
           <div className="rounded-lg border p-4 space-y-3">
             <div className="flex items-center gap-2 mb-2">
-              <StatusBadge status={tank.status} />
+              <StatusBadge status={tank.assetStatus} />
+              {tank.activeProject && (
+                <span className="text-xs text-muted-foreground">
+                  Active project: <span className="font-mono">{tank.activeProject.projectNo}</span>
+                </span>
+              )}
             </div>
             <InfoRow label="Tank No." value={tank.tankNo} />
             <InfoRow label="Tank Name" value={tank.tankName} />
@@ -74,16 +78,7 @@ export default function TankDetailPage() {
             <InfoRow label="Height (mm)" value={tank.heightMm?.toLocaleString()} />
             <InfoRow label="Shell Courses" value={tank.shellCourseCount} />
             <InfoRow label="Steam Coil" value={tank.hasSteamCoil ? "Yes" : "No"} />
-            <InfoRow label="Contractor" value={tank.contractorCompany?.name} />
-            <InfoRow label="Inspection Co." value={tank.inspectionCompany?.name} />
-            <InfoRow
-              label="Start Date"
-              value={tank.startDate ? format(new Date(tank.startDate), "dd MMM yyyy") : null}
-            />
-            <InfoRow
-              label="Est. Finish Date"
-              value={tank.estimatedFinishDate ? format(new Date(tank.estimatedFinishDate), "dd MMM yyyy") : null}
-            />
+            <InfoRow label="Overhaul Projects" value={tank._count.projects} />
           </div>
         </TabsContent>
 

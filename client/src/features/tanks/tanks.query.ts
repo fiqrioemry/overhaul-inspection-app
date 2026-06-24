@@ -32,7 +32,7 @@ export function useCreateTank() {
   return useMutation({
     mutationFn: (data: CreateTankPayload) => createTank(data),
     onSuccess: () => {
-      toast.success("Tank created. Process list has been generated from master template.");
+      toast.success("Tank asset created. Create a tank project to start an overhaul workflow.");
       queryClient.invalidateQueries({ queryKey: TANK_KEYS.all });
     },
     onError: (err: { message: string }) => {
