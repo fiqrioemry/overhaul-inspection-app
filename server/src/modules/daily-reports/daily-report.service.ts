@@ -164,7 +164,14 @@ export class DailyReportService {
       updatedAt: r.updatedAt,
       tank: r.tank,
       project: r.project
-        ? { id: r.project.id, projectNo: r.project.projectNo, type: r.project.type, status: r.project.status }
+        ? {
+            id: r.project.id,
+            projectNo: r.project.projectNo,
+            type: r.project.type,
+            status: r.project.status,
+            inspectionCompany: r.project.inspectionCompany ?? null,
+            contractorCompany: r.project.contractorCompany ?? null,
+          }
         : null,
       tankProcess: r.tankProcess ?? null,
       inspector: r.inspector ?? null,

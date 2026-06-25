@@ -784,6 +784,7 @@ model Finding {
   findingNo      String            @unique @map("finding_no")
   title          String
   description    String?
+  
   locationDetail String?           @map("location_detail")
   status         FindingStatusEnum @default(OPEN)
   severity       SeverityEnum      @default(MAJOR)

@@ -31,7 +31,14 @@ export interface DailyReportListItem {
   createdAt: Date;
   updatedAt: Date;
   tank: { id: string; tankNo: string; tankName: string | null; location: string | null } | null;
-  project: { id: string; projectNo: string; type: string; status: string } | null;
+  project: {
+    id: string;
+    projectNo: string;
+    type: string;
+    status: string;
+    inspectionCompany: { id: string; name: string; logoFile: { url: string } | null } | null;
+    contractorCompany: { id: string; name: string; logoFile: { url: string } | null } | null;
+  } | null;
   tankProcess: { id: string; name: string } | null;
   inspector: { id: string; name: string } | null;
   attachments: DailyReportAttachmentItem[];
