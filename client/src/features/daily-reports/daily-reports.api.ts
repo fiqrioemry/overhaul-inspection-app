@@ -48,7 +48,8 @@ export interface DailyReportAttachment {
 
 export interface DailyReportSummary {
   id: string;
-  tankId: string;
+  tankId: string | null;
+  projectId: string | null;
   tankProcessId: string | null;
   reportDate: string;
   activityType: DailyActivityType;
@@ -64,10 +65,16 @@ export interface DailyReportSummary {
     tankNo: string;
     tankName: string | null;
     location: string | null;
+  } | null;
+  project: {
+    id: string;
+    projectNo: string;
+    type: string;
+    status: string;
     inspectionCompany: { id: string; name: string; logoFile: { url: string } | null } | null;
     contractorCompany: { id: string; name: string; logoFile: { url: string } | null } | null;
   } | null;
-  tankProcess: { id: string; name: string } | null;
+  tankProcess: { id: string; name: string; type?: string } | null;
   inspector: { id: string; name: string } | null;
   attachments: DailyReportAttachment[];
 }

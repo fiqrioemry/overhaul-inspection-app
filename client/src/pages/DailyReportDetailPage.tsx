@@ -38,7 +38,7 @@ export default function DailyReportDetailPage() {
   const activityLabel = ACTIVITY_LABEL[report.activityType] ?? report.activityType.replace(/_/g, " ");
   const locationLabel = report.tank?.location ? (LOCATION_LABEL[report.tank.location] ?? report.tank.location) : null;
 
-  const inspectionCompany = report.tank?.inspectionCompany ?? null;
+  const inspectionCompany = report.project?.inspectionCompany ?? null;
   const inspectionLogoUrl = inspectionCompany?.logoFile?.url ?? null;
 
   const attachments = report.attachments;
@@ -50,10 +50,16 @@ export default function DailyReportDetailPage() {
   return (
     <>
       <style>{`
+        * { font-family: Arial, sans-serif !important; }
         @media print {
+          * { font-family: Arial, sans-serif !important; }
           html, body {
             height: auto !important;
             overflow: visible !important;
+            background: #ffffff !important;
+            color: #000000 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
           }
           #root, #root > div {
             height: auto !important;
@@ -82,7 +88,11 @@ export default function DailyReportDetailPage() {
             min-height: auto !important;
             padding: 15mm 20mm !important;
             margin: 0 !important;
+            background: #ffffff !important;
+            color: #000000 !important;
           }
+          .report-page * { color: #000000 !important; }
+          .report-page table td { color: #000000 !important; }
           .photo-page { break-before: page !important; }
           img { break-inside: avoid; }
         }
@@ -115,16 +125,24 @@ export default function DailyReportDetailPage() {
 
               {/* Center: title */}
               <div className="flex-1 text-center space-y-0.5">
-                <h1 className="text-base font-bold uppercase tracking-wide">Laporan Harian Inspeksi</h1>
-                <p className="text-[11px] text-gray-500">Daily Inspection Report</p>
-                {inspectionCompany && <p className="text-[9px] text-gray-400 uppercase tracking-widest mt-1">{inspectionCompany.name}</p>}
+                <h1 style={{ fontSize: "14px", fontWeight: 700 }} className="uppercase tracking-wide text-gray-900">
+                  Laporan Harian Inspeksi
+                </h1>
+                <p style={{ fontSize: "12px" }} className="text-gray-500">
+                  Daily Inspection Report
+                </p>
+                {inspectionCompany && (
+                  <p style={{ fontSize: "12px" }} className="text-gray-400 uppercase tracking-widest mt-1">
+                    {inspectionCompany.name}
+                  </p>
+                )}
               </div>
             </div>
           </div>
 
-          {/* Metadata table — 10px font */}
+          {/* Metadata table */}
           <div>
-            <table className="w-full border-collapse" style={{ fontSize: "10px" }}>
+            <table className="w-full border-collapse" style={{ fontSize: "12px" }}>
               <tbody>
                 <MetaRow label="Tanggal / Date" value={reportDateFormatted} />
                 <MetaRow label="Nomor Tangki / Tank No." value={report.tank?.tankNo ?? "—"} />
@@ -139,9 +157,9 @@ export default function DailyReportDetailPage() {
           <div className="space-y-3">
             <SectionTitle>Uraian Kegiatan / Activity Description</SectionTitle>
             {report.description ? (
-              <div className="leading-relaxed pt-2 prose prose-sm max-w-none" style={{ fontSize: "10px" }} dangerouslySetInnerHTML={{ __html: report.description }} />
+              <div className="leading-relaxed pt-2 prose prose-sm max-w-none" style={{ fontSize: "12px" }} dangerouslySetInnerHTML={{ __html: report.description }} />
             ) : (
-              <div className="pt-2" style={{ fontSize: "10px" }}>
+              <div className="pt-2" style={{ fontSize: "12px" }}>
                 <span className="text-gray-400 italic">Tidak ada deskripsi.</span>
               </div>
             )}
@@ -151,9 +169,9 @@ export default function DailyReportDetailPage() {
           <div className="space-y-3 flex-1">
             <SectionTitle>Rekomendasi / Recommendation</SectionTitle>
             {report.recommendation ? (
-              <div className="leading-relaxed pt-2 prose prose-sm max-w-none" style={{ fontSize: "10px" }} dangerouslySetInnerHTML={{ __html: report.recommendation }} />
+              <div className="leading-relaxed pt-2 prose prose-sm max-w-none" style={{ fontSize: "12px" }} dangerouslySetInnerHTML={{ __html: report.recommendation }} />
             ) : (
-              <div className="pt-2" style={{ fontSize: "10px" }}>
+              <div className="pt-2" style={{ fontSize: "12px" }}>
                 <span className="text-gray-400 italic">Belum ada rekomendasi.</span>
               </div>
             )}
@@ -168,8 +186,10 @@ export default function DailyReportDetailPage() {
               <div className="flex items-center justify-between gap-4">
                 <CompanyLogo url={inspectionLogoUrl} name={inspectionCompany?.name} size="md" />
                 <div className="flex-1 text-center space-y-0.5">
-                  <h2 className="text-sm font-semibold uppercase tracking-wide">Dokumentasi Foto</h2>
-                  <p className="text-[10px] text-gray-500">
+                  <h2 style={{ fontSize: "12px", fontWeight: 700 }} className="uppercase tracking-wide text-gray-900">
+                    Dokumentasi Foto
+                  </h2>
+                  <p style={{ fontSize: "12px" }} className="text-gray-500">
                     {report.tank?.tankNo ?? "Kegiatan Umum"} &mdash; {reportDateFormatted}
                   </p>
                 </div>
@@ -194,7 +214,7 @@ export default function DailyReportDetailPage() {
             </div>
 
             {/* Footer */}
-            <div className="border-t pt-3 text-center text-[10px] text-gray-400">
+            <div className="border-t pt-3 text-center text-gray-400" style={{ fontSize: "12px" }}>
               <p>Dicetak pada {format(new Date(), "dd MMMM yyyy HH:mm")}</p>
             </div>
           </div>
@@ -212,12 +232,20 @@ function CompanyLogo({ url, name, size = "md" }: { url: string | null; name: str
 function MetaRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <tr className="border-b last:border-b-0">
-      <td className="py-2 pr-4 text-gray-500 font-medium w-56 align-top">{label}</td>
-      <td className="py-2 font-semibold">{value}</td>
+      <td className="py-2 pr-4 text-gray-500 w-56 align-top" style={{ fontSize: "12px", fontWeight: 600 }}>
+        {label}
+      </td>
+      <td className="py-2 text-gray-900" style={{ fontSize: "12px", fontWeight: 600 }}>
+        {value}
+      </td>
     </tr>
   );
 }
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
-  return <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-500 border-b pb-1.5">{children}</h2>;
+  return (
+    <h2 className="uppercase tracking-widest text-gray-600 border-b pb-1.5" style={{ fontSize: "12px", fontWeight: 700 }}>
+      {children}
+    </h2>
+  );
 }

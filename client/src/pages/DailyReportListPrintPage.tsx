@@ -28,11 +28,11 @@ export default function DailyReportListPrintPage() {
   });
 
   const reports = data?.items ?? [];
+  console.log("reports", data);
 
-  const firstTank = reports[0]?.tank;
-  const companyName = firstTank?.inspectionCompany?.name ?? null;
-  const companyLogoUrl = firstTank?.inspectionCompany?.logoFile?.url ?? null;
-  console.log("companyLogoUrl", companyLogoUrl);
+  const firstReport = reports[0];
+  const companyName = firstReport?.project?.inspectionCompany?.name ?? null;
+  const companyLogoUrl = firstReport?.project?.inspectionCompany?.logoFile?.url ?? null;
 
   const periodLabel = (() => {
     if (startDate && endDate) return `${format(new Date(startDate), "dd MMM yyyy")} – ${format(new Date(endDate), "dd MMM yyyy")}`;
