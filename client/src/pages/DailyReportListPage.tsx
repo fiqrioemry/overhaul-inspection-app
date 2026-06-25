@@ -139,6 +139,7 @@ export default function DailyReportListPage() {
                     <th className="px-4 py-3 text-left font-medium">Tank</th>
                     <th className="px-4 py-3 text-left font-medium">Process</th>
                     <th className="px-4 py-3 text-left font-medium">Activity Type</th>
+                    <th className="px-4 py-3 text-left font-medium">Title</th>
                     <th className="px-4 py-3 text-left font-medium">Description</th>
                     <th className="px-4 py-3 text-left font-medium">Inspector</th>
                     <th className="px-4 py-3"></th>
@@ -152,6 +153,9 @@ export default function DailyReportListPage() {
                       <td className="px-4 py-3 text-muted-foreground text-xs">{report.tankProcess?.name ?? "—"}</td>
                       <td className="px-4 py-3">
                         <span className="text-xs bg-muted px-2 py-0.5 rounded">{ACTIVITY_LABEL[report.activityType] ?? report.activityType.replace(/_/g, " ")}</span>
+                      </td>
+                      <td className="px-4 py-3 max-w-xs">
+                        <p className="line-clamp-2 text-xs font-medium">{report.title || "—"}</p>
                       </td>
                       <td className="px-4 py-3 max-w-sm">
                         <p className="line-clamp-2 text-xs">

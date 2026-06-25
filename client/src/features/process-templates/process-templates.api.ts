@@ -34,6 +34,30 @@ export interface ProcessDependency {
   dependsOn: { id: string; code: string; name: string; sequenceOrder: number };
 }
 
+// The server returns the Prisma relation shape (`requiredProcessTemplate` /
+// `requiredProcessTemplateId`). Normalize it to the `dependsOn` shape the UI uses.
+interface RawProcessDependency {
+  id: string;
+  processTemplateId: string;
+  requiredProcessTemplateId: string;
+  requiredStatus: string;
+  isRequired: boolean;
+  applicabilityRule: string | null;
+  requiredProcessTemplate: { id: string; code: string; name: string; sequenceOrder: number };
+}
+
+function mapDependency(raw: RawProcessDependency): ProcessDependency {
+  return {
+    id: raw.id,
+    processTemplateId: raw.processTemplateId,
+    dependsOnId: raw.requiredProcessTemplateId,
+    requiredStatus: raw.requiredStatus,
+    isRequired: raw.isRequired,
+    applicabilityRule: raw.applicabilityRule,
+    dependsOn: raw.requiredProcessTemplate,
+  };
+}
+
 export interface ListProcessTemplatesParams {
   page?: number;
   limit?: number;
@@ -131,13 +155,13 @@ export async function removeTemplateCriteria(id: string): Promise<ResponseOK> {
 }
 
 export async function getTemplateDependencies(processTemplateId: string): Promise<ProcessDependency[]> {
-  const res = await api.get<ResponseSuccess<ProcessDependency[]>>(`/process-templates/${processTemplateId}/dependencies`);
-  return res.data.data!;
+  const res = await api.get<ResponseSuccess<RawProcessDependency[]>>(`/process-templates/${processTemplateId}/dependencies`);
+  return (res.data.data ?? []).map(mapDependency);
 }
 
 export async function addTemplateDependency(processTemplateId: string, data: AddDependencyPayload): Promise<ProcessDependency> {
-  const res = await api.post<ResponseSuccess<ProcessDependency>>(`/process-templates/${processTemplateId}/dependencies`, data);
-  return res.data.data!;
+  const res = await api.post<ResponseSuccess<RawProcessDependency>>(`/process-templates/${processTemplateId}/dependencies`, data);
+  return mapDependency(res.data.data!);
 }
 
 export async function removeTemplateDependency(id: string): Promise<ResponseOK> {

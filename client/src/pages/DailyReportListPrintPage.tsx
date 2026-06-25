@@ -30,8 +30,9 @@ export default function DailyReportListPrintPage() {
   const reports = data?.items ?? [];
 
   const firstReport = reports[0];
-  const companyName = firstReport?.project?.inspectionCompany?.name ?? null;
-  const companyLogoUrl = firstReport?.project?.inspectionCompany?.logoFile?.url ?? null;
+  const inspectionCompany = firstReport?.inspectionCompany ?? firstReport?.project?.inspectionCompany ?? null;
+  const companyName = inspectionCompany?.name ?? null;
+  const companyLogoUrl = inspectionCompany?.logoFile?.url ?? null;
 
   const periodLabel = (() => {
     if (startDate && endDate) return `${format(new Date(startDate), "dd MMM yyyy")} – ${format(new Date(endDate), "dd MMM yyyy")}`;
@@ -172,7 +173,7 @@ export default function DailyReportListPrintPage() {
                         {ACTIVITY_LABEL[report.activityType] ?? report.activityType.replace(/_/g, " ")}
                       </td>
                       <td className="border border-gray-300 px-2 py-2 text-gray-800" style={{ fontSize: "10px" }}>
-                        {report.description ? <div className="rich-text max-w-none" dangerouslySetInnerHTML={{ __html: report.description }} /> : "—"}
+                        {report.title || "—"}
                       </td>
                     </tr>
                   ))}

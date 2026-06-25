@@ -38,7 +38,7 @@ export default function DailyReportDetailPage() {
   const activityLabel = ACTIVITY_LABEL[report.activityType] ?? report.activityType.replace(/_/g, " ");
   const locationLabel = report.tank?.location ? (LOCATION_LABEL[report.tank.location] ?? report.tank.location) : null;
 
-  const inspectionCompany = report.project?.inspectionCompany ?? null;
+  const inspectionCompany = report.inspectionCompany ?? report.project?.inspectionCompany ?? null;
   const inspectionLogoUrl = inspectionCompany?.logoFile?.url ?? null;
 
   const attachments = report.attachments;
@@ -140,14 +140,16 @@ export default function DailyReportDetailPage() {
             </div>
           </div>
 
+          <div className="border-b border-black -mt-7.5"></div>
           {/* Metadata table */}
           <div>
             <table className="w-full border-collapse" style={{ fontSize: "12px" }}>
               <tbody>
+                <MetaRow label="Judul / Title" value={report.title || "—"} />
                 <MetaRow label="Tanggal / Date" value={reportDateFormatted} />
-                <MetaRow label="Nomor Tangki / Tank No." value={report.tank?.tankNo ?? "—"} />
+                {report.tank && <MetaRow label="Tangki / Tank" value={report.tank?.tankNo ?? "—"} />}
                 {locationLabel && <MetaRow label="Lokasi / Location" value={locationLabel} />}
-                <MetaRow label="Proses / Process" value={report.tankProcess?.name ?? "—"} />
+                {report.tankProcess && <MetaRow label="Proses / Process" value={report.tankProcess?.name ?? "—"} />}
                 <MetaRow label="Jenis Kegiatan / Activity Type" value={activityLabel} />
               </tbody>
             </table>
@@ -182,19 +184,20 @@ export default function DailyReportDetailPage() {
         {photoPages.map((pagePhotos, pageIdx) => (
           <div key={pageIdx} className="photo-page report-page bg-white shadow-lg w-full max-w-198.5 min-h-280.75 p-16 flex flex-col gap-6">
             {/* Page header */}
-            <div className="border-b pb-4">
+            <div className="border-b-2 border-black pb-6">
               <div className="flex items-center justify-between gap-4">
                 <CompanyLogo url={inspectionLogoUrl} name={inspectionCompany?.name} size="md" />
                 <div className="flex-1 text-center space-y-0.5">
-                  <h2 style={{ fontSize: "12px", fontWeight: 700 }} className="uppercase tracking-wide text-gray-900">
+                  <h1 style={{ fontSize: "14px", fontWeight: 700 }} className="uppercase tracking-wide text-gray-900">
                     Dokumentasi Foto
-                  </h2>
+                  </h1>
                   <p style={{ fontSize: "12px" }} className="text-gray-500">
-                    {report.tank?.tankNo ?? "Kegiatan Umum"} &mdash; {reportDateFormatted}
+                    Laporan Harian Inspeksi
                   </p>
                 </div>
               </div>
             </div>
+            <div className="border-b border-black -mt-5.5"></div>
 
             {/* 2-column grid, max 6 photos */}
             <div className="grid grid-cols-2 gap-6 flex-1">

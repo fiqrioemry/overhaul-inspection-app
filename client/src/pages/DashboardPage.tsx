@@ -105,19 +105,24 @@ export default function DashboardPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y">
-                    {tanks.map((tank) => {
-                      const activeProcess = tank.processes?.find((p) => p.status === "IN_PROGRESS" || p.status === "ACTIVE");
+                    {tanks.map((row) => {
+                      const activeProcess = row.processes?.find((p) => p.status === "IN_PROGRESS" || p.status === "ACTIVE");
+                      const tankId = row.tank?.id;
                       return (
-                        <tr key={tank.id} className="hover:bg-muted/20 cursor-pointer transition-colors" onClick={() => navigate(ROUTES.TANK_DETAIL.replace(":tankId", tank.id))}>
+                        <tr
+                          key={row.id}
+                          className={`hover:bg-muted/20 transition-colors ${tankId ? "cursor-pointer" : ""}`}
+                          onClick={() => tankId && navigate(ROUTES.TANK_DETAIL.replace(":tankId", tankId))}
+                        >
                           <td className="px-4 py-3">
                             <div>
-                              <span className="font-mono font-semibold text-xs">{tank.tankNo}</span>
-                              {tank.tankName && <p className="text-muted-foreground text-xs leading-none mt-0.5">{tank.tankName}</p>}
-                              {tank.contractorCompany && <p className="text-muted-foreground text-xs leading-none mt-0.5 hidden sm:block">{tank.contractorCompany.name}</p>}
+                              <span className="font-mono font-semibold text-xs">{row.tank?.tankNo ?? "—"}</span>
+                              {row.tank?.tankName && <p className="text-muted-foreground text-xs leading-none mt-0.5">{row.tank.tankName}</p>}
+                              {row.contractorCompany && <p className="text-muted-foreground text-xs leading-none mt-0.5 hidden sm:block">{row.contractorCompany.name}</p>}
                             </div>
                           </td>
                           <td className="px-4 py-3">
-                            <StatusBadge status={tank.status} />
+                            <StatusBadge status={row.status} />
                           </td>
                           <td className="px-4 py-3 hidden md:table-cell">
                             {activeProcess ? (
@@ -130,13 +135,13 @@ export default function DashboardPage() {
                             )}
                           </td>
                           <td className="px-4 py-3">
-                            <ProgressBar value={tank.progress} />
+                            <ProgressBar value={row.progress} />
                           </td>
                           <td className="px-4 py-3 text-right">
-                            {tank._count.findings > 0 ? (
+                            {row._count.findings > 0 ? (
                               <span className="inline-flex items-center gap-1 text-xs font-medium text-red-600">
                                 <AlertTriangle className="h-3 w-3" />
-                                {tank._count.findings}
+                                {row._count.findings}
                               </span>
                             ) : (
                               <span className="text-xs text-muted-foreground">—</span>

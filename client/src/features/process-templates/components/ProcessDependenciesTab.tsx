@@ -126,7 +126,7 @@ export default function ProcessDependenciesTab({ processTemplateId }: ProcessDep
               {dependencies?.map((dep) => (
                 <tr key={dep.id} className="hover:bg-muted/20">
                   <td className="px-4 py-3">
-                    <span className="font-mono text-xs text-muted-foreground mr-2">[{dep.dependsOn.sequenceOrder}]</span>
+                    <span className="font-mono text-xs text-muted-foreground mr-2">[{dep?.dependsOn?.sequenceOrder}]</span>
                     {dep.dependsOn.name}
                   </td>
                   <td className="px-4 py-3">

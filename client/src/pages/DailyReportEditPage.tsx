@@ -12,6 +12,7 @@ import { SortableContext, useSortable, arrayMove, rectSortingStrategy } from "@d
 import { CSS } from "@dnd-kit/utilities";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import SelectField from "@/components/fields/SelectField";
 import DateField from "@/components/fields/DateField";
 import LoadingState from "@/components/common/LoadingState";
@@ -24,6 +25,7 @@ import { format } from "date-fns";
 const schema = z.object({
   reportDate: z.string().min(1, "Report date required"),
   activityType: z.enum(["MONITORING", "INSPECTION"]),
+  title: z.string().trim().min(1, "Judul kegiatan wajib diisi").max(300),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -183,6 +185,7 @@ function DailyReportEditContent({ report, reportId }: { report: DailyReport; rep
     defaultValues: {
       reportDate: format(new Date(report.reportDate), "yyyy-MM-dd"),
       activityType: report.activityType,
+      title: report.title ?? "",
     },
   });
 
@@ -283,6 +286,7 @@ function DailyReportEditContent({ report, reportId }: { report: DailyReport; rep
         data: {
           reportDate: values.reportDate,
           activityType: values.activityType,
+          title: values.title.trim(),
           description,
           recommendation,
           removedAttachmentIds: removedIds,
@@ -329,6 +333,14 @@ function DailyReportEditContent({ report, reportId }: { report: DailyReport; rep
           <div className="grid grid-cols-2 gap-4">
             <DateField control={form.control} name="reportDate" label="Report Date" />
             <SelectField control={form.control} name="activityType" label="Activity Type" options={ACTIVITY_OPTIONS} />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="title" className="text-sm font-medium">
+              Judul Kegiatan / Activity Title <span className="text-destructive">*</span>
+            </Label>
+            <Input id="title" placeholder="cth. Inspeksi visual hasil lasan" maxLength={300} {...form.register("title")} />
+            {form.formState.errors.title && <p className="text-xs text-destructive">{form.formState.errors.title.message}</p>}
           </div>
         </div>
 

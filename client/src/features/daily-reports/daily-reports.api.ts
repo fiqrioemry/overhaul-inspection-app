@@ -27,6 +27,8 @@ export interface TankProcessOption {
 }
 
 export interface AIGenerateResult {
+  /** Short, general but informative activity title (plain text). */
+  title: string;
   description: string;
   recommendation: string | null;
   captions: string[];
@@ -53,6 +55,7 @@ export interface DailyReportSummary {
   tankProcessId: string | null;
   reportDate: string;
   activityType: DailyActivityType;
+  title: string;
   description: string | null;
   recommendation: string | null;
   inspectorId: string | null;
@@ -60,6 +63,9 @@ export interface DailyReportSummary {
   aiSuggestedDescription: string | null;
   createdAt: string;
   updatedAt: string;
+  // Resolved inspector brand: project.inspectionCompany, or the system INSPECTOR_COMPANY
+  // fallback for reports not linked to a project. Always present when one is configured.
+  inspectionCompany: { id: string; name: string; logoFile: { url: string } | null } | null;
   tank: {
     id: string;
     tankNo: string;
@@ -97,6 +103,7 @@ export interface CreateDailyReportPayload {
   tankProcessId?: string;
   reportDate: string;
   activityType: DailyActivityType;
+  title: string;
   description: string;
   recommendation?: string;
   inspectorId?: string;
@@ -108,6 +115,7 @@ export interface CreateDailyReportPayload {
 export interface UpdateDailyReportPayload {
   reportDate?: string;
   activityType?: DailyActivityType;
+  title?: string;
   description?: string;
   recommendation?: string | null;
   inspectorId?: string;
@@ -134,6 +142,7 @@ export async function createDailyReport(payload: CreateDailyReportPayload): Prom
   if (payload.tankProcessId) formData.append("tankProcessId", payload.tankProcessId);
   formData.append("reportDate", payload.reportDate);
   formData.append("activityType", payload.activityType);
+  formData.append("title", payload.title);
   formData.append("description", payload.description);
   if (payload.recommendation) formData.append("recommendation", payload.recommendation);
   if (payload.inspectorId) formData.append("inspectorId", payload.inspectorId);
@@ -150,6 +159,7 @@ export async function updateDailyReport(id: string, payload: UpdateDailyReportPa
   const formData = new FormData();
   if (payload.reportDate) formData.append("reportDate", payload.reportDate);
   if (payload.activityType) formData.append("activityType", payload.activityType);
+  if (payload.title !== undefined) formData.append("title", payload.title);
   if (payload.description !== undefined) formData.append("description", payload.description);
   if (payload.recommendation !== undefined) formData.append("recommendation", payload.recommendation ?? "");
   if (payload.inspectorId) formData.append("inspectorId", payload.inspectorId);

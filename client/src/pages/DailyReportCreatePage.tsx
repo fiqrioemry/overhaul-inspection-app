@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils";
 const schema = z.object({
   reportDate: z.string().min(1, "Report date required"),
   activityType: z.enum(["MONITORING", "INSPECTION"]),
+  title: z.string().trim().min(1, "Judul kegiatan wajib diisi").max(300),
   tankId: z.string().optional(),
   tankProcessId: z.string().optional(),
 });
@@ -66,7 +67,7 @@ export default function DailyReportCreatePage() {
   const [aiStep, setAiStep] = useState(0);
   const [aiWarning, setAiWarning] = useState(false);
   const [aiNotes, setAiNotes] = useState<string[]>([]);
-  const [pendingAi, setPendingAi] = useState<{ description: string; recommendation: string | null } | null>(null);
+  const [pendingAi, setPendingAi] = useState<{ title: string; description: string; recommendation: string | null } | null>(null);
   const stepTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const descRef = useRef<RichTextEditorHandle>(null);
@@ -77,6 +78,7 @@ export default function DailyReportCreatePage() {
     defaultValues: {
       reportDate: format(new Date(), "yyyy-MM-dd"),
       activityType: "MONITORING",
+      title: "",
       tankId: lockedProcessId ? "" : "",
       tankProcessId: "",
     },
@@ -173,11 +175,14 @@ export default function DailyReportCreatePage() {
     });
   }
 
-  function applyAi(result: { description: string; recommendation: string | null }, mode: "replace" | "append") {
+  function applyAi(result: { title: string; description: string; recommendation: string | null }, mode: "replace" | "append") {
     if (mode === "replace") {
+      if (result.title) form.setValue("title", result.title, { shouldValidate: true });
       descRef.current?.setContent(result.description);
       if (result.recommendation) recRef.current?.setContent(result.recommendation);
     } else {
+      // Append keeps any title the user already typed; only fills it when empty.
+      if (result.title && !form.getValues("title").trim()) form.setValue("title", result.title, { shouldValidate: true });
       descRef.current?.appendContent(result.description);
       if (result.recommendation) recRef.current?.appendContent(result.recommendation);
     }
@@ -214,9 +219,9 @@ export default function DailyReportCreatePage() {
       const editorsHaveContent = !(descRef.current?.isEmpty() ?? true) || !(recRef.current?.isEmpty() ?? true);
       if (editorsHaveContent) {
         // Let the user decide whether to replace or append.
-        setPendingAi({ description: result.description, recommendation: result.recommendation });
+        setPendingAi({ title: result.title, description: result.description, recommendation: result.recommendation });
       } else {
-        applyAi({ description: result.description, recommendation: result.recommendation }, "replace");
+        applyAi({ title: result.title, description: result.description, recommendation: result.recommendation }, "replace");
       }
     } catch {
       if (stepTimerRef.current) clearInterval(stepTimerRef.current);
@@ -239,6 +244,7 @@ export default function DailyReportCreatePage() {
         tankProcessId: effectiveProcessId,
         reportDate: values.reportDate,
         activityType: values.activityType,
+        title: values.title.trim(),
         description,
         recommendation,
         files: localFiles.map((lf) => lf.file),
@@ -285,6 +291,15 @@ export default function DailyReportCreatePage() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <DateField control={form.control} name="reportDate" label="Report Date" />
             <SelectField control={form.control} name="activityType" label="Activity Type" options={ACTIVITY_OPTIONS} />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="title" className="text-sm font-medium">
+              Judul Kegiatan / Activity Title <span className="text-destructive">*</span>
+            </Label>
+            <Input id="title" placeholder="cth. Inspeksi visual hasil lasan" maxLength={300} {...form.register("title")} />
+            <p className="text-[11px] text-muted-foreground">Ringkasan umum namun informatif. Otomatis diisi AI bila tersedia.</p>
+            {form.formState.errors.title && <p className="text-xs text-destructive">{form.formState.errors.title.message}</p>}
           </div>
 
           {selectable && (
@@ -422,7 +437,7 @@ export default function DailyReportCreatePage() {
         {/* AI generated indicator */}
         {generateAI.isSuccess && !isGenerating && !pendingAi && !aiWarning && (
           <div className="flex items-center gap-2 rounded-md border border-green-200 bg-green-50 px-3 py-1.5 text-xs text-green-700">
-            <CheckCircle2 className="size-3.5 shrink-0" /> Uraian, rekomendasi, dan caption berhasil dibuat AI. Silakan periksa dan edit sesuai kebutuhan.
+            <CheckCircle2 className="size-3.5 shrink-0" /> Judul, uraian, rekomendasi, dan caption berhasil dibuat AI. Silakan periksa dan edit sesuai kebutuhan.
           </div>
         )}
 

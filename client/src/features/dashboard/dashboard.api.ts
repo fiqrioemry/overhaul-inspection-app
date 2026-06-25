@@ -21,13 +21,20 @@ export interface DashboardSummary {
   };
 }
 
+// A row is an active TankProject; the physical tank is nested under `tank`.
+// `id` is the project id — navigate to tank detail with `tank.id`, not `id`.
 export interface TankProgressRow {
   id: string;
-  tankNo: string;
-  tankName: string | null;
+  projectNo: string;
+  type: string;
   status: string;
+  startDate: string | null;
+  estimatedFinishDate: string | null;
+  createdAt: string;
   progress: number;
+  tank: { id: string; tankNo: string; tankName: string | null } | null;
   contractorCompany: { id: string; name: string } | null;
+  inspectionCompany: { id: string; name: string } | null;
   processes: Array<{
     id: string;
     name: string;
