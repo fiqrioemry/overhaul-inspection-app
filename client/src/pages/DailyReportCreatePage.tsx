@@ -30,7 +30,7 @@ type FormValues = z.infer<typeof schema>;
 
 const NO_TANK_VALUE = "__none__";
 const NO_PROCESS_VALUE = "__none__";
-const MAX_ATTACHMENTS = 15;
+const MAX_ATTACHMENTS = 20;
 const MAX_FILE_SIZE = 8 * 1024 * 1024;
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 

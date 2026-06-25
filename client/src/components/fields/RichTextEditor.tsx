@@ -46,7 +46,7 @@ const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(fun
     extensions: [StarterKit, Placeholder.configure({ placeholder: placeholder ?? "Tulis di sini..." })],
     content: initialContent,
     editorProps: {
-      attributes: { class: "min-h-32 px-3 py-2 text-sm focus:outline-none prose prose-sm dark:prose-invert max-w-none" },
+      attributes: { class: "rich-text min-h-32 px-3 py-2 text-sm focus:outline-none max-w-none" },
     },
     onUpdate: ({ editor }) => onChange?.(editor.getHTML()),
   });

@@ -172,7 +172,7 @@ export default function DailyReportListPrintPage() {
                         {ACTIVITY_LABEL[report.activityType] ?? report.activityType.replace(/_/g, " ")}
                       </td>
                       <td className="border border-gray-300 px-2 py-2 text-gray-800" style={{ fontSize: "10px" }}>
-                        {report.description ? <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: report.description }} /> : "—"}
+                        {report.description ? <div className="rich-text max-w-none" dangerouslySetInnerHTML={{ __html: report.description }} /> : "—"}
                       </td>
                     </tr>
                   ))}
@@ -194,11 +194,6 @@ export default function DailyReportListPrintPage() {
                 <SignatureBox label="Pejabat PIC Pertamina" />
               </div>
             </div>
-
-            {/* Footer */}
-            <div className="border-t border-gray-300 pt-4 text-center text-gray-500" style={{ fontSize: "12px" }}>
-              <p>Dicetak pada {format(new Date(), "dd MMMM yyyy HH:mm")}</p>
-            </div>
           </>
         )}
       </div>
@@ -208,11 +203,7 @@ export default function DailyReportListPrintPage() {
 
 function CompanyLogo({ url, name, size = "md" }: { url: string | null; name: string | undefined; size?: "sm" | "md" }) {
   const dim = size === "sm" ? "h-10 w-10" : "h-14 w-14";
-  return (
-    <div className={`${dim} shrink-0 flex items-center justify-center`}>
-      {url ? <img src={url} alt={name ?? "logo"} className="h-full w-full object-contain" /> : <Building2 className="size-6 text-gray-300" />}
-    </div>
-  );
+  return <div className={`${dim} shrink-0 flex items-center justify-center`}>{url ? <img src={url} alt={name ?? "logo"} className="h-full w-full object-contain" /> : <Building2 className="size-6 text-gray-300" />}</div>;
 }
 
 function SignatureBox({ label }: { label: string }) {

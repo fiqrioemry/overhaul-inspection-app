@@ -186,3 +186,63 @@
     @apply bg-background text-foreground;
   }
 }
+
+/*
+ * Rich-text content styling (TipTap editor body + rendered report HTML).
+ * Tailwind v4 preflight resets list markers/indentation and no typography
+ * plugin is installed, so lists from the editor (<ul>/<ol>) would otherwise
+ * render without bullets or numbers. Re-establish readable defaults here.
+ */
+.rich-text {
+  line-height: 1.6;
+}
+.rich-text p {
+  margin: 0 0 0.5em;
+}
+.rich-text > :last-child {
+  margin-bottom: 0;
+}
+.rich-text ul,
+.rich-text ol {
+  margin: 0.25em 0 0.5em;
+  padding-left: 1.5rem;
+}
+.rich-text ul {
+  list-style: disc;
+}
+.rich-text ol {
+  list-style: decimal;
+}
+.rich-text ul ul {
+  list-style: circle;
+}
+.rich-text li {
+  margin: 0.15em 0;
+}
+.rich-text li::marker {
+  color: inherit;
+}
+.rich-text h1,
+.rich-text h2,
+.rich-text h3 {
+  font-weight: 600;
+  margin: 0.6em 0 0.3em;
+}
+.rich-text strong {
+  font-weight: 600;
+}
+.rich-text em {
+  font-style: italic;
+}
+.rich-text a {
+  color: var(--primary);
+  text-decoration: underline;
+}
+/* Placeholder shown by TipTap's Placeholder extension on an empty editor. */
+.rich-text p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+  color: var(--muted-foreground);
+}

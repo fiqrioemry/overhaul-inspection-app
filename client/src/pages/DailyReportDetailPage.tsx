@@ -157,7 +157,7 @@ export default function DailyReportDetailPage() {
           <div className="space-y-3">
             <SectionTitle>Uraian Kegiatan / Activity Description</SectionTitle>
             {report.description ? (
-              <div className="leading-relaxed pt-2 prose prose-sm max-w-none" style={{ fontSize: "12px" }} dangerouslySetInnerHTML={{ __html: report.description }} />
+              <div className="rich-text leading-relaxed pt-2 max-w-none" style={{ fontSize: "12px" }} dangerouslySetInnerHTML={{ __html: report.description }} />
             ) : (
               <div className="pt-2" style={{ fontSize: "12px" }}>
                 <span className="text-gray-400 italic">Tidak ada deskripsi.</span>
@@ -169,7 +169,7 @@ export default function DailyReportDetailPage() {
           <div className="space-y-3 flex-1">
             <SectionTitle>Rekomendasi / Recommendation</SectionTitle>
             {report.recommendation ? (
-              <div className="leading-relaxed pt-2 prose prose-sm max-w-none" style={{ fontSize: "12px" }} dangerouslySetInnerHTML={{ __html: report.recommendation }} />
+              <div className="rich-text leading-relaxed pt-2 max-w-none" style={{ fontSize: "12px" }} dangerouslySetInnerHTML={{ __html: report.recommendation }} />
             ) : (
               <div className="pt-2" style={{ fontSize: "12px" }}>
                 <span className="text-gray-400 italic">Belum ada rekomendasi.</span>
@@ -211,11 +211,6 @@ export default function DailyReportDetailPage() {
                   </div>
                 );
               })}
-            </div>
-
-            {/* Footer */}
-            <div className="border-t pt-3 text-center text-gray-400" style={{ fontSize: "12px" }}>
-              <p>Dicetak pada {format(new Date(), "dd MMMM yyyy HH:mm")}</p>
             </div>
           </div>
         ))}

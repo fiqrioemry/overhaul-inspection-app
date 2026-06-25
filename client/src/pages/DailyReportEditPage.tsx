@@ -29,6 +29,7 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>;
 type DailyReport = NonNullable<ReturnType<typeof useDailyReport>["data"]>;
 
+const MAX_ATTACHMENTS = 20;
 const MAX_FILE_SIZE = 8 * 1024 * 1024;
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
@@ -233,7 +234,7 @@ function DailyReportEditContent({ report, reportId }: { report: DailyReport; rep
       const valid = files.filter((f) => ALLOWED_TYPES.has(f.type) && f.size <= MAX_FILE_SIZE);
 
       const currentTotal = attachments.length + localFiles.length;
-      const remainingSlots = 15 - currentTotal;
+      const remainingSlots = MAX_ATTACHMENTS - currentTotal;
       const take = Math.min(valid.length, remainingSlots);
 
       const newFiles: LocalFile[] = valid.slice(0, take).map((f) => ({
@@ -246,7 +247,7 @@ function DailyReportEditContent({ report, reportId }: { report: DailyReport; rep
       setLocalFiles((prev) => [...prev, ...newFiles]);
 
       if (valid.length > remainingSlots) {
-        alert("Maximum 15 photos per report.");
+        alert(`Maximum ${MAX_ATTACHMENTS} photos per report.`);
       }
 
       e.target.value = "";
@@ -354,10 +355,10 @@ function DailyReportEditContent({ report, reportId }: { report: DailyReport; rep
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-sm font-medium">Photos</h2>
-              <p className="text-xs text-muted-foreground mt-0.5">Drag to reorder · {totalPhotos}/15</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Drag to reorder · {totalPhotos}/{MAX_ATTACHMENTS}</p>
             </div>
 
-            <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={totalPhotos >= 15}>
+            <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={totalPhotos >= MAX_ATTACHMENTS}>
               <Plus className="h-4 w-4 mr-1" /> Add Photos
             </Button>
 
