@@ -12,6 +12,7 @@ export const createDailyReportRequest = z.object({
   tankProcessId: z.string().optional(),
   reportDate: z.string().min(1),
   activityType: z.nativeEnum(DailyActivityTypeEnum),
+  title: z.string().min(1).max(300),
   description: z.string().min(1).max(20000),
   recommendation: z.string().max(20000).optional(),
   inspectorId: z.string().optional(),
@@ -33,6 +34,7 @@ export const sortOrderUpdateItem = z.object({
 export const updateDailyReportRequest = z.object({
   reportDate: z.string().optional(),
   activityType: z.nativeEnum(DailyActivityTypeEnum).optional(),
+  title: z.string().min(1).max(300).optional(),
   description: z.string().min(1).max(20000).optional(),
   recommendation: z.string().max(20000).nullable().optional(),
   inspectorId: z.string().optional(),

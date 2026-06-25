@@ -1,8 +1,21 @@
 import { HTTPException } from "hono/http-exception";
+import sharp from "sharp";
 import { getOpenAIClient } from "@/lib/openai";
 import { openaiConfig } from "@/config/env";
 import { pgsql } from "@/lib/database";
 import { sanitizeHtml } from "@/utils/sanitize-html";
+
+/** Compress an image to webp at max 1024px longest side for AI vision analysis.
+ *  Targets ~90% file-size reduction while retaining sufficient detail for OCR/vision. */
+async function compressForAI(file: File): Promise<{ base64: string; mimeType: string }> {
+  const inputBuffer = Buffer.from(await file.arrayBuffer());
+  const compressed = await sharp(inputBuffer)
+    .rotate()
+    .resize({ width: 1024, height: 1024, fit: "inside", withoutEnlargement: true })
+    .webp({ quality: 75 })
+    .toBuffer();
+  return { base64: compressed.toString("base64"), mimeType: "image/webp" };
+}
 
 const ACTIVITY_LABELS: Record<string, string> = {
   MONITORING: "Monitoring Rutin",
@@ -25,6 +38,8 @@ export interface AIGenerateInput {
 }
 
 export interface AIGenerateResult {
+  /** Short, general but informative activity title (plain text, e.g. "Inspeksi visual hasil lasan") */
+  title: string;
   /** HTML bullet list ready for the rich editor */
   description: string;
   /** HTML bullet list ready for the rich editor, or null when no recommendation applies */
@@ -61,13 +76,16 @@ function buildSystemPrompt(
     "",
     "TUGAS:",
     "1. Analisis setiap foto yang diberikan secara teknis.",
-    "2. Buat URAIAN KEGIATAN (description) dalam bahasa Indonesia, formal dan teknis, sebagai daftar poin.",
-    "3. Buat REKOMENDASI (recommendation) dalam bahasa Indonesia sebagai daftar poin.",
+    "2. Buat JUDUL KEGIATAN (title) dalam bahasa Indonesia: singkat, UMUM, namun informatif — merangkum inti kegiatan, BUKAN daftar rinci.",
+    "   - Maksimal 8 kata, plain text, tanpa tanda baca akhir, tanpa HTML.",
+    "   - Contoh: jika uraian berisi 'inspeksi visual hasil lasan, mencatat korosi, memastikan tanda visual sesuai standar', maka title cukup 'Inspeksi visual hasil lasan'.",
+    "3. Buat URAIAN KEGIATAN (description) dalam bahasa Indonesia, formal dan teknis, sebagai daftar poin.",
+    "4. Buat REKOMENDASI (recommendation) dalam bahasa Indonesia sebagai daftar poin.",
     "   - Jika draft rekomendasi user tersedia, JADIKAN itu sebagai dasar utama dan rapikan bahasanya tanpa mengubah makna.",
     "   - Jika draft rekomendasi kosong, boleh menyusun rekomendasi konservatif berdasarkan foto/konteks.",
     "   - Jika tidak ada rekomendasi yang relevan, set recommendation ke null.",
-    "4. Buat CAPTION singkat untuk SETIAP foto (maksimal 15 kata, teknis dan deskriptif). Jumlah caption HARUS sama dengan jumlah foto.",
-    "5. Set relevanceWarning ke true JIKA foto tidak berhubungan dengan kegiatan inspeksi/konstruksi/overhaul tangki industri.",
+    "5. Buat CAPTION singkat untuk SETIAP foto (maksimal 15 kata, teknis dan deskriptif). Jumlah caption HARUS sama dengan jumlah foto.",
+    "6. Set relevanceWarning ke true JIKA foto tidak berhubungan dengan kegiatan inspeksi/konstruksi/overhaul tangki industri.",
     "",
     "ATURAN PENTING:",
     "- JANGAN membuat temuan baru yang tidak terlihat di foto atau tidak disebut user.",
@@ -85,6 +103,7 @@ function buildSystemPrompt(
     "",
     "FORMAT RESPONS (JSON valid):",
     "{",
+    '  "title": "Inspeksi visual hasil lasan",',
     '  "description": "<ul><li>...</li></ul>",',
     '  "recommendation": "<ul><li>...</li></ul>",',
     '  "captions": ["caption foto 1", "caption foto 2"],',
@@ -133,12 +152,11 @@ export class DailyReportAIService {
 
     const imageContents = await Promise.all(
       files.map(async (file) => {
-        const buffer = await file.arrayBuffer();
-        const base64 = Buffer.from(buffer).toString("base64");
+        const { base64, mimeType } = await compressForAI(file);
         return {
           type: "image_url" as const,
           image_url: {
-            url: `data:${file.type};base64,${base64}`,
+            url: `data:${mimeType};base64,${base64}`,
             detail: "low" as const,
           },
         };
@@ -172,6 +190,7 @@ export class DailyReportAIService {
 
     try {
       const parsed = JSON.parse(raw) as {
+        title?: string;
         description?: string;
         recommendation?: string | null;
         captions?: string[];
@@ -182,8 +201,11 @@ export class DailyReportAIService {
 
       const description = toBulletHtml(parsed.description) ?? "<ul><li>Dokumentasi kegiatan inspeksi harian.</li></ul>";
       const recommendation = toBulletHtml(parsed.recommendation ?? null);
+      // Title is plain text: strip any stray HTML, collapse whitespace, cap length.
+      const title = (parsed.title ?? "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 300) || "Kegiatan Inspeksi Harian";
 
       return {
+        title,
         description,
         recommendation,
         captions: parsed.captions?.length ? parsed.captions : files.map((_, i) => `Foto dokumentasi ${i + 1}`),

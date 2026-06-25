@@ -962,6 +962,7 @@ model DailyReport {
   tankProcessId  String?               @map("tank_process_id")
   reportDate     DateTime              @map("report_date") @db.Date
   activityType   DailyActivityTypeEnum @map("activity_type")
+  title          String
   description    String
   recommendation String?
   inspectorId    String?               @map("inspector_id")

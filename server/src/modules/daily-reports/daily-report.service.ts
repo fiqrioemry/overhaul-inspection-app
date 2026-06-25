@@ -9,7 +9,7 @@ import { sanitizeHtml } from "@/utils/sanitize-html";
 import type { CreateDailyReportRequest, UpdateDailyReportRequest, ListDailyReportsQuery } from "./daily-report.schema";
 import type { DailyReportListItem, DailyReportListResult } from "./daily-report.types";
 
-const MAX_ATTACHMENTS = 15;
+const MAX_ATTACHMENTS = 20;
 const MAX_FILE_SIZE = 8 * 1024 * 1024; // 8 MB
 const ALLOWED_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 const DAILY_REPORT_BLOCKED_STATUSES: ProcessStatusEnum[] = [ProcessStatusEnum.NOT_STARTED, ProcessStatusEnum.COMPLETED];
@@ -100,6 +100,7 @@ export class DailyReportService {
           tankProcessId,
           reportDate: new Date(data.reportDate),
           activityType: data.activityType,
+          title: data.title,
           description: sanitizeHtml(data.description) ?? data.description,
           recommendation: sanitizeHtml(data.recommendation),
           inspectorId: data.inspectorId ?? userId,
@@ -148,6 +149,9 @@ export class DailyReportService {
     const { reports, total } = await DailyReportRepository.findMany(query);
     const totalPages = total > 0 ? Math.ceil(total / query.limit) : 0;
 
+    // Resolved inspector brand for reports not tied to a project (see repository note).
+    const defaultInspectionCompany = await DailyReportRepository.findDefaultInspectionCompany();
+
     const data: DailyReportListItem[] = reports.map((r) => ({
       id: r.id,
       tankId: r.tankId,
@@ -155,6 +159,7 @@ export class DailyReportService {
       tankProcessId: r.tankProcessId,
       reportDate: r.reportDate,
       activityType: r.activityType,
+      title: r.title,
       description: r.description,
       recommendation: (r as any).recommendation ?? null,
       inspectorId: r.inspectorId,
@@ -162,6 +167,7 @@ export class DailyReportService {
       aiSuggestedDescription: (r as any).aiSuggestedDescription ?? null,
       createdAt: r.createdAt,
       updatedAt: r.updatedAt,
+      inspectionCompany: r.project?.inspectionCompany ?? defaultInspectionCompany,
       tank: r.tank,
       project: r.project
         ? {
@@ -194,7 +200,11 @@ export class DailyReportService {
   static async getReportById(id: string) {
     const report = await DailyReportRepository.findById(id);
     if (!report) throw new HTTPException(404, { message: "Daily report not found", cause: "REPORT_NOT_FOUND" });
-    return report;
+
+    // Surface the inspector brand at the top level so the report header renders it
+    // even when the report is not linked to a project (see repository note).
+    const inspectionCompany = report.project?.inspectionCompany ?? (await DailyReportRepository.findDefaultInspectionCompany());
+    return { ...report, inspectionCompany };
   }
 
   static async updateReport(c: Context, id: string, data: UpdateDailyReportRequest, newFiles: File[], userId: string) {
@@ -291,6 +301,7 @@ export class DailyReportService {
         data: {
           ...(data.reportDate && { reportDate: new Date(data.reportDate) }),
           ...(data.activityType && { activityType: data.activityType }),
+          ...(data.title !== undefined && { title: data.title }),
           ...(data.description !== undefined && { description: sanitizeHtml(data.description) ?? data.description }),
           ...(data.recommendation !== undefined && { recommendation: sanitizeHtml(data.recommendation) }),
           ...(data.inspectorId !== undefined && { inspectorId: data.inspectorId }),

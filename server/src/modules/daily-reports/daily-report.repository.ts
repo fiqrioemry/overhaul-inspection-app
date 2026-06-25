@@ -95,6 +95,18 @@ export class DailyReportRepository {
     return { reports, total };
   }
 
+  // The inspecting organisation is effectively a singleton in this internal SSIE
+  // app. Most daily reports are not linked to a project (routine monitoring), so
+  // they cannot resolve a company through project.inspectionCompany. Fall back to
+  // the active INSPECTOR_COMPANY so report headers always carry the inspector brand.
+  static async findDefaultInspectionCompany() {
+    return pgsql.company.findFirst({
+      where: { type: "INSPECTOR_COMPANY", isActive: true, deletedAt: null },
+      select: { id: true, name: true, logoFile: { select: { url: true } } },
+      orderBy: { createdAt: "asc" },
+    });
+  }
+
   static async findByTankAndDate(tankId: string, date: string) {
     return pgsql.dailyReport.findMany({
       where: { tankId, reportDate: new Date(date), deletedAt: null },

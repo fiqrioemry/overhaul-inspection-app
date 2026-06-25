@@ -33,6 +33,7 @@ export class DailyReportController {
       tankProcessId: body["tankProcessId"] || undefined,
       reportDate: body["reportDate"],
       activityType: body["activityType"],
+      title: body["title"],
       description: body["description"],
       recommendation: body["recommendation"] || undefined,
       inspectorId: body["inspectorId"] || undefined,
@@ -65,6 +66,7 @@ export class DailyReportController {
     const data = updateDailyReportRequest.parse({
       reportDate: body["reportDate"] || undefined,
       activityType: body["activityType"] || undefined,
+      title: body["title"] || undefined,
       description: body["description"] || undefined,
       recommendation: body["recommendation"] !== undefined ? (body["recommendation"] || null) : undefined,
       inspectorId: body["inspectorId"] || undefined,

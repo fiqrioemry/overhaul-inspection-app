@@ -23,6 +23,7 @@ export interface DailyReportListItem {
   tankProcessId: string | null;
   reportDate: Date;
   activityType: string;
+  title: string;
   description: string | null;
   recommendation: string | null;
   inspectorId: string | null;
@@ -30,6 +31,7 @@ export interface DailyReportListItem {
   aiSuggestedDescription: string | null;
   createdAt: Date;
   updatedAt: Date;
+  inspectionCompany: { id: string; name: string; logoFile: { url: string } | null } | null;
   tank: { id: string; tankNo: string; tankName: string | null; location: string | null } | null;
   project: {
     id: string;
