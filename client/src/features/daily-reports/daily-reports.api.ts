@@ -71,8 +71,8 @@ export interface DailyReportSummary {
     projectNo: string;
     type: string;
     status: string;
-    inspectionCompany?: { id: string; name: string; logoFile: { url: string } | null } | null;
-    contractorCompany?: { id: string; name: string; logoFile: { url: string } | null } | null;
+    inspectionCompany: { id: string; name: string; logoFile: { url: string } | null } | null;
+    contractorCompany: { id: string; name: string; logoFile: { url: string } | null } | null;
   } | null;
   tankProcess: { id: string; name: string; type?: string } | null;
   inspector: { id: string; name: string } | null;

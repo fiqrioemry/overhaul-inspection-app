@@ -97,29 +97,25 @@ export default function DailyReportListPrintPage() {
 
       {/* Document — A4 portrait width */}
       <div className="print-doc bg-white border rounded-lg shadow-sm mx-auto max-w-198.5 p-10 space-y-6">
-        {/* Document Header */}
-        <div className="border-b border-gray-300 pb-5">
-          <div className="flex items-center gap-4">
+        {/* Document Header — mirrors DailyReportDetailPage.tsx layout exactly */}
+        <div className="border-b-2 border-black pb-6">
+          <div className="flex items-center justify-between gap-4">
             {/* Left: inspection company logo */}
-            <div className="h-14 w-14 shrink-0 flex items-center justify-center">
-              {companyLogoUrl
-                ? <img src={companyLogoUrl} alt={companyName ?? "logo"} className="h-full w-full object-contain" />
-                : <Building2 className="size-8 text-gray-300" />}
-            </div>
+            <CompanyLogo url={companyLogoUrl} name={companyName ?? undefined} size="md" />
 
-            {/* Right: title block */}
-            <div className="flex-1">
-              {companyName && (
-                <p style={{ fontSize: "10px", fontWeight: 600 }} className="text-gray-500 uppercase tracking-widest mb-0.5">
-                  {companyName}
-                </p>
-              )}
+            {/* Center: title */}
+            <div className="flex-1 text-center space-y-0.5">
               <h1 style={{ fontSize: "14px", fontWeight: 700 }} className="uppercase tracking-wide text-gray-900">
                 Laporan Harian Inspeksi
               </h1>
-              <p style={{ fontSize: "12px" }} className="text-gray-600">
+              <p style={{ fontSize: "12px" }} className="text-gray-500">
                 Daily Inspection Report
               </p>
+              {companyName && (
+                <p style={{ fontSize: "12px" }} className="text-gray-400 uppercase tracking-widest mt-1">
+                  {companyName}
+                </p>
+              )}
               {periodLabel && (
                 <p style={{ fontSize: "11px" }} className="text-gray-500 mt-0.5">
                   {periodLabel}
@@ -207,6 +203,15 @@ export default function DailyReportListPrintPage() {
         )}
       </div>
     </>
+  );
+}
+
+function CompanyLogo({ url, name, size = "md" }: { url: string | null; name: string | undefined; size?: "sm" | "md" }) {
+  const dim = size === "sm" ? "h-10 w-10" : "h-14 w-14";
+  return (
+    <div className={`${dim} shrink-0 flex items-center justify-center`}>
+      {url ? <img src={url} alt={name ?? "logo"} className="h-full w-full object-contain" /> : <Building2 className="size-6 text-gray-300" />}
+    </div>
   );
 }
 
