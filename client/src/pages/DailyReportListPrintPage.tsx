@@ -1,6 +1,6 @@
 // src/pages/DailyReportListPrintPage.tsx
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Printer, FileText } from "lucide-react";
+import { ArrowLeft, Printer, FileText, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import LoadingState from "@/components/common/LoadingState";
 import ErrorState from "@/components/common/ErrorState";
@@ -28,7 +28,6 @@ export default function DailyReportListPrintPage() {
   });
 
   const reports = data?.items ?? [];
-  console.log("reports", data);
 
   const firstReport = reports[0];
   const companyName = firstReport?.project?.inspectionCompany?.name ?? null;
@@ -76,14 +75,14 @@ export default function DailyReportListPrintPage() {
             color: #000000 !important;
           }
           .print-doc * { color: #000000 !important; background: transparent !important; }
-          .print-doc table { font-size: 12px !important; background: #ffffff !important; }
-          .print-doc th { background: #f3f3f3 !important; color: #000000 !important; font-size: 12px !important; }
+          .print-doc table { font-size: 10px !important; background: #ffffff !important; }
+          .print-doc th { background: #f3f3f3 !important; color: #000000 !important; font-size: 10px !important; }
           .print-doc tr.row-even { background: #ffffff !important; }
           .print-doc tr.row-odd { background: #f9f9f9 !important; }
           .print-doc th, .print-doc td { padding: 4px 6px !important; border-color: #cccccc !important; }
           .print-doc .border-b, .print-doc .border-t { border-color: #cccccc !important; }
         }
-        @page { size: A4 landscape; margin: 15mm; }
+        @page { size: A4 portrait; margin: 15mm; }
       `}</style>
 
       {/* Toolbar */}
@@ -96,36 +95,43 @@ export default function DailyReportListPrintPage() {
         </Button>
       </div>
 
-      {/* Document */}
-      <div className="print-doc bg-white border rounded-lg shadow-sm mx-auto max-w-5xl p-10 space-y-6">
+      {/* Document — A4 portrait width */}
+      <div className="print-doc bg-white border rounded-lg shadow-sm mx-auto max-w-198.5 p-10 space-y-6">
         {/* Document Header */}
-        <div className="text-center space-y-1 border-b border-gray-300 pb-5">
-          {companyLogoUrl && (
-            <div className="flex justify-center mb-2">
-              <img src={companyLogoUrl} alt={companyName ?? "Company Logo"} className="h-12 object-contain" />
+        <div className="border-b border-gray-300 pb-5">
+          <div className="flex items-center gap-4">
+            {/* Left: inspection company logo */}
+            <div className="h-14 w-14 shrink-0 flex items-center justify-center">
+              {companyLogoUrl
+                ? <img src={companyLogoUrl} alt={companyName ?? "logo"} className="h-full w-full object-contain" />
+                : <Building2 className="size-8 text-gray-300" />}
             </div>
-          )}
-          {companyName && (
-            <p style={{ fontSize: "12px", fontWeight: 600 }} className="text-gray-700 uppercase tracking-widest">
-              {companyName}
-            </p>
-          )}
-          <h1 style={{ fontSize: "14px", fontWeight: 700 }} className="uppercase tracking-wide text-gray-900 mt-1">
-            Laporan Harian Inspeksi
-          </h1>
-          <p style={{ fontSize: "12px" }} className="text-gray-600">
-            Daily Inspection Report
-          </p>
-          {periodLabel && (
-            <p style={{ fontSize: "12px" }} className="text-gray-500 mt-1">
-              {periodLabel}
-            </p>
-          )}
-          {activityType && (
-            <p style={{ fontSize: "12px" }} className="text-gray-500">
-              Jenis Kegiatan: {ACTIVITY_LABEL[activityType] ?? activityType}
-            </p>
-          )}
+
+            {/* Right: title block */}
+            <div className="flex-1">
+              {companyName && (
+                <p style={{ fontSize: "10px", fontWeight: 600 }} className="text-gray-500 uppercase tracking-widest mb-0.5">
+                  {companyName}
+                </p>
+              )}
+              <h1 style={{ fontSize: "14px", fontWeight: 700 }} className="uppercase tracking-wide text-gray-900">
+                Laporan Harian Inspeksi
+              </h1>
+              <p style={{ fontSize: "12px" }} className="text-gray-600">
+                Daily Inspection Report
+              </p>
+              {periodLabel && (
+                <p style={{ fontSize: "11px" }} className="text-gray-500 mt-0.5">
+                  {periodLabel}
+                </p>
+              )}
+              {activityType && (
+                <p style={{ fontSize: "11px" }} className="text-gray-500">
+                  Jenis Kegiatan: {ACTIVITY_LABEL[activityType] ?? activityType}
+                </p>
+              )}
+            </div>
+          </div>
         </div>
 
         {reports.length === 0 ? (
@@ -134,22 +140,22 @@ export default function DailyReportListPrintPage() {
           <>
             {/* Table */}
             <div className="overflow-x-auto">
-              <table className="w-full border-collapse" style={{ fontSize: "12px" }}>
+              <table className="w-full border-collapse" style={{ fontSize: "10px" }}>
                 <thead>
                   <tr className="bg-gray-100">
-                    <th className="border border-gray-300 px-3 py-2 text-center w-8" style={{ fontSize: "12px", fontWeight: 600 }}>
+                    <th className="border border-gray-300 px-2 py-2 text-center w-8" style={{ fontSize: "10px", fontWeight: 600 }}>
                       No.
                     </th>
-                    <th className="border border-gray-300 px-3 py-2 text-left w-28" style={{ fontSize: "12px", fontWeight: 600 }}>
+                    <th className="border border-gray-300 px-2 py-2 text-left w-24" style={{ fontSize: "10px", fontWeight: 600 }}>
                       Tanggal
                     </th>
-                    <th className="border border-gray-300 px-3 py-2 text-left w-24" style={{ fontSize: "12px", fontWeight: 600 }}>
+                    <th className="border border-gray-300 px-2 py-2 text-left w-16" style={{ fontSize: "10px", fontWeight: 600 }}>
                       Tank
                     </th>
-                    <th className="border border-gray-300 px-3 py-2 text-left w-28" style={{ fontSize: "12px", fontWeight: 600 }}>
+                    <th className="border border-gray-300 px-2 py-2 text-left w-24" style={{ fontSize: "10px", fontWeight: 600 }}>
                       Jenis Kegiatan
                     </th>
-                    <th className="border border-gray-300 px-3 py-2 text-left" style={{ fontSize: "12px", fontWeight: 600 }}>
+                    <th className="border border-gray-300 px-2 py-2 text-left" style={{ fontSize: "10px", fontWeight: 600 }}>
                       Uraian Kegiatan
                     </th>
                   </tr>
@@ -157,19 +163,19 @@ export default function DailyReportListPrintPage() {
                 <tbody>
                   {reports.map((report, idx) => (
                     <tr key={report.id} className={idx % 2 === 0 ? "row-even bg-white" : "row-odd bg-gray-50"}>
-                      <td className="border border-gray-300 px-3 py-2 text-center text-gray-700" style={{ fontSize: "12px" }}>
+                      <td className="border border-gray-300 px-2 py-2 text-center text-gray-700" style={{ fontSize: "10px" }}>
                         {idx + 1}
                       </td>
-                      <td className="border border-gray-300 px-3 py-2 whitespace-nowrap text-gray-900" style={{ fontSize: "12px" }}>
+                      <td className="border border-gray-300 px-2 py-2 whitespace-nowrap text-gray-900" style={{ fontSize: "10px" }}>
                         {format(new Date(report.reportDate), "dd MMM yyyy")}
                       </td>
-                      <td className="border border-gray-300 px-3 py-2 font-medium text-gray-900" style={{ fontSize: "12px" }}>
+                      <td className="border border-gray-300 px-2 py-2 font-medium text-gray-900" style={{ fontSize: "10px" }}>
                         {report.tank?.tankNo ?? "—"}
                       </td>
-                      <td className="border border-gray-300 px-3 py-2 text-gray-900" style={{ fontSize: "12px" }}>
+                      <td className="border border-gray-300 px-2 py-2 text-gray-900" style={{ fontSize: "10px" }}>
                         {ACTIVITY_LABEL[report.activityType] ?? report.activityType.replace(/_/g, " ")}
                       </td>
-                      <td className="border border-gray-300 px-3 py-2 text-gray-800" style={{ fontSize: "12px" }}>
+                      <td className="border border-gray-300 px-2 py-2 text-gray-800" style={{ fontSize: "10px" }}>
                         {report.description ? <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: report.description }} /> : "—"}
                       </td>
                     </tr>
