@@ -1,7 +1,7 @@
 // src/pages/TankDetailPage.tsx
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Pencil, Plus, ClipboardList } from "lucide-react";
+import { ArrowLeft, Pencil, Plus, ClipboardList, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PageHeader from "@/components/common/PageHeader";
@@ -13,6 +13,7 @@ import PermissionGate from "@/components/common/PermissionGate";
 import TankProcessList from "@/features/tanks/components/TankProcessList";
 import CreateOverhaulProjectDialog from "@/features/tank-projects/components/CreateOverhaulProjectDialog";
 import { useTank } from "@/features/tanks/tanks.query";
+import type { ShellCourse } from "@/features/tanks/tanks.api";
 import { PERMISSIONS } from "@/constants/permission.constant";
 import { ROUTES } from "@/constants/route.constant";
 import { format } from "date-fns";
@@ -27,17 +28,49 @@ function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
+function ShellCoursesTable({ shellCourses }: { shellCourses: ShellCourse[] }) {
+  if (shellCourses.length === 0) {
+    return <p className="text-sm text-muted-foreground">No shell course data recorded.</p>;
+  }
+  return (
+    <div className="rounded-lg border overflow-hidden">
+      <table className="w-full text-sm">
+        <thead className="border-b bg-muted/40">
+          <tr>
+            <th className="px-4 py-3 text-left font-medium">Course No.</th>
+            <th className="px-4 py-3 text-left font-medium">Thickness (mm)</th>
+            <th className="px-4 py-3 text-left font-medium">Plate Dimension</th>
+            <th className="px-4 py-3 text-left font-medium">Remarks</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y">
+          {shellCourses.map((sc) => (
+            <tr key={sc.id} className="hover:bg-muted/20">
+              <td className="px-4 py-3">{sc.courseNo}</td>
+              <td className="px-4 py-3">{sc.thicknessMm}</td>
+              <td className="px-4 py-3 text-muted-foreground">{sc.plateDimension ?? "—"}</td>
+              <td className="px-4 py-3 text-muted-foreground">{sc.remarks ?? "—"}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 export default function TankDetailPage() {
   const { tankId } = useParams<{ tankId: string }>();
   const navigate = useNavigate();
   const { data: tank, isLoading, isError, refetch } = useTank(tankId!);
   const [projectDialogOpen, setProjectDialogOpen] = useState(false);
+  const [shellCoursesOpen, setShellCoursesOpen] = useState(false);
 
   if (isLoading) return <LoadingState />;
   if (isError || !tank) return <ErrorState message="Failed to load tank." onRetry={() => refetch()} />;
 
   const editPath = ROUTES.TANK_EDIT.replace(":tankId", tankId!);
 
+  const isUnderOverhaul = tank.assetStatus === "UNDER_OVERHAUL";
   const isDecommissioned = tank.assetStatus === "DECOMMISSIONED";
   const hasActiveProject = Boolean(tank.activeProject) || tank.assetStatus === "UNDER_OVERHAUL";
   const canCreateProject = !isDecommissioned && !hasActiveProject;
@@ -75,8 +108,7 @@ export default function TankDetailPage() {
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="projects">Projects</TabsTrigger>
-          <TabsTrigger value="processes">Processes</TabsTrigger>
-          <TabsTrigger value="shell-courses">Shell Courses</TabsTrigger>
+          {isUnderOverhaul && <TabsTrigger value="processes">Processes</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="overview" className="mt-4">
@@ -100,6 +132,25 @@ export default function TankDetailPage() {
             <InfoRow label="Steam Coil" value={tank.hasSteamCoil ? "Yes" : "No"} />
             <InfoRow label="Overhaul Projects" value={tank._count.projects} />
           </div>
+
+          {!isUnderOverhaul && (
+            <div className="mt-4 rounded-lg border">
+              <button
+                type="button"
+                onClick={() => setShellCoursesOpen((v) => !v)}
+                aria-expanded={shellCoursesOpen}
+                className="flex w-full items-center justify-between px-4 py-3 text-sm font-medium hover:bg-muted/20"
+              >
+                <span>Shell Courses ({tank.shellCourses.length})</span>
+                <ChevronDown className={`h-4 w-4 transition-transform ${shellCoursesOpen ? "rotate-180" : ""}`} />
+              </button>
+              {shellCoursesOpen && (
+                <div className="border-t p-4">
+                  <ShellCoursesTable shellCourses={tank.shellCourses} />
+                </div>
+              )}
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="projects" className="mt-4">
@@ -144,38 +195,17 @@ export default function TankDetailPage() {
           )}
         </TabsContent>
 
-        <TabsContent value="processes" className="mt-4">
-          <TankProcessList tankId={tankId!} />
-        </TabsContent>
+        {isUnderOverhaul && (
+          <>
+            <TabsContent value="processes" className="mt-4">
+              <TankProcessList tankId={tankId!} />
+            </TabsContent>
 
-        <TabsContent value="shell-courses" className="mt-4">
-          {tank.shellCourses.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No shell course data recorded.</p>
-          ) : (
-            <div className="rounded-lg border overflow-hidden">
-              <table className="w-full text-sm">
-                <thead className="border-b bg-muted/40">
-                  <tr>
-                    <th className="px-4 py-3 text-left font-medium">Course No.</th>
-                    <th className="px-4 py-3 text-left font-medium">Thickness (mm)</th>
-                    <th className="px-4 py-3 text-left font-medium">Plate Dimension</th>
-                    <th className="px-4 py-3 text-left font-medium">Remarks</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {tank.shellCourses.map((sc) => (
-                    <tr key={sc.id} className="hover:bg-muted/20">
-                      <td className="px-4 py-3">{sc.courseNo}</td>
-                      <td className="px-4 py-3">{sc.thicknessMm}</td>
-                      <td className="px-4 py-3 text-muted-foreground">{sc.plateDimension ?? "—"}</td>
-                      <td className="px-4 py-3 text-muted-foreground">{sc.remarks ?? "—"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </TabsContent>
+            <TabsContent value="shell-courses" className="mt-4">
+              <ShellCoursesTable shellCourses={tank.shellCourses} />
+            </TabsContent>
+          </>
+        )}
       </Tabs>
 
       <CreateOverhaulProjectDialog
