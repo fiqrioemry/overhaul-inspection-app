@@ -195,7 +195,35 @@ export class TankService {
       }
     }
 
-    return TankRepository.update(id, { ...data });
+    const { shellCourses, ...scalars } = data;
+
+    // When shellCourses is omitted, leave the existing set untouched. When provided,
+    // replace it wholesale (add / edit / remove) and keep shellCourseCount in sync.
+    if (shellCourses === undefined) {
+      return TankRepository.update(id, scalars);
+    }
+
+    await pgsql.$transaction(async (tx) => {
+      await tx.tankShellCourse.deleteMany({ where: { tankId: id } });
+      if (shellCourses.length > 0) {
+        await tx.tankShellCourse.createMany({
+          data: shellCourses.map((sc, idx) => ({
+            tankId: id,
+            // Normalise course numbering so removals don't leave gaps.
+            courseNo: idx + 1,
+            thicknessMm: sc.thicknessMm,
+            plateDimension: sc.plateDimension,
+            remarks: sc.remarks,
+          })),
+        });
+      }
+      await tx.tank.update({
+        where: { id },
+        data: { ...scalars, shellCourseCount: shellCourses.length },
+      });
+    });
+
+    return TankRepository.findById(id);
   }
 
   static async deleteTank(id: string) {

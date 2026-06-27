@@ -36,7 +36,10 @@ export const createTankRequest = z.object({
 });
 export type CreateTankRequest = z.infer<typeof createTankRequest>;
 
-export const updateTankRequest = createTankRequest.omit({ shellCourses: true, newFileCaptions: true }).partial();
+// shellCourses is accepted on update too: when provided it fully replaces the tank's
+// shell course set (supports add / edit / remove in one payload). newFileCaptions is
+// create-only (attachments are managed elsewhere).
+export const updateTankRequest = createTankRequest.omit({ newFileCaptions: true }).partial();
 export type UpdateTankRequest = z.infer<typeof updateTankRequest>;
 
 export const listTanksQuery = z.object({
