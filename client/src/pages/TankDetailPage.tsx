@@ -133,7 +133,7 @@ export default function TankDetailPage() {
             <InfoRow label="Overhaul Projects" value={tank._count.projects} />
           </div>
 
-          {!isUnderOverhaul && (
+          {tank.shellCourses.length > 0 && (
             <div className="mt-4 rounded-lg border">
               <button
                 type="button"
@@ -196,15 +196,9 @@ export default function TankDetailPage() {
         </TabsContent>
 
         {isUnderOverhaul && (
-          <>
-            <TabsContent value="processes" className="mt-4">
-              <TankProcessList tankId={tankId!} />
-            </TabsContent>
-
-            <TabsContent value="shell-courses" className="mt-4">
-              <ShellCoursesTable shellCourses={tank.shellCourses} />
-            </TabsContent>
-          </>
+          <TabsContent value="processes" className="mt-4">
+            <TankProcessList tankId={tankId!} />
+          </TabsContent>
         )}
       </Tabs>
 
