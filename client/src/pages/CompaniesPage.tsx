@@ -11,9 +11,10 @@ import EmptyState from "@/components/common/EmptyState";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 import Pagination from "@/components/common/Pagination";
 import PermissionGate from "@/components/common/PermissionGate";
+import FilterSelect from "@/components/fields/FilterSelect";
 import CompanyFormDialog from "@/features/companies/components/CompanyFormDialog";
 import { useCompanies, useDeleteCompany } from "@/features/companies/companies.query";
-import type { Company } from "@/features/companies/companies.api";
+import type { Company, CompanyType } from "@/features/companies/companies.api";
 import { PERMISSIONS } from "@/constants/permission.constant";
 import { useDebounce } from "@/hooks/useDebounce";
 import { format } from "date-fns";
@@ -24,15 +25,34 @@ const TYPE_LABEL: Record<string, string> = {
   CONTRACTOR: "Contractor",
 };
 
+const TYPE_OPTIONS = [
+  { label: "Owner", value: "OWNER" },
+  { label: "Inspector Company", value: "INSPECTOR_COMPANY" },
+  { label: "Contractor", value: "CONTRACTOR" },
+];
+
+const STATUS_OPTIONS = [
+  { label: "Active", value: "true" },
+  { label: "Inactive", value: "false" },
+];
+
 export default function CompaniesPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
+  const [type, setType] = useState("");
+  const [status, setStatus] = useState("");
   const [formOpen, setFormOpen] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState<Company | undefined>();
   const [deleteTarget, setDeleteTarget] = useState<Company | undefined>();
 
   const debouncedSearch = useDebounce(search, 400);
-  const { data, isLoading, isError, refetch } = useCompanies({ page, limit: 10, search: debouncedSearch });
+  const { data, isLoading, isError, refetch } = useCompanies({
+    page,
+    limit: 10,
+    search: debouncedSearch,
+    type: (type || undefined) as CompanyType | undefined,
+    isActive: status === "" ? undefined : status === "true",
+  });
   const deleteMutation = useDeleteCompany();
 
   function openCreate() {
@@ -74,6 +94,42 @@ export default function CompaniesPage() {
           }}
           className="max-w-xs"
         />
+        <div className="ml-auto flex items-center gap-2">
+          <FilterSelect
+            value={type}
+            onChange={(v) => {
+              setType(v);
+              setPage(1);
+            }}
+            options={TYPE_OPTIONS}
+            placeholder="Type"
+            allLabel="All Types"
+          />
+          <FilterSelect
+            value={status}
+            onChange={(v) => {
+              setStatus(v);
+              setPage(1);
+            }}
+            options={STATUS_OPTIONS}
+            placeholder="Status"
+            allLabel="All Status"
+          />
+          {(search || type || status) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setSearch("");
+                setType("");
+                setStatus("");
+                setPage(1);
+              }}
+            >
+              Reset
+            </Button>
+          )}
+        </div>
       </div>
 
       {isLoading && <LoadingState />}
