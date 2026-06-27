@@ -134,6 +134,8 @@ export interface UpdateTankPayload {
   diameterMm?: number;
   heightMm?: number;
   assetStatus?: TankAssetStatus;
+  // When provided, fully replaces the tank's shell course set (add / edit / remove).
+  shellCourses?: ShellCourseInput[];
 }
 
 export async function listTanks(params: ListTanksParams): Promise<PaginatedResponse<TankSummary>> {

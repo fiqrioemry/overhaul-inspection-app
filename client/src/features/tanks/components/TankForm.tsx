@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import type { Resolver, Path } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import ShortTextField from "@/components/fields/ShortTextField";
@@ -65,12 +65,23 @@ export default function TankForm(props: TankFormProps) {
           heightMm: props.tank.heightMm ?? undefined,
           // UNDER_OVERHAUL is system-managed: shown read-only, never submitted.
           assetStatus: props.tank.assetStatus === "UNDER_OVERHAUL" ? undefined : props.tank.assetStatus,
+          shellCourses: props.tank.shellCourses.map((sc) => ({
+            courseNo: sc.courseNo,
+            thicknessMm: sc.thicknessMm,
+            plateDimension: sc.plateDimension ?? "",
+            remarks: sc.remarks ?? "",
+          })),
         }
       : {},
   });
 
   const { fields, append, replace } = useFieldArray({
     control: createForm.control,
+    name: "shellCourses",
+  });
+
+  const editCourses = useFieldArray({
+    control: editForm.control,
     name: "shellCourses",
   });
 
@@ -154,6 +165,43 @@ export default function TankForm(props: TankFormProps) {
             description="Under Overhaul is set automatically when a tank project is active."
           />
         )}
+
+        <div className="space-y-2">
+          <FieldLabel>Shell Courses</FieldLabel>
+          {editCourses.fields.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No shell courses. Add one below.</p>
+          ) : (
+            <div className="rounded-lg border divide-y">
+              {editCourses.fields.map((field, index) => (
+                <div key={field.id} className="grid grid-cols-[3rem_1fr_1fr_1fr_2.5rem] gap-2 p-3 items-end">
+                  <Field>
+                    <FieldLabel className="text-xs">No.</FieldLabel>
+                    <Input type="number" readOnly value={index + 1} className="bg-muted" {...editForm.register(`shellCourses.${index}.courseNo`, { valueAsNumber: true })} />
+                  </Field>
+                  <Field>
+                    <FieldLabel className="text-xs">Thickness (mm)</FieldLabel>
+                    <Input type="number" step="0.1" placeholder="0.0" {...editForm.register(`shellCourses.${index}.thicknessMm`, { valueAsNumber: true })} />
+                  </Field>
+                  <Field>
+                    <FieldLabel className="text-xs">Plate Dimension</FieldLabel>
+                    <Input placeholder="e.g. 2000×6000" {...editForm.register(`shellCourses.${index}.plateDimension`)} />
+                  </Field>
+                  <Field>
+                    <FieldLabel className="text-xs">Remarks</FieldLabel>
+                    <Input placeholder="Optional" {...editForm.register(`shellCourses.${index}.remarks`)} />
+                  </Field>
+                  <Button type="button" variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive" onClick={() => editCourses.remove(index)}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+          <Button type="button" variant="outline" size="sm" onClick={() => editCourses.append({ courseNo: editCourses.fields.length + 1, thicknessMm: 0 })}>
+            <Plus className="h-3 w-3" /> Add Course
+          </Button>
+        </div>
+
         <Button type="submit" disabled={props.isPending} className="w-full">
           {props.isPending ? "Saving..." : "Save Changes"}
         </Button>

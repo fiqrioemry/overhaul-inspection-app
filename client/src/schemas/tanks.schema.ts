@@ -112,6 +112,7 @@ export const updateTankSchema = z.object({
   diameterMm: z.coerce.number().positive().optional().or(z.literal("")),
   heightMm: z.coerce.number().positive().optional().or(z.literal("")),
   assetStatus: ASSET_STATUS_ENUM.optional(),
+  shellCourses: z.array(shellCourseSchema).optional(),
 });
 
 export type UpdateTankFormValues = z.infer<typeof updateTankSchema>;

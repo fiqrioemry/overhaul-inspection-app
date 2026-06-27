@@ -22,6 +22,13 @@ export default function TankEditPage() {
       diameterMm: values.diameterMm ? Number(values.diameterMm) : undefined,
       heightMm: values.heightMm ? Number(values.heightMm) : undefined,
       capacityM3: values.capacityM3 ? Number(values.capacityM3) : undefined,
+      // Renumber courses to close gaps from removals; drop empty optional text fields.
+      shellCourses: values.shellCourses?.map((sc, index) => ({
+        courseNo: index + 1,
+        thicknessMm: Number(sc.thicknessMm),
+        plateDimension: sc.plateDimension?.trim() || undefined,
+        remarks: sc.remarks?.trim() || undefined,
+      })),
     };
     updateMutation.mutate({ id: tankId!, data: payload }, { onSuccess: () => navigate(ROUTES.TANK_DETAIL.replace(":tankId", tankId!)) });
   }
