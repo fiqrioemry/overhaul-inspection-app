@@ -34,13 +34,15 @@ export default function InspectionRequestPrintPage() {
       <style>{`
         @media print {
           .no-print { display: none !important; }
-          body { background: white !important; }
-          .print-page { box-shadow: none !important; margin: 0 !important; }
+          html, body { background: white !important; margin: 0 !important; padding: 0 !important; }
+          .print-wrap { background: white !important; margin: 0 !important; padding: 0 !important; min-height: 0 !important; }
+          .print-page { box-shadow: none !important; margin: 0 !important; padding: 12mm !important; width: 210mm !important; }
         }
-        @page { size: A4 portrait; margin: 12mm; }
+        /* margin: 0 removes the browser's auto header/footer (date, title, URL) */
+        @page { size: A4 portrait; margin: 0; }
       `}</style>
 
-      <div className="min-h-screen bg-gray-100 py-6">
+      <div className="print-wrap min-h-screen bg-gray-100 py-6">
         <div className="no-print mx-auto mb-4 flex max-w-[210mm] items-center justify-between px-2">
           <Button variant="ghost" size="sm" onClick={() => navigate(ROUTES.INSPECTION_REQUEST_DETAIL.replace(":id", req.id))}>
             <ArrowLeft className="h-4 w-4 mr-1" /> Back
@@ -58,8 +60,8 @@ export default function InspectionRequestPrintPage() {
                 <p className="text-sm font-bold uppercase leading-tight">Stationary Inspection Engineer</p>
                 <p className="text-xs font-semibold uppercase">PT. Pertamina RU-III</p>
               </div>
-              <div className="w-56 p-3 flex flex-col items-center justify-center text-center">
-                {inspectionLogo ? <img src={inspectionLogo} alt="logo" className="h-8 object-contain" /> : <p className="text-base font-bold text-red-600">PERTAMINA</p>}
+              <div className="w-56 px-2 py-2 flex flex-col items-center justify-center text-center">
+                {inspectionLogo ? <img src={inspectionLogo} alt="logo" className="h-16 w-full object-contain" /> : <p className="text-base font-bold text-red-600">PERTAMINA</p>}
                 <p className="mt-1 text-[9px]">
                   {req.tank?.location ? `${req.tank.location}, ` : "Plaju, "}
                   {format(new Date(req.requestDate), "dd MMMM yyyy")}
