@@ -7,10 +7,12 @@ import { minioClient, BUCKET } from "@/lib/minio";
 import { generateRandomFilename } from "@/utils/generator";
 import { createFileData, fileResponse } from "@/modules/files/file.types";
 import { FileRepository } from "@/modules/files/file.repository";
-import { processFile, processImage, processInspectionAttachment, type AspectRatio, type CropRect } from "@/utils/file-processing";
+import { processFile, processImage, processInspectionAttachment, processLogo, type AspectRatio, type CropRect } from "@/utils/file-processing";
 import type { ImageProcessMode } from "@/modules/files/file.types";
 
 const INSPECTION_ATTACHMENT_MODULES = new Set(["DAILY_REPORT", "FINDING", "TEST_RECORD", "INSPECTION_REQUEST", "TANK"]);
+// Logos keep their original aspect ratio (no square crop).
+const LOGO_MODULES = new Set(["COMPANY_LOGO"]);
 
 export class FileService {
   static async generateFileRecord(
@@ -19,14 +21,24 @@ export class FileService {
     aspectRatio: AspectRatio = "1:1",
     cropRect?: CropRect,
   ): Promise<createFileData> {
-    const imageProcessMode: ImageProcessMode = INSPECTION_ATTACHMENT_MODULES.has(module) ? "inspection_attachment" : "avatar";
+    const imageProcessMode: ImageProcessMode = LOGO_MODULES.has(module) ? "logo" : INSPECTION_ATTACHMENT_MODULES.has(module) ? "inspection_attachment" : "avatar";
     let fileProcessed: Buffer;
     let randomFileName: string;
     let mimeType: string;
     let metadata: createFileData["metadata"];
 
     if (file.type.startsWith("image/")) {
-      if (imageProcessMode === "inspection_attachment") {
+      if (imageProcessMode === "logo") {
+        fileProcessed = await processLogo(file);
+        metadata = {
+          originalName: file.name,
+          mimeType: "image/webp",
+          originalMimeType: file.type,
+          processedMimeType: "image/webp",
+          processMode: "logo",
+          cropped: false,
+        };
+      } else if (imageProcessMode === "inspection_attachment") {
         fileProcessed = await processInspectionAttachment(file);
         metadata = {
           originalName: file.name,

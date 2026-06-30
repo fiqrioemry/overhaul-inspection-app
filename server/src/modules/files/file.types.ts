@@ -1,4 +1,4 @@
-export type ImageProcessMode = "avatar" | "inspection_attachment";
+export type ImageProcessMode = "avatar" | "inspection_attachment" | "logo";
 
 type fileMetadata = {
   originalName: string;

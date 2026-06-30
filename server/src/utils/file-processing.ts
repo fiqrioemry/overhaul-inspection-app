@@ -55,6 +55,15 @@ export async function processImage(file: File, aspectRatio: AspectRatio = "1:1",
   return processed;
 }
 
+// Company logos must keep their original proportions — no square crop. We only
+// apply EXIF orientation and re-encode to webp; dimensions/aspect ratio are kept
+// exactly as uploaded (no resize, no crop).
+export async function processLogo(file: File): Promise<Buffer> {
+  const arrayBuffer = await file.arrayBuffer();
+  const inputBuffer = Buffer.from(arrayBuffer);
+  return await sharp(inputBuffer).rotate().webp({ quality: 100 }).toBuffer();
+}
+
 export async function processInspectionAttachment(file: File): Promise<Buffer> {
   const arrayBuffer = await file.arrayBuffer();
   const inputBuffer = Buffer.from(arrayBuffer);
