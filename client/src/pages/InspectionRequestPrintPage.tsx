@@ -55,17 +55,19 @@ export default function InspectionRequestPrintPage() {
         <div className="print-page mx-auto w-[210mm] bg-white p-8 shadow-lg">
           <div className="border-2 border-black">
             {/* Header */}
-            <div className="flex items-stretch border-b-2 border-black">
-              <div className="flex-1 border-black p-3 flex flex-col items-center justify-center text-center">
-                <p className="text-sm font-bold uppercase leading-tight">Stationary Inspection Engineer</p>
-                <p className="text-xs font-semibold uppercase">PT. Pertamina RU-III</p>
-              </div>
-              <div className="w-56 px-2 py-2 flex flex-col items-center justify-center text-center">
+            <div className="relative flex items-stretch border-b-2 border-black">
+              {/* Logo sits on the right and defines the header height (position unchanged) */}
+              <div className="ml-auto w-56 px-2 py-2 flex flex-col items-center justify-center text-center">
                 {inspectionLogo ? <img src={inspectionLogo} alt="logo" className="h-16 w-full object-contain" /> : <p className="text-base font-bold text-red-600">PERTAMINA</p>}
                 <p className="mt-1 text-[9px]">
                   {req.tank?.location ? `${req.tank.location}, ` : "Plaju, "}
                   {format(new Date(req.requestDate), "dd MMMM yyyy")}
                 </p>
+              </div>
+              {/* Title centered across the full header width (logo area included) */}
+              <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center px-3 text-center">
+                <p className="-mt-0.5 text-base font-bold uppercase leading-tight">Stationary Inspection Engineer</p>
+                <p className="text-xs font-semibold uppercase">PT. Pertamina RU-III</p>
               </div>
             </div>
 
@@ -98,7 +100,7 @@ export default function InspectionRequestPrintPage() {
             </div>
 
             {/* Body */}
-            <div className="grid grid-cols-2">
+            <div className="grid grid-cols-[3fr_2fr]">
               {/* Left: description */}
               <div className="border-r-2 border-black p-3" style={{ minHeight: "150mm" }}>
                 <p className="mb-2 text-[11px] font-semibold uppercase">Work Instruction</p>
@@ -132,7 +134,7 @@ export default function InspectionRequestPrintPage() {
             <div className="grid grid-cols-3 border-t-2 border-black">
               <div className="border-r-2 border-black text-center">
                 <p className="px-2 py-1 text-start text-[11px] border-b font-semibold uppercase">Received By :</p>
-                {req.receivedByUser?.position && <p className="px-2 py-1 text-start text-[9px] text-black">{req.receivedByUser.position}</p>}
+                {req.receivedByUser?.company?.name && <p className="px-2 py-1 text-start text-[9px] text-black">{req.receivedByUser.company.name}</p>}
                 <div className="h-14" />
                 <div className="mx-auto w-3/4 border-t border-black pt-1 text-[10px] text-black">{req.receivedByUser?.name}</div>
               </div>
