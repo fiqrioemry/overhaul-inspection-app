@@ -27,7 +27,7 @@ export default function InspectionRequestPrintPage() {
   if (isError || !req) return <ErrorState message="Failed to load inspection request." onRetry={() => refetch()} />;
 
   const sketch = req.attachments.find((a) => a.attachmentType === "SKETCH");
-  const inspectionLogo = req.tank?.inspectionCompany?.logoFile?.url ?? null;
+  const inspectionLogo = req.inspectionLogoUrl ?? req.approvedByUser?.company?.logoFile?.url ?? null;
 
   return (
     <>

@@ -97,6 +97,7 @@ export interface CompanyRef {
   id: string;
   name: string;
   type: "OWNER" | "INSPECTOR_COMPANY" | "CONTRACTOR";
+  logoFile?: { url: string } | null;
 }
 
 export interface PersonnelRef {
@@ -154,6 +155,8 @@ export interface InspectionRequestDetail {
   attachments: InspectionRequestAttachment[];
   signatoryTemplate: string[];
   summary: InspectionRequestSummary;
+  // Resolved OWNER company logo (from the approver's company, else any OWNER company).
+  inspectionLogoUrl: string | null;
 }
 
 export interface ListInspectionRequestsParams {
