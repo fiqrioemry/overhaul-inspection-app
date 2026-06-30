@@ -44,7 +44,7 @@ const personnelSelect = {
   id: true,
   name: true,
   position: true,
-  company: { select: { id: true, name: true, type: true } },
+  company: { select: { id: true, name: true, type: true, logoFile: { select: { url: true } } } },
 } as const;
 
 const detailInclude = {
@@ -73,6 +73,17 @@ export class InspectionRequestRepository {
       where: { id, deletedAt: null },
       include: detailInclude,
     });
+  }
+
+  // Logo of the OWNER company, used as the inspection logo fallback on the
+  // printable request form when the approver has no resolvable company logo.
+  static async findOwnerCompanyLogoUrl(): Promise<string | null> {
+    const company = await pgsql.company.findFirst({
+      where: { type: "OWNER", deletedAt: null, isActive: true, logoFile: { isNot: null } },
+      select: { logoFile: { select: { url: true } } },
+      orderBy: { createdAt: "asc" },
+    });
+    return company?.logoFile?.url ?? null;
   }
 
   static async findMany(query: {

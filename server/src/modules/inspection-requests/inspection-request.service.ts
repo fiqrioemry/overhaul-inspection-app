@@ -309,8 +309,17 @@ export class InspectionRequestService {
   static async getRequestById(id: string) {
     const request = await InspectionRequestRepository.findById(id);
     if (!request) throw new HTTPException(404, { message: "Inspection request not found", cause: "REQUEST_NOT_FOUND" });
+
+    // Inspection logo for the printable request form: take it from the OWNER
+    // company of the approver (approvedRequests user); fall back to any active
+    // OWNER company logo when the approver is unset or has no resolvable logo.
+    const approverCompany = request.approvedByUser?.company;
+    const approverLogoUrl = approverCompany?.type === "OWNER" ? approverCompany.logoFile?.url ?? null : null;
+    const inspectionLogoUrl = approverLogoUrl ?? (await InspectionRequestRepository.findOwnerCompanyLogoUrl());
+
     return {
       ...request,
+      inspectionLogoUrl,
       signatoryTemplate: getSignatoryTemplate(request.testType),
       summary: computeSummary(request.items, request.testRecords),
     };
