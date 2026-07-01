@@ -74,6 +74,15 @@ export interface DailyActivitySummary {
   items: DailyActivityItem[];
 }
 
+export interface DashboardInspectionRequestObject {
+  id: string;
+  objectType: string;
+  objectName: string | null;
+  quantity: number;
+  unit: string | null;
+  locationDetail: string | null;
+}
+
 export interface DashboardInspectionRequestItem {
   id: string;
   requestNo: string;
@@ -84,6 +93,7 @@ export interface DashboardInspectionRequestItem {
   executionParty: string | null;
   tank: { id: string; tankNo: string; tankName: string | null } | null;
   tankProcess: { id: string; name: string } | null;
+  items: DashboardInspectionRequestObject[];
 }
 
 export interface InProcessInspectionRequests {

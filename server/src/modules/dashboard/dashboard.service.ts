@@ -193,6 +193,10 @@ export class DashboardService {
         include: {
           tank: { select: { id: true, tankNo: true, tankName: true } },
           tankProcess: { select: { id: true, name: true } },
+          items: {
+            orderBy: { sortOrder: "asc" },
+            select: { id: true, objectType: true, objectName: true, quantity: true, unit: true, locationDetail: true },
+          },
         },
       }),
     ]);
@@ -209,6 +213,7 @@ export class DashboardService {
         executionParty: r.executionParty,
         tank: r.tank,
         tankProcess: r.tankProcess,
+        items: r.items,
       })),
     };
   }
