@@ -7,6 +7,7 @@ import PageHeader from "@/components/common/PageHeader";
 import LoadingState from "@/components/common/LoadingState";
 import StatusBadge from "@/components/common/StatusBadge";
 import { useDashboardSummary, useTankProgress, useDashboardFindings, useDashboardDailyActivities, useDashboardInspectionRequests } from "@/features/dashboard/dashboard.query";
+import type { DashboardInspectionRequestObject } from "@/features/dashboard/dashboard.api";
 import { ROUTES } from "@/constants/route.constant";
 import { formatDistanceToNow } from "date-fns";
 
@@ -37,6 +38,13 @@ const ACTIVITY_TYPE_CONFIG: Record<string, { label: string; color: string }> = {
   MONITORING: { label: "Monitoring", color: "bg-blue-100 text-blue-700" },
   INSPECTION: { label: "Inspection", color: "bg-violet-100 text-violet-700" },
 };
+
+// "Manhole 24 - 2 Unit - Shell plate course 1" — object · qty+unit · location, skipping blanks.
+function formatRequestObject(item: DashboardInspectionRequestObject): string {
+  const name = item.objectName?.trim() || item.objectType.replace(/_/g, " ");
+  const qty = `${item.quantity} ${item.unit?.trim() || "Pcs"}`;
+  return [name, qty, item.locationDetail?.trim()].filter(Boolean).join(" - ");
+}
 
 function SummaryCard({ title, value, sub, icon: Icon, iconBg, iconColor, highlight }: { title: string; value: number; sub?: string; icon: React.ElementType; iconBg: string; iconColor: string; highlight?: boolean }) {
   return (
@@ -347,7 +355,7 @@ export default function DashboardPage() {
                   <th className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground">Request No</th>
                   <th className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground">Test Type</th>
                   <th className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground hidden md:table-cell">Tank</th>
-                  <th className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground hidden lg:table-cell">Process</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground hidden md:table-cell">Object &amp; Location</th>
                   <th className="px-4 py-2.5 text-right text-xs font-medium text-muted-foreground">Requested</th>
                 </tr>
               </thead>
@@ -371,8 +379,18 @@ export default function DashboardPage() {
                         <span className="text-xs text-muted-foreground">—</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 hidden lg:table-cell">
-                      <span className="text-xs text-muted-foreground line-clamp-1">{req.tankProcess?.name ?? "—"}</span>
+                    <td className="px-4 py-3 hidden md:table-cell">
+                      {req.items.length > 0 ? (
+                        <div className="space-y-0.5">
+                          {req.items.map((item) => (
+                            <p key={item.id} className="text-xs text-muted-foreground line-clamp-1">
+                              {formatRequestObject(item)}
+                            </p>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-right">
                       <span className="text-xs text-muted-foreground whitespace-nowrap">{formatDistanceToNow(new Date(req.createdAt), { addSuffix: true })}</span>
