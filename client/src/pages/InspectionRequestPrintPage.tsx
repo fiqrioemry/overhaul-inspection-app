@@ -75,15 +75,15 @@ export default function InspectionRequestPrintPage() {
             <div className="grid grid-cols-2 border-b-2 border-black">
               <div className="flex border-b border-r-2 border-black text-[10px]">
                 <span className="w-44 shrink-0 border-r border-black px-2 py-1 font-semibold uppercase">User</span>
-                <span className="flex-1 px-2 py-1">{req.requestedByUser?.name || "-"}</span>
+                <span className="flex-1 px-2 py-1">Stat. Ins. Eng</span>
               </div>
               <div className="flex border-b border-black text-[10px]">
                 <span className="w-36 shrink-0 border-r border-black px-2 py-1 font-semibold uppercase">Request No.</span>
-                <span className="flex-1 px-2 py-1">{req.requestNo || "-"}</span>
+                <span className="flex-1 px-2 py-1">{`_ /NDT/SSIE/${new Date().getFullYear()}`}</span>
               </div>
               <div className="flex border-b border-r-2 border-black text-[10px]">
                 <span className="w-44 shrink-0 border-r border-black px-2 py-1 font-semibold uppercase">Customer / Asset Holder</span>
-                <span className="flex-1 px-2 py-1">{req.assetHolder || "-"}</span>
+                <span className="flex-1 px-2 py-1">MA</span>
               </div>
               <div className="flex border-b border-black text-[10px]">
                 <span className="w-36 shrink-0 border-r border-black px-2 py-1 font-semibold uppercase">NDT Type</span>

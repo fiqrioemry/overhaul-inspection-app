@@ -1,12 +1,12 @@
 // src/pages/DashboardPage.tsx
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Container, AlertTriangle, CheckCircle, Clock, Activity, TrendingUp, Flame, ChevronRight, Layers, ClipboardList, Paperclip, User } from "lucide-react";
+import { Container, AlertTriangle, CheckCircle, Clock, Activity, TrendingUp, Flame, ChevronRight, ClipboardList, ClipboardCheck, Paperclip, User } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import PageHeader from "@/components/common/PageHeader";
 import LoadingState from "@/components/common/LoadingState";
 import StatusBadge from "@/components/common/StatusBadge";
-import { useDashboardSummary, useTankProgress, useDashboardFindings, useDashboardDailyActivities } from "@/features/dashboard/dashboard.query";
+import { useDashboardSummary, useTankProgress, useDashboardFindings, useDashboardDailyActivities, useDashboardInspectionRequests } from "@/features/dashboard/dashboard.query";
 import { ROUTES } from "@/constants/route.constant";
 import { formatDistanceToNow } from "date-fns";
 
@@ -73,6 +73,7 @@ export default function DashboardPage() {
   const { data: tanks, isLoading: tanksLoading } = useTankProgress();
   const { data: findingsData, isLoading: findingsLoading } = useDashboardFindings();
   const { data: dailyActivities } = useDashboardDailyActivities();
+  const { data: inspectionRequests } = useDashboardInspectionRequests();
 
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
 
@@ -318,38 +319,71 @@ export default function DashboardPage() {
                 )}
               </CardContent>
             </Card>
-
-            {/* By Status */}
-            {findingsData.byStatus.length > 0 && (
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                    <Layers className="h-4 w-4 text-muted-foreground" />
-                    Findings by Status
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex flex-wrap gap-2">
-                    {findingsData.byStatus.map((item) => {
-                      const cfg = FINDING_STATUS_CONFIG[item.status] ?? {
-                        label: item.status.replace(/_/g, " "),
-                        color: "bg-muted text-muted-foreground",
-                      };
-                      return (
-                        <div key={item.status} className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${cfg.color}`}>
-                          <span>{cfg.label}</span>
-                          <span className="font-bold">{item.count}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
             </>
           )}
         </div>
       </div>
+
+      {/* In-Process Inspection Requests */}
+      {inspectionRequests && inspectionRequests.items.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <ClipboardCheck className="h-4 w-4 text-muted-foreground" />
+                Inspection Requests — In Process
+                <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">{inspectionRequests.total}</span>
+              </CardTitle>
+              <button onClick={() => navigate(ROUTES.INSPECTION_REQUESTS)} className="text-xs text-primary hover:underline flex items-center gap-0.5">
+                View all
+                <ChevronRight className="h-3 w-3" />
+              </button>
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            <table className="w-full text-sm">
+              <thead className="border-y bg-muted/30">
+                <tr>
+                  <th className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground">Request No</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground">Test Type</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground hidden md:table-cell">Tank</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground hidden lg:table-cell">Process</th>
+                  <th className="px-4 py-2.5 text-right text-xs font-medium text-muted-foreground">Requested</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {inspectionRequests.items.map((req) => (
+                  <tr
+                    key={req.id}
+                    className="hover:bg-muted/20 transition-colors cursor-pointer"
+                    onClick={() => navigate(ROUTES.INSPECTION_REQUEST_DETAIL.replace(":id", req.id))}
+                  >
+                    <td className="px-4 py-3">
+                      <span className="font-mono font-semibold text-xs">{req.requestNo}</span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">{req.testType.replace(/_/g, " ")}</span>
+                    </td>
+                    <td className="px-4 py-3 hidden md:table-cell">
+                      {req.tank ? (
+                        <span className="font-mono text-xs">{req.tank.tankNo}</span>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 hidden lg:table-cell">
+                      <span className="text-xs text-muted-foreground line-clamp-1">{req.tankProcess?.name ?? "—"}</span>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">{formatDistanceToNow(new Date(req.createdAt), { addSuffix: true })}</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Recent Findings */}
       {findingsData && findingsData.recent.length > 0 && (

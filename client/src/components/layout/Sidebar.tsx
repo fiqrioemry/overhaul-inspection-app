@@ -18,6 +18,8 @@ import {
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth.store";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { PERMISSIONS } from "@/constants/permission.constant";
 import { ROUTES } from "@/constants/route.constant";
 
@@ -65,27 +67,41 @@ const adminNav: NavItem[] = [
   { label: "User Management", to: ROUTES.USERS, icon: Users, permission: PERMISSIONS.USER_READ },
 ];
 
-function NavItemLink({ item }: { item: NavItem }) {
+/** Wraps a nav element with a tooltip that only shows when the sidebar is collapsed. */
+function CollapsedTooltip({ label, collapsed, children }: { label: string; collapsed: boolean; children: React.ReactNode }) {
+  if (!collapsed) return <>{children}</>;
   return (
-    <NavLink
-      to={item.to}
-      end={item.to === ROUTES.DASHBOARD}
-      className={({ isActive }) =>
-        cn(
-          "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-          isActive
-            ? "bg-primary text-primary-foreground"
-            : "text-muted-foreground hover:bg-muted hover:text-foreground",
-        )
-      }
-    >
-      <item.icon className="size-4 shrink-0" />
-      <span className="truncate">{item.label}</span>
-    </NavLink>
+    <Tooltip>
+      <TooltipTrigger asChild>{children}</TooltipTrigger>
+      <TooltipContent side="right">{label}</TooltipContent>
+    </Tooltip>
   );
 }
 
-function MasterDataGroup({ group }: { group: NavGroup }) {
+function NavItemLink({ item, collapsed }: { item: NavItem; collapsed: boolean }) {
+  return (
+    <CollapsedTooltip label={item.label} collapsed={collapsed}>
+      <NavLink
+        to={item.to}
+        end={item.to === ROUTES.DASHBOARD}
+        className={({ isActive }) =>
+          cn(
+            "flex items-center rounded-md text-sm font-medium transition-colors",
+            collapsed ? "justify-center px-0 py-2" : "gap-3 px-3 py-2",
+            isActive
+              ? "bg-primary text-primary-foreground"
+              : "text-muted-foreground hover:bg-muted hover:text-foreground",
+          )
+        }
+      >
+        <item.icon className="size-4 shrink-0" />
+        {!collapsed && <span className="truncate">{item.label}</span>}
+      </NavLink>
+    </CollapsedTooltip>
+  );
+}
+
+function MasterDataGroup({ group, collapsed }: { group: NavGroup; collapsed: boolean }) {
   const canAny = useAuthStore((s) => s.canAny);
   const can = useAuthStore((s) => s.can);
   const [expanded, setExpanded] = useState(false);
@@ -93,6 +109,17 @@ function MasterDataGroup({ group }: { group: NavGroup }) {
   if (!canAny(group.permissions)) return null;
 
   const visibleChildren = group.children.filter((c) => !c.permission || can(c.permission));
+
+  // Collapsed rail: flatten children into individual icon links with tooltips.
+  if (collapsed) {
+    return (
+      <div className="space-y-1">
+        {visibleChildren.map((child) => (
+          <NavItemLink key={child.to} item={child} collapsed />
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -109,7 +136,7 @@ function MasterDataGroup({ group }: { group: NavGroup }) {
       {expanded && (
         <div className="ml-4 mt-1 space-y-1 border-l pl-3">
           {visibleChildren.map((child) => (
-            <NavItemLink key={child.to} item={child} />
+            <NavItemLink key={child.to} item={child} collapsed={false} />
           ))}
         </div>
       )}
@@ -119,34 +146,51 @@ function MasterDataGroup({ group }: { group: NavGroup }) {
 
 export default function Sidebar() {
   const can = useAuthStore((s) => s.can);
+  // Auto-collapse to an icon-only rail on mobile / narrow viewports.
+  const collapsed = useMediaQuery("(max-width: 767px)");
 
   return (
-    <aside className="flex h-full w-60 shrink-0 flex-col border-r bg-background">
-      {/* Logo */}
-      <div className="flex h-14 items-center border-b px-4">
-        <span className="font-bold text-lg tracking-tight">
-          Overhaul<span className="text-primary">.</span>
-        </span>
-      </div>
+    <TooltipProvider delayDuration={0}>
+      <aside
+        className={cn(
+          "flex h-full shrink-0 flex-col border-r bg-background transition-[width] duration-200",
+          collapsed ? "w-16" : "w-60",
+        )}
+      >
+        {/* Logo */}
+        <div className={cn("flex h-14 items-center border-b", collapsed ? "justify-center px-0" : "px-4")}>
+          <span className="font-bold text-lg tracking-tight">
+            {collapsed ? (
+              <>
+                O<span className="text-primary">.</span>
+              </>
+            ) : (
+              <>
+                Overhaul<span className="text-primary">.</span>
+              </>
+            )}
+          </span>
+        </div>
 
-      {/* Nav */}
-      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
-        {mainNav.map((item) => {
-          if (item.permission && !can(item.permission)) return null;
-          return <NavItemLink key={item.to} item={item} />;
-        })}
+        {/* Nav */}
+        <nav className={cn("flex-1 overflow-y-auto py-4 space-y-1", collapsed ? "px-2" : "px-3")}>
+          {mainNav.map((item) => {
+            if (item.permission && !can(item.permission)) return null;
+            return <NavItemLink key={item.to} item={item} collapsed={collapsed} />;
+          })}
 
-        <div className="my-2 border-t" />
+          <div className="my-2 border-t" />
 
-        <MasterDataGroup group={masterDataGroup} />
+          <MasterDataGroup group={masterDataGroup} collapsed={collapsed} />
 
-        <div className="my-2 border-t" />
+          <div className="my-2 border-t" />
 
-        {adminNav.map((item) => {
-          if (item.permission && !can(item.permission)) return null;
-          return <NavItemLink key={item.to} item={item} />;
-        })}
-      </nav>
-    </aside>
+          {adminNav.map((item) => {
+            if (item.permission && !can(item.permission)) return null;
+            return <NavItemLink key={item.to} item={item} collapsed={collapsed} />;
+          })}
+        </nav>
+      </aside>
+    </TooltipProvider>
   );
 }

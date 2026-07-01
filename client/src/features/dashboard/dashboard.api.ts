@@ -78,6 +78,23 @@ export interface DailyActivitySummary {
   items: DailyActivityItem[];
 }
 
+export interface DashboardInspectionRequestItem {
+  id: string;
+  requestNo: string;
+  testType: string;
+  status: string;
+  requestDate: string;
+  createdAt: string;
+  executionParty: string | null;
+  tank: { id: string; tankNo: string; tankName: string | null } | null;
+  tankProcess: { id: string; name: string } | null;
+}
+
+export interface InProcessInspectionRequests {
+  total: number;
+  items: DashboardInspectionRequestItem[];
+}
+
 export async function getDashboardSummary(): Promise<DashboardSummary> {
   const res = await api.get<ResponseSuccess<DashboardSummary>>("/dashboard/summary");
   return res.data.data!;
@@ -95,5 +112,10 @@ export async function getDashboardFindings(): Promise<FindingSummaryData> {
 
 export async function getDashboardDailyActivities(): Promise<DailyActivitySummary> {
   const res = await api.get<ResponseSuccess<DailyActivitySummary>>("/dashboard/daily-activities");
+  return res.data.data!;
+}
+
+export async function getDashboardInspectionRequests(): Promise<InProcessInspectionRequests> {
+  const res = await api.get<ResponseSuccess<InProcessInspectionRequests>>("/dashboard/inspection-requests");
   return res.data.data!;
 }
