@@ -28,4 +28,9 @@ export class DashboardController {
     const data = await DashboardService.getTodayDailyActivities();
     return responseOK(c, dashboardSuccessMessage.GET_DAILY_ACTIVITIES, data);
   }
+
+  static async getInspectionRequests(c: Context) {
+    const data = await DashboardService.getInProcessInspectionRequests();
+    return responseOK(c, dashboardSuccessMessage.GET_INSPECTION_REQUESTS, data);
+  }
 }

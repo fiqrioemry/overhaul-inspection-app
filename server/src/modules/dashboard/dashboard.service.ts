@@ -6,7 +6,14 @@ import {
   TankAssetStatusEnum,
   TankProjectStatusEnum,
 } from "generated/prisma";
-import type { DailyActivitySummary, DashboardSummary, FindingSummary, TankProgressItem, TestSummary } from "./dashboard.types";
+import type {
+  DailyActivitySummary,
+  DashboardSummary,
+  FindingSummary,
+  InProcessInspectionRequests,
+  TankProgressItem,
+  TestSummary,
+} from "./dashboard.types";
 
 const ACTIVE_PROJECT_STATUSES: TankProjectStatusEnum[] = [
   TankProjectStatusEnum.PLANNED,
@@ -167,6 +174,41 @@ export class DashboardService {
         tank: r.tank,
         tankProcess: r.tankProcess,
         inspector: r.inspector,
+      })),
+    };
+  }
+
+  static async getInProcessInspectionRequests(limit = 8): Promise<InProcessInspectionRequests> {
+    const where = {
+      deletedAt: null,
+      status: InspectionRequestStatusEnum.IN_PROCESS,
+    };
+
+    const [total, requests] = await Promise.all([
+      pgsql.inspectionRequest.count({ where }),
+      pgsql.inspectionRequest.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        take: limit,
+        include: {
+          tank: { select: { id: true, tankNo: true, tankName: true } },
+          tankProcess: { select: { id: true, name: true } },
+        },
+      }),
+    ]);
+
+    return {
+      total,
+      items: requests.map((r) => ({
+        id: r.id,
+        requestNo: r.requestNo,
+        testType: r.testType,
+        status: r.status,
+        requestDate: r.requestDate,
+        createdAt: r.createdAt,
+        executionParty: r.executionParty,
+        tank: r.tank,
+        tankProcess: r.tankProcess,
       })),
     };
   }

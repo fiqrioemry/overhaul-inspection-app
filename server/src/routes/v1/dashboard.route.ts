@@ -11,5 +11,6 @@ dashboard.get("/tank-progress", protect, requirePermission(PERMISSIONS.DASHBOARD
 dashboard.get("/findings", protect, requirePermission(PERMISSIONS.DASHBOARD_READ), ctrl.getFindings);
 dashboard.get("/tests", protect, requirePermission(PERMISSIONS.DASHBOARD_READ), ctrl.getTests);
 dashboard.get("/daily-activities", protect, requirePermission(PERMISSIONS.DASHBOARD_READ), ctrl.getDailyActivities);
+dashboard.get("/inspection-requests", protect, requirePermission(PERMISSIONS.DASHBOARD_READ), ctrl.getInspectionRequests);
 
 export default dashboard;

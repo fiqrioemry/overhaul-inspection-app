@@ -74,6 +74,23 @@ export interface DailyActivitySummary {
   items: DailyActivityItem[];
 }
 
+export interface DashboardInspectionRequestItem {
+  id: string;
+  requestNo: string;
+  testType: string;
+  status: string;
+  requestDate: Date;
+  createdAt: Date;
+  executionParty: string | null;
+  tank: { id: string; tankNo: string; tankName: string | null } | null;
+  tankProcess: { id: string; name: string } | null;
+}
+
+export interface InProcessInspectionRequests {
+  total: number;
+  items: DashboardInspectionRequestItem[];
+}
+
 export interface TestSummary {
   testRecords: {
     passed: number;
