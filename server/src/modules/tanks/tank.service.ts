@@ -1,5 +1,6 @@
 import { HTTPException } from "hono/http-exception";
 import { Context } from "hono";
+import { Prisma } from "generated/prisma";
 import { pgsql } from "@/lib/database";
 import { TankRepository } from "./tank.repository";
 import { TankAttachmentRepository } from "./tank-attachment.repository";
@@ -43,13 +44,23 @@ function validateDocumentFiles(files: File[]) {
   }
 }
 
+// Maps the DB-level partial unique index violation (tanks_tank_no_active_unique) — which can
+// still fire under a concurrent create/update race — to a clear 409 instead of a 500.
+function rethrowTankNoConflict(err: unknown): never {
+  if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+    throw new HTTPException(409, { message: "Tank No sudah digunakan oleh tank aktif", cause: "TANK_NO_EXISTS" });
+  }
+  throw err;
+}
+
 export class TankService {
   // Creates the physical asset only. Overhaul workflow (TankProcess) is generated
   // when a TankProject is created against this tank, not here.
   static async createTank(data: CreateTankRequest, createdBy: string, c?: Context, files: File[] = []) {
-    const existing = await TankRepository.findByTankNo(data.tankNo);
+    // Only active tanks (deleted_at IS NULL) block a tank_no; soft-deleted numbers are reusable.
+    const existing = await TankRepository.findActiveByTankNo(data.tankNo);
     if (existing) {
-      throw new HTTPException(409, { message: "Tank number already exists", cause: "TANK_NO_EXISTS" });
+      throw new HTTPException(409, { message: "Tank No sudah digunakan oleh tank aktif", cause: "TANK_NO_EXISTS" });
     }
 
     validateDocumentFiles(files);
@@ -65,7 +76,7 @@ export class TankService {
     const tank = await pgsql.$transaction(async (tx) => {
       const newTank = await tx.tank.create({
         data: {
-          tankNo: data.tankNo,
+          tankNo: data.tankNo, // uniqueness re-checked at DB level by tanks_tank_no_active_unique
           tankName: data.tankName,
           location: data.location,
           capacityM3: data.capacityM3,
@@ -124,7 +135,7 @@ export class TankService {
       }
 
       return newTank;
-    });
+    }).catch(rethrowTankNoConflict);
 
     return TankRepository.findById(tank.id);
   }
@@ -189,9 +200,10 @@ export class TankService {
     }
 
     if (data.tankNo && data.tankNo !== tank.tankNo) {
-      const existing = await TankRepository.findByTankNo(data.tankNo);
+      // Ignore soft-deleted rows and exclude this tank itself; only an active duplicate blocks.
+      const existing = await TankRepository.findActiveByTankNo(data.tankNo, id);
       if (existing) {
-        throw new HTTPException(409, { message: "Tank number already exists", cause: "TANK_NO_EXISTS" });
+        throw new HTTPException(409, { message: "Tank No sudah digunakan oleh tank aktif", cause: "TANK_NO_EXISTS" });
       }
     }
 
@@ -200,28 +212,30 @@ export class TankService {
     // When shellCourses is omitted, leave the existing set untouched. When provided,
     // replace it wholesale (add / edit / remove) and keep shellCourseCount in sync.
     if (shellCourses === undefined) {
-      return TankRepository.update(id, scalars);
+      return TankRepository.update(id, scalars).catch(rethrowTankNoConflict);
     }
 
-    await pgsql.$transaction(async (tx) => {
-      await tx.tankShellCourse.deleteMany({ where: { tankId: id } });
-      if (shellCourses.length > 0) {
-        await tx.tankShellCourse.createMany({
-          data: shellCourses.map((sc, idx) => ({
-            tankId: id,
-            // Normalise course numbering so removals don't leave gaps.
-            courseNo: idx + 1,
-            thicknessMm: sc.thicknessMm,
-            plateDimension: sc.plateDimension,
-            remarks: sc.remarks,
-          })),
+    await pgsql
+      .$transaction(async (tx) => {
+        await tx.tankShellCourse.deleteMany({ where: { tankId: id } });
+        if (shellCourses.length > 0) {
+          await tx.tankShellCourse.createMany({
+            data: shellCourses.map((sc, idx) => ({
+              tankId: id,
+              // Normalise course numbering so removals don't leave gaps.
+              courseNo: idx + 1,
+              thicknessMm: sc.thicknessMm,
+              plateDimension: sc.plateDimension,
+              remarks: sc.remarks,
+            })),
+          });
+        }
+        await tx.tank.update({
+          where: { id },
+          data: { ...scalars, shellCourseCount: shellCourses.length },
         });
-      }
-      await tx.tank.update({
-        where: { id },
-        data: { ...scalars, shellCourseCount: shellCourses.length },
-      });
-    });
+      })
+      .catch(rethrowTankNoConflict);
 
     return TankRepository.findById(id);
   }

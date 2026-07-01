@@ -597,8 +597,12 @@ model ProcessDependency {
 // ─── Tank Domain ──────────────────────────────────────────────────────────────
 
 model Tank {
-  id                   String              @id @default(cuid())
-  tankNo               String              @unique @map("tank_no")
+  id String @id @default(cuid())
+  // Uniqueness of tank_no is enforced only among active rows (deleted_at IS NULL) via a
+  // partial unique index created in migration 20260702030000_tank_no_partial_unique_active.
+  // Prisma cannot express filtered/partial unique indexes in the schema, so it is managed
+  // by raw SQL in that migration — do NOT re-add @unique here.
+  tankNo               String              @map("tank_no")
   tankName             String?             @map("tank_name")
   diameterMm           Float?              @map("diameter_mm")
   heightMm             Float?              @map("height_mm")

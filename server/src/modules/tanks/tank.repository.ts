@@ -38,8 +38,16 @@ export class TankRepository {
     });
   }
 
-  static async findByTankNo(tankNo: string) {
-    return pgsql.tank.findFirst({ where: { tankNo, deletedAt: null } });
+  // Finds an ACTIVE tank (deleted_at IS NULL) with the given tank_no. Soft-deleted tanks are
+  // ignored so their number can be reused. On update, pass excludeId to skip the tank itself.
+  static async findActiveByTankNo(tankNo: string, excludeId?: string) {
+    return pgsql.tank.findFirst({
+      where: {
+        tankNo,
+        deletedAt: null,
+        ...(excludeId ? { id: { not: excludeId } } : {}),
+      },
+    });
   }
 
   static async findMany(query: { search?: string; assetStatus?: string; page: number; limit: number }) {
