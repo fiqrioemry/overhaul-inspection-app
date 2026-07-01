@@ -306,10 +306,10 @@ export default function DailyReportCreatePage() {
             <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
               <span className="text-sm font-medium">Report Context (optional)</span>
               <div className={cn("grid grid-cols-1 gap-4", effectiveTankId && "sm:grid-cols-2")}>
-                <SelectField control={form.control} name="tankId" label="Tank" placeholder="Select tank..." options={tankSelectOptions} />
+                <SelectField control={form.control} name="tankId" label="Tank" placeholder="Select tank..." searchable searchPlaceholder="Cari tank..." options={tankSelectOptions} />
                 {effectiveTankId && (
                   <div className="animate-in fade-in slide-in-from-top-1 duration-200">
-                    <SelectField control={form.control} name="tankProcessId" label="Process" placeholder="Select process..." options={processSelectOptions} />
+                    <SelectField control={form.control} name="tankProcessId" label="Process" placeholder="Select process..." searchable searchPlaceholder="Cari process..." options={processSelectOptions} />
                   </div>
                 )}
               </div>

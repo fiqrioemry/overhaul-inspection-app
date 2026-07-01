@@ -60,6 +60,24 @@ export interface FindingSummaryData {
   }>;
 }
 
+export interface DailyActivityItem {
+  id: string;
+  title: string;
+  activityType: "MONITORING" | "INSPECTION" | string;
+  reportDate: string;
+  createdAt: string;
+  attachmentCount: number;
+  tank: { id: string; tankNo: string; tankName: string | null } | null;
+  tankProcess: { id: string; name: string } | null;
+  inspector: { id: string; name: string } | null;
+}
+
+export interface DailyActivitySummary {
+  date: string;
+  total: number;
+  items: DailyActivityItem[];
+}
+
 export async function getDashboardSummary(): Promise<DashboardSummary> {
   const res = await api.get<ResponseSuccess<DashboardSummary>>("/dashboard/summary");
   return res.data.data!;
@@ -72,5 +90,10 @@ export async function getTankProgress(): Promise<TankProgressRow[]> {
 
 export async function getDashboardFindings(): Promise<FindingSummaryData> {
   const res = await api.get<ResponseSuccess<FindingSummaryData>>("/dashboard/findings");
+  return res.data.data!;
+}
+
+export async function getDashboardDailyActivities(): Promise<DailyActivitySummary> {
+  const res = await api.get<ResponseSuccess<DailyActivitySummary>>("/dashboard/daily-activities");
   return res.data.data!;
 }

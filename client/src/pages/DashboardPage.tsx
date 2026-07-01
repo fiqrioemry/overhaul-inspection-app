@@ -1,11 +1,12 @@
 // src/pages/DashboardPage.tsx
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Container, AlertTriangle, CheckCircle, Clock, Activity, TrendingUp, Flame, ChevronRight, Layers } from "lucide-react";
+import { Container, AlertTriangle, CheckCircle, Clock, Activity, TrendingUp, Flame, ChevronRight, Layers, ClipboardList, Paperclip, User } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import PageHeader from "@/components/common/PageHeader";
 import LoadingState from "@/components/common/LoadingState";
 import StatusBadge from "@/components/common/StatusBadge";
-import { useDashboardSummary, useTankProgress, useDashboardFindings } from "@/features/dashboard/dashboard.query";
+import { useDashboardSummary, useTankProgress, useDashboardFindings, useDashboardDailyActivities } from "@/features/dashboard/dashboard.query";
 import { ROUTES } from "@/constants/route.constant";
 import { formatDistanceToNow } from "date-fns";
 
@@ -22,6 +23,19 @@ const FINDING_STATUS_CONFIG: Record<string, { label: string; color: string }> = 
   REPAIRED: { label: "Repaired", color: "bg-blue-100 text-blue-700" },
   VERIFIED: { label: "Verified", color: "bg-purple-100 text-purple-700" },
   CLOSED: { label: "Closed", color: "bg-green-100 text-green-700" },
+};
+
+const PROJECT_STATUS_LABELS: Record<string, string> = {
+  PLANNED: "Planned",
+  IN_PROGRESS: "In Progress",
+  ON_HOLD: "On Hold",
+  COMPLETED: "Completed",
+  CANCELLED: "Cancelled",
+};
+
+const ACTIVITY_TYPE_CONFIG: Record<string, { label: string; color: string }> = {
+  MONITORING: { label: "Monitoring", color: "bg-blue-100 text-blue-700" },
+  INSPECTION: { label: "Inspection", color: "bg-violet-100 text-violet-700" },
 };
 
 function SummaryCard({ title, value, sub, icon: Icon, iconBg, iconColor, highlight }: { title: string; value: number; sub?: string; icon: React.ElementType; iconBg: string; iconColor: string; highlight?: boolean }) {
@@ -58,6 +72,21 @@ export default function DashboardPage() {
   const { data: summary, isLoading: summaryLoading } = useDashboardSummary();
   const { data: tanks, isLoading: tanksLoading } = useTankProgress();
   const { data: findingsData, isLoading: findingsLoading } = useDashboardFindings();
+  const { data: dailyActivities } = useDashboardDailyActivities();
+
+  const [statusFilter, setStatusFilter] = useState<string>("ALL");
+
+  // Distinct project statuses present in the progress list, with counts, for the filter bar.
+  const statusFilters = useMemo(() => {
+    const counts = new Map<string, number>();
+    (tanks ?? []).forEach((t) => counts.set(t.status, (counts.get(t.status) ?? 0) + 1));
+    return Array.from(counts.entries()).map(([status, count]) => ({ status, count }));
+  }, [tanks]);
+
+  const filteredTanks = useMemo(() => {
+    if (!tanks) return [];
+    return statusFilter === "ALL" ? tanks : tanks.filter((t) => t.status === statusFilter);
+  }, [tanks, statusFilter]);
 
   if (summaryLoading || tanksLoading || findingsLoading) return <LoadingState />;
 
@@ -84,13 +113,34 @@ export default function DashboardPage() {
         {tanks && tanks.length > 0 && (
           <div className="lg:col-span-2">
             <Card>
-              <CardHeader className="pb-3">
+              <CardHeader className="pb-3 space-y-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-sm font-semibold flex items-center gap-2">
                     <TrendingUp className="h-4 w-4 text-muted-foreground" />
                     Tank Progress
                   </CardTitle>
-                  <span className="text-xs text-muted-foreground">{tanks.length} tanks</span>
+                  <span className="text-xs text-muted-foreground">
+                    {filteredTanks.length}
+                    {statusFilter !== "ALL" && ` / ${tanks.length}`} tanks
+                  </span>
+                </div>
+                {/* Status filter — narrows both the table and its count */}
+                <div className="flex flex-wrap gap-1.5">
+                  <button
+                    onClick={() => setStatusFilter("ALL")}
+                    className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${statusFilter === "ALL" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/70"}`}
+                  >
+                    All <span className="tabular-nums opacity-70">{tanks.length}</span>
+                  </button>
+                  {statusFilters.map(({ status, count }) => (
+                    <button
+                      key={status}
+                      onClick={() => setStatusFilter(status)}
+                      className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${statusFilter === status ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/70"}`}
+                    >
+                      {PROJECT_STATUS_LABELS[status] ?? status.replace(/_/g, " ")} <span className="tabular-nums opacity-70">{count}</span>
+                    </button>
+                  ))}
                 </div>
               </CardHeader>
               <CardContent className="p-0">
@@ -105,7 +155,14 @@ export default function DashboardPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y">
-                    {tanks.map((row) => {
+                    {filteredTanks.length === 0 && (
+                      <tr>
+                        <td colSpan={5} className="px-4 py-8 text-center text-xs text-muted-foreground">
+                          No tanks match this status.
+                        </td>
+                      </tr>
+                    )}
+                    {filteredTanks.map((row) => {
                       const activeProcess = row.processes?.find((p) => p.status === "IN_PROGRESS" || p.status === "ACTIVE");
                       const tankId = row.tank?.id;
                       return (
@@ -157,9 +214,69 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Findings Summary Panel — 1 col */}
-        {findingsData && (
-          <div className="space-y-4">
+        {/* Right column — 1 col */}
+        <div className="space-y-4">
+          {/* Today's Daily Activity — top 3 */}
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                  <ClipboardList className="h-4 w-4 text-muted-foreground" />
+                  Today's Activity
+                </CardTitle>
+                <button onClick={() => navigate(ROUTES.DAILY_REPORTS)} className="text-xs text-primary hover:underline flex items-center gap-0.5">
+                  View all
+                  <ChevronRight className="h-3 w-3" />
+                </button>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              {!dailyActivities || dailyActivities.items.length === 0 ? (
+                <p className="px-4 pb-4 text-xs text-muted-foreground">No daily activity recorded today.</p>
+              ) : (
+                <div className="divide-y">
+                  {dailyActivities.items.map((a) => {
+                    const type = ACTIVITY_TYPE_CONFIG[a.activityType] ?? { label: a.activityType, color: "bg-muted text-muted-foreground" };
+                    return (
+                      <button
+                        key={a.id}
+                        onClick={() => navigate(ROUTES.DAILY_REPORT_DETAIL.replace(":id", a.id))}
+                        className="w-full text-left px-4 py-3 hover:bg-muted/20 transition-colors"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="text-sm font-medium line-clamp-1 min-w-0">{a.title}</p>
+                          <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${type.color}`}>{type.label}</span>
+                        </div>
+                        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
+                          {a.tank && <span className="font-mono">{a.tank.tankNo}</span>}
+                          {a.tankProcess && <span className="line-clamp-1">· {a.tankProcess.name}</span>}
+                          {a.inspector && (
+                            <span className="inline-flex items-center gap-0.5">
+                              <User className="h-3 w-3" />
+                              {a.inspector.name}
+                            </span>
+                          )}
+                          {a.attachmentCount > 0 && (
+                            <span className="inline-flex items-center gap-0.5">
+                              <Paperclip className="h-3 w-3" />
+                              {a.attachmentCount}
+                            </span>
+                          )}
+                          <span className="ml-auto whitespace-nowrap">{formatDistanceToNow(new Date(a.createdAt), { addSuffix: true })}</span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                  {dailyActivities.total > dailyActivities.items.length && (
+                    <p className="px-4 py-2 text-[11px] text-muted-foreground">+{dailyActivities.total - dailyActivities.items.length} more today</p>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {findingsData && (
+            <>
             {/* By Severity */}
             <Card>
               <CardHeader className="pb-3">
@@ -229,8 +346,9 @@ export default function DashboardPage() {
                 </CardContent>
               </Card>
             )}
-          </div>
-        )}
+            </>
+          )}
+        </div>
       </div>
 
       {/* Recent Findings */}
