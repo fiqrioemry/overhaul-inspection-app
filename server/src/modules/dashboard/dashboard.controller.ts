@@ -23,4 +23,9 @@ export class DashboardController {
     const data = await DashboardService.getTestSummary();
     return responseOK(c, dashboardSuccessMessage.GET_TEST_SUMMARY, data);
   }
+
+  static async getDailyActivities(c: Context) {
+    const data = await DashboardService.getTodayDailyActivities();
+    return responseOK(c, dashboardSuccessMessage.GET_DAILY_ACTIVITIES, data);
+  }
 }

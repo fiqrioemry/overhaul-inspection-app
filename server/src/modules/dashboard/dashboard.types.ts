@@ -56,6 +56,24 @@ export interface FindingSummary {
   }[];
 }
 
+export interface DailyActivityItem {
+  id: string;
+  title: string;
+  activityType: string;
+  reportDate: Date;
+  createdAt: Date;
+  attachmentCount: number;
+  tank: { id: string; tankNo: string; tankName: string | null } | null;
+  tankProcess: { id: string; name: string } | null;
+  inspector: { id: string; name: string } | null;
+}
+
+export interface DailyActivitySummary {
+  date: string;
+  total: number;
+  items: DailyActivityItem[];
+}
+
 export interface TestSummary {
   testRecords: {
     passed: number;

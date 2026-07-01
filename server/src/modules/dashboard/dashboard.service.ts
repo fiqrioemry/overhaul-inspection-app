@@ -6,7 +6,7 @@ import {
   TankAssetStatusEnum,
   TankProjectStatusEnum,
 } from "generated/prisma";
-import type { DashboardSummary, FindingSummary, TankProgressItem, TestSummary } from "./dashboard.types";
+import type { DailyActivitySummary, DashboardSummary, FindingSummary, TankProgressItem, TestSummary } from "./dashboard.types";
 
 const ACTIVE_PROJECT_STATUSES: TankProjectStatusEnum[] = [
   TankProjectStatusEnum.PLANNED,
@@ -125,6 +125,49 @@ export class DashboardService {
       byStatus: byStatus.map((g) => ({ status: g.status, count: g._count.id })),
       bySeverity: bySeverity.map((g) => ({ severity: g.severity, count: g._count.id })),
       recent: recentFindings,
+    };
+  }
+
+  static async getTodayDailyActivities(limit = 3): Promise<DailyActivitySummary> {
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    const end = new Date();
+    end.setHours(23, 59, 59, 999);
+
+    const where = {
+      deletedAt: null,
+      reportDate: { gte: start, lte: end },
+    };
+
+    const [total, reports] = await Promise.all([
+      pgsql.dailyReport.count({ where }),
+      pgsql.dailyReport.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        take: limit,
+        include: {
+          tank: { select: { id: true, tankNo: true, tankName: true } },
+          tankProcess: { select: { id: true, name: true } },
+          inspector: { select: { id: true, name: true } },
+          _count: { select: { attachments: true } },
+        },
+      }),
+    ]);
+
+    return {
+      date: start.toISOString().slice(0, 10),
+      total,
+      items: reports.map((r) => ({
+        id: r.id,
+        title: r.title,
+        activityType: r.activityType,
+        reportDate: r.reportDate,
+        createdAt: r.createdAt,
+        attachmentCount: r._count.attachments,
+        tank: r.tank,
+        tankProcess: r.tankProcess,
+        inspector: r.inspector,
+      })),
     };
   }
 
