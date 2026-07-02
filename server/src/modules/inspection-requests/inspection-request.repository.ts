@@ -128,9 +128,9 @@ export class InspectionRequestRepository {
     return { requests, total };
   }
 
-  static async countForRequestNo(prefix: string) {
+  static async countForRequestNoSuffix(suffix: string) {
     return pgsql.inspectionRequest.count({
-      where: { requestNo: { startsWith: prefix } },
+      where: { requestNo: { endsWith: suffix } },
     });
   }
 

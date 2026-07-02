@@ -68,7 +68,7 @@ export class DashboardService {
 
   static async getTankProgress(): Promise<TankProgressItem[]> {
     const projects = await pgsql.tankProject.findMany({
-      where: { deletedAt: null, status: { in: ACTIVE_PROJECT_STATUSES } },
+      where: { deletedAt: null, status: { in: ACTIVE_PROJECT_STATUSES }, tank: { deletedAt: null } },
       orderBy: { createdAt: "desc" },
       take: 50,
       include: {

@@ -24,9 +24,6 @@ const TEST_TYPE_LABELS: Record<string, string> = {
   HYDROTEST_PIPE: "Hydrotest Pipe",
   PNEUMATIC_BOTTOM_TEST: "Pneumatic Bottom Test",
   PNEUMATIC_ROOF_TEST: "Pneumatic Roof Test",
-  MATERIAL_INSPECTION: "Material Inspection",
-  VISUAL_INSPECTION: "Visual Inspection",
-  COATING_INSPECTION: "Coating Inspection",
   OTHER: "Inspection",
 };
 
@@ -108,10 +105,13 @@ function toItemRows(items: InspectionRequestItemInput[]) {
 }
 
 export class InspectionRequestService {
-  private static async generateRequestNo(tankNo?: string | null): Promise<string> {
-    const prefix = `REQ-${tankNo ?? "GEN"}-`;
-    const count = await InspectionRequestRepository.countForRequestNo(prefix);
-    return `${prefix}${String(count + 1).padStart(4, "0")}`;
+  // Request numbers follow the format `001/NDT/SSIE/{year}`, where the leading number is a
+  // per-year running sequence sourced from the count of existing requests for that year.
+  private static async generateRequestNo(): Promise<string> {
+    const year = new Date().getFullYear();
+    const suffix = `/NDT/SSIE/${year}`;
+    const count = await InspectionRequestRepository.countForRequestNoSuffix(suffix);
+    return `${String(count + 1).padStart(3, "0")}${suffix}`;
   }
 
   // Resolves and validates the tank / project / process triple. project + tank are
@@ -200,7 +200,7 @@ export class InspectionRequestService {
     }
     validateFiles(files);
 
-    const requestNo = await this.generateRequestNo(tankNo);
+    const requestNo = await this.generateRequestNo();
     const description = data.description?.trim() || buildRequestDescription(data.testType, data.items, tankNo);
 
     // Upload supporting files to MinIO outside the transaction
