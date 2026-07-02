@@ -59,6 +59,10 @@ type FormValues = z.infer<typeof schema>;
 
 const emptyItem = { objectType: "WELD_JOINT", objectName: "", quantity: 1, unit: "", locationDetail: "", remarks: "" };
 
+// Test types that default the Standard & Code field to "ASME V".
+const ASME_V_TEST_TYPES = new Set<InspectionRequestType>(["PENETRANT_TEST", "RADIOGRAPHY_TEST"]);
+const DEFAULT_STANDARD_ASME_V = "ASME V";
+
 export default function InspectionRequestForm() {
   const navigate = useNavigate();
   const createMutation = useCreateInspectionRequest();
@@ -77,7 +81,7 @@ export default function InspectionRequestForm() {
       receivedById: "",
       preparedById: "",
       approvedById: "",
-      standardAndCode: "",
+      standardAndCode: DEFAULT_STANDARD_ASME_V,
       requestLocation: "",
       description: "",
       remarks: "",
@@ -111,6 +115,23 @@ export default function InspectionRequestForm() {
   const receivedByOptions = [{ label: "— None —", value: NONE_VALUE }, ...receivedByUsers.map((u) => ({ label: userOptionLabel(u), value: u.id }))];
   const preparedByOptions = [{ label: "— None —", value: NONE_VALUE }, ...ownerUsers.map((u) => ({ label: userOptionLabel(u), value: u.id }))];
   const approvedByOptions = [{ label: "— None —", value: NONE_VALUE }, ...ownerUsers.map((u) => ({ label: userOptionLabel(u), value: u.id }))];
+
+  // Default the Standard & Code field to "ASME V" for Penetrant / Radiography tests.
+  // Only auto-fill/clear when the field holds the default value so custom input is preserved.
+  const selectedTestType = form.watch("testType") as InspectionRequestType;
+  const prevTestTypeRef = useRef(selectedTestType);
+  useEffect(() => {
+    if (prevTestTypeRef.current !== selectedTestType) {
+      prevTestTypeRef.current = selectedTestType;
+      const current = form.getValues("standardAndCode") ?? "";
+      if (ASME_V_TEST_TYPES.has(selectedTestType)) {
+        if (current === "") form.setValue("standardAndCode", DEFAULT_STANDARD_ASME_V);
+      } else if (current === DEFAULT_STANDARD_ASME_V) {
+        form.setValue("standardAndCode", "");
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedTestType]);
 
   // Reset process when tank changes
   const prevTankRef = useRef(selectedTankValue);

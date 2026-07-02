@@ -10,9 +10,6 @@ export const TEST_TYPE_LABELS: Record<InspectionRequestType, string> = {
   HYDROTEST_PIPE: "Hydrotest Pipe",
   PNEUMATIC_BOTTOM_TEST: "Pneumatic Bottom Test",
   PNEUMATIC_ROOF_TEST: "Pneumatic Roof Test",
-  MATERIAL_INSPECTION: "Material Inspection",
-  VISUAL_INSPECTION: "Visual Inspection",
-  COATING_INSPECTION: "Coating Inspection",
   OTHER: "Other",
 };
 

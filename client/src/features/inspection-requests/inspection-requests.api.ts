@@ -14,9 +14,6 @@ export type InspectionRequestType =
   | "HYDROTEST_PIPE"
   | "PNEUMATIC_BOTTOM_TEST"
   | "PNEUMATIC_ROOF_TEST"
-  | "MATERIAL_INSPECTION"
-  | "VISUAL_INSPECTION"
-  | "COATING_INSPECTION"
   | "OTHER";
 
 export type InspectionObjectType =

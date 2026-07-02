@@ -137,7 +137,6 @@ export default function DailyReportListPage() {
                   <tr>
                     <th className="px-4 py-3 text-left font-medium">Date</th>
                     <th className="px-4 py-3 text-left font-medium">Tank</th>
-                    <th className="px-4 py-3 text-left font-medium">Process</th>
                     <th className="px-4 py-3 text-left font-medium">Activity Type</th>
                     <th className="px-4 py-3 text-left font-medium">Title</th>
                     <th className="px-4 py-3 text-left font-medium">Description</th>
@@ -150,7 +149,6 @@ export default function DailyReportListPage() {
                     <tr key={report.id} className="hover:bg-muted/20">
                       <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">{format(new Date(report.reportDate), "dd MMM yyyy")}</td>
                       <td className="px-4 py-3 font-mono text-xs font-medium">{report.tank?.tankNo ?? "—"}</td>
-                      <td className="px-4 py-3 text-muted-foreground text-xs">{report.tankProcess?.name ?? "—"}</td>
                       <td className="px-4 py-3">
                         <span className="text-xs bg-muted px-2 py-0.5 rounded">{ACTIVITY_LABEL[report.activityType] ?? report.activityType.replace(/_/g, " ")}</span>
                       </td>
