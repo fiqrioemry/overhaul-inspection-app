@@ -5,8 +5,8 @@ import type { ResponseSuccess } from "@/types/response.type";
 export interface DashboardSummary {
   tanks: {
     total: number;
-    active: number;
-    inProgress: number;
+    operational: number;
+    underOverhaul: number;
   };
   processes: {
     total: number;

@@ -109,7 +109,7 @@ export default function DashboardPage() {
       {/* Summary Cards */}
       {summary && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <SummaryCard title="Total Tanks" value={summary.tanks.total} sub={`${summary.tanks.inProgress} in progress · ${completedTanks} completed`} icon={Container} iconBg="bg-blue-100" iconColor="text-blue-600" />
+          <SummaryCard title="Total Tanks" value={summary.tanks.total} sub={`${summary.tanks.underOverhaul} under overhaul · ${completedTanks} completed`} icon={Container} iconBg="bg-blue-100" iconColor="text-blue-600" />
           <SummaryCard title="Process Completion" value={summary.processes.completed} sub={`${processCompletionRate}% of ${summary.processes.total} total processes`} icon={CheckCircle} iconBg="bg-green-100" iconColor="text-green-600" />
           <SummaryCard title="Open Findings" value={summary.findings.open} sub={`${summary.findings.critical} critical`} icon={AlertTriangle} iconBg="bg-red-100" iconColor="text-red-600" highlight={summary.findings.critical > 0} />
           <SummaryCard title="Pending Reviews" value={summary.inspectionRequests.pending} sub="awaiting inspector review" icon={Clock} iconBg="bg-amber-100" iconColor="text-amber-600" />
