@@ -372,6 +372,11 @@ export class InspectionRequestService {
     const ctx = await this.resolveContext(nextTankId, nextProjectId, nextProcessId);
     await this.assertPersonnel(data);
 
+    // Mirror create semantics: an empty description means "auto-generate from objects".
+    const nextTestType = data.testType ?? request.testType;
+    const nextItems = data.items ?? request.items.map((it) => ({ ...it, objectName: it.objectName ?? undefined, unit: it.unit ?? undefined, locationDetail: it.locationDetail ?? undefined, remarks: it.remarks ?? undefined }));
+    const nextDescription = data.description === undefined ? undefined : data.description?.trim() || buildRequestDescription(nextTestType, nextItems, ctx.tankNo);
+
     // When the test type changes, re-resolve the active clearance-form template
     // so the linked template + snapshot stay consistent with the new type.
     let templateUpdate: Prisma.InspectionRequestUpdateInput = {};
@@ -422,7 +427,7 @@ export class InspectionRequestService {
           }),
           ...(data.standardAndCode !== undefined && { standardAndCode: data.standardAndCode }),
           ...(data.requestLocation !== undefined && { requestLocation: data.requestLocation }),
-          ...(data.description !== undefined && { description: data.description }),
+          ...(nextDescription !== undefined && { description: nextDescription }),
           ...(data.remarks !== undefined && { remarks: data.remarks }),
           ...templateUpdate,
         },
