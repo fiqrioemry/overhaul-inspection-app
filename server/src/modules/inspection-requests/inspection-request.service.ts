@@ -341,9 +341,15 @@ export class InspectionRequestService {
     const approverLogoUrl = approverCompany?.type === "OWNER" ? approverCompany.logoFile?.url ?? null : null;
     const inspectionLogoUrl = approverLogoUrl ?? (await InspectionRequestRepository.findOwnerCompanyLogoUrl());
 
+    // Contractor company for the clearance form's "Requested By" signature block:
+    // from the request's project, else the tank's most recent active project.
+    const contractorCompany =
+      request.project?.contractorCompany ?? (request.tankId ? await InspectionRequestRepository.findTankContractorCompany(request.tankId) : null);
+
     return {
       ...request,
       inspectionLogoUrl,
+      contractorCompany,
       signatoryTemplate: getSignatoryTemplate(request.testType),
       summary: computeSummary(request.items, request.testRecords),
     };

@@ -89,6 +89,17 @@ export class InspectionRequestRepository {
     });
   }
 
+  // Contractor company of the tank's most recent active project. Used on the
+  // printable clearance form when the request itself is not linked to a project.
+  static async findTankContractorCompany(tankId: string) {
+    const project = await pgsql.tankProject.findFirst({
+      where: { tankId, deletedAt: null, contractorCompanyId: { not: null } },
+      select: { contractorCompany: { select: { id: true, name: true, type: true, logoFile: { select: { url: true } } } } },
+      orderBy: { createdAt: "desc" },
+    });
+    return project?.contractorCompany ?? null;
+  }
+
   // Logo of the OWNER company, used as the inspection logo fallback on the
   // printable request form when the approver has no resolvable company logo.
   static async findOwnerCompanyLogoUrl(): Promise<string | null> {
