@@ -1,7 +1,7 @@
 // src/pages/TankProcessDetailPage.tsx
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Send, Plus, AlertTriangle, Pencil, ArrowRightLeft, Trash2, CheckCheck, Eye } from "lucide-react";
+import { ArrowLeft, Plus, AlertTriangle, Pencil, ArrowRightLeft, Trash2, CheckCheck, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -150,13 +150,6 @@ export default function TankProcessDetailPage() {
                 </Button>
               </PermissionGate>
             )}
-            {process.status === "IN_PROGRESS" && (
-              <PermissionGate permission={PERMISSIONS.INSPECTION_REQUEST_CREATE}>
-                <Button onClick={() => navigate(ROUTES.INSPECTION_REQUEST_CREATE)}>
-                  <Send className="h-4 w-4 mr-1" /> New Inspection Request
-                </Button>
-              </PermissionGate>
-            )}
           </div>
         }
       />
@@ -184,7 +177,6 @@ export default function TankProcessDetailPage() {
           <TabsTrigger value="findings">Findings {findingsData?.meta?.total ? <span className="ml-1 text-xs">({findingsData.meta.total})</span> : null}</TabsTrigger>
           <TabsTrigger value="daily-activity">Daily Activity {dailyReportsData?.meta?.total ? <span className="ml-1 text-xs">({dailyReportsData.meta.total})</span> : null}</TabsTrigger>
           {isTestType && <TabsTrigger value="test-records">Test Records {testRecords.length > 0 ? <span className="ml-1 text-xs">({testRecords.length})</span> : null}</TabsTrigger>}
-          <TabsTrigger value="inspection">Inspection Requests</TabsTrigger>
         </TabsList>
 
         {/* OVERVIEW */}
@@ -403,25 +395,6 @@ export default function TankProcessDetailPage() {
           </TabsContent>
         )}
 
-        {/* INSPECTION REQUESTS */}
-        <TabsContent value="inspection" className="mt-4">
-          <div className="space-y-4">
-            <PermissionGate permission={PERMISSIONS.INSPECTION_REQUEST_CREATE}>
-              <div className="flex justify-end">
-                <Button size="sm" onClick={() => navigate(ROUTES.INSPECTION_REQUEST_CREATE)}>
-                  <Send className="h-4 w-4 mr-1" /> New Request
-                </Button>
-              </div>
-            </PermissionGate>
-            <p className="text-sm text-muted-foreground">
-              Inspection requests for this process are listed on the{" "}
-              <a href={ROUTES.INSPECTION_REQUESTS} className="underline">
-                Inspection Requests
-              </a>{" "}
-              page.
-            </p>
-          </div>
-        </TabsContent>
       </Tabs>
 
       {/* DIALOGS */}

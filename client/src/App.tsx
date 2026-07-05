@@ -34,6 +34,7 @@ import TankDetailPage from "@/pages/TankDetailPage";
 import TankProcessDetailPage from "@/pages/TankProcessDetailPage";
 import InspectionRequestListPage from "@/pages/InspectionRequestListPage";
 import InspectionRequestCreatePage from "@/pages/InspectionRequestCreatePage";
+import InspectionRequestEditPage from "@/pages/InspectionRequestEditPage";
 import InspectionRequestDetailPage from "@/pages/InspectionRequestDetailPage";
 import InspectionRequestPrintPage from "@/pages/InspectionRequestPrintPage";
 import FindingListPage from "@/pages/FindingListPage";
@@ -124,6 +125,9 @@ export default function AppRouter() {
             {/* Inspection Requests */}
             <Route element={<PermissionRoute permission={PERMISSIONS.INSPECTION_REQUEST_CREATE} />}>
               <Route path={ROUTES.INSPECTION_REQUEST_CREATE} element={<InspectionRequestCreatePage />} />
+            </Route>
+            <Route element={<PermissionRoute permission={PERMISSIONS.INSPECTION_REQUEST_UPDATE} />}>
+              <Route path={ROUTES.INSPECTION_REQUEST_EDIT} element={<InspectionRequestEditPage />} />
             </Route>
             <Route element={<PermissionRoute permission={PERMISSIONS.INSPECTION_REQUEST_READ} />}>
               <Route path={ROUTES.INSPECTION_REQUESTS} element={<InspectionRequestListPage />} />

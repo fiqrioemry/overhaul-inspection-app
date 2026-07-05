@@ -14,9 +14,9 @@ import LongTextField from "@/components/fields/LongTextField";
 import ShortTextField from "@/components/fields/ShortTextField";
 import { cn } from "@/lib/utils";
 import { ROUTES } from "@/constants/route.constant";
-import { useCreateInspectionRequest, useRequestTankOptions, useRequestTankProcessOptions } from "../inspection-requests.query";
+import { useCreateInspectionRequest, useUpdateInspectionRequest, useRequestTankOptions, useRequestTankProcessOptions } from "../inspection-requests.query";
 import { TEST_TYPE_OPTIONS, OBJECT_TYPE_OPTIONS } from "../inspection-request.constants";
-import type { CreateInspectionRequestPayload, InspectionRequestType, InspectionObjectType } from "../inspection-requests.api";
+import type { CreateInspectionRequestPayload, UpdateInspectionRequestPayload, InspectionRequestDetail, InspectionRequestType, InspectionObjectType } from "../inspection-requests.api";
 import { useCompanyOptions } from "@/features/companies/companies.query";
 import { useUserOptions } from "@/features/users/users.query";
 import type { UserOption } from "@/features/users/users.api";
@@ -74,30 +74,68 @@ const DEFAULT_STANDARD_BY_TEST_TYPE: Record<InspectionRequestType, string> = {
   OTHER: "",
 };
 
-export default function InspectionRequestForm() {
+interface InspectionRequestFormProps {
+  /** When provided, the form runs in edit mode and saves via PATCH instead of creating. */
+  request?: InspectionRequestDetail;
+}
+
+function requestToFormValues(request: InspectionRequestDetail): FormValues {
+  return {
+    testType: request.testType,
+    tankId: request.tankId ?? NO_TANK_VALUE,
+    tankProcessId: request.tankProcessId ?? (request.tankId ? NO_PROCESS_VALUE : ""),
+    requestDate: format(new Date(request.requestDate), "yyyy-MM-dd"),
+    assetHolder: request.assetHolder ?? "",
+    executionCompanyId: request.executionCompanyId ?? NONE_VALUE,
+    receivedById: request.receivedById ?? NONE_VALUE,
+    preparedById: request.preparedById ?? NONE_VALUE,
+    approvedById: request.approvedById ?? NONE_VALUE,
+    standardAndCode: request.standardAndCode ?? "",
+    requestLocation: request.requestLocation ?? "",
+    description: request.description ?? "",
+    remarks: request.remarks ?? "",
+    items: [...request.items]
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .map((it) => ({
+        objectType: it.objectType,
+        objectName: it.objectName ?? "",
+        quantity: it.quantity,
+        unit: it.unit ?? "",
+        locationDetail: it.locationDetail ?? "",
+        remarks: it.remarks ?? "",
+      })),
+  };
+}
+
+export default function InspectionRequestForm({ request }: InspectionRequestFormProps) {
   const navigate = useNavigate();
+  const isEdit = Boolean(request);
   const createMutation = useCreateInspectionRequest();
+  const updateMutation = useUpdateInspectionRequest();
+  const isPending = createMutation.isPending || updateMutation.isPending;
   const [files, setFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema) as Resolver<FormValues>,
-    defaultValues: {
-      testType: "PENETRANT_TEST",
-      tankId: "",
-      tankProcessId: "",
-      requestDate: format(new Date(), "yyyy-MM-dd"),
-      assetHolder: "MA 4",
-      executionCompanyId: "",
-      receivedById: "",
-      preparedById: "",
-      approvedById: "",
-      standardAndCode: DEFAULT_STANDARD_BY_TEST_TYPE.PENETRANT_TEST,
-      requestLocation: "",
-      description: "",
-      remarks: "",
-      items: [{ ...emptyItem }],
-    },
+    defaultValues: request
+      ? requestToFormValues(request)
+      : {
+          testType: "PENETRANT_TEST",
+          tankId: "",
+          tankProcessId: "",
+          requestDate: format(new Date(), "yyyy-MM-dd"),
+          assetHolder: "MA 4",
+          executionCompanyId: "",
+          receivedById: "",
+          preparedById: "",
+          approvedById: "",
+          standardAndCode: DEFAULT_STANDARD_BY_TEST_TYPE.PENETRANT_TEST,
+          requestLocation: "",
+          description: "",
+          remarks: "",
+          items: [{ ...emptyItem }],
+        },
   });
 
   const { fields, append, remove, insert } = useFieldArray({ control: form.control, name: "items" });
@@ -163,6 +201,42 @@ export default function InspectionRequestForm() {
   function onSubmit(values: FormValues) {
     const effectiveProcessId = selectedProcessValue && selectedProcessValue !== NO_PROCESS_VALUE ? selectedProcessValue : undefined;
     const pick = (v?: string) => (v && v !== NONE_VALUE ? v : undefined);
+
+    if (isEdit && request) {
+      const nextTankId = effectiveTankId ?? null;
+      const nextProcessId = effectiveProcessId ?? null;
+      const payload: UpdateInspectionRequestPayload = {
+        testType: values.testType as InspectionRequestType,
+        tankId: nextTankId,
+        tankProcessId: nextProcessId,
+        // Drop the stale project link when the tank/process context changes so
+        // the server re-derives it from the new process.
+        ...((nextTankId !== request.tankId || nextProcessId !== request.tankProcessId) && { projectId: null }),
+        requestDate: values.requestDate,
+        assetHolder: values.assetHolder || null,
+        executionCompanyId: pick(values.executionCompanyId) ?? null,
+        receivedById: pick(values.receivedById) ?? null,
+        preparedById: pick(values.preparedById) ?? null,
+        approvedById: pick(values.approvedById) ?? null,
+        standardAndCode: values.standardAndCode || null,
+        requestLocation: values.requestLocation || null,
+        description: values.description || null,
+        remarks: values.remarks || null,
+        items: values.items.map((it) => ({
+          objectType: it.objectType as InspectionObjectType,
+          objectName: it.objectName || undefined,
+          quantity: it.quantity,
+          unit: it.unit || undefined,
+          locationDetail: it.locationDetail || undefined,
+          remarks: it.remarks || undefined,
+        })),
+      };
+      updateMutation.mutate(
+        { id: request.id, data: payload },
+        { onSuccess: () => navigate(ROUTES.INSPECTION_REQUEST_DETAIL.replace(":id", request.id)) },
+      );
+      return;
+    }
 
     const payload: CreateInspectionRequestPayload = {
       testType: values.testType as InspectionRequestType,
@@ -311,7 +385,8 @@ export default function InspectionRequestForm() {
         </div>
       </div>
 
-      {/* Supporting documents */}
+      {/* Supporting documents — attachments are managed on the detail page in edit mode */}
+      {!isEdit && (
       <div className="rounded-lg border p-5 space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-medium">Supporting Documents (optional)</h2>
@@ -336,13 +411,19 @@ export default function InspectionRequestForm() {
           </div>
         )}
       </div>
+      )}
 
       <div className="flex items-center justify-end gap-3">
-        <Button type="button" variant="outline" onClick={() => navigate(ROUTES.INSPECTION_REQUESTS)} disabled={createMutation.isPending}>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => navigate(isEdit && request ? ROUTES.INSPECTION_REQUEST_DETAIL.replace(":id", request.id) : ROUTES.INSPECTION_REQUESTS)}
+          disabled={isPending}
+        >
           Cancel
         </Button>
-        <Button type="submit" disabled={createMutation.isPending}>
-          {createMutation.isPending ? "Creating..." : "Create Request"}
+        <Button type="submit" disabled={isPending}>
+          {isEdit ? (isPending ? "Saving..." : "Save Changes") : isPending ? "Creating..." : "Create Request"}
         </Button>
       </div>
     </form>

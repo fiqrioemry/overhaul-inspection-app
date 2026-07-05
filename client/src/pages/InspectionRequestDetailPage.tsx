@@ -1,7 +1,7 @@
 // src/pages/InspectionRequestDetailPage.tsx
 import { useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Printer, Upload, X, CheckCircle2, FileText, Trash2 } from "lucide-react";
+import { ArrowLeft, Printer, Upload, X, CheckCircle2, FileText, Trash2, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import LoadingState from "@/components/common/LoadingState";
 import ErrorState from "@/components/common/ErrorState";
@@ -94,9 +94,14 @@ export default function InspectionRequestDetailPage() {
             <Printer className="h-4 w-4 mr-1" /> Print Request Form
           </Button>
           {canUpdate && req.status === "NOT_STARTED" && (
-            <Button variant="ghost" size="sm" onClick={() => setDeleteOpen(true)} title="Delete">
-              <Trash2 className="h-4 w-4 text-destructive" />
-            </Button>
+            <>
+              <Button variant="outline" size="sm" onClick={() => navigate(ROUTES.INSPECTION_REQUEST_EDIT.replace(":id", req.id))}>
+                <Pencil className="h-4 w-4 mr-1" /> Edit
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => setDeleteOpen(true)} title="Delete">
+                <Trash2 className="h-4 w-4 text-destructive" />
+              </Button>
+            </>
           )}
         </div>
       </div>

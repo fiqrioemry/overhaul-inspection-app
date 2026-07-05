@@ -236,6 +236,7 @@ export interface CreateInspectionRequestPayload {
 export interface UpdateInspectionRequestPayload {
   testType?: InspectionRequestType;
   tankId?: string | null;
+  projectId?: string | null;
   tankProcessId?: string | null;
   requestDate?: string;
   assetHolder?: string | null;

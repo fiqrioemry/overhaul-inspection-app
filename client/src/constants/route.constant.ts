@@ -25,6 +25,7 @@ export const ROUTES = {
   INSPECTION_REQUESTS: "/inspection-requests",
   INSPECTION_REQUEST_CREATE: "/inspection-requests/create",
   INSPECTION_REQUEST_DETAIL: "/inspection-requests/:id",
+  INSPECTION_REQUEST_EDIT: "/inspection-requests/:id/edit",
   INSPECTION_REQUEST_PRINT: "/inspection-requests/:id/print",
   NOTIFICATIONS: "/notifications",
   USERS: "/users",

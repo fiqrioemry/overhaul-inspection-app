@@ -1,7 +1,7 @@
 // src/pages/InspectionRequestListPage.tsx
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ClipboardList, Eye, Trash2, Plus } from "lucide-react";
+import { ClipboardList, Eye, Trash2, Plus, Pencil } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import PageHeader from "@/components/common/PageHeader";
@@ -134,6 +134,11 @@ export default function InspectionRequestListPage() {
                             <Eye className="h-3.5 w-3.5 text-muted-foreground" />
                           </Button>
                           <PermissionGate permission={PERMISSIONS.INSPECTION_REQUEST_UPDATE}>
+                            {r.status === "NOT_STARTED" && (
+                              <Button variant="ghost" size="icon-sm" title="Edit" onClick={() => navigate(ROUTES.INSPECTION_REQUEST_EDIT.replace(":id", r.id))}>
+                                <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                              </Button>
+                            )}
                             <Button variant="ghost" size="icon-sm" title="Delete" onClick={() => setDeleteTarget(r)} disabled={deleteMutation.isPending}>
                               <Trash2 className="h-3.5 w-3.5 text-destructive" />
                             </Button>
