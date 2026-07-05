@@ -97,6 +97,17 @@ export interface CompanyRef {
   logoFile?: { url: string } | null;
 }
 
+// TankProject reference on the detail response; contractor / inspection
+// companies live at the project level (see server projectSelect).
+export interface InspectionRequestProjectRef {
+  id: string;
+  projectNo: string;
+  type: string;
+  status: string;
+  inspectionCompany?: { id: string; name: string; logoFile: { url: string } | null } | null;
+  contractorCompany?: { id: string; name: string; logoFile: { url: string } | null } | null;
+}
+
 export interface PersonnelRef {
   id: string;
   name: string;
@@ -171,6 +182,7 @@ export interface InspectionRequestDetail {
   createdAt: string;
   updatedAt: string;
   tank: TankRef | null;
+  project?: InspectionRequestProjectRef | null;
   tankProcess: { id: string; name: string; type: string } | null;
   requestedByUser: { id: string; name: string; email: string } | null;
   executionCompany: CompanyRef | null;

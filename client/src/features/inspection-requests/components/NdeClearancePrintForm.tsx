@@ -29,11 +29,12 @@ function CheckBox({ checked }: { checked: boolean }) {
   return <span className={`inline-block h-3 w-3 border border-black align-middle ${checked ? "bg-black" : ""}`} />;
 }
 
+// Row 1 = role (Requested/Accepted/Inspected/Issued By), row 2 = company PT.
 function SignatureBlock({ company, role }: { company: string; role: string }) {
   return (
     <div className="flex flex-1 flex-col border border-black">
-      <p className="border-b border-black px-2 py-1 text-center text-[10px] font-bold leading-tight">{company}</p>
-      <p className="px-2 py-1 text-center text-[10px] font-semibold uppercase">{role}</p>
+      <p className="border-b border-black px-2 py-1 text-center text-[10px] font-semibold uppercase">{role}</p>
+      <p className="px-2 py-1 text-center text-[10px] font-bold leading-tight">{company}</p>
       <div className="h-16" />
       <p className="px-2 py-1 text-[10px]">Name :</p>
     </div>
@@ -51,9 +52,11 @@ export default function NdeClearancePrintForm({ req }: Props) {
 
   const title = template?.title || DEFAULT_TITLE;
   const contractor = req.executionCompany?.name || req.executionParty || "-";
-  // Contractor PT for the "Requested By" signature block, resolved server-side
-  // from the request's project / the tank's most recent project.
-  const contractorCompanyName = req.contractorCompany?.name || "";
+  // Contractor PT for the "Requested By" signature block: TankProject →
+  // contractorCompany relation; req.contractorCompany is the server-resolved
+  // fallback (tank's most recent project) for requests without a project link.
+  const contractorCompanyName = req.project?.contractorCompany?.name || req.contractorCompany?.name || "";
+  // Same logo resolution as LegacyInspectionRequestPrintForm.
   const inspectionLogo = req.inspectionLogoUrl ?? req.approvedByUser?.company?.logoFile?.url ?? null;
   const dateOfRequest = format(new Date(req.requestDate), "dd MMMM yyyy");
   // Left blank on purpose: filled in by hand when the form is signed.
@@ -98,8 +101,8 @@ export default function NdeClearancePrintForm({ req }: Props) {
           <div className="border-2 border-black text-black">
             {/* Form heading */}
             <div className="flex items-stretch border-b-2 border-black">
-              <div className="flex w-44 shrink-0 flex-col items-center justify-center border-r border-black px-2 py-2 text-center">
-                {inspectionLogo ? <img src={inspectionLogo} alt="logo" className="h-12 w-full object-contain" /> : <p className="text-base font-bold text-red-600">PERTAMINA</p>}
+              <div className="w-56 shrink-0 px-2 py-2 flex flex-col items-center justify-center text-center border-r border-black">
+                {inspectionLogo ? <img src={inspectionLogo} alt="logo" className="h-16 w-full object-contain" /> : <p className="text-base font-bold text-red-600">PERTAMINA</p>}
               </div>
               <p className="flex-1 self-center px-3 py-2 text-center text-lg font-bold uppercase tracking-wide">{title}</p>
               <div className="flex w-44 shrink-0 flex-col justify-center border-l border-black px-2 py-1 text-[9px]">

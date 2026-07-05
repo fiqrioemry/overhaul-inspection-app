@@ -87,7 +87,7 @@ export default function InspectionRequestForm() {
       tankId: "",
       tankProcessId: "",
       requestDate: format(new Date(), "yyyy-MM-dd"),
-      assetHolder: "",
+      assetHolder: "MA 4",
       executionCompanyId: "",
       receivedById: "",
       preparedById: "",
@@ -214,7 +214,7 @@ export default function InspectionRequestForm() {
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <ShortTextField control={form.control} name="assetHolder" label="Customer / Asset Holder" placeholder="e.g. MA" />
+          <ShortTextField control={form.control} name="assetHolder" label="Customer / Asset Holder" placeholder="e.g. MA 4" />
           <ShortTextField control={form.control} name="standardAndCode" label="Standard & Code" placeholder="e.g. ASME Sec. V" />
           <ShortTextField control={form.control} name="requestLocation" label="Remarks / NDT Location" placeholder="e.g. Lokasi NDT: Tank A2" />
         </div>
