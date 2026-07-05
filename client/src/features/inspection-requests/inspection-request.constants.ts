@@ -43,6 +43,24 @@ export const OBJECT_TYPE_OPTIONS = (Object.keys(OBJECT_TYPE_LABELS) as Inspectio
   label: OBJECT_TYPE_LABELS[value],
 }));
 
+// Print form routing: PT/RT keep the original A4 portrait request form;
+// every other test type prints the A4 landscape NDE Clearance form.
+export const LEGACY_PRINT_TEST_TYPES = ["PENETRANT_TEST", "RADIOGRAPHY_TEST"] as const satisfies readonly InspectionRequestType[];
+
+export const NDE_CLEARANCE_PRINT_TEST_TYPES = [
+  "HYDROTEST_SHELL",
+  "PNEUMATIC_BOTTOM_TEST",
+  "PNEUMATIC_ROOF_TEST",
+  "OIL_LEAK_TEST",
+  "PNEUMATIC_REINFORCEMENT_TEST",
+  "HYDROTEST_PIPE",
+  "OTHER",
+] as const satisfies readonly InspectionRequestType[];
+
+export function isLegacyPrintTestType(testType: InspectionRequestType): boolean {
+  return (LEGACY_PRINT_TEST_TYPES as readonly InspectionRequestType[]).includes(testType);
+}
+
 export const STATUS_LABELS: Record<InspectionRequestStatus, string> = {
   NOT_STARTED: "Not Started",
   IN_PROCESS: "In Process",

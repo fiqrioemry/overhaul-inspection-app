@@ -120,6 +120,35 @@ export interface InspectionRequestListRow {
   summary: InspectionRequestSummary;
 }
 
+// Dynamic clearance-form template (NDE Clearance print form). The snapshot
+// stored on a request has the same shape minus `isActive`.
+export interface InspectionFormTemplateChecklistItem {
+  label: string;
+}
+
+export interface InspectionFormTemplateInfo {
+  id: string;
+  code: string;
+  testType: InspectionRequestType;
+  title: string;
+  revision: string;
+  defaultStandardAndCode: string | null;
+  procedureText: string | null;
+  acceptanceCriteriaText: string | null;
+  checklistItems: InspectionFormTemplateChecklistItem[];
+  isActive?: boolean;
+}
+
+// Saved checklist values keyed by row index; rendered on the printable form.
+export interface InspectionRequestFormChecklistValue {
+  result?: "ACCEPT" | "REJECT";
+  remarks?: string;
+}
+
+export interface InspectionRequestFormData {
+  checklist?: InspectionRequestFormChecklistValue[];
+}
+
 export interface InspectionRequestDetail {
   id: string;
   requestNo: string;
@@ -154,6 +183,11 @@ export interface InspectionRequestDetail {
   summary: InspectionRequestSummary;
   // Resolved OWNER company logo (from the approver's company, else any OWNER company).
   inspectionLogoUrl: string | null;
+  // Dynamic clearance-form support (optional: absent on older requests / legacy PT-RT).
+  formTemplateId?: string | null;
+  formTemplate?: InspectionFormTemplateInfo | null;
+  formTemplateSnapshot?: InspectionFormTemplateInfo | null;
+  formData?: InspectionRequestFormData | null;
 }
 
 export interface ListInspectionRequestsParams {
