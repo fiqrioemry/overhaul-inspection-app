@@ -812,6 +812,36 @@ model Finding {
   @@map("findings")
 }
 
+// Master template for dynamic printable clearance/NDE forms per test type.
+// checklistItems holds an ordered array of { label } rows; requestFields /
+// resultFields / printLayout are reserved for future dynamic form rendering.
+model InspectionFormTemplate {
+  id                     String                    @id @default(cuid())
+  code                   String                    @unique
+  testType               InspectionRequestTypeEnum @map("test_type")
+  title                  String
+  revision               String                    @default("0")
+  defaultStandardAndCode String?                   @map("default_standard_and_code")
+  procedureText          String?                   @map("procedure_text")
+  acceptanceCriteriaText String?                   @map("acceptance_criteria_text")
+  checklistItems         Json                      @map("checklist_items")
+  requestFields          Json?                     @map("request_fields")
+  resultFields           Json?                     @map("result_fields")
+  printLayout            Json?                     @map("print_layout")
+  isActive               Boolean                   @default(true) @map("is_active")
+  createdAt              DateTime                  @default(now()) @map("created_at")
+  updatedAt              DateTime                  @updatedAt @map("updated_at")
+  deletedAt              DateTime?                 @map("deleted_at")
+
+  inspectionRequests InspectionRequest[]
+
+  @@unique([testType, revision])
+  @@index([testType])
+  @@index([isActive])
+  @@index([deletedAt])
+  @@map("inspection_form_templates")
+}
+
 model InspectionRequest {
   id                 String                      @id @default(cuid())
   requestNo          String                      @unique @map("request_no")
@@ -833,6 +863,11 @@ model InspectionRequest {
   description        String?
   remarks            String?
   confirmedAt        DateTime?                   @map("confirmed_at")
+  // Dynamic clearance-form support: template link, filled values, and a frozen
+  // copy of the template so old printed requests never change retroactively.
+  formTemplateId       String? @map("form_template_id")
+  formData             Json?   @map("form_data")
+  formTemplateSnapshot Json?   @map("form_template_snapshot")
   createdAt          DateTime                    @default(now()) @map("created_at")
   updatedAt          DateTime                    @updatedAt @map("updated_at")
   deletedAt          DateTime?                   @map("deleted_at")
@@ -845,6 +880,7 @@ model InspectionRequest {
   receivedByUser   User?        @relation("InspectionRequestReceivedBy", fields: [receivedById], references: [id])
   preparedByUser   User?        @relation("InspectionRequestPreparedBy", fields: [preparedById], references: [id])
   approvedByUser   User?        @relation("InspectionRequestApprovedBy", fields: [approvedById], references: [id])
+  formTemplate     InspectionFormTemplate? @relation(fields: [formTemplateId], references: [id], onDelete: SetNull)
 
   items       InspectionRequestItem[]
   attachments InspectionRequestAttachment[]
@@ -856,6 +892,7 @@ model InspectionRequest {
   @@index([status])
   @@index([testType])
   @@index([executionCompanyId])
+  @@index([formTemplateId])
   @@index([deletedAt])
   @@map("inspection_requests")
 }
@@ -918,6 +955,8 @@ model TestRecord {
   status                  TestResultStatusEnum @default(NOT_STARTED)
   result                  ProcessResultEnum    @default(PENDING)
   remarks                 String?
+  // Dynamic result values captured against a form template's resultFields.
+  resultData              Json?                @map("result_data")
   createdBy               String?              @map("created_by")
   createdAt               DateTime             @default(now()) @map("created_at")
   updatedAt               DateTime             @updatedAt @map("updated_at")

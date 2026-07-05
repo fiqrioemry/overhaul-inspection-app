@@ -3,6 +3,8 @@ import { Context } from "hono";
 import { pgsql } from "@/lib/database";
 import { InspectionRequestStatusEnum, InspectionRequestTypeEnum, InspectionRequestAttachmentTypeEnum, CompanyType } from "generated/prisma";
 import { FileService } from "@/modules/files/file.service";
+import { Prisma } from "generated/prisma";
+import { InspectionFormTemplateRepository } from "@/modules/inspection-form-templates/inspection-form-template.repository";
 import { InspectionRequestRepository } from "./inspection-request.repository";
 import { InspectionRequestAttachmentRepository } from "./inspection-request-attachment.repository";
 import type { CreateInspectionRequestRequest, UpdateInspectionRequestRequest, ListInspectionRequestsQuery, UpdateStatusRequest, InspectionRequestItemInput } from "./inspection-request.schema";
@@ -203,6 +205,26 @@ export class InspectionRequestService {
     const requestNo = await this.generateRequestNo();
     const description = data.description?.trim() || buildRequestDescription(data.testType, data.items, tankNo);
 
+    // Attach the active clearance-form template for this test type (none exists
+    // for PENETRANT_TEST / RADIOGRAPHY_TEST, which keep the legacy print form).
+    // The snapshot freezes the template so already-printed requests never change
+    // when the master template is revised later.
+    const formTemplate = await InspectionFormTemplateRepository.findActiveByTestType(data.testType);
+    const formTemplateSnapshot = formTemplate
+      ? ({
+          id: formTemplate.id,
+          code: formTemplate.code,
+          testType: formTemplate.testType,
+          title: formTemplate.title,
+          revision: formTemplate.revision,
+          defaultStandardAndCode: formTemplate.defaultStandardAndCode,
+          procedureText: formTemplate.procedureText,
+          acceptanceCriteriaText: formTemplate.acceptanceCriteriaText,
+          checklistItems: formTemplate.checklistItems,
+        } as Prisma.InputJsonValue)
+      : undefined;
+    const standardAndCode = data.standardAndCode ?? formTemplate?.defaultStandardAndCode ?? null;
+
     // Upload supporting files to MinIO outside the transaction
     const fileRecords = files.length > 0 ? await Promise.all(files.map((f) => FileService.generateFileRecord(f, "INSPECTION_REQUEST"))) : [];
     if (fileRecords.length > 0) {
@@ -219,7 +241,7 @@ export class InspectionRequestService {
           requestDate: new Date(data.requestDate),
           assetHolder: data.assetHolder ?? null,
           executionParty: data.executionParty ?? null,
-          standardAndCode: data.standardAndCode ?? null,
+          standardAndCode,
           requestLocation: data.requestLocation ?? null,
           description,
           remarks: data.remarks ?? null,
@@ -231,6 +253,8 @@ export class InspectionRequestService {
           receivedByUser: data.receivedById ? { connect: { id: data.receivedById } } : undefined,
           preparedByUser: data.preparedById ? { connect: { id: data.preparedById } } : undefined,
           approvedByUser: data.approvedById ? { connect: { id: data.approvedById } } : undefined,
+          formTemplate: formTemplate ? { connect: { id: formTemplate.id } } : undefined,
+          ...(formTemplateSnapshot !== undefined && { formTemplateSnapshot }),
         },
         toItemRows(data.items),
       );
@@ -342,6 +366,29 @@ export class InspectionRequestService {
     const ctx = await this.resolveContext(nextTankId, nextProjectId, nextProcessId);
     await this.assertPersonnel(data);
 
+    // When the test type changes, re-resolve the active clearance-form template
+    // so the linked template + snapshot stay consistent with the new type.
+    let templateUpdate: Prisma.InspectionRequestUpdateInput = {};
+    if (data.testType && data.testType !== request.testType) {
+      const formTemplate = await InspectionFormTemplateRepository.findActiveByTestType(data.testType);
+      templateUpdate = {
+        formTemplate: formTemplate ? { connect: { id: formTemplate.id } } : { disconnect: true },
+        formTemplateSnapshot: formTemplate
+          ? ({
+              id: formTemplate.id,
+              code: formTemplate.code,
+              testType: formTemplate.testType,
+              title: formTemplate.title,
+              revision: formTemplate.revision,
+              defaultStandardAndCode: formTemplate.defaultStandardAndCode,
+              procedureText: formTemplate.procedureText,
+              acceptanceCriteriaText: formTemplate.acceptanceCriteriaText,
+              checklistItems: formTemplate.checklistItems,
+            } as Prisma.InputJsonValue)
+          : Prisma.DbNull,
+      };
+    }
+
     await pgsql.$transaction(async (tx) => {
       await tx.inspectionRequest.update({
         where: { id },
@@ -371,6 +418,7 @@ export class InspectionRequestService {
           ...(data.requestLocation !== undefined && { requestLocation: data.requestLocation }),
           ...(data.description !== undefined && { description: data.description }),
           ...(data.remarks !== undefined && { remarks: data.remarks }),
+          ...templateUpdate,
         },
       });
 

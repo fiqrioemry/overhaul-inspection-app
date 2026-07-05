@@ -56,6 +56,20 @@ const detailInclude = {
   receivedByUser: { select: personnelSelect },
   preparedByUser: { select: personnelSelect },
   approvedByUser: { select: personnelSelect },
+  formTemplate: {
+    select: {
+      id: true,
+      code: true,
+      testType: true,
+      title: true,
+      revision: true,
+      defaultStandardAndCode: true,
+      procedureText: true,
+      acceptanceCriteriaText: true,
+      checklistItems: true,
+      isActive: true,
+    },
+  },
   items: { select: itemSelect, orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
   attachments: {
     where: { deletedAt: null },

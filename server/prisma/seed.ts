@@ -17,6 +17,7 @@ import {
   TankAssetStatusEnum,
   TankProjectTypeEnum,
   TankProjectStatusEnum,
+  InspectionRequestTypeEnum,
 } from "../generated/prisma";
 import { hashPassword } from "../src/utils/hash";
 
@@ -299,6 +300,132 @@ const processDependencies: Record<string, string[]> = {
   "PT-015": ["PT-014"],
   "PT-016": ["PT-015"],
 };
+
+// ─── Batch 5: Inspection form templates (NDE clearance print forms) ──────────
+// One active template per non-NDT test type. PENETRANT_TEST / RADIOGRAPHY_TEST
+// intentionally have no template — they keep the legacy A4 portrait print form.
+
+const inspectionFormTemplatesData: Array<{
+  code: string;
+  testType: InspectionRequestTypeEnum;
+  title: string;
+  defaultStandardAndCode: string;
+  acceptanceCriteriaText: string;
+  checklistItems: Array<{ label: string }>;
+}> = [
+  {
+    code: "NDE-PBT",
+    testType: InspectionRequestTypeEnum.PNEUMATIC_BOTTOM_TEST,
+    title: "PNEUMATIC BOTTOM TEST CLEARANCE FORM",
+    defaultStandardAndCode: "API 650 Sec. 7.2.4.2 / 7.3.3 / 8.6 or approved ITP / approved NDT procedure",
+    acceptanceCriteriaText:
+      "Accepted apabila tidak terdapat bubble formation / indikasi leakage pada area las yang diuji dan tidak terdapat defect visual yang tidak diterima.",
+    checklistItems: [
+      { label: "Hasil lasan bersih dari slag, spatter, oil, grease, dan kontaminan." },
+      { label: "Weld capping / weld profile sudah terpenuhi." },
+      { label: "Tidak terdapat undercut yang melebihi acceptance criteria." },
+      { label: "Tidak terdapat crack, pinhole, porosity terbuka, atau visual defect yang jelas." },
+      { label: "Root / initial pass sudah selesai dan bersih." },
+      { label: "Oil leak test / penetrating oil test sudah dilaksanakan." },
+    ],
+  },
+  {
+    code: "NDE-PRT",
+    testType: InspectionRequestTypeEnum.PNEUMATIC_ROOF_TEST,
+    title: "PNEUMATIC ROOF TEST CLEARANCE FORM",
+    defaultStandardAndCode: "API 650 Sec. 7.3.8 / API 650 Sec. 8.6 or approved ITP / approved test procedure",
+    acceptanceCriteriaText:
+      "Accepted apabila tidak terdapat bubble formation / leakage pada seluruh weld joint yang diuji dan tidak terjadi penurunan tekanan abnormal selama test.",
+    checklistItems: [
+      { label: "Hasil lasan roof bersih dari slag, spatter, oil, grease, dan kontaminan." },
+      { label: "Weld capping / weld profile sudah terpenuhi." },
+      { label: "Tidak terdapat undercut yang melebihi acceptance criteria." },
+      { label: "Tidak terdapat crack, pinhole, porosity terbuka, atau visual defect yang jelas." },
+      { label: "Roof plate, roof nozzle, roof manhole, dan attachment sudah selesai dilas." },
+      { label: "Vent / opening yang diperlukan untuk test sudah ditutup atau dikontrol sesuai procedure." },
+      { label: "Hydrotest shell sudah dilaksanakan." },
+    ],
+  },
+  {
+    code: "NDE-HTS",
+    testType: InspectionRequestTypeEnum.HYDROTEST_SHELL,
+    title: "HYDROTEST SHELL CLEARANCE FORM",
+    defaultStandardAndCode: "API 650 Sec. 7.3.6 / 7.3.7 or API 653 for existing/repair/alteration tank and approved hydrotest procedure",
+    acceptanceCriteriaText:
+      "Accepted apabila tidak terdapat leakage, tidak terdapat deformasi abnormal, tidak terdapat settlement di luar batas yang diizinkan, dan tidak terdapat penurunan level air yang signifikan di luar acceptance project specification.",
+    checklistItems: [
+      { label: "Seluruh welding shell, nozzle, manhole, clean out door, dan attachment sudah selesai dilas." },
+      { label: "Hasil lasan bersih dari slag, spatter, oil, grease, dan kontaminan." },
+      { label: "Weld capping / weld profile sudah terpenuhi." },
+      { label: "Tidak terdapat undercut yang melebihi acceptance criteria." },
+      { label: "Hasil radiography untuk tiap shell course tidak ada repair." },
+      { label: "Pneumatic reinforcement pad test sudah terpenuhi." },
+      { label: "Pneumatic Bottom test sudah terpenuhi." },
+    ],
+  },
+  {
+    code: "NDE-HTP",
+    testType: InspectionRequestTypeEnum.HYDROTEST_PIPE,
+    title: "HYDROTEST PIPE CLEARANCE FORM",
+    defaultStandardAndCode: "ASME B31.3 Sec. 345 or applicable line class / project specification",
+    acceptanceCriteriaText:
+      "Accepted apabila tidak terdapat leakage, tidak terdapat pressure drop abnormal, tidak terdapat deformasi, dan seluruh joint / connection dalam kondisi aman setelah pressure holding.",
+    checklistItems: [
+      { label: "Hasil lasan bersih dari slag, spatter, oil, grease, dan kontaminan." },
+      { label: "Weld capping / weld profile sudah terpenuhi." },
+      { label: "Tidak terdapat undercut yang melebihi acceptance criteria." },
+      { label: "Radiography Test sudah tidak ada repair." },
+      { label: "Blind flange / spectacle blind / isolation sudah terpasang sesuai test boundary." },
+      { label: "Pressure gauge tersedia dan terkalibrasi." },
+      { label: "Valve yang tidak boleh terkena pressure test sudah dilepas atau di-isolate." },
+      { label: "Instrument yang sensitif sudah dilepas atau di-isolate." },
+    ],
+  },
+  {
+    code: "NDE-PRP",
+    testType: InspectionRequestTypeEnum.PNEUMATIC_REINFORCEMENT_TEST,
+    title: "PNEUMATIC REINFORCEMENT PAD TEST CLEARANCE FORM",
+    defaultStandardAndCode: "API 650 Sec. 7.3.5",
+    acceptanceCriteriaText:
+      "Accepted apabila tidak terdapat bubble formation / leakage pada weld attachment reinforcement pad selama tekanan ditahan.",
+    checklistItems: [
+      { label: "Reinforcement pad dan nozzle sudah selesai dilas." },
+      { label: "Telltale hole / weep hole sudah tersedia dan tidak tertutup." },
+      { label: "Hasil lasan bersih dari slag, spatter, oil, grease, dan kontaminan." },
+      { label: "Weld capping / weld profile sudah terpenuhi." },
+      { label: "Tidak terdapat undercut yang melebihi acceptance criteria." },
+      { label: "Penetrant test pada nozzle-to-shell weld / repad weld sudah dilaksanakan." },
+      { label: "Pressure gauge tersedia dan terkalibrasi." },
+    ],
+  },
+  {
+    code: "NDE-OLT",
+    testType: InspectionRequestTypeEnum.OIL_LEAK_TEST,
+    title: "OIL LEAK TEST CLEARANCE FORM",
+    defaultStandardAndCode: "API 650 Sec. 7.2.4.1 or approved project specification / client specification",
+    acceptanceCriteriaText: "Accepted apabila tidak terdapat indikasi wicking / rembesan / noda minyak pada sisi developer / kapur putih.",
+    checklistItems: [
+      { label: "Root / initial pass sudah selesai." },
+      { label: "Slag dan nonmetallic deposit sudah dibersihkan." },
+      { label: "Area test kering dan bersih." },
+      { label: "Tidak terdapat crack, pinhole, porosity terbuka, atau visual defect yang jelas." },
+      { label: "Kapur putih / developer tersedia." },
+      { label: "Solar / light diesel / penetrating oil tersedia dan disetujui oleh procedure." },
+      { label: "Area test aman dari hot work selama pengujian." },
+      { label: "Dwell time minimal 4 jam atau sesuai approved procedure." },
+      { label: "Approved procedure / ITP tersedia di lokasi." },
+    ],
+  },
+  {
+    code: "NDE-GEN",
+    testType: InspectionRequestTypeEnum.OTHER,
+    title: "NDE / INSPECTION CLEARANCE FORM",
+    defaultStandardAndCode: "As per approved ITP / approved procedure / project specification",
+    acceptanceCriteriaText: "As per approved procedure / project specification.",
+    // Empty on purpose: the print form renders 8 blank checklist rows.
+    checklistItems: [],
+  },
+];
 
 async function main() {
   console.log("🌱 Seeding database...\n");
@@ -622,6 +749,32 @@ async function main() {
       }
     }
     console.log(`  ✅ Workflow generated for ${proj.projectNo}`);
+  }
+
+  // ── Batch 5: Inspection form templates ───────────────────────────────────────
+  console.log("\n🖨️  Seeding inspection form templates...");
+  for (const tpl of inspectionFormTemplatesData) {
+    const created = await prisma.inspectionFormTemplate.upsert({
+      where: { code: tpl.code },
+      update: {
+        title: tpl.title,
+        defaultStandardAndCode: tpl.defaultStandardAndCode,
+        acceptanceCriteriaText: tpl.acceptanceCriteriaText,
+        checklistItems: tpl.checklistItems,
+        isActive: true,
+        deletedAt: null,
+      },
+      create: {
+        code: tpl.code,
+        testType: tpl.testType,
+        title: tpl.title,
+        defaultStandardAndCode: tpl.defaultStandardAndCode,
+        acceptanceCriteriaText: tpl.acceptanceCriteriaText,
+        checklistItems: tpl.checklistItems,
+        isActive: true,
+      },
+    });
+    console.log(`  ✅ [${created.code}] ${created.title}`);
   }
 
   console.log("\n✨ Seeding complete.");
