@@ -183,6 +183,9 @@ export interface InspectionRequestDetail {
   summary: InspectionRequestSummary;
   // Resolved OWNER company logo (from the approver's company, else any OWNER company).
   inspectionLogoUrl: string | null;
+  // Contractor company resolved from the request's project, else the tank's
+  // most recent active project (used on the NDE clearance signature block).
+  contractorCompany?: CompanyRef | null;
   // Dynamic clearance-form support (optional: absent on older requests / legacy PT-RT).
   formTemplateId?: string | null;
   formTemplate?: InspectionFormTemplateInfo | null;

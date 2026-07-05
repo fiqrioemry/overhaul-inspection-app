@@ -51,8 +51,13 @@ export default function NdeClearancePrintForm({ req }: Props) {
 
   const title = template?.title || DEFAULT_TITLE;
   const contractor = req.executionCompany?.name || req.executionParty || "-";
+  // Contractor PT for the "Requested By" signature block, resolved server-side
+  // from the request's project / the tank's most recent project.
+  const contractorCompanyName = req.contractorCompany?.name || "";
+  const inspectionLogo = req.inspectionLogoUrl ?? req.approvedByUser?.company?.logoFile?.url ?? null;
   const dateOfRequest = format(new Date(req.requestDate), "dd MMMM yyyy");
-  const requestedBy = req.requestedByUser?.name || "-";
+  // Left blank on purpose: filled in by hand when the form is signed.
+  const requestedBy = "";
   const tankNo = req.tank?.tankNo || "-";
   const testingType = TEST_TYPE_LABELS[req.testType] ?? req.testType;
   const customerAssetHolder = req.assetHolder || "PT. Pertamina Patra Niaga";
@@ -93,14 +98,16 @@ export default function NdeClearancePrintForm({ req }: Props) {
           <div className="border-2 border-black text-black">
             {/* Form heading */}
             <div className="flex items-stretch border-b-2 border-black">
-              <div className="flex w-40 shrink-0 flex-col justify-center border-r border-black px-2 py-1 text-[9px]">
-                <span>Form No. : {template?.code ?? "-"}</span>
-                <span>Rev. : {template?.revision ?? "0"}</span>
+              <div className="flex w-44 shrink-0 flex-col items-center justify-center border-r border-black px-2 py-2 text-center">
+                {inspectionLogo ? <img src={inspectionLogo} alt="logo" className="h-12 w-full object-contain" /> : <p className="text-base font-bold text-red-600">PERTAMINA</p>}
               </div>
               <p className="flex-1 self-center px-3 py-2 text-center text-lg font-bold uppercase tracking-wide">{title}</p>
-              <div className="flex w-40 shrink-0 flex-col justify-center border-l border-black px-2 py-1 text-[9px]">
-                <span>Request No. :</span>
-                <span className="font-semibold">{req.requestNo}</span>
+              <div className="flex w-44 shrink-0 flex-col justify-center border-l border-black px-2 py-1 text-[9px]">
+                <span>Form No. : {template?.code ?? "-"}</span>
+                <span>Rev. : {template?.revision ?? "0"}</span>
+                <span>
+                  Request No. : <span className="font-semibold">{req.requestNo}</span>
+                </span>
               </div>
             </div>
 
@@ -159,7 +166,7 @@ export default function NdeClearancePrintForm({ req }: Props) {
 
             {/* Signatures */}
             <div className="flex gap-3 p-3">
-              <SignatureBlock company={contractor !== "-" ? contractor : "PT. ________________"} role="Requested By" />
+              <SignatureBlock company={contractorCompanyName || "PT. ________________"} role="Requested By" />
               <SignatureBlock company="PT. Pertamina Patra Niaga (MA4)" role="Accepted By" />
               <SignatureBlock company="PT. Biro Klasifikasi Indonesia" role="Inspected By" />
               <SignatureBlock company="PT. Pertamina Patra Niaga (Stat. Ins. Eng)" role="Issued By" />

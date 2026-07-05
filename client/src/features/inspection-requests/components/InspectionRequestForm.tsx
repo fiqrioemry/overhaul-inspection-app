@@ -59,9 +59,20 @@ type FormValues = z.infer<typeof schema>;
 
 const emptyItem = { objectType: "WELD_JOINT", objectName: "", quantity: 1, unit: "", locationDetail: "", remarks: "" };
 
-// Test types that default the Standard & Code field to "ASME V".
-const ASME_V_TEST_TYPES = new Set<InspectionRequestType>(["PENETRANT_TEST", "RADIOGRAPHY_TEST"]);
-const DEFAULT_STANDARD_ASME_V = "ASME V";
+// Default Standard & Code per test type, auto-filled when the test type changes.
+// Custom input is preserved: the value is only replaced while it is empty or
+// still holds the previous type's default.
+const DEFAULT_STANDARD_BY_TEST_TYPE: Record<InspectionRequestType, string> = {
+  PENETRANT_TEST: "ASME Section V Article 6",
+  RADIOGRAPHY_TEST: "ASME Section V Article 2",
+  OIL_LEAK_TEST: "Royal Dutch",
+  PNEUMATIC_REINFORCEMENT_TEST: "API 650 Section 7.3.5",
+  HYDROTEST_SHELL: "API 650 Section 7.3.6",
+  HYDROTEST_PIPE: "ASME B31.3",
+  PNEUMATIC_BOTTOM_TEST: "API 650 Section 8.6",
+  PNEUMATIC_ROOF_TEST: "Royal Dutch",
+  OTHER: "",
+};
 
 export default function InspectionRequestForm() {
   const navigate = useNavigate();
@@ -81,7 +92,7 @@ export default function InspectionRequestForm() {
       receivedById: "",
       preparedById: "",
       approvedById: "",
-      standardAndCode: DEFAULT_STANDARD_ASME_V,
+      standardAndCode: DEFAULT_STANDARD_BY_TEST_TYPE.PENETRANT_TEST,
       requestLocation: "",
       description: "",
       remarks: "",
@@ -116,18 +127,18 @@ export default function InspectionRequestForm() {
   const preparedByOptions = [{ label: "— None —", value: NONE_VALUE }, ...ownerUsers.map((u) => ({ label: userOptionLabel(u), value: u.id }))];
   const approvedByOptions = [{ label: "— None —", value: NONE_VALUE }, ...ownerUsers.map((u) => ({ label: userOptionLabel(u), value: u.id }))];
 
-  // Default the Standard & Code field to "ASME V" for Penetrant / Radiography tests.
-  // Only auto-fill/clear when the field holds the default value so custom input is preserved.
+  // Auto-fill Standard & Code with the selected test type's default. Only
+  // replace when the field is empty or still holds the previous type's
+  // default so custom input is preserved.
   const selectedTestType = form.watch("testType") as InspectionRequestType;
   const prevTestTypeRef = useRef(selectedTestType);
   useEffect(() => {
     if (prevTestTypeRef.current !== selectedTestType) {
+      const prevDefault = DEFAULT_STANDARD_BY_TEST_TYPE[prevTestTypeRef.current] ?? "";
       prevTestTypeRef.current = selectedTestType;
       const current = form.getValues("standardAndCode") ?? "";
-      if (ASME_V_TEST_TYPES.has(selectedTestType)) {
-        if (current === "") form.setValue("standardAndCode", DEFAULT_STANDARD_ASME_V);
-      } else if (current === DEFAULT_STANDARD_ASME_V) {
-        form.setValue("standardAndCode", "");
+      if (current === "" || current === prevDefault) {
+        form.setValue("standardAndCode", DEFAULT_STANDARD_BY_TEST_TYPE[selectedTestType] ?? "");
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
