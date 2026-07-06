@@ -1,5 +1,5 @@
 // src/pages/DailyReportEditPage.tsx
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -17,16 +17,22 @@ import SelectField from "@/components/fields/SelectField";
 import DateField from "@/components/fields/DateField";
 import LoadingState from "@/components/common/LoadingState";
 import ErrorState from "@/components/common/ErrorState";
-import { useDailyReport, useUpdateDailyReport } from "@/features/daily-reports/daily-reports.query";
+import { useDailyReport, useUpdateDailyReport, useTankOptions, useTankProcessOptions } from "@/features/daily-reports/daily-reports.query";
 import type { DailyReportAttachment } from "@/features/daily-reports/daily-reports.api";
 import { ROUTES } from "@/constants/route.constant";
 import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 const schema = z.object({
   reportDate: z.string().min(1, "Report date required"),
   activityType: z.enum(["MONITORING", "INSPECTION"]),
   title: z.string().trim().min(1, "Judul kegiatan wajib diisi").max(300),
+  tankId: z.string().optional(),
+  tankProcessId: z.string().optional(),
 });
+
+const NO_TANK_VALUE = "__none__";
+const NO_PROCESS_VALUE = "__none__";
 
 type FormValues = z.infer<typeof schema>;
 type DailyReport = NonNullable<ReturnType<typeof useDailyReport>["data"]>;
@@ -186,8 +192,37 @@ function DailyReportEditContent({ report, reportId }: { report: DailyReport; rep
       reportDate: format(new Date(report.reportDate), "yyyy-MM-dd"),
       activityType: report.activityType,
       title: report.title ?? "",
+      tankId: report.tankId ?? NO_TANK_VALUE,
+      tankProcessId: report.tankProcessId ?? NO_PROCESS_VALUE,
     },
   });
+
+  const selectedTankValue = form.watch("tankId") ?? "";
+  const selectedProcessValue = form.watch("tankProcessId") ?? "";
+  const effectiveTankId = selectedTankValue && selectedTankValue !== NO_TANK_VALUE ? selectedTankValue : undefined;
+  const effectiveProcessId = selectedProcessValue && selectedProcessValue !== NO_PROCESS_VALUE ? selectedProcessValue : undefined;
+
+  const { data: tankOptions = [] } = useTankOptions();
+  const { data: tankProcessOptions = [] } = useTankProcessOptions(effectiveTankId ?? "");
+
+  const tankSelectOptions = [
+    { label: "General — no tank", value: NO_TANK_VALUE },
+    ...tankOptions.map((t) => ({ label: t.tankName ? `${t.tankNo} — ${t.tankName}` : t.tankNo, value: t.id })),
+  ];
+  const processSelectOptions = [
+    { label: "No specific process", value: NO_PROCESS_VALUE },
+    ...tankProcessOptions.map((p) => ({ label: p.name, value: p.id })),
+  ];
+
+  // Reset process when tank changes
+  const prevTankRef = useRef(selectedTankValue);
+  useEffect(() => {
+    if (prevTankRef.current !== selectedTankValue) {
+      prevTankRef.current = selectedTankValue;
+      form.setValue("tankProcessId", NO_PROCESS_VALUE);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedTankValue]);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
@@ -284,6 +319,8 @@ function DailyReportEditContent({ report, reportId }: { report: DailyReport; rep
       {
         id: reportId,
         data: {
+          tankId: effectiveTankId ?? null,
+          tankProcessId: effectiveProcessId ?? null,
           reportDate: values.reportDate,
           activityType: values.activityType,
           title: values.title.trim(),
@@ -341,6 +378,23 @@ function DailyReportEditContent({ report, reportId }: { report: DailyReport; rep
             </Label>
             <Input id="title" placeholder="cth. Inspeksi visual hasil lasan" maxLength={300} {...form.register("title")} />
             {form.formState.errors.title && <p className="text-xs text-destructive">{form.formState.errors.title.message}</p>}
+          </div>
+
+          <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
+            <span className="text-sm font-medium">Report Context (optional)</span>
+            <div className={cn("grid grid-cols-1 gap-4", effectiveTankId && "sm:grid-cols-2")}>
+              <SelectField control={form.control} name="tankId" label="Tank" placeholder="Select tank..." searchable searchPlaceholder="Cari tank..." options={tankSelectOptions} />
+              {effectiveTankId && (
+                <div className="animate-in fade-in slide-in-from-top-1 duration-200">
+                  <SelectField control={form.control} name="tankProcessId" label="Process" placeholder="Select process..." searchable searchPlaceholder="Cari process..." options={processSelectOptions} />
+                </div>
+              )}
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              {!effectiveTankId
+                ? "General report — not linked to any tank or process."
+                : "Optionally narrow this report down to a specific process of the selected tank."}
+            </p>
           </div>
         </div>
 

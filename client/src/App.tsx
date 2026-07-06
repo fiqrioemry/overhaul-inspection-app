@@ -51,7 +51,7 @@ export default function AppRouter() {
   return (
     <>
       <ScrollToTop />
-      <Toaster position="top-right" richColors />
+      <Toaster position="top-right" richColors closeButton />
       <Routes>
         {/* Public routes */}
         <Route element={<PublicRoute />}>

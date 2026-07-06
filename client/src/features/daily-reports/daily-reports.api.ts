@@ -113,6 +113,9 @@ export interface CreateDailyReportPayload {
 }
 
 export interface UpdateDailyReportPayload {
+  /** undefined = keep current context, null = clear (general report) */
+  tankId?: string | null;
+  tankProcessId?: string | null;
   reportDate?: string;
   activityType?: DailyActivityType;
   title?: string;
@@ -157,6 +160,8 @@ export async function createDailyReport(payload: CreateDailyReportPayload): Prom
 
 export async function updateDailyReport(id: string, payload: UpdateDailyReportPayload): Promise<DailyReportDetail> {
   const formData = new FormData();
+  if (payload.tankId !== undefined) formData.append("tankId", payload.tankId ?? "");
+  if (payload.tankProcessId !== undefined) formData.append("tankProcessId", payload.tankProcessId ?? "");
   if (payload.reportDate) formData.append("reportDate", payload.reportDate);
   if (payload.activityType) formData.append("activityType", payload.activityType);
   if (payload.title !== undefined) formData.append("title", payload.title);
