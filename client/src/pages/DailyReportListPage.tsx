@@ -3,8 +3,8 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FileText, Pencil, Trash2, Eye, Printer, Plus } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import DateRangeFilter from "@/components/fields/DateRangeFilter";
 import PageHeader from "@/components/common/PageHeader";
 import LoadingState from "@/components/common/LoadingState";
 import ErrorState from "@/components/common/ErrorState";
@@ -90,26 +90,14 @@ export default function DailyReportListPage() {
           </SelectContent>
         </Select>
 
-        <Input
-          type="date"
-          className="w-38 text-sm"
-          value={startDate}
-          onChange={(e) => {
-            setStartDate(e.target.value);
+        <DateRangeFilter
+          startDate={startDate}
+          endDate={endDate}
+          onChange={(start, end) => {
+            setStartDate(start);
+            setEndDate(end);
             setPage(1);
           }}
-          title="Start date"
-        />
-        <span className="text-muted-foreground text-sm">—</span>
-        <Input
-          type="date"
-          className="w-38 text-sm"
-          value={endDate}
-          onChange={(e) => {
-            setEndDate(e.target.value);
-            setPage(1);
-          }}
-          title="End date"
         />
 
         {hasActiveFilter && (
