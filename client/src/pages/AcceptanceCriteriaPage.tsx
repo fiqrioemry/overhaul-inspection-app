@@ -13,22 +13,39 @@ import LoadingState from "@/components/common/LoadingState";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 import { PERMISSIONS } from "@/constants/permission.constant";
 import PermissionGate from "@/components/common/PermissionGate";
+import FilterSelect from "@/components/fields/FilterSelect";
 import { ClipboardCheck, Plus, Pencil, Trash2, ChevronDown, ChevronRight } from "lucide-react";
 import CriteriaDetailPanel from "@/features/acceptance-criteria/components/CriteriaDetailPanel";
 import type { AcceptanceCriteria } from "@/features/acceptance-criteria/acceptance-criteria.api";
 import AcceptanceCriteriaFormDialog from "@/features/acceptance-criteria/components/AcceptanceCriteriaFormDialog";
 import { useAcceptanceCriteria, useDeleteAcceptanceCriteria } from "@/features/acceptance-criteria/acceptance-criteria.query";
+import { ACCEPTANCE_TYPE_OPTIONS } from "@/schemas/acceptance-criteria.schema";
+
+// Backend MasterDataStatus enum values (DRAFT | ACTIVE | ARCHIVED)
+const STATUS_OPTIONS = [
+  { label: "Draft", value: "DRAFT" },
+  { label: "Active", value: "ACTIVE" },
+  { label: "Archived", value: "ARCHIVED" },
+];
 
 export default function AcceptanceCriteriaPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
+  const [type, setType] = useState("");
+  const [status, setStatus] = useState("");
   const [formOpen, setFormOpen] = useState(false);
   const [selectedCriteria, setSelectedCriteria] = useState<AcceptanceCriteria | undefined>();
   const [deleteTarget, setDeleteTarget] = useState<AcceptanceCriteria | undefined>();
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const debouncedSearch = useDebounce(search, 400);
-  const { data, isLoading, isError, refetch } = useAcceptanceCriteria({ page, limit: 10, search: debouncedSearch });
+  const { data, isLoading, isError, refetch } = useAcceptanceCriteria({
+    page,
+    limit: 10,
+    search: debouncedSearch,
+    acceptanceType: type || undefined,
+    status: status || undefined,
+  });
   const deleteMutation = useDeleteAcceptanceCriteria();
 
   function openCreate() {
@@ -75,6 +92,42 @@ export default function AcceptanceCriteriaPage() {
           }}
           className="max-w-xs"
         />
+        <div className="ml-auto flex items-center gap-2">
+          <FilterSelect
+            value={type}
+            onChange={(v) => {
+              setType(v);
+              setPage(1);
+            }}
+            options={ACCEPTANCE_TYPE_OPTIONS}
+            placeholder="Type"
+            allLabel="All Types"
+          />
+          <FilterSelect
+            value={status}
+            onChange={(v) => {
+              setStatus(v);
+              setPage(1);
+            }}
+            options={STATUS_OPTIONS}
+            placeholder="Status"
+            allLabel="All Status"
+          />
+          {(search || type || status) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setSearch("");
+                setType("");
+                setStatus("");
+                setPage(1);
+              }}
+            >
+              Reset
+            </Button>
+          )}
+        </div>
       </div>
 
       {isLoading && <LoadingState />}
