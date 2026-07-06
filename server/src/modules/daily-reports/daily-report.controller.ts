@@ -64,6 +64,9 @@ export class DailyReportController {
     const files = extractFiles(body as Record<string, unknown>);
 
     const data = updateDailyReportRequest.parse({
+      // undefined = keep current context, "" = clear (null)
+      tankId: body["tankId"] !== undefined ? (body["tankId"] || null) : undefined,
+      tankProcessId: body["tankProcessId"] !== undefined ? (body["tankProcessId"] || null) : undefined,
       reportDate: body["reportDate"] || undefined,
       activityType: body["activityType"] || undefined,
       title: body["title"] || undefined,

@@ -32,6 +32,8 @@ export const sortOrderUpdateItem = z.object({
 });
 
 export const updateDailyReportRequest = z.object({
+  tankId: z.string().nullable().optional(),
+  tankProcessId: z.string().nullable().optional(),
   reportDate: z.string().optional(),
   activityType: z.nativeEnum(DailyActivityTypeEnum).optional(),
   title: z.string().min(1).max(300).optional(),
