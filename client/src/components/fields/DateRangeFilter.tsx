@@ -25,6 +25,9 @@ function parseIso(value?: string): Date | undefined {
 
 export default function DateRangeFilter({ startDate, endDate, onChange, placeholder = "Date range", className }: DateRangeFilterProps) {
   const [open, setOpen] = useState(false);
+  // react-day-picker reports {from, to} both set on the FIRST click of a range,
+  // so "to is set" can't be used to detect completion — track it ourselves.
+  const [selecting, setSelecting] = useState(false);
   const from = parseIso(startDate);
   const to = parseIso(endDate);
   const selected: DateRange | undefined = from || to ? { from: from ?? to, to } : undefined;
@@ -37,7 +40,13 @@ export default function DateRangeFilter({ startDate, endDate, onChange, placehol
         : placeholder;
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover
+      open={open}
+      onOpenChange={(o) => {
+        setOpen(o);
+        if (!o) setSelecting(false);
+      }}
+    >
       <PopoverTrigger asChild>
         <Button type="button" variant="outline" className={cn("justify-between px-3 font-normal", !from && !to && "text-muted-foreground", className)}>
           <span className="flex items-center gap-2 truncate">
@@ -57,8 +66,20 @@ export default function DateRangeFilter({ startDate, endDate, onChange, placehol
           startMonth={new Date(new Date().getFullYear() - 10, 0)}
           endMonth={new Date(new Date().getFullYear() + 5, 11)}
           onSelect={(range) => {
-            onChange(range?.from ? format(range.from, "yyyy-MM-dd") : "", range?.to ? format(range.to, "yyyy-MM-dd") : "");
-            if (range?.from && range?.to) setOpen(false);
+            if (!range?.from) {
+              onChange("", "");
+              setSelecting(false);
+              return;
+            }
+            if (!selecting) {
+              // First click: start a new range (ignore the auto-filled `to`).
+              onChange(format(range.from, "yyyy-MM-dd"), "");
+              setSelecting(true);
+              return;
+            }
+            onChange(format(range.from, "yyyy-MM-dd"), range.to ? format(range.to, "yyyy-MM-dd") : "");
+            setSelecting(false);
+            setOpen(false);
           }}
         />
 
@@ -72,6 +93,7 @@ export default function DateRangeFilter({ startDate, endDate, onChange, placehol
               className="text-muted-foreground"
               onClick={() => {
                 onChange("", "");
+                setSelecting(false);
                 setOpen(false);
               }}
             >
