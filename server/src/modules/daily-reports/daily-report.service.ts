@@ -211,6 +211,45 @@ export class DailyReportService {
     const report = await DailyReportRepository.findById(id);
     if (!report) throw new HTTPException(404, { message: "Daily report not found", cause: "REPORT_NOT_FOUND" });
 
+    // Resolve report context (tank/project/process) when the caller edits it.
+    // undefined = untouched, null = explicitly cleared. project/tank are derived
+    // from the process so the three columns stay consistent (same rules as create).
+    let contextUpdate: { tankId: string | null; projectId: string | null; tankProcessId: string | null } | undefined;
+    if (data.tankId !== undefined || data.tankProcessId !== undefined) {
+      const nextTankId = data.tankId !== undefined ? data.tankId : report.tankId;
+      const nextProcessId = data.tankProcessId !== undefined ? data.tankProcessId : report.tankProcessId;
+
+      if (nextProcessId) {
+        const tankProcess = await pgsql.tankProcess.findUnique({
+          where: { id: nextProcessId },
+          include: { project: { select: { id: true, tankId: true } } },
+        });
+        if (!tankProcess) throw new HTTPException(404, { message: "Tank process not found", cause: "PROCESS_NOT_FOUND" });
+        if (nextTankId && nextTankId !== tankProcess.project.tankId) {
+          throw new HTTPException(422, { message: "Tank process does not belong to the provided tank", cause: "PROCESS_TANK_MISMATCH" });
+        }
+        // only enforce the status gate when assigning a different process
+        if (nextProcessId !== report.tankProcessId && DAILY_REPORT_BLOCKED_STATUSES.includes(tankProcess.status as ProcessStatusEnum)) {
+          throw new HTTPException(422, {
+            message: `Cannot add daily report when process is ${tankProcess.status}`,
+            cause: "INVALID_PROCESS_STATUS_FOR_DAILY_REPORT",
+          });
+        }
+        contextUpdate = { tankId: tankProcess.project.tankId, projectId: tankProcess.projectId, tankProcessId: nextProcessId };
+      } else if (nextTankId) {
+        const tank = await pgsql.tank.findFirst({ where: { id: nextTankId, deletedAt: null } });
+        if (!tank) throw new HTTPException(404, { message: "Tank not found", cause: "TANK_NOT_FOUND" });
+        // keep an existing project link only when the tank is unchanged
+        contextUpdate = {
+          tankId: nextTankId,
+          projectId: nextTankId === report.tankId ? report.projectId : null,
+          tankProcessId: null,
+        };
+      } else {
+        contextUpdate = { tankId: null, projectId: null, tankProcessId: null };
+      }
+    }
+
     const activeAttachments = await DailyReportAttachmentRepository.findActiveByDailyReportId(id);
     const removedIds = data.removedAttachmentIds ?? [];
     const captions = data.captions ?? [];
@@ -299,6 +338,7 @@ export class DailyReportService {
       await tx.dailyReport.update({
         where: { id },
         data: {
+          ...(contextUpdate ?? {}),
           ...(data.reportDate && { reportDate: new Date(data.reportDate) }),
           ...(data.activityType && { activityType: data.activityType }),
           ...(data.title !== undefined && { title: data.title }),
