@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { FileText, Pencil, Trash2, Eye, Printer, Plus } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import DateRangeFilter from "@/components/fields/DateRangeFilter";
 import PageHeader from "@/components/common/PageHeader";
 import LoadingState from "@/components/common/LoadingState";
@@ -14,6 +15,7 @@ import ConfirmDialog from "@/components/common/ConfirmDialog";
 import PermissionGate from "@/components/common/PermissionGate";
 import { ACTIVITY_OPTIONS, ACTIVITY_LABEL } from "@/features/daily-reports/daily-report.constants";
 import { useDailyReports, useDeleteDailyReport } from "@/features/daily-reports/daily-reports.query";
+import { useDebounce } from "@/hooks/useDebounce";
 import { format } from "date-fns";
 import { PERMISSIONS } from "@/constants/permission.constant";
 import { ROUTES } from "@/constants/route.constant";
@@ -24,17 +26,20 @@ const ACTIVITY_FILTER_OPTIONS = [{ label: "All Types", value: "ALL" }, ...ACTIVI
 export default function DailyReportListPage() {
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
   const [activityType, setActivityType] = useState<string>("ALL");
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
   const [deleteTarget, setDeleteTarget] = useState<DailyReportSummary | null>(null);
 
+  const debouncedSearch = useDebounce(search, 400);
   const deleteMutation = useDeleteDailyReport();
 
   const { data, isLoading, isError, refetch } = useDailyReports({
     page,
     limit: 20,
     ...(activityType !== "ALL" && { activityType: activityType as DailyActivityType }),
+    ...(debouncedSearch && { search: debouncedSearch }),
     ...(startDate && { startDate }),
     ...(endDate && { endDate }),
   });
@@ -48,13 +53,14 @@ export default function DailyReportListPage() {
   }
 
   function resetFilters() {
+    setSearch("");
     setActivityType("ALL");
     setStartDate("");
     setEndDate("");
     setPage(1);
   }
 
-  const hasActiveFilter = activityType !== "ALL" || startDate || endDate;
+  const hasActiveFilter = Boolean(search) || activityType !== "ALL" || Boolean(startDate) || Boolean(endDate);
 
   return (
     <div className="space-y-6">
@@ -71,6 +77,15 @@ export default function DailyReportListPage() {
       />
 
       <div className="flex flex-wrap items-center gap-3">
+        <Input
+          placeholder="Search by tank, title, or description..."
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(1);
+          }}
+          className="max-w-xs"
+        />
         <Select
           value={activityType}
           onValueChange={(v) => {
