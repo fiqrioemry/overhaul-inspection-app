@@ -93,6 +93,7 @@ export interface ListDailyReportsParams {
   reportDate?: string;
   startDate?: string;
   endDate?: string;
+  search?: string;
   activityType?: DailyActivityType;
   page?: number;
   limit?: number;

@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { ClipboardList, Eye, Trash2, Plus, Pencil } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import DateRangeFilter from "@/components/fields/DateRangeFilter";
 import PageHeader from "@/components/common/PageHeader";
 import LoadingState from "@/components/common/LoadingState";
 import ErrorState from "@/components/common/ErrorState";
@@ -14,6 +16,7 @@ import PermissionGate from "@/components/common/PermissionGate";
 import RequestStatusBadge from "@/features/inspection-requests/components/RequestStatusBadge";
 import { useInspectionRequests, useDeleteInspectionRequest } from "@/features/inspection-requests/inspection-requests.query";
 import { TEST_TYPE_LABELS, TEST_TYPE_OPTIONS, STATUS_LABELS } from "@/features/inspection-requests/inspection-request.constants";
+import { useDebounce } from "@/hooks/useDebounce";
 import { format } from "date-fns";
 import { PERMISSIONS } from "@/constants/permission.constant";
 import { ROUTES } from "@/constants/route.constant";
@@ -25,10 +28,14 @@ const TYPE_FILTER = [{ label: "All Types", value: "ALL" }, ...TEST_TYPE_OPTIONS]
 export default function InspectionRequestListPage() {
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
   const [status, setStatus] = useState<string>("ALL");
   const [testType, setTestType] = useState<string>("ALL");
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
   const [deleteTarget, setDeleteTarget] = useState<InspectionRequestListRow | null>(null);
 
+  const debouncedSearch = useDebounce(search, 400);
   const deleteMutation = useDeleteInspectionRequest();
 
   const { data, isLoading, isError, refetch } = useInspectionRequests({
@@ -36,7 +43,21 @@ export default function InspectionRequestListPage() {
     limit: 10,
     ...(status !== "ALL" && { status: status as InspectionRequestStatus }),
     ...(testType !== "ALL" && { testType: testType as InspectionRequestType }),
+    ...(debouncedSearch && { search: debouncedSearch }),
+    ...(startDate && { startDate }),
+    ...(endDate && { endDate }),
   });
+
+  function resetFilters() {
+    setSearch("");
+    setStatus("ALL");
+    setTestType("ALL");
+    setStartDate("");
+    setEndDate("");
+    setPage(1);
+  }
+
+  const hasActiveFilter = Boolean(search) || status !== "ALL" || testType !== "ALL" || Boolean(startDate) || Boolean(endDate);
 
   return (
     <div className="space-y-6">
@@ -53,6 +74,15 @@ export default function InspectionRequestListPage() {
       />
 
       <div className="flex flex-wrap items-center gap-3">
+        <Input
+          placeholder="Search by request no. or tank..."
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(1);
+          }}
+          className="max-w-xs"
+        />
         <Select
           value={status}
           onValueChange={(v) => {
@@ -89,6 +119,22 @@ export default function InspectionRequestListPage() {
             ))}
           </SelectContent>
         </Select>
+
+        <DateRangeFilter
+          startDate={startDate}
+          endDate={endDate}
+          onChange={(start, end) => {
+            setStartDate(start);
+            setEndDate(end);
+            setPage(1);
+          }}
+        />
+
+        {hasActiveFilter && (
+          <Button variant="ghost" size="sm" onClick={resetFilters} className="text-muted-foreground">
+            Reset
+          </Button>
+        )}
       </div>
 
       {isLoading && <LoadingState />}

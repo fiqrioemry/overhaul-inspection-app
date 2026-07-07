@@ -212,6 +212,9 @@ export interface ListInspectionRequestsParams {
   testType?: InspectionRequestType;
   tankId?: string;
   tankProcessId?: string;
+  search?: string;
+  startDate?: string;
+  endDate?: string;
 }
 
 export interface CreateInspectionRequestPayload {
