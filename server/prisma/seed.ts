@@ -324,9 +324,9 @@ const inspectionFormTemplatesData: Array<{
       { label: "Hasil lasan bersih dari slag, spatter, oil, grease, dan kontaminan." },
       { label: "Weld capping / weld profile sudah terpenuhi." },
       { label: "Tidak terdapat undercut yang melebihi acceptance criteria." },
-      { label: "Tidak terdapat crack, pinhole, porosity terbuka, atau visual defect yang jelas." },
-      { label: "Root / initial pass sudah selesai dan bersih." },
-      { label: "Oil leak test / penetrating oil test sudah dilaksanakan." },
+      { label: "Oil leak test sudah dilaksanakan." },
+      // Trailing blank row: filled in by hand on the printed form.
+      { label: "" },
     ],
   },
   {
@@ -340,10 +340,10 @@ const inspectionFormTemplatesData: Array<{
       { label: "Hasil lasan roof bersih dari slag, spatter, oil, grease, dan kontaminan." },
       { label: "Weld capping / weld profile sudah terpenuhi." },
       { label: "Tidak terdapat undercut yang melebihi acceptance criteria." },
-      { label: "Tidak terdapat crack, pinhole, porosity terbuka, atau visual defect yang jelas." },
-      { label: "Roof plate, roof nozzle, roof manhole, dan attachment sudah selesai dilas." },
-      { label: "Vent / opening yang diperlukan untuk test sudah ditutup atau dikontrol sesuai procedure." },
       { label: "Hydrotest shell sudah dilaksanakan." },
+      { label: "Vent / seluruh opening yang diperlukan untuk test sudah ditutup." },
+      // Trailing blank row: filled in by hand on the printed form.
+      { label: "" },
     ],
   },
   {
@@ -354,13 +354,14 @@ const inspectionFormTemplatesData: Array<{
     acceptanceCriteriaText:
       "Accepted apabila tidak terdapat leakage, tidak terdapat deformasi abnormal, tidak terdapat settlement di luar batas yang diizinkan, dan tidak terdapat penurunan level air yang signifikan di luar acceptance project specification.",
     checklistItems: [
-      { label: "Seluruh welding shell, nozzle, manhole, clean out door, dan attachment sudah selesai dilas." },
       { label: "Hasil lasan bersih dari slag, spatter, oil, grease, dan kontaminan." },
       { label: "Weld capping / weld profile sudah terpenuhi." },
       { label: "Tidak terdapat undercut yang melebihi acceptance criteria." },
       { label: "Hasil radiography untuk tiap shell course tidak ada repair." },
-      { label: "Pneumatic reinforcement pad test sudah terpenuhi." },
       { label: "Pneumatic Bottom test sudah terpenuhi." },
+      { label: "Pneumatic reinforcement pad test sudah terpenuhi." },
+      // Trailing blank row: filled in by hand on the printed form.
+      { label: "" },
     ],
   },
   {
@@ -375,10 +376,10 @@ const inspectionFormTemplatesData: Array<{
       { label: "Weld capping / weld profile sudah terpenuhi." },
       { label: "Tidak terdapat undercut yang melebihi acceptance criteria." },
       { label: "Radiography Test sudah tidak ada repair." },
-      { label: "Blind flange / spectacle blind / isolation sudah terpasang sesuai test boundary." },
       { label: "Pressure gauge tersedia dan terkalibrasi." },
-      { label: "Valve yang tidak boleh terkena pressure test sudah dilepas atau di-isolate." },
-      { label: "Instrument yang sensitif sudah dilepas atau di-isolate." },
+      { label: "Blind flange / spectacle blind / isolation sudah terpasang sesuai test boundary." },
+      // Trailing blank row: filled in by hand on the printed form.
+      { label: "" },
     ],
   },
   {
@@ -389,13 +390,14 @@ const inspectionFormTemplatesData: Array<{
     acceptanceCriteriaText:
       "Accepted apabila tidak terdapat bubble formation / leakage pada weld attachment reinforcement pad selama tekanan ditahan.",
     checklistItems: [
-      { label: "Reinforcement pad dan nozzle sudah selesai dilas." },
       { label: "Telltale hole / weep hole sudah tersedia dan tidak tertutup." },
-      { label: "Hasil lasan bersih dari slag, spatter, oil, grease, dan kontaminan." },
-      { label: "Weld capping / weld profile sudah terpenuhi." },
-      { label: "Tidak terdapat undercut yang melebihi acceptance criteria." },
       { label: "Penetrant test pada nozzle-to-shell weld / repad weld sudah dilaksanakan." },
+      { label: "Tidak terdapat undercut yang melebihi acceptance criteria." },
+      { label: "Weld capping / weld profile sudah terpenuhi." },
+      { label: "Hasil lasan bersih dari slag, spatter, oil, grease, dan kontaminan." },
       { label: "Pressure gauge tersedia dan terkalibrasi." },
+      // Trailing blank row: filled in by hand on the printed form.
+      { label: "" },
     ],
   },
   {
@@ -405,15 +407,11 @@ const inspectionFormTemplatesData: Array<{
     defaultStandardAndCode: "API 650 Sec. 7.2.4.1 or approved project specification / client specification",
     acceptanceCriteriaText: "Accepted apabila tidak terdapat indikasi wicking / rembesan / noda minyak pada sisi developer / kapur putih.",
     checklistItems: [
-      { label: "Root / initial pass sudah selesai." },
-      { label: "Slag dan nonmetallic deposit sudah dibersihkan." },
       { label: "Area test kering dan bersih." },
-      { label: "Tidak terdapat crack, pinhole, porosity terbuka, atau visual defect yang jelas." },
-      { label: "Kapur putih / developer tersedia." },
-      { label: "Solar / light diesel / penetrating oil tersedia dan disetujui oleh procedure." },
-      { label: "Area test aman dari hot work selama pengujian." },
-      { label: "Dwell time minimal 4 jam atau sesuai approved procedure." },
-      { label: "Approved procedure / ITP tersedia di lokasi." },
+      { label: "Slag dan nonmetallic deposit sudah dibersihkan." },
+      { label: "Sambungan Shell to Annular sudah di root weld (tanpa capping / initial pass)." },
+      // Trailing blank row: filled in by hand on the printed form.
+      { label: "" },
     ],
   },
   {
