@@ -117,10 +117,13 @@ export class InspectionRequestRepository {
     tankProcessId?: string;
     testType?: InspectionRequestTypeEnum;
     status?: InspectionRequestStatusEnum;
+    search?: string;
+    startDate?: string;
+    endDate?: string;
     page: number;
     limit: number;
   }) {
-    const { tankId, projectId, tankProcessId, testType, status, page, limit } = query;
+    const { tankId, projectId, tankProcessId, testType, status, search, startDate, endDate, page, limit } = query;
     const skip = (page - 1) * limit;
 
     const where: Prisma.InspectionRequestWhereInput = {
@@ -130,6 +133,19 @@ export class InspectionRequestRepository {
       ...(tankProcessId && { tankProcessId }),
       ...(testType && { testType }),
       ...(status && { status }),
+      ...((startDate || endDate) && {
+        requestDate: {
+          ...(startDate && { gte: new Date(startDate) }),
+          ...(endDate && { lte: new Date(endDate) }),
+        },
+      }),
+      ...(search && {
+        OR: [
+          { requestNo: { contains: search, mode: "insensitive" } },
+          { tank: { tankNo: { contains: search, mode: "insensitive" } } },
+          { tank: { tankName: { contains: search, mode: "insensitive" } } },
+        ],
+      }),
     };
 
     const [requests, total] = await Promise.all([

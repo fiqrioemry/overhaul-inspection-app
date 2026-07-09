@@ -54,6 +54,7 @@ export const listDailyReportsQuery = z.object({
   reportDate: z.string().optional(),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
+  search: z.string().optional(),
   activityType: z.nativeEnum(DailyActivityTypeEnum).optional(),
   page: z.string().default("1").transform(Number),
   limit: z.string().default("20").transform(Number),

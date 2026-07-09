@@ -52,11 +52,12 @@ export class DailyReportRepository {
     reportDate?: string;
     startDate?: string;
     endDate?: string;
+    search?: string;
     activityType?: DailyActivityTypeEnum;
     page: number;
     limit: number;
   }) {
-    const { tankId, projectId, tankProcessId, reportDate, startDate, endDate, activityType, page, limit } = query;
+    const { tankId, projectId, tankProcessId, reportDate, startDate, endDate, search, activityType, page, limit } = query;
     const skip = (page - 1) * limit;
     const where: Prisma.DailyReportWhereInput = {
       deletedAt: null,
@@ -70,6 +71,14 @@ export class DailyReportRepository {
           ...(startDate && { gte: new Date(startDate) }),
           ...(endDate && { lte: new Date(endDate) }),
         },
+      }),
+      ...(search && {
+        OR: [
+          { title: { contains: search, mode: "insensitive" } },
+          { description: { contains: search, mode: "insensitive" } },
+          { tank: { tankNo: { contains: search, mode: "insensitive" } } },
+          { tank: { tankName: { contains: search, mode: "insensitive" } } },
+        ],
       }),
     };
     const [reports, total] = await Promise.all([

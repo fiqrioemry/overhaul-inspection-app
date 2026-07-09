@@ -87,6 +87,9 @@ export const listInspectionRequestsQuery = z.object({
   tankProcessId: z.string().optional(),
   testType: z.nativeEnum(InspectionRequestTypeEnum).optional(),
   status: z.nativeEnum(InspectionRequestStatusEnum).optional(),
+  search: z.string().optional(),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
   page: z.string().default("1").transform(Number),
   limit: z.string().default("10").transform(Number),
 });
