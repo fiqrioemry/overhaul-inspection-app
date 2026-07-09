@@ -161,11 +161,19 @@ export default function NdeClearancePrintForm({ req }: Props) {
               </tbody>
             </table>
 
-            {/* Acceptance criteria */}
-            <div className="flex border-b-2 border-black text-[10px]">
-              <span className="w-44 shrink-0 border-r border-black px-2 py-1 font-semibold uppercase">Acceptance Criteria</span>
-              <span className="flex-1 px-2 py-1">{template?.acceptanceCriteriaText || "As per approved procedure / project specification."}</span>
-            </div>
+            {/* Note row — left blank for handwritten remarks. Only the generic
+                OTHER form keeps the original Acceptance Criteria text. */}
+            {req.testType === "OTHER" ? (
+              <div className="flex border-b-2 border-black text-[10px]">
+                <span className="w-44 shrink-0 border-r border-black px-2 py-1 font-semibold uppercase">Acceptance Criteria</span>
+                <span className="flex-1 px-2 py-1">{template?.acceptanceCriteriaText || "As per approved procedure / project specification."}</span>
+              </div>
+            ) : (
+              <div className="flex border-b-2 border-black text-[10px]">
+                <span className="w-44 shrink-0 border-r border-black px-2 py-1 font-semibold uppercase">Note</span>
+                <span className="flex-1 px-2 py-1">&nbsp;</span>
+              </div>
+            )}
 
             {/* Signatures */}
             <div className="flex gap-3 p-3">
