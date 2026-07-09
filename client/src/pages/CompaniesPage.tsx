@@ -72,7 +72,7 @@ export default function CompaniesPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
+      {/* <PageHeader
         title="Companies"
         description="Manage companies involved in tank inspection projects"
         action={
@@ -82,7 +82,7 @@ export default function CompaniesPage() {
             </Button>
           </PermissionGate>
         }
-      />
+      /> */}
 
       <div className="flex items-center gap-3">
         <Input
