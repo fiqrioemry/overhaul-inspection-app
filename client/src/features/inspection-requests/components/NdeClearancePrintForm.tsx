@@ -83,7 +83,12 @@ export default function NdeClearancePrintForm({ req }: Props) {
           .no-print { display: none !important; }
           html, body { background: white !important; margin: 0 !important; padding: 0 !important; }
           .nde-print-wrap { background: white !important; margin: 0 !important; padding: 0 !important; min-height: 0 !important; }
-          .nde-print-page { box-shadow: none !important; margin: 0 !important; padding: 10mm !important; width: 297mm !important; }
+          /* Fill the physical sheet (209mm, not 210mm, so rounding never spills
+             a blank second page) and stretch the checklist so the form border
+             reaches the bottom with the same 10mm margin on every side. */
+          .nde-print-page { box-shadow: none !important; margin: 0 !important; padding: 10mm !important; width: 297mm !important; min-height: 209mm !important; display: flex !important; flex-direction: column !important; }
+          .nde-print-form { flex: 1 1 auto !important; display: flex !important; flex-direction: column !important; }
+          .nde-print-checklist { flex: 1 1 auto !important; }
         }
       `}</style>
 
@@ -98,7 +103,7 @@ export default function NdeClearancePrintForm({ req }: Props) {
         </div>
 
         <div className="nde-print-page mx-auto w-[297mm] bg-white p-8 shadow-lg">
-          <div className="border-2 border-black text-black">
+          <div className="nde-print-form border-2 border-black text-black">
             {/* Form heading */}
             <div className="flex items-stretch border-b-2 border-black">
               <div className="w-56 shrink-0 px-2 py-2 flex flex-col items-center justify-center text-center border-r border-black">
@@ -131,7 +136,7 @@ export default function NdeClearancePrintForm({ req }: Props) {
             </div>
 
             {/* Checklist */}
-            <table className="w-full border-collapse text-[10px]">
+            <table className="nde-print-checklist w-full border-collapse text-[10px]">
               <thead>
                 <tr className="bg-gray-200 text-center font-semibold uppercase">
                   <td className="w-10 border-b border-r border-black px-2 py-1">No.</td>
