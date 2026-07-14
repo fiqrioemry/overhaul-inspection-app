@@ -61,9 +61,10 @@ export default function DailyReportDetailPage() {
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
           }
-          #root, #root > div {
+          #root, #root > div, #root > div > div {
             height: auto !important;
             overflow: visible !important;
+            background: #ffffff !important;
           }
           aside { display: none !important; }
           header { display: none !important; }
@@ -72,10 +73,11 @@ export default function DailyReportDetailPage() {
             overflow: visible !important;
             padding: 0 !important;
             flex: none !important;
+            background: #ffffff !important;
           }
           .no-print { display: none !important; }
           .report-viewer {
-            background: none !important;
+            background: #ffffff !important;
             padding: 0 !important;
             gap: 0 !important;
           }
