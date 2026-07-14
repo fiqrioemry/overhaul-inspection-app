@@ -169,7 +169,7 @@ export default function NdeClearancePrintForm({ req }: Props) {
                 <span className="flex-1 px-2 py-1">{template?.acceptanceCriteriaText || "As per approved procedure / project specification."}</span>
               </div>
             ) : (
-              <div className="flex border-b-2 border-black text-[10px]">
+              <div className="flex min-h-16.5 border-b-2 border-black text-[10px]">
                 <span className="w-44 shrink-0 border-r border-black px-2 py-1 font-semibold uppercase">Note</span>
                 <span className="flex-1 px-2 py-1">&nbsp;</span>
               </div>
