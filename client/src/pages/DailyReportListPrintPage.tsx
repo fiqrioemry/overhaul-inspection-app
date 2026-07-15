@@ -70,7 +70,7 @@ export default function DailyReportListPrintPage() {
             border-radius: 0 !important;
             width: 100% !important;
             max-width: none !important;
-            padding: 0 !important;
+            padding: 15mm !important;
             margin: 0 !important;
             background: #ffffff !important;
             color: #000000 !important;
@@ -83,7 +83,10 @@ export default function DailyReportListPrintPage() {
           .print-doc th, .print-doc td { padding: 4px 6px !important; border-color: #cccccc !important; }
           .print-doc .border-b, .print-doc .border-t { border-color: #cccccc !important; }
         }
-        @page { size: A4 portrait; margin: 15mm; }
+        /* margin: 0 suppresses the browser-generated print header/footer
+           (timestamp, page title, URL); the 15mm sheet margin is applied as
+           .print-doc padding instead. */
+        @page { size: A4 portrait; margin: 0; }
       `}</style>
 
       {/* Toolbar */}
