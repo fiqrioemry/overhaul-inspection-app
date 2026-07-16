@@ -131,6 +131,7 @@ export default function InspectionRequestDetailPage() {
             </div>
           )}
 
+          {req.items.length > 0 && (
           <div className="rounded-lg border p-5">
             <h2 className="text-sm font-medium mb-3">Inspection Objects ({req.items.length})</h2>
             <div className="rounded border overflow-hidden">
@@ -158,6 +159,7 @@ export default function InspectionRequestDetailPage() {
               </table>
             </div>
           </div>
+          )}
 
           {/* Test records */}
           <div className="rounded-lg border p-5">
