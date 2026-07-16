@@ -61,6 +61,22 @@ export function isLegacyPrintTestType(testType: InspectionRequestType): boolean 
   return (LEGACY_PRINT_TEST_TYPES as readonly InspectionRequestType[]).includes(testType);
 }
 
+// Whole-tank / pressure tests apply to the tank or system as a whole, so
+// per-object inspection item rows are optional for these test types.
+// Mirrors OBJECT_OPTIONAL_TEST_TYPES in server inspection-request.schema.ts.
+export const OBJECT_OPTIONAL_TEST_TYPES = [
+  "PNEUMATIC_REINFORCEMENT_TEST",
+  "HYDROTEST_SHELL",
+  "HYDROTEST_PIPE",
+  "PNEUMATIC_BOTTOM_TEST",
+  "PNEUMATIC_ROOF_TEST",
+  "OTHER",
+] as const satisfies readonly InspectionRequestType[];
+
+export function isObjectOptionalTestType(testType: InspectionRequestType): boolean {
+  return (OBJECT_OPTIONAL_TEST_TYPES as readonly InspectionRequestType[]).includes(testType);
+}
+
 export const STATUS_LABELS: Record<InspectionRequestStatus, string> = {
   NOT_STARTED: "Not Started",
   IN_PROCESS: "In Process",
