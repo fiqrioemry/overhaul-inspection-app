@@ -15,7 +15,7 @@ import ShortTextField from "@/components/fields/ShortTextField";
 import { cn } from "@/lib/utils";
 import { ROUTES } from "@/constants/route.constant";
 import { useCreateInspectionRequest, useUpdateInspectionRequest, useRequestTankOptions, useRequestTankProcessOptions } from "../inspection-requests.query";
-import { TEST_TYPE_OPTIONS, OBJECT_TYPE_OPTIONS } from "../inspection-request.constants";
+import { TEST_TYPE_OPTIONS, OBJECT_TYPE_OPTIONS, TEST_TYPE_LABELS, isObjectOptionalTestType } from "../inspection-request.constants";
 import type { CreateInspectionRequestPayload, UpdateInspectionRequestPayload, InspectionRequestDetail, InspectionRequestType, InspectionObjectType } from "../inspection-requests.api";
 import { useCompanyOptions } from "@/features/companies/companies.query";
 import { useUserOptions } from "@/features/users/users.query";
@@ -38,7 +38,7 @@ const itemSchema = z.object({
   remarks: z.string().optional(),
 });
 
-const schema = z.object({
+const baseSchema = z.object({
   testType: z.string().min(1),
   tankId: z.string().optional(),
   tankProcessId: z.string().optional(),
@@ -52,10 +52,18 @@ const schema = z.object({
   requestLocation: z.string().optional(),
   description: z.string().optional(),
   remarks: z.string().optional(),
-  items: z.array(itemSchema).min(1, "Add at least one inspection object"),
+  items: z.array(itemSchema),
 });
 
-type FormValues = z.infer<typeof schema>;
+// Inspection objects are only mandatory for test types that target specific
+// objects; whole-tank / pressure tests skip them entirely.
+const schema = baseSchema.superRefine((data, ctx) => {
+  if (!isObjectOptionalTestType(data.testType as InspectionRequestType) && data.items.length === 0) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Add at least one inspection object", path: ["items"] });
+  }
+});
+
+type FormValues = z.infer<typeof baseSchema>;
 
 const emptyItem = { objectType: "WELD_JOINT", objectName: "", quantity: 1, unit: "", locationDetail: "", remarks: "" };
 
@@ -169,6 +177,7 @@ export default function InspectionRequestForm({ request }: InspectionRequestForm
   // replace when the field is empty or still holds the previous type's
   // default so custom input is preserved.
   const selectedTestType = form.watch("testType") as InspectionRequestType;
+  const objectsRequired = !isObjectOptionalTestType(selectedTestType);
   const prevTestTypeRef = useRef(selectedTestType);
   useEffect(() => {
     if (prevTestTypeRef.current !== selectedTestType) {
@@ -181,6 +190,15 @@ export default function InspectionRequestForm({ request }: InspectionRequestForm
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedTestType]);
+
+  // Keep at least one editable object row when switching back to a test type
+  // that requires inspection objects (rows may be empty after an edit load).
+  useEffect(() => {
+    if (objectsRequired && form.getValues("items").length === 0) {
+      append({ ...emptyItem });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [objectsRequired]);
 
   // Reset process when tank changes
   const prevTankRef = useRef(selectedTankValue);
@@ -201,6 +219,17 @@ export default function InspectionRequestForm({ request }: InspectionRequestForm
   function onSubmit(values: FormValues) {
     const effectiveProcessId = selectedProcessValue && selectedProcessValue !== NO_PROCESS_VALUE ? selectedProcessValue : undefined;
     const pick = (v?: string) => (v && v !== NONE_VALUE ? v : undefined);
+    // Whole-tank test types don't take inspection objects; drop any hidden rows.
+    const itemsPayload = objectsRequired
+      ? values.items.map((it) => ({
+          objectType: it.objectType as InspectionObjectType,
+          objectName: it.objectName || undefined,
+          quantity: it.quantity,
+          unit: it.unit || undefined,
+          locationDetail: it.locationDetail || undefined,
+          remarks: it.remarks || undefined,
+        }))
+      : [];
 
     if (isEdit && request) {
       const nextTankId = effectiveTankId ?? null;
@@ -222,14 +251,7 @@ export default function InspectionRequestForm({ request }: InspectionRequestForm
         requestLocation: values.requestLocation || null,
         description: values.description || null,
         remarks: values.remarks || null,
-        items: values.items.map((it) => ({
-          objectType: it.objectType as InspectionObjectType,
-          objectName: it.objectName || undefined,
-          quantity: it.quantity,
-          unit: it.unit || undefined,
-          locationDetail: it.locationDetail || undefined,
-          remarks: it.remarks || undefined,
-        })),
+        items: itemsPayload,
       };
       updateMutation.mutate(
         { id: request.id, data: payload },
@@ -252,14 +274,7 @@ export default function InspectionRequestForm({ request }: InspectionRequestForm
       requestLocation: values.requestLocation || undefined,
       description: values.description || undefined,
       remarks: values.remarks || undefined,
-      items: values.items.map((it) => ({
-        objectType: it.objectType as InspectionObjectType,
-        objectName: it.objectName || undefined,
-        quantity: it.quantity,
-        unit: it.unit || undefined,
-        locationDetail: it.locationDetail || undefined,
-        remarks: it.remarks || undefined,
-      })),
+      items: itemsPayload,
       files,
     };
 
@@ -332,7 +347,15 @@ export default function InspectionRequestForm({ request }: InspectionRequestForm
         <LongTextField control={form.control} name="remarks" label="Additional Remarks (optional)" rows={2} />
       </div>
 
-      {/* Inspection objects */}
+      {/* Inspection objects — hidden for whole-tank test types that don't target specific objects */}
+      {!objectsRequired ? (
+        <div className="rounded-lg border border-dashed p-4">
+          <h2 className="text-sm font-medium">Inspection Objects</h2>
+          <p className="text-xs text-muted-foreground mt-1">
+            Not required for {TEST_TYPE_LABELS[selectedTestType] ?? selectedTestType} — this request applies to the tank/system as a whole.
+          </p>
+        </div>
+      ) : (
       <div className="rounded-lg border p-5 space-y-4">
         <div className="flex items-center justify-between">
           <div>
@@ -384,6 +407,7 @@ export default function InspectionRequestForm({ request }: InspectionRequestForm
           ))}
         </div>
       </div>
+      )}
 
       {/* Supporting documents — attachments are managed on the detail page in edit mode */}
       {!isEdit && (
