@@ -7,6 +7,7 @@ import { Prisma } from "generated/prisma";
 import { InspectionFormTemplateRepository } from "@/modules/inspection-form-templates/inspection-form-template.repository";
 import { InspectionRequestRepository } from "./inspection-request.repository";
 import { InspectionRequestAttachmentRepository } from "./inspection-request-attachment.repository";
+import { OBJECT_OPTIONAL_TEST_TYPES } from "./inspection-request.schema";
 import type { CreateInspectionRequestRequest, UpdateInspectionRequestRequest, ListInspectionRequestsQuery, UpdateStatusRequest, InspectionRequestItemInput } from "./inspection-request.schema";
 import type { InspectionRequestListItem, InspectionRequestListResult, InspectionRequestSummaryCounts } from "./inspection-request.types";
 
@@ -72,6 +73,9 @@ export function getSignatoryTemplate(testType: InspectionRequestTypeEnum): strin
 
 function buildRequestDescription(testType: InspectionRequestTypeEnum, items: InspectionRequestItemInput[], tankNo?: string | null): string {
   const label = TEST_TYPE_LABELS[testType] ?? "Inspection";
+  if (items.length === 0) {
+    return tankNo ? `Lakukan ${label} pada tangki ${tankNo}.` : `Lakukan ${label}.`;
+  }
   const head = tankNo ? `Lakukan ${label} pada tangki ${tankNo}:` : `Lakukan ${label} pada objek berikut:`;
   const lines = items.map((item, idx) => {
     const objectLabel = OBJECT_TYPE_LABELS[item.objectType] ?? item.objectType;
@@ -375,6 +379,12 @@ export class InspectionRequestService {
     // Mirror create semantics: an empty description means "auto-generate from objects".
     const nextTestType = data.testType ?? request.testType;
     const nextItems = data.items ?? request.items.map((it) => ({ ...it, objectName: it.objectName ?? undefined, unit: it.unit ?? undefined, locationDetail: it.locationDetail ?? undefined, remarks: it.remarks ?? undefined }));
+    if (!OBJECT_OPTIONAL_TEST_TYPES.has(nextTestType) && nextItems.length === 0) {
+      throw new HTTPException(400, {
+        message: "At least one inspection object is required for this test type",
+        cause: "ITEMS_REQUIRED",
+      });
+    }
     const nextDescription = data.description === undefined ? undefined : data.description?.trim() || buildRequestDescription(nextTestType, nextItems, ctx.tankNo);
 
     // When the test type changes, re-resolve the active clearance-form template

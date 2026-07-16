@@ -6,6 +6,17 @@ import {
   InspectionRequestAttachmentTypeEnum,
 } from "generated/prisma";
 
+// Whole-tank / pressure tests apply to the tank or system as a whole, so
+// per-object inspection item rows are optional for these test types.
+export const OBJECT_OPTIONAL_TEST_TYPES = new Set<InspectionRequestTypeEnum>([
+  InspectionRequestTypeEnum.PNEUMATIC_REINFORCEMENT_TEST,
+  InspectionRequestTypeEnum.HYDROTEST_SHELL,
+  InspectionRequestTypeEnum.HYDROTEST_PIPE,
+  InspectionRequestTypeEnum.PNEUMATIC_BOTTOM_TEST,
+  InspectionRequestTypeEnum.PNEUMATIC_ROOF_TEST,
+  InspectionRequestTypeEnum.OTHER,
+]);
+
 export const inspectionRequestItemInput = z.object({
   objectType: z.nativeEnum(InspectionObjectTypeEnum),
   objectName: z.string().max(200).optional(),
@@ -34,12 +45,16 @@ export const createInspectionRequestRequest = z
     requestLocation: z.string().max(300).optional(),
     description: z.string().max(10000).optional(),
     remarks: z.string().max(2000).optional(),
-    items: z.array(inspectionRequestItemInput).min(1, "At least one inspection object is required"),
+    items: z.array(inspectionRequestItemInput).default([]),
   })
   // A tank process can only be referenced when the request is also tied to a tank.
   .refine((data) => !data.tankProcessId || Boolean(data.tankId), {
     message: "tankId is required when tankProcessId is provided",
     path: ["tankProcessId"],
+  })
+  .refine((data) => OBJECT_OPTIONAL_TEST_TYPES.has(data.testType) || data.items.length > 0, {
+    message: "At least one inspection object is required for this test type",
+    path: ["items"],
   });
 export type CreateInspectionRequestRequest = z.infer<typeof createInspectionRequestRequest>;
 
@@ -61,7 +76,9 @@ export const updateInspectionRequestRequest = z
     requestLocation: z.string().max(300).nullable().optional(),
     description: z.string().max(10000).nullable().optional(),
     remarks: z.string().max(2000).nullable().optional(),
-    items: z.array(inspectionRequestItemInput).min(1).optional(),
+    // Emptiness is validated in the service against the effective test type,
+    // since testType may be absent from a partial update payload.
+    items: z.array(inspectionRequestItemInput).optional(),
   })
   .refine((data) => !data.tankProcessId || Boolean(data.tankId), {
     message: "tankId is required when tankProcessId is provided",
