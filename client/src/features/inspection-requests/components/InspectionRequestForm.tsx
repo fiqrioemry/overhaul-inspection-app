@@ -72,6 +72,7 @@ const emptyItem = { objectType: "WELD_JOINT", objectName: "", quantity: 1, unit:
 // still holds the previous type's default.
 const DEFAULT_STANDARD_BY_TEST_TYPE: Record<InspectionRequestType, string> = {
   PENETRANT_TEST: "ASME Section V Article 6",
+  PRE_RADIOGRAPHY_TEST: "API 650 Section 8.1",
   RADIOGRAPHY_TEST: "ASME Section V Article 2",
   OIL_LEAK_TEST: "Royal Dutch",
   PNEUMATIC_REINFORCEMENT_TEST: "API 650 Section 7.3.5",
