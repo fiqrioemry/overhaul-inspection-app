@@ -415,6 +415,24 @@ const inspectionFormTemplatesData: Array<{
     ],
   },
   {
+    code: "NDE-PRA",
+    testType: InspectionRequestTypeEnum.PRE_RADIOGRAPHY_TEST,
+    title: "PRE-RADIOGRAPHY VISUAL CLEARANCE FORM",
+    defaultStandardAndCode: "API 650 Sec. 8.1 (Visual Examination) / approved welding & NDT procedure",
+    acceptanceCriteriaText:
+      "Accepted apabila hasil visual pengelasan pada seluruh shell course (ring 1 s/d n) memenuhi acceptance criteria dan siap dilanjutkan ke Radiography Test.",
+    checklistItems: [
+      { label: "Seluruh shell course (ring 1 s/d n) telah selesai difabrikasi dan di-assembly." },
+      { label: "Hasil lasan vertical & horizontal bersih dari slag, spatter, oil, grease, dan kontaminan." },
+      { label: "Weld capping / weld profile sudah terpenuhi pada seluruh ring." },
+      { label: "Tidak terdapat undercut yang melebihi acceptance criteria." },
+      { label: "Tidak terdapat cacat visual permukaan (crack, porosity, overlap) yang tidak diterima." },
+      { label: "Marking joint / identifikasi welder sudah tersedia untuk keperluan radiography." },
+      // Trailing blank row: filled in by hand on the printed form.
+      { label: "" },
+    ],
+  },
+  {
     code: "NDE-GEN",
     testType: InspectionRequestTypeEnum.OTHER,
     title: "NDE / INSPECTION CLEARANCE FORM",
