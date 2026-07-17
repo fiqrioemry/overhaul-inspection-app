@@ -1,21 +1,48 @@
 // src/features/inspection-requests/inspection-request.constants.ts
 import type { InspectionRequestType, InspectionObjectType, InspectionRequestStatus, AttachmentType } from "./inspection-requests.api";
 
-export const TEST_TYPE_LABELS: Record<InspectionRequestType, string> = {
-  PENETRANT_TEST: "Penetrant Test",
-  RADIOGRAPHY_TEST: "Radiography Test",
-  OIL_LEAK_TEST: "Oil Leak Test",
-  PNEUMATIC_REINFORCEMENT_TEST: "Pneumatic Reinforcement Test",
-  HYDROTEST_SHELL: "Hydrotest Shell",
-  HYDROTEST_PIPE: "Hydrotest Pipe",
-  PNEUMATIC_BOTTOM_TEST: "Pneumatic Bottom Test",
-  PNEUMATIC_ROOF_TEST: "Pneumatic Roof Test",
-  OTHER: "Other",
+// Single source of truth per test type. Mirrors TEST_TYPE_CONFIG in the server
+// (config/constant/inspection-request.constant.ts). Every per-type flag below is
+// derived from here instead of maintaining parallel arrays.
+//   hasClearanceForm true -> prints the A4 landscape NDE clearance form.
+//                    false -> PENETRANT / RADIOGRAPHY keep the legacy A4 form.
+//   objectScope      WHOLE_TANK -> per-object rows are optional.
+type SignatorySet = "NDT" | "EXECUTION";
+type ObjectScope = "PER_OBJECT" | "WHOLE_TANK";
+
+interface TestTypeConfig {
+  label: string;
+  signatorySet: SignatorySet;
+  hasClearanceForm: boolean;
+  objectScope: ObjectScope;
+}
+
+export const TEST_TYPE_CONFIG: Record<InspectionRequestType, TestTypeConfig> = {
+  PENETRANT_TEST: { label: "Penetrant Test", signatorySet: "NDT", hasClearanceForm: false, objectScope: "PER_OBJECT" },
+  PRE_RADIOGRAPHY_TEST: { label: "Pre-Radiography Test", signatorySet: "EXECUTION", hasClearanceForm: true, objectScope: "WHOLE_TANK" },
+  RADIOGRAPHY_TEST: { label: "Radiography Test", signatorySet: "NDT", hasClearanceForm: false, objectScope: "PER_OBJECT" },
+  OIL_LEAK_TEST: { label: "Oil Leak Test", signatorySet: "EXECUTION", hasClearanceForm: true, objectScope: "PER_OBJECT" },
+  PNEUMATIC_REINFORCEMENT_TEST: { label: "Pneumatic Reinforcement Test", signatorySet: "EXECUTION", hasClearanceForm: true, objectScope: "WHOLE_TANK" },
+  HYDROTEST_SHELL: { label: "Hydrotest Shell", signatorySet: "EXECUTION", hasClearanceForm: true, objectScope: "WHOLE_TANK" },
+  HYDROTEST_PIPE: { label: "Hydrotest Pipe", signatorySet: "EXECUTION", hasClearanceForm: true, objectScope: "WHOLE_TANK" },
+  PNEUMATIC_BOTTOM_TEST: { label: "Pneumatic Bottom Test", signatorySet: "EXECUTION", hasClearanceForm: true, objectScope: "WHOLE_TANK" },
+  PNEUMATIC_ROOF_TEST: { label: "Pneumatic Roof Test", signatorySet: "EXECUTION", hasClearanceForm: true, objectScope: "WHOLE_TANK" },
+  OTHER: { label: "Other", signatorySet: "EXECUTION", hasClearanceForm: true, objectScope: "WHOLE_TANK" },
 };
 
-export const TEST_TYPE_OPTIONS = (Object.keys(TEST_TYPE_LABELS) as InspectionRequestType[]).map((value) => ({
+const TEST_TYPE_KEYS = Object.keys(TEST_TYPE_CONFIG) as InspectionRequestType[];
+
+export const TEST_TYPE_LABELS = TEST_TYPE_KEYS.reduce<Record<InspectionRequestType, string>>(
+  (acc, key) => {
+    acc[key] = TEST_TYPE_CONFIG[key].label;
+    return acc;
+  },
+  {} as Record<InspectionRequestType, string>,
+);
+
+export const TEST_TYPE_OPTIONS = TEST_TYPE_KEYS.map((value) => ({
   value,
-  label: TEST_TYPE_LABELS[value],
+  label: TEST_TYPE_CONFIG[value].label,
 }));
 
 export const OBJECT_TYPE_LABELS: Record<InspectionObjectType, string> = {
@@ -43,38 +70,17 @@ export const OBJECT_TYPE_OPTIONS = (Object.keys(OBJECT_TYPE_LABELS) as Inspectio
   label: OBJECT_TYPE_LABELS[value],
 }));
 
-// Print form routing: PT/RT keep the original A4 portrait request form;
-// every other test type prints the A4 landscape NDE Clearance form.
-export const LEGACY_PRINT_TEST_TYPES = ["PENETRANT_TEST", "RADIOGRAPHY_TEST"] as const satisfies readonly InspectionRequestType[];
-
-export const NDE_CLEARANCE_PRINT_TEST_TYPES = [
-  "HYDROTEST_SHELL",
-  "PNEUMATIC_BOTTOM_TEST",
-  "PNEUMATIC_ROOF_TEST",
-  "OIL_LEAK_TEST",
-  "PNEUMATIC_REINFORCEMENT_TEST",
-  "HYDROTEST_PIPE",
-  "OTHER",
-] as const satisfies readonly InspectionRequestType[];
-
+// Print form routing: types without a clearance form (PT/RT) keep the original
+// A4 portrait request form; every clearance-form type prints the A4 landscape
+// NDE Clearance form.
 export function isLegacyPrintTestType(testType: InspectionRequestType): boolean {
-  return (LEGACY_PRINT_TEST_TYPES as readonly InspectionRequestType[]).includes(testType);
+  return !TEST_TYPE_CONFIG[testType].hasClearanceForm;
 }
 
 // Whole-tank / pressure tests apply to the tank or system as a whole, so
 // per-object inspection item rows are optional for these test types.
-// Mirrors OBJECT_OPTIONAL_TEST_TYPES in server inspection-request.schema.ts.
-export const OBJECT_OPTIONAL_TEST_TYPES = [
-  "PNEUMATIC_REINFORCEMENT_TEST",
-  "HYDROTEST_SHELL",
-  "HYDROTEST_PIPE",
-  "PNEUMATIC_BOTTOM_TEST",
-  "PNEUMATIC_ROOF_TEST",
-  "OTHER",
-] as const satisfies readonly InspectionRequestType[];
-
 export function isObjectOptionalTestType(testType: InspectionRequestType): boolean {
-  return (OBJECT_OPTIONAL_TEST_TYPES as readonly InspectionRequestType[]).includes(testType);
+  return TEST_TYPE_CONFIG[testType].objectScope === "WHOLE_TANK";
 }
 
 export const STATUS_LABELS: Record<InspectionRequestStatus, string> = {
@@ -95,6 +101,7 @@ export const ATTACHMENT_TYPE_LABELS: Record<AttachmentType, string> = {
   SUPPORTING_DOCUMENT: "Supporting Document",
   GENERATED_REQUEST_FORM: "Generated Request Form",
   SIGNED_REQUEST_FORM: "Signed Request Form",
+  SIGNED_RESULT_FORM: "Signed Result Form",
   SKETCH: "Sketch",
   OTHER: "Other",
 };
