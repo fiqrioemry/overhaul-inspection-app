@@ -7,28 +7,13 @@ import { Prisma } from "generated/prisma";
 import { InspectionFormTemplateRepository } from "@/modules/inspection-form-templates/inspection-form-template.repository";
 import { InspectionRequestRepository } from "./inspection-request.repository";
 import { InspectionRequestAttachmentRepository } from "./inspection-request-attachment.repository";
-import { OBJECT_OPTIONAL_TEST_TYPES } from "./inspection-request.schema";
+import { OBJECT_OPTIONAL_TEST_TYPES, TEST_TYPE_LABELS, getSignatoryTemplate } from "@/config/constant/inspection-request.constant";
 import type { CreateInspectionRequestRequest, UpdateInspectionRequestRequest, ListInspectionRequestsQuery, UpdateStatusRequest, InspectionRequestItemInput } from "./inspection-request.schema";
 import type { InspectionRequestListItem, InspectionRequestListResult, InspectionRequestSummaryCounts } from "./inspection-request.types";
 
 const MAX_ATTACHMENTS = 15;
 const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15 MB
 const ALLOWED_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "application/pdf"]);
-
-// NDT test types use the User / Inspector / Head of SSIE signatory set.
-const NDT_TEST_TYPES = new Set<InspectionRequestTypeEnum>([InspectionRequestTypeEnum.PENETRANT_TEST, InspectionRequestTypeEnum.RADIOGRAPHY_TEST]);
-
-const TEST_TYPE_LABELS: Record<string, string> = {
-  PENETRANT_TEST: "Penetrant Test",
-  RADIOGRAPHY_TEST: "Radiography Test",
-  OIL_LEAK_TEST: "Oil Leak Test",
-  PNEUMATIC_REINFORCEMENT_TEST: "Pneumatic Reinforcement Test",
-  HYDROTEST_SHELL: "Hydrotest Shell",
-  HYDROTEST_PIPE: "Hydrotest Pipe",
-  PNEUMATIC_BOTTOM_TEST: "Pneumatic Bottom Test",
-  PNEUMATIC_ROOF_TEST: "Pneumatic Roof Test",
-  OTHER: "Inspection",
-};
 
 const OBJECT_TYPE_LABELS: Record<string, string> = {
   MANHOLE: "Manhole",
@@ -65,10 +50,6 @@ function validateFiles(files: File[]) {
       });
     }
   }
-}
-
-export function getSignatoryTemplate(testType: InspectionRequestTypeEnum): string[] {
-  return NDT_TEST_TYPES.has(testType) ? ["User", "Inspector", "Head of SSIE"] : ["Inspector", "Contractor", "User"];
 }
 
 function buildRequestDescription(testType: InspectionRequestTypeEnum, items: InspectionRequestItemInput[], tankNo?: string | null): string {

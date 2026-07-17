@@ -7,15 +7,10 @@ import {
 } from "generated/prisma";
 
 // Whole-tank / pressure tests apply to the tank or system as a whole, so
-// per-object inspection item rows are optional for these test types.
-export const OBJECT_OPTIONAL_TEST_TYPES = new Set<InspectionRequestTypeEnum>([
-  InspectionRequestTypeEnum.PNEUMATIC_REINFORCEMENT_TEST,
-  InspectionRequestTypeEnum.HYDROTEST_SHELL,
-  InspectionRequestTypeEnum.HYDROTEST_PIPE,
-  InspectionRequestTypeEnum.PNEUMATIC_BOTTOM_TEST,
-  InspectionRequestTypeEnum.PNEUMATIC_ROOF_TEST,
-  InspectionRequestTypeEnum.OTHER,
-]);
+// per-object inspection item rows are optional for these test types. Sourced
+// from the single TEST_TYPE_CONFIG map (objectScope === "WHOLE_TANK").
+export { OBJECT_OPTIONAL_TEST_TYPES } from "@/config/constant/inspection-request.constant";
+import { OBJECT_OPTIONAL_TEST_TYPES } from "@/config/constant/inspection-request.constant";
 
 export const inspectionRequestItemInput = z.object({
   objectType: z.nativeEnum(InspectionObjectTypeEnum),
