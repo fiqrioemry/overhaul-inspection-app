@@ -214,6 +214,9 @@ export default function InspectionRequestDetailPage() {
                 <Button variant="outline" size="sm" onClick={() => triggerUpload("SIGNED_REQUEST_FORM")} disabled={uploadAttachment.isPending}>
                   <Upload className="h-3.5 w-3.5 mr-1" /> Signed Form
                 </Button>
+                <Button variant="outline" size="sm" onClick={() => triggerUpload("SIGNED_RESULT_FORM")} disabled={uploadAttachment.isPending}>
+                  <Upload className="h-3.5 w-3.5 mr-1" /> Result Form
+                </Button>
                 <Button variant="outline" size="sm" onClick={() => triggerUpload("SKETCH")} disabled={uploadAttachment.isPending}>
                   <Upload className="h-3.5 w-3.5 mr-1" /> Sketch
                 </Button>

@@ -7,6 +7,7 @@ export type InspectionRequestStatus = "NOT_STARTED" | "IN_PROCESS" | "REPAIR" | 
 
 export type InspectionRequestType =
   | "PENETRANT_TEST"
+  | "PRE_RADIOGRAPHY_TEST"
   | "RADIOGRAPHY_TEST"
   | "OIL_LEAK_TEST"
   | "PNEUMATIC_REINFORCEMENT_TEST"
@@ -39,6 +40,7 @@ export type AttachmentType =
   | "SUPPORTING_DOCUMENT"
   | "GENERATED_REQUEST_FORM"
   | "SIGNED_REQUEST_FORM"
+  | "SIGNED_RESULT_FORM"
   | "SKETCH"
   | "OTHER";
 
