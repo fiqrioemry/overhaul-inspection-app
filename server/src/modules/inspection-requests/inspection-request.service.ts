@@ -35,6 +35,22 @@ const OBJECT_TYPE_LABELS: Record<string, string> = {
   OTHER: "Object",
 };
 
+function validateFiles(files: File[]) {
+  for (const file of files) {
+    if (!ALLOWED_MIME_TYPES.has(file.type)) {
+      throw new HTTPException(400, {
+        message: `File "${file.name}" has unsupported type ${file.type}. Allowed: jpeg, png, webp, pdf.`,
+        cause: "INVALID_FILE_TYPE",
+      });
+    }
+    if (file.size > MAX_FILE_SIZE) {
+      throw new HTTPException(400, {
+        message: `File "${file.name}" exceeds the 15 MB size limit.`,
+        cause: "FILE_TOO_LARGE",
+      });
+    }
+  }
+}
 function buildRequestDescription(testType: InspectionRequestTypeEnum, items: InspectionRequestItemInput[], tankNo?: string | null): string {
   const label = TEST_TYPE_LABELS[testType] ?? "Inspection";
   if (items.length === 0) {
