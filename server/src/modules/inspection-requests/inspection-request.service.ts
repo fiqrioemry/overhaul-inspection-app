@@ -35,23 +35,6 @@ const OBJECT_TYPE_LABELS: Record<string, string> = {
   OTHER: "Object",
 };
 
-function validateFiles(files: File[]) {
-  for (const file of files) {
-    if (!ALLOWED_MIME_TYPES.has(file.type)) {
-      throw new HTTPException(400, {
-        message: `File "${file.name}" has unsupported type ${file.type}. Allowed: jpeg, png, webp, pdf.`,
-        cause: "INVALID_FILE_TYPE",
-      });
-    }
-    if (file.size > MAX_FILE_SIZE) {
-      throw new HTTPException(400, {
-        message: `File "${file.name}" exceeds the 15 MB size limit.`,
-        cause: "FILE_TOO_LARGE",
-      });
-    }
-  }
-}
-
 function buildRequestDescription(testType: InspectionRequestTypeEnum, items: InspectionRequestItemInput[], tankNo?: string | null): string {
   const label = TEST_TYPE_LABELS[testType] ?? "Inspection";
   if (items.length === 0) {
@@ -103,11 +86,7 @@ export class InspectionRequestService {
 
   // Resolves and validates the tank / project / process triple. project + tank are
   // derived from the process when present; otherwise from the project.
-  private static async resolveContext(
-    tankId?: string | null,
-    projectId?: string | null,
-    tankProcessId?: string | null,
-  ): Promise<{ tankNo: string | null; tankId: string | null; projectId: string | null }> {
+  private static async resolveContext(tankId?: string | null, projectId?: string | null, tankProcessId?: string | null): Promise<{ tankNo: string | null; tankId: string | null; projectId: string | null }> {
     let resolvedTankId = tankId ?? null;
     let resolvedProjectId = projectId ?? null;
 
@@ -323,13 +302,12 @@ export class InspectionRequestService {
     // company of the approver (approvedRequests user); fall back to any active
     // OWNER company logo when the approver is unset or has no resolvable logo.
     const approverCompany = request.approvedByUser?.company;
-    const approverLogoUrl = approverCompany?.type === "OWNER" ? approverCompany.logoFile?.url ?? null : null;
+    const approverLogoUrl = approverCompany?.type === "OWNER" ? (approverCompany.logoFile?.url ?? null) : null;
     const inspectionLogoUrl = approverLogoUrl ?? (await InspectionRequestRepository.findOwnerCompanyLogoUrl());
 
     // Contractor company for the clearance form's "Requested By" signature block:
     // from the request's project, else the tank's most recent active project.
-    const contractorCompany =
-      request.project?.contractorCompany ?? (request.tankId ? await InspectionRequestRepository.findTankContractorCompany(request.tankId) : null);
+    const contractorCompany = request.project?.contractorCompany ?? (request.tankId ? await InspectionRequestRepository.findTankContractorCompany(request.tankId) : null);
 
     return {
       ...request,
