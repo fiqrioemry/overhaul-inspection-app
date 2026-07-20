@@ -59,6 +59,12 @@ export class ProcessTemplateController {
   }
 
   // Dependencies
+  static async addDependency(c: Context) {
+    const processTemplateId = c.req.param("id");
+    const request = addProcessDependencyRequest.parse(await c.req.json());
+    const dep = await ProcessTemplateService.addDependency(processTemplateId, request);
+    return responseCreated(c, processTemplateSuccessMessage.ADD_DEPENDENCY, dep);
+  }
 
   static async listDependencies(c: Context) {
     const processTemplateId = c.req.param("id");
