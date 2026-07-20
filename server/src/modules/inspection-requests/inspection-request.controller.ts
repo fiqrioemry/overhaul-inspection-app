@@ -13,22 +13,6 @@ import {
 } from "./inspection-request.schema";
 import { inspectionRequestSuccessMessage } from "@/config/constant/inspection-request.constant";
 
-function extractFiles(body: Record<string, unknown>): File[] {
-  const raw = body["attachments"];
-  if (!raw) return [];
-  const arr = Array.isArray(raw) ? raw : [raw];
-  return arr.filter((f): f is File => f instanceof File);
-}
-
-function parseJson<T>(value: unknown, fallback: T): T {
-  if (!value || typeof value !== "string") return fallback;
-  try {
-    return JSON.parse(value) as T;
-  } catch {
-    return fallback;
-  }
-}
-
 function str(body: Record<string, unknown>, key: string): string | undefined {
   const v = body[key];
   return v && typeof v === "string" && v.length > 0 ? v : undefined;
@@ -106,14 +90,7 @@ export class InspectionRequestController {
       caption: str(body, "caption"),
     });
     const user = c.get("user");
-    const request = await InspectionRequestService.uploadAttachment(
-      c,
-      id,
-      attachmentType as InspectionRequestAttachmentTypeEnum,
-      caption,
-      files,
-      user.id,
-    );
+    const request = await InspectionRequestService.uploadAttachment(c, id, attachmentType as InspectionRequestAttachmentTypeEnum, caption, files, user.id);
     return responseOK(c, inspectionRequestSuccessMessage.UPLOAD_ATTACHMENT, request);
   }
 
