@@ -8,11 +8,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 function notificationLabel(type: string): string {
   const labels: Record<string, string> = {
     INSPECTION_REVIEW_REQUESTED: "Inspection Review Requested",
-    INSPECTION_REVIEWED: "Inspection Reviewed",
-    FINDING_CREATED: "Finding Created",
-    FINDING_STATUS_UPDATED: "Finding Updated",
-    TEST_RESULT_UPDATED: "Test Result Updated",
-    RADIOGRAPHY_RESULT_UPDATED: "Radiography Updated",
   };
   return labels[type] ?? type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
