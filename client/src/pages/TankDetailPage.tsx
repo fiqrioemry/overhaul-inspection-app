@@ -78,6 +78,28 @@ export default function TankDetailPage() {
 
   return (
     <div className="space-y-6">
+      <PageHeader
+        title={`${tank.tankNo}${tank.tankName ? ` — ${tank.tankName}` : ""}`}
+        description="Tank overview and process workflow"
+        action={
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => navigate(ROUTES.TANKS)}>
+              <ArrowLeft /> Back
+            </Button>
+            <PermissionGate permission={PERMISSIONS.TANK_UPDATE}>
+              <Button variant="outline" onClick={() => navigate(editPath)}>
+                <Pencil /> Edit Tank
+              </Button>
+            </PermissionGate>
+            <PermissionGate permission={PERMISSIONS.TANK_PROJECT_CREATE}>
+              <Button onClick={() => setProjectDialogOpen(true)} disabled={!canCreateProject} title={createBlockedReason || undefined}>
+                <Plus /> Start Overhaul Project
+              </Button>
+            </PermissionGate>
+          </div>
+        }
+      />
+
       <Tabs defaultValue="overview">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
