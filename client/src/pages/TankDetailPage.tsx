@@ -74,36 +74,10 @@ export default function TankDetailPage() {
   const isDecommissioned = tank.assetStatus === "DECOMMISSIONED";
   const hasActiveProject = Boolean(tank.activeProject) || tank.assetStatus === "UNDER_OVERHAUL";
   const canCreateProject = !isDecommissioned && !hasActiveProject;
-  const createBlockedReason = isDecommissioned
-    ? "Decommissioned tanks cannot start new projects."
-    : hasActiveProject
-      ? "This tank already has an active project. Complete or cancel it before creating a new overhaul project."
-      : "";
+  const createBlockedReason = isDecommissioned ? "Decommissioned tanks cannot start new projects." : hasActiveProject ? "This tank already has an active project. Complete or cancel it before creating a new overhaul project." : "";
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title={`${tank.tankNo}${tank.tankName ? ` — ${tank.tankName}` : ""}`}
-        description="Tank overview and process workflow"
-        action={
-          <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => navigate(ROUTES.TANKS)}>
-              <ArrowLeft /> Back
-            </Button>
-            <PermissionGate permission={PERMISSIONS.TANK_UPDATE}>
-              <Button variant="outline" onClick={() => navigate(editPath)}>
-                <Pencil /> Edit Tank
-              </Button>
-            </PermissionGate>
-            <PermissionGate permission={PERMISSIONS.TANK_PROJECT_CREATE}>
-              <Button onClick={() => setProjectDialogOpen(true)} disabled={!canCreateProject} title={createBlockedReason || undefined}>
-                <Plus /> Start Overhaul Project
-              </Button>
-            </PermissionGate>
-          </div>
-        }
-      />
-
       <Tabs defaultValue="overview">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
@@ -135,12 +109,7 @@ export default function TankDetailPage() {
 
           {tank.shellCourses.length > 0 && (
             <div className="mt-4 rounded-lg border">
-              <button
-                type="button"
-                onClick={() => setShellCoursesOpen((v) => !v)}
-                aria-expanded={shellCoursesOpen}
-                className="flex w-full items-center justify-between px-4 py-3 text-sm font-medium hover:bg-muted/20"
-              >
+              <button type="button" onClick={() => setShellCoursesOpen((v) => !v)} aria-expanded={shellCoursesOpen} className="flex w-full items-center justify-between px-4 py-3 text-sm font-medium hover:bg-muted/20">
                 <span>Shell Courses ({tank.shellCourses.length})</span>
                 <ChevronDown className={`h-4 w-4 transition-transform ${shellCoursesOpen ? "rotate-180" : ""}`} />
               </button>
@@ -154,15 +123,9 @@ export default function TankDetailPage() {
         </TabsContent>
 
         <TabsContent value="projects" className="mt-4">
-          {createBlockedReason && (
-            <p className="mb-3 text-xs text-muted-foreground">{createBlockedReason}</p>
-          )}
+          {createBlockedReason && <p className="mb-3 text-xs text-muted-foreground">{createBlockedReason}</p>}
           {tank.projects.length === 0 ? (
-            <EmptyState
-              title="No projects yet"
-              description="This tank has no overhaul/repair project. Start one to generate the workflow."
-              icon={ClipboardList}
-            />
+            <EmptyState title="No projects yet" description="This tank has no overhaul/repair project. Start one to generate the workflow." icon={ClipboardList} />
           ) : (
             <div className="rounded-lg border overflow-hidden">
               <table className="w-full text-sm">
@@ -182,7 +145,9 @@ export default function TankDetailPage() {
                     <tr key={p.id} className="hover:bg-muted/20">
                       <td className="px-4 py-3 font-mono font-medium">{p.projectNo}</td>
                       <td className="px-4 py-3 text-xs text-muted-foreground">{p.type.replace(/_/g, " ")}</td>
-                      <td className="px-4 py-3"><StatusBadge status={p.status} /></td>
+                      <td className="px-4 py-3">
+                        <StatusBadge status={p.status} />
+                      </td>
                       <td className="px-4 py-3 text-xs text-muted-foreground">{p.startDate ? format(new Date(p.startDate), "dd MMM yyyy") : "—"}</td>
                       <td className="px-4 py-3 text-xs text-muted-foreground">{p.estimatedFinishDate ? format(new Date(p.estimatedFinishDate), "dd MMM yyyy") : "—"}</td>
                       <td className="px-4 py-3 text-xs text-muted-foreground">{p.contractorCompany?.name ?? "—"}</td>
@@ -202,12 +167,7 @@ export default function TankDetailPage() {
         )}
       </Tabs>
 
-      <CreateOverhaulProjectDialog
-        open={projectDialogOpen}
-        onOpenChange={setProjectDialogOpen}
-        tankId={tank.id}
-        tankNo={tank.tankNo}
-      />
+      <CreateOverhaulProjectDialog open={projectDialogOpen} onOpenChange={setProjectDialogOpen} tankId={tank.id} tankNo={tank.tankNo} />
     </div>
   );
 }
