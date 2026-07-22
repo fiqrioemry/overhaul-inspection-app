@@ -27,21 +27,6 @@ export default function NotificationPage() {
 
   return (
     <div className="space-y-6 max-w-2xl">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Bell className="size-6 text-muted-foreground" />
-          <div>
-            <h1 className="text-2xl font-semibold">Notifications</h1>
-            <p className="text-sm text-muted-foreground">Your recent activity alerts</p>
-          </div>
-        </div>
-        {hasUnread && (
-          <Button variant="outline" size="sm" onClick={() => markAllRead.mutate()} disabled={markAllRead.isPending}>
-            Mark all as read
-          </Button>
-        )}
-      </div>
-
       <div className="rounded-lg border divide-y">
         {isLoading ? (
           Array.from({ length: 5 }).map((_, i) => (
