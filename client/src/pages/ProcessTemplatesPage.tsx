@@ -71,6 +71,19 @@ export default function ProcessTemplatesPage() {
 
   return (
     <div className="space-y-6">
+      <PageHeader
+        title="Process Templates"
+        description="Define inspection process templates and their criteria mappings"
+        action={
+          <PermissionGate permission={PERMISSIONS.MASTER_PROCESS_CREATE}>
+            <Button onClick={openCreate}>
+              <Plus />
+              Add Template
+            </Button>
+          </PermissionGate>
+        }
+      />
+
       <div className="flex items-center gap-3">
         <Input
           placeholder="Search templates..."
