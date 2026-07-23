@@ -70,19 +70,6 @@ export default function UserManagementPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="User Management"
-        description="Manage system users, roles, and access"
-        action={
-          <PermissionGate permission={PERMISSIONS.USER_CREATE}>
-            <Button onClick={openCreate}>
-              <Plus />
-              Create User
-            </Button>
-          </PermissionGate>
-        }
-      />
-
       <div className="flex items-center gap-3">
         <Input
           placeholder="Search users..."
