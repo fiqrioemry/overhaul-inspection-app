@@ -71,24 +71,14 @@ export default function ProcessTemplatesPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Process Templates"
-        description="Define inspection process templates and their criteria mappings"
-        action={
-          <PermissionGate permission={PERMISSIONS.MASTER_PROCESS_CREATE}>
-            <Button onClick={openCreate}>
-              <Plus />
-              Add Template
-            </Button>
-          </PermissionGate>
-        }
-      />
-
       <div className="flex items-center gap-3">
         <Input
           placeholder="Search templates..."
           value={search}
-          onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(1);
+          }}
           className="max-w-xs"
         />
         <div className="ml-auto flex items-center gap-2">
@@ -159,7 +149,9 @@ export default function ProcessTemplatesPage() {
                       <td className="px-4 py-3 text-xs text-muted-foreground">{template.type}</td>
                       <td className="px-4 py-3">
                         {template.isOptional ? (
-                          <Badge variant="outline" className="text-xs">Optional</Badge>
+                          <Badge variant="outline" className="text-xs">
+                            Optional
+                          </Badge>
                         ) : (
                           <span className="text-muted-foreground text-xs">—</span>
                         )}
@@ -191,9 +183,7 @@ export default function ProcessTemplatesPage() {
             </div>
           )}
 
-          {data?.meta && data.meta.totalPages > 1 && (
-            <Pagination meta={data.meta} onPageChange={setPage} />
-          )}
+          {data?.meta && data.meta.totalPages > 1 && <Pagination meta={data.meta} onPageChange={setPage} />}
         </>
       )}
 
@@ -201,7 +191,9 @@ export default function ProcessTemplatesPage() {
 
       <ConfirmDialog
         open={Boolean(deleteTarget)}
-        onOpenChange={(open) => { if (!open) setDeleteTarget(undefined); }}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(undefined);
+        }}
         title="Delete Process Template"
         description={`Delete "${deleteTarget?.name}"? This cannot be undone.`}
         confirmLabel="Delete"
