@@ -107,6 +107,66 @@ export default function InspectionRequestDetailPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left: meta + description + items */}
+        <div className="lg:col-span-2 space-y-6">
+          <div className="rounded-lg border p-5">
+            <h2 className="text-sm font-medium mb-3">Request Information</h2>
+            <MetaRow label="Tank" value={req.tank?.tankNo ?? "General"} />
+            <MetaRow label="Process" value={req.tankProcess?.name} />
+            <MetaRow label="Request Date" value={format(new Date(req.requestDate), "dd MMM yyyy")} />
+            <MetaRow label="Requested By" value={req.requestedByUser?.name} />
+            <MetaRow label="Customer / Asset Holder" value={req.assetHolder} />
+            <MetaRow label="Execution / 3rd Party" value={req.executionCompany?.name ?? req.executionParty} />
+            <MetaRow label="Standard & Code" value={req.standardAndCode} />
+            <MetaRow label="Remarks / Location" value={req.requestLocation} />
+            <MetaRow label="Received By" value={personnelLabel(req.receivedByUser)} />
+            <MetaRow label="Prepared By" value={personnelLabel(req.preparedByUser)} />
+            <MetaRow label="Approved By" value={personnelLabel(req.approvedByUser)} />
+          </div>
+
+          {req.description && (
+            <div className="rounded-lg border p-5">
+              <h2 className="text-sm font-medium mb-2">Description</h2>
+              <pre className="text-xs whitespace-pre-wrap font-sans text-muted-foreground">{req.description}</pre>
+            </div>
+          )}
+
+          {req.items.length > 0 && (
+            <div className="rounded-lg border p-5">
+              <h2 className="text-sm font-medium mb-3">Inspection Objects ({req.items.length})</h2>
+              <div className="rounded border overflow-hidden">
+                <table className="w-full text-xs">
+                  <thead className="border-b bg-muted/40">
+                    <tr>
+                      <th className="px-2 py-1.5 text-left font-medium">Type</th>
+                      <th className="px-2 py-1.5 text-left font-medium">Name</th>
+                      <th className="px-2 py-1.5 text-left font-medium">Qty</th>
+                      <th className="px-2 py-1.5 text-left font-medium">Location</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {req.items.map((it) => (
+                      <tr key={it.id}>
+                        <td className="px-2 py-1.5">{OBJECT_TYPE_LABELS[it.objectType as InspectionObjectType] ?? it.objectType}</td>
+                        <td className="px-2 py-1.5">{it.objectName ?? "—"}</td>
+                        <td className="px-2 py-1.5">
+                          {it.quantity} {it.unit ?? ""}
+                        </td>
+                        <td className="px-2 py-1.5 text-muted-foreground">{it.locationDetail ?? "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Test records */}
+          <div className="rounded-lg border p-5">
+            <TestRecordSection requestId={req.id} requestStatus={req.status} items={req.items} canManage={can(PERMISSIONS.TEST_RECORD_CREATE)} isAdmin={isAdmin} />
+          </div>
+        </div>
+
         {/* Right: workflow + attachments */}
         <div className="space-y-6">
           {/* Workflow */}
