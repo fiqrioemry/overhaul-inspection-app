@@ -119,6 +119,60 @@ export default function ReferenceDocumentsPage() {
       {isLoading && <LoadingState />}
       {isError && <ErrorState message="Failed to load reference documents." onRetry={() => refetch()} />}
 
+      {!isLoading && !isError && (
+        <>
+          {data && data.items.length === 0 ? (
+            <EmptyState title="No reference documents" description="Add a reference document to get started." icon={FileText} />
+          ) : (
+            <div className="rounded-lg border overflow-hidden">
+              <table className="w-full text-sm">
+                <thead className="border-b bg-muted/40">
+                  <tr>
+                    <th className="px-4 py-3 text-left font-medium">Code</th>
+                    <th className="px-4 py-3 text-left font-medium">Title</th>
+                    <th className="px-4 py-3 text-left font-medium">Type</th>
+                    <th className="px-4 py-3 text-left font-medium">Revision</th>
+                    <th className="px-4 py-3 text-left font-medium">Issuer</th>
+                    <th className="px-4 py-3 text-left font-medium">Status</th>
+                    <th className="px-4 py-3 text-right font-medium">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {data?.items.map((doc) => (
+                    <tr key={doc.id} className="hover:bg-muted/20">
+                      <td className="px-4 py-3 font-medium font-mono text-xs">{doc.code}</td>
+                      <td className="px-4 py-3">{doc.title}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{doc.documentType}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{doc.revision ?? "—"}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{doc.issuer ?? "—"}</td>
+                      <td className="px-4 py-3">
+                        <StatusBadge status={doc.status} />
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-end gap-2">
+                          <PermissionGate permission={PERMISSIONS.REFERENCE_DOCUMENT_UPDATE}>
+                            <Button variant="ghost" size="icon-sm" onClick={() => openEdit(doc)}>
+                              <Pencil />
+                            </Button>
+                          </PermissionGate>
+                          <PermissionGate permission={PERMISSIONS.REFERENCE_DOCUMENT_CREATE}>
+                            <Button variant="ghost" size="icon-sm" onClick={() => setDeleteTarget(doc)}>
+                              <Trash2 className="text-destructive" />
+                            </Button>
+                          </PermissionGate>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {data?.meta && data.meta.totalPages > 1 && <Pagination meta={data.meta} onPageChange={setPage} />}
+        </>
+      )}
+
       <ReferenceDocumentFormDialog open={formOpen} onOpenChange={setFormOpen} document={selectedDoc} />
 
       <ConfirmDialog
