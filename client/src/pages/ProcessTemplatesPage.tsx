@@ -135,6 +135,71 @@ export default function ProcessTemplatesPage() {
       {isLoading && <LoadingState />}
       {isError && <ErrorState message="Failed to load process templates." onRetry={() => refetch()} />}
 
+      {!isLoading && !isError && (
+        <>
+          {sortedItems.length === 0 ? (
+            <EmptyState title="No process templates" description="Add a process template to get started." icon={GitBranch} />
+          ) : (
+            <div className="rounded-lg border overflow-hidden">
+              <table className="w-full text-sm">
+                <thead className="border-b bg-muted/40">
+                  <tr>
+                    <th className="px-4 py-3 text-left font-medium w-12">Seq</th>
+                    <th className="px-4 py-3 text-left font-medium">Code</th>
+                    <th className="px-4 py-3 text-left font-medium">Name</th>
+                    <th className="px-4 py-3 text-left font-medium">Type</th>
+                    <th className="px-4 py-3 text-left font-medium">Optional</th>
+                    <th className="px-4 py-3 text-left font-medium">Active</th>
+                    <th className="px-4 py-3 text-right font-medium">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {sortedItems.map((template) => (
+                    <tr key={template.id} className="hover:bg-muted/20">
+                      <td className="px-4 py-3 text-muted-foreground font-mono text-xs">{template.sequenceOrder}</td>
+                      <td className="px-4 py-3 font-mono text-xs font-medium">{template.code}</td>
+                      <td className="px-4 py-3">{template.name}</td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground">{template.type}</td>
+                      <td className="px-4 py-3">
+                        {template.isOptional ? (
+                          <Badge variant="outline" className="text-xs">
+                            Optional
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground text-xs">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        <StatusBadge status={template.isActive ? "ACTIVE" : "INACTIVE"} />
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-end gap-2">
+                          <Button variant="ghost" size="icon-sm" onClick={() => goToDetail(template.id)}>
+                            <Eye />
+                          </Button>
+                          <PermissionGate permission={PERMISSIONS.MASTER_PROCESS_UPDATE}>
+                            <Button variant="ghost" size="icon-sm" onClick={() => openEdit(template)}>
+                              <Pencil />
+                            </Button>
+                          </PermissionGate>
+                          <PermissionGate permission={PERMISSIONS.MASTER_PROCESS_CREATE}>
+                            <Button variant="ghost" size="icon-sm" onClick={() => setDeleteTarget(template)}>
+                              <Trash2 className="text-destructive" />
+                            </Button>
+                          </PermissionGate>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {data?.meta && data.meta.totalPages > 1 && <Pagination meta={data.meta} onPageChange={setPage} />}
+        </>
+      )}
+
       <ProcessTemplateFormDialog open={formOpen} onOpenChange={setFormOpen} template={selectedTemplate} />
 
       <ConfirmDialog
