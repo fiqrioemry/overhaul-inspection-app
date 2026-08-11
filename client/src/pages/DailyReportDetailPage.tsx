@@ -170,16 +170,12 @@ export default function DailyReportDetailPage() {
           </div>
 
           {/* Recommendation */}
-          <div className="space-y-3 flex-1">
-            <SectionTitle>Rekomendasi / Recommendation</SectionTitle>
-            {report.recommendation ? (
+          {report.recommendation && (
+            <div className="space-y-3 flex-1">
+              <SectionTitle>Rekomendasi / Recommendation</SectionTitle>
               <div className="rich-text leading-relaxed pt-2 max-w-none" style={{ fontSize: "12px" }} dangerouslySetInnerHTML={{ __html: report.recommendation }} />
-            ) : (
-              <div className="pt-2" style={{ fontSize: "12px" }}>
-                <span className="text-gray-400 italic">Belum ada rekomendasi.</span>
-              </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
         {/* ── PHOTO PAGES: 6 photos per page, 2 columns ── */}
