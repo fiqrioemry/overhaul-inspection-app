@@ -1,7 +1,7 @@
 // src/pages/TankProcessDetailPage.tsx
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, AlertTriangle, Pencil, ArrowRightLeft, Trash2, CheckCheck, Eye } from "lucide-react";
+import { ArrowLeft, Plus, AlertTriangle, Pencil, ArrowRightLeft, Trash2, CheckCheck, Eye, CalendarClock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -21,6 +21,7 @@ import FindingStatusDialog from "@/features/findings/components/FindingStatusDia
 import { FindingStatusBadge, FindingSeverityBadge } from "@/features/findings/components/FindingStatusBadge";
 import { ACTIVITY_LABEL } from "@/features/daily-reports/daily-report.constants";
 import { useTankProcess, useUpdateProcessStatus } from "@/features/tank-processes/tank-processes.query";
+import ProcessDatesDialog from "@/features/tank-processes/components/ProcessDatesDialog";
 import { useFindings, useDeleteFinding, useBulkCloseFindings } from "@/features/findings/findings.query";
 import { useDailyReports, useDeleteDailyReport } from "@/features/daily-reports/daily-reports.query";
 import type { DailyReportSummary } from "@/features/daily-reports/daily-reports.api";
@@ -72,6 +73,7 @@ export default function TankProcessDetailPage() {
   const [selectedFindingIds, setSelectedFindingIds] = useState<Set<string>>(new Set());
   const [deleteFindingTarget, setDeleteFindingTarget] = useState<FindingSummary | null>(null);
   const [deleteDailyReportTarget, setDeleteDailyReportTarget] = useState<DailyReportSummary | null>(null);
+  const [datesDialogMode, setDatesDialogMode] = useState<"start" | "edit" | null>(null);
 
   const { data: process, isLoading, isError, refetch } = useTankProcess(processId!);
   const updateStatus = useUpdateProcessStatus();
@@ -127,6 +129,10 @@ export default function TankProcessDetailPage() {
 
   function handleStatusAdvance() {
     if (!nextStatus) return;
+    if (process.status === "NOT_STARTED") {
+      setDatesDialogMode("start");
+      return;
+    }
     updateStatus.mutate({ id: processId!, data: { status: nextStatus } });
   }
 
@@ -143,6 +149,13 @@ export default function TankProcessDetailPage() {
         description={`${process.processTemplate.code} · ${process.type}`}
         action={
           <div className="flex items-center gap-2">
+            {process.status !== "NOT_STARTED" && (
+              <PermissionGate permission={PERMISSIONS.PROCESS_UPDATE}>
+                <Button variant="outline" onClick={() => setDatesDialogMode("edit")}>
+                  <CalendarClock className="h-4 w-4 mr-1" /> Edit Dates
+                </Button>
+              </PermissionGate>
+            )}
             {nextStatus && actionLabel && (
               <PermissionGate permission={actionPermission}>
                 <Button variant="outline" onClick={handleStatusAdvance} disabled={updateStatus.isPending || submitForReviewBlocked} title={submitForReviewBlocked ? "Close all OPEN findings before submitting for review" : undefined}>
@@ -398,6 +411,17 @@ export default function TankProcessDetailPage() {
       </Tabs>
 
       {/* DIALOGS */}
+      {datesDialogMode && (
+        <ProcessDatesDialog
+          open={Boolean(datesDialogMode)}
+          onOpenChange={(next) => {
+            if (!next) setDatesDialogMode(null);
+          }}
+          mode={datesDialogMode}
+          process={process}
+        />
+      )}
+
       <FindingFormDialog open={findingDialogOpen} onOpenChange={setFindingDialogOpen} tankId={process.tank?.id ?? tankId!} tankProcessId={processId!} />
 
       {editFinding && <FindingEditDialog open={Boolean(editFinding)} onOpenChange={(open) => !open && setEditFinding(null)} finding={editFinding} />}

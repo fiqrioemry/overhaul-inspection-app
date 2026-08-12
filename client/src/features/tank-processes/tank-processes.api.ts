@@ -46,6 +46,15 @@ export interface EligibilityResult {
 
 export interface UpdateProcessStatusPayload {
   status: ProcessStatus;
+  // Only meaningful for the NOT_STARTED -> IN_PROGRESS transition.
+  startDate?: string;
+  // undefined = leave untouched; null = clear it.
+  finishDate?: string | null;
+}
+
+export interface UpdateProcessDatesPayload {
+  startDate: string;
+  finishDate?: string | null;
 }
 
 export async function getTankProcesses(tankId: string): Promise<TankProcessSummary[]> {
@@ -60,6 +69,11 @@ export async function getTankProcessById(id: string): Promise<TankProcessDetail>
 
 export async function updateProcessStatus(id: string, data: UpdateProcessStatusPayload): Promise<TankProcessDetail> {
   const res = await api.patch<ResponseSuccess<TankProcessDetail>>(`/processes/${id}/status`, data);
+  return res.data.data!;
+}
+
+export async function updateProcessDates(id: string, data: UpdateProcessDatesPayload): Promise<TankProcessDetail> {
+  const res = await api.patch<ResponseSuccess<TankProcessDetail>>(`/processes/${id}/dates`, data);
   return res.data.data!;
 }
 

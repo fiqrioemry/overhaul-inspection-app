@@ -76,7 +76,7 @@ export default function ProcessTemplateFormDialog({ open, onOpenChange, template
 
           <div className="grid grid-cols-2 gap-4">
             <ShortTextField control={form.control} name="code" label="Code" placeholder="e.g. PT-001" />
-            <ShortTextField control={form.control} name="sequenceOrder" label="Sequence Order" placeholder="0" type="text" />
+            <ShortTextField control={form.control} name="sequenceOrder" label="Sequence Order" placeholder="0" type="number" min={0} />
           </div>
 
           <ShortTextField control={form.control} name="name" label="Name" placeholder="Process name" />
