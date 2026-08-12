@@ -54,10 +54,12 @@ export class DailyReportRepository {
     endDate?: string;
     search?: string;
     activityType?: DailyActivityTypeEnum;
+    orderBy?: "reportDate";
+    sortBy?: "asc" | "desc";
     page: number;
     limit: number;
   }) {
-    const { tankId, projectId, tankProcessId, reportDate, startDate, endDate, search, activityType, page, limit } = query;
+    const { tankId, projectId, tankProcessId, reportDate, startDate, endDate, search, activityType, orderBy = "reportDate", sortBy = "desc", page, limit } = query;
     const skip = (page - 1) * limit;
     const where: Prisma.DailyReportWhereInput = {
       deletedAt: null,
@@ -86,7 +88,7 @@ export class DailyReportRepository {
         where,
         skip,
         take: limit,
-        orderBy: [{ reportDate: "desc" }, { createdAt: "desc" }],
+        orderBy: [{ [orderBy]: sortBy }, { createdAt: sortBy }],
         include: {
           tank: { select: tankSelect },
           project: { select: projectSelect },

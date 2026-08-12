@@ -56,6 +56,8 @@ export const listDailyReportsQuery = z.object({
   endDate: z.string().optional(),
   search: z.string().optional(),
   activityType: z.nativeEnum(DailyActivityTypeEnum).optional(),
+  orderBy: z.enum(["reportDate"]).default("reportDate"),
+  sortBy: z.enum(["asc", "desc"]).default("desc"),
   page: z.string().default("1").transform(Number),
   limit: z.string().default("20").transform(Number),
 });
