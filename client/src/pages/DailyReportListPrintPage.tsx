@@ -152,9 +152,9 @@ export default function DailyReportListPrintPage() {
                     <th className="border border-gray-300 px-2 py-2 text-left w-16" style={{ fontSize: "10px", fontWeight: 600 }}>
                       Tank
                     </th>
-                    <th className="border border-gray-300 px-2 py-2 text-left w-24" style={{ fontSize: "10px", fontWeight: 600 }}>
+                    {/* <th className="border border-gray-300 px-2 py-2 text-left w-24" style={{ fontSize: "10px", fontWeight: 600 }}>
                       Jenis Kegiatan
-                    </th>
+                    </th> */}
                     <th className="border border-gray-300 px-2 py-2 text-left" style={{ fontSize: "10px", fontWeight: 600 }}>
                       Uraian Kegiatan
                     </th>
@@ -167,14 +167,14 @@ export default function DailyReportListPrintPage() {
                         {idx + 1}
                       </td>
                       <td className="border border-gray-300 px-2 py-2 whitespace-nowrap text-gray-900" style={{ fontSize: "10px" }}>
-                        {format(new Date(report.reportDate), "dd MMM yyyy")}
+                        {format(new Date(report.reportDate), "dd-MM-yy")}
                       </td>
                       <td className="border border-gray-300 px-2 py-2 font-medium text-gray-900" style={{ fontSize: "10px" }}>
                         {report.tank?.tankNo ?? "—"}
                       </td>
-                      <td className="border border-gray-300 px-2 py-2 text-gray-900" style={{ fontSize: "10px" }}>
+                      {/* <td className="border border-gray-300 px-2 py-2 text-gray-900" style={{ fontSize: "10px" }}>
                         {ACTIVITY_LABEL[report.activityType] ?? report.activityType.replace(/_/g, " ")}
-                      </td>
+                      </td> */}
                       <td className="border border-gray-300 px-2 py-2 text-gray-800" style={{ fontSize: "10px" }}>
                         {report.title || "—"}
                       </td>
@@ -184,18 +184,18 @@ export default function DailyReportListPrintPage() {
               </table>
             </div>
 
-            <p className="text-right text-gray-500" style={{ fontSize: "12px" }}>
+            {/* <p className="text-right text-gray-500" style={{ fontSize: "12px" }}>
               Total: {reports.length} laporan
-            </p>
+            </p> */}
 
             {/* Signature Section */}
             <div className="pt-6 space-y-4">
-              <p className="font-semibold uppercase tracking-wide text-gray-700" style={{ fontSize: "12px" }}>
+              {/* <p className="font-semibold uppercase tracking-wide text-gray-700" style={{ fontSize: "12px" }}>
                 Mengetahui / Acknowledged by
-              </p>
-              <div className="grid grid-cols-2 gap-16">
-                <SignatureBox label="Inspektor / Inspector" />
-                <SignatureBox label="Pejabat PIC Pertamina" />
+              </p> */}
+              <div className=" flex items-center justify-between gap-4 p-8">
+                <SignatureBox label="Inspector" />
+                <SignatureBox label="PIC Pertamina" />
               </div>
             </div>
           </>
@@ -212,7 +212,7 @@ function CompanyLogo({ url, name, size = "md" }: { url: string | null; name: str
 
 function SignatureBox({ label }: { label: string }) {
   return (
-    <div className="space-y-2 text-center">
+    <div className="space-y-2 text-center w-50">
       <p className="text-gray-600" style={{ fontSize: "12px" }}>
         {label}
       </p>
