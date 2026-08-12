@@ -12,6 +12,7 @@ tankProcesses.patch("/:id/status", protect, requirePermission(PERMISSIONS.PROCES
 tankProcesses.patch("/:id/dates", protect, requirePermission(PERMISSIONS.PROCESS_UPDATE), ctrl.updateDates);
 tankProcesses.get("/:id/eligibility", protect, requirePermission(PERMISSIONS.PROCESS_READ), ctrl.getEligibility);
 tankProcesses.get("/:id/checklist", protect, requirePermission(PERMISSIONS.CHECKLIST_READ), ctrl.getChecklist);
+tankProcesses.delete("/:id", protect, requirePermission(PERMISSIONS.PROCESS_DELETE), ctrl.deleteProcess);
 
 // Checklist actions — bulk-check must be before /:checklistId to avoid param match
 tankProcesses.patch("/:id/checklists/bulk-check", protect, requirePermission(PERMISSIONS.CHECKLIST_UPDATE), checklistCtrl.bulkCheck);

@@ -99,4 +99,14 @@ export class TankProjectRepository {
   static async countByTankAndPrefix(tankId: string) {
     return pgsql.tankProject.count({ where: { tankId } });
   }
+
+  // Active process templates not yet added as a TankProcess on this project — the
+  // candidate set for the "add a single process" action.
+  static async findAvailableTemplates(projectId: string) {
+    return pgsql.processTemplate.findMany({
+      where: { isActive: true, deletedAt: null, tankProcesses: { none: { projectId } } },
+      orderBy: { sequenceOrder: "asc" },
+      select: { id: true, code: true, name: true, type: true, sequenceOrder: true, isOptional: true, applicabilityRule: true },
+    });
+  }
 }

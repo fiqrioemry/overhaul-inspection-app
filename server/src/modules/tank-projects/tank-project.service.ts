@@ -188,7 +188,10 @@ export class TankProjectService {
 
   // Populates missing processes for an EXISTING project only — never a way to start a
   // new overhaul cycle. Idempotent (unique [projectId, processTemplateId]).
-  static async generateProcesses(id: string) {
+  // With processTemplateIds omitted, generates the full applicable set (used by the
+  // legacy "generate remaining" action); with it provided, generates exactly those
+  // templates — this is what backs the single-process "Add Process" UI action.
+  static async generateProcesses(id: string, processTemplateIds?: string[]) {
     const project = await TankProjectRepository.findById(id);
     if (!project) {
       throw new HTTPException(404, { message: "Tank project not found", cause: "PROJECT_NOT_FOUND" });
@@ -200,9 +203,16 @@ export class TankProjectService {
       });
     }
     const created = await pgsql.$transaction((tx) =>
-      ProcessGenerationService.generateProcessesForProject(tx, id, project.tank?.hasSteamCoil ?? false),
+      ProcessGenerationService.generateProcessesForProject(tx, id, project.tank?.hasSteamCoil ?? false, processTemplateIds),
     );
     return { generated: created };
+  }
+
+  // Candidate templates for the "Add Process" action: active templates not already
+  // present as a TankProcess on this project.
+  static async getAvailableTemplates(id: string) {
+    await this.getProjectById(id);
+    return TankProjectRepository.findAvailableTemplates(id);
   }
 
   static async updateProject(id: string, data: UpdateTankProjectRequest) {

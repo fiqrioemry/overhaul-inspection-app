@@ -147,4 +147,39 @@ export class TankProcessService {
       finishDate: data.finishDate ? new Date(data.finishDate) : null,
     });
   }
+
+  // Removes a mistakenly-added process from a project's workflow. Only allowed while the
+  // process is still NOT_STARTED — checklist items can only be checked once IN_PROGRESS
+  // (see ChecklistResultService), so NOT_STARTED guarantees no checklist work exists yet.
+  // Findings/inspection requests/test records/daily reports are additionally checked
+  // directly since those only SetNull on delete (they would otherwise be silently orphaned).
+  static async deleteProcess(id: string) {
+    const process = await TankProcessRepository.findById(id);
+    if (!process) {
+      throw new HTTPException(404, { message: "Process not found", cause: "PROCESS_NOT_FOUND" });
+    }
+
+    if (process.status !== ProcessStatusEnum.NOT_STARTED) {
+      throw new HTTPException(422, {
+        message: `Cannot remove process: status is ${process.status}. Only a process that has not started can be removed.`,
+        cause: "PROCESS_ALREADY_STARTED",
+      });
+    }
+
+    const [findingsCount, inspectionRequestsCount, testRecordsCount, dailyReportsCount] = await Promise.all([
+      pgsql.finding.count({ where: { tankProcessId: id, deletedAt: null } }),
+      pgsql.inspectionRequest.count({ where: { tankProcessId: id, deletedAt: null } }),
+      pgsql.testRecord.count({ where: { tankProcessId: id } }),
+      pgsql.dailyReport.count({ where: { tankProcessId: id, deletedAt: null } }),
+    ]);
+    const linkedRecords = findingsCount + inspectionRequestsCount + testRecordsCount + dailyReportsCount;
+    if (linkedRecords > 0) {
+      throw new HTTPException(422, {
+        message: "Cannot remove process: it already has findings, inspection requests, test records, or daily reports linked to it.",
+        cause: "PROCESS_HAS_LINKED_RECORDS",
+      });
+    }
+
+    await TankProcessRepository.delete(id);
+  }
 }

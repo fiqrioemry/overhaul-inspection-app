@@ -50,6 +50,13 @@ export class TankProcessRepository {
     return pgsql.tankProcess.update({ where: { id }, data });
   }
 
+  // Hard delete — TankProcess has no deletedAt column. ChecklistResult cascades;
+  // Finding/InspectionRequest/TestRecord/DailyReport only SetNull their tankProcessId,
+  // so the service must guard against removing a process those already reference.
+  static async delete(id: string) {
+    return pgsql.tankProcess.delete({ where: { id } });
+  }
+
   static async getChecklistSummary(tankProcessId: string) {
     return pgsql.checklistResult.findMany({
       where: { tankProcessId },

@@ -40,4 +40,10 @@ export class TankProcessController {
     const items = await ChecklistResultService.getChecklistByProcess(id);
     return responseOK(c, tankProcessSuccessMessage.GET_CHECKLIST, items);
   }
+
+  static async deleteProcess(c: Context) {
+    const id = c.req.param("id");
+    await TankProcessService.deleteProcess(id);
+    return responseOK(c, tankProcessSuccessMessage.DELETE_PROCESS, null);
+  }
 }

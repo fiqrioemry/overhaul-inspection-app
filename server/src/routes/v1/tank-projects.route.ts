@@ -11,6 +11,7 @@ tankProjects.get("/", protect, requirePermission(PERMISSIONS.TANK_PROJECT_READ),
 tankProjects.get("/:id", protect, requirePermission(PERMISSIONS.TANK_PROJECT_READ), ctrl.getProjectById);
 tankProjects.get("/:id/processes", protect, requirePermission(PERMISSIONS.PROCESS_READ), ctrl.getProjectProcesses);
 tankProjects.get("/:id/progress-summary", protect, requirePermission(PERMISSIONS.TANK_PROJECT_READ), ctrl.getProgressSummary);
+tankProjects.get("/:id/available-templates", protect, requirePermission(PERMISSIONS.PROCESS_READ), ctrl.getAvailableTemplates);
 tankProjects.post("/:id/generate-processes", protect, requirePermission(PERMISSIONS.TANK_PROJECT_UPDATE), ctrl.generateProcesses);
 tankProjects.patch("/:id", protect, requirePermission(PERMISSIONS.TANK_PROJECT_UPDATE), ctrl.updateProject);
 tankProjects.delete("/:id", protect, requirePermission(PERMISSIONS.TANK_PROJECT_DELETE), ctrl.deleteProject);

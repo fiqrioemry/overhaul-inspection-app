@@ -1,12 +1,19 @@
 import { HTTPException } from "hono/http-exception";
 import { Context } from "hono";
-import { Prisma } from "generated/prisma";
+import { Prisma, TankProjectStatusEnum } from "generated/prisma";
 import { pgsql } from "@/lib/database";
 import { TankRepository } from "./tank.repository";
 import { TankAttachmentRepository } from "./tank-attachment.repository";
 import { FileService } from "@/modules/files/file.service";
 import { CreateTankRequest, ListTanksQuery, UpdateTankRequest } from "./tank.schema";
 import type { TankListItem, TankListResult } from "./tank.types";
+
+/** A project in one of these statuses keeps the tank "busy" (only one allowed per tank). */
+const ACTIVE_PROJECT_STATUSES: TankProjectStatusEnum[] = [
+  TankProjectStatusEnum.PLANNED,
+  TankProjectStatusEnum.IN_PROGRESS,
+  TankProjectStatusEnum.ON_HOLD,
+];
 
 const MAX_ATTACHMENTS = 10;
 const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15 MB
@@ -180,7 +187,15 @@ export class TankService {
     if (!tank) {
       throw new HTTPException(404, { message: "Tank not found", cause: "TANK_NOT_FOUND" });
     }
-    return tank;
+    // findById loads full project history (for the Projects tab); activeProject picks out
+    // the one still-open project, matching what listTanks already exposes per tank.
+    const activeProject = tank.projects.find((p) => ACTIVE_PROJECT_STATUSES.includes(p.status)) ?? null;
+    return {
+      ...tank,
+      activeProject: activeProject
+        ? { id: activeProject.id, projectNo: activeProject.projectNo, type: activeProject.type, status: activeProject.status }
+        : null,
+    };
   }
 
   // Legacy endpoint: resolves processes via the tank's active project, if any.

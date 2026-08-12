@@ -34,6 +34,13 @@ export const updateTankProjectRequest = z.object({
 });
 export type UpdateTankProjectRequest = z.infer<typeof updateTankProjectRequest>;
 
+export const generateProjectProcessesRequest = z.object({
+  // Omitted/empty = generate the full applicable set (steam-coil rule applied).
+  // Provided = generate exactly these templates (e.g. adding one process at a time).
+  processTemplateIds: z.array(z.string()).optional(),
+});
+export type GenerateProjectProcessesRequest = z.infer<typeof generateProjectProcessesRequest>;
+
 export const listTankProjectsQuery = z.object({
   search: z.string().optional(),
   tankId: z.string().optional(),

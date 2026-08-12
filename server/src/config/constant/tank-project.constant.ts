@@ -5,6 +5,7 @@ const tankProjectSuccessMessage = {
   GET_PROJECT_PROCESSES: "Tank project processes retrieved successfully",
   GET_PROGRESS_SUMMARY: "Tank project progress summary retrieved successfully",
   GENERATE_PROCESSES: "Tank project processes generated successfully",
+  GET_AVAILABLE_TEMPLATES: "Available process templates retrieved successfully",
   UPDATE_PROJECT: "Tank project updated successfully",
   DELETE_PROJECT: "Tank project deleted successfully",
 };

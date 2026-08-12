@@ -1,7 +1,12 @@
 import { Context } from "hono";
 import { responseOK, responseCreated } from "@/utils/response";
 import { TankProjectService } from "./tank-project.service";
-import { createTankProjectRequest, updateTankProjectRequest, listTankProjectsQuery } from "./tank-project.schema";
+import {
+  createTankProjectRequest,
+  updateTankProjectRequest,
+  listTankProjectsQuery,
+  generateProjectProcessesRequest,
+} from "./tank-project.schema";
 import { tankProjectSuccessMessage } from "@/config/constant/tank-project.constant";
 
 export class TankProjectController {
@@ -39,8 +44,16 @@ export class TankProjectController {
 
   static async generateProcesses(c: Context) {
     const id = c.req.param("id");
-    const result = await TankProjectService.generateProcesses(id);
+    const body = await c.req.json().catch(() => ({}));
+    const data = generateProjectProcessesRequest.parse(body);
+    const result = await TankProjectService.generateProcesses(id, data.processTemplateIds);
     return responseOK(c, tankProjectSuccessMessage.GENERATE_PROCESSES, result);
+  }
+
+  static async getAvailableTemplates(c: Context) {
+    const id = c.req.param("id");
+    const templates = await TankProjectService.getAvailableTemplates(id);
+    return responseOK(c, tankProjectSuccessMessage.GET_AVAILABLE_TEMPLATES, templates);
   }
 
   static async updateProject(c: Context) {
