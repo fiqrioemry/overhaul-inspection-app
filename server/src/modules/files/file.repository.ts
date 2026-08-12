@@ -52,21 +52,54 @@ export class FileRepository {
     });
   }
 
+  /**
+   * Files the cleanup worker may reclaim: marked unused, past the TTL, and no longer
+   * reachable from anything live.
+   *
+   * `isUsed = false` alone is not enough. Removing an attachment soft-deletes the
+   * attachment row *and* flags the file unused, but that row still holds a
+   * `onDelete: Restrict` foreign key — so a naive delete raises P2003 and, because the
+   * previous implementation deleted the storage object first, destroyed the object while
+   * the row survived. Every attachment table is therefore checked for a *live* reference
+   * (`none: { deletedAt: null }`); soft-deleted references are purged alongside the file
+   * in deleteExpiredFile(). Avatars and company logos are excluded outright: their FKs are
+   * SetNull, so deleting the file would silently blank a profile instead of erroring.
+   */
   static async findExpiredUnusedFiles(): Promise<{ id: string; path: string }[]> {
     return database.fileStorage.findMany({
       where: {
         isUsed: false,
         createdAt: { lt: fileLimit.UNUSED_AVATAR_EXP ? new Date(Date.now() - fileLimit.UNUSED_AVATAR_EXP * 1000) : new Date(Date.now() - 24 * 60 * 60 * 1000) },
+        dailyReportAttachments: { none: { deletedAt: null } },
+        tankAttachments: { none: { deletedAt: null } },
+        inspectionRequestAttachments: { none: { deletedAt: null } },
+        testRecordAttachments: { none: { deletedAt: null } },
+        avatarOfUser: null,
+        logoOfCompany: null,
       },
       select: { id: true, path: true },
     });
   }
 
-  static async deleteFileRecordsByIds(ids: string[]): Promise<number> {
-    const result = await database.fileStorage.deleteMany({
-      where: { id: { in: ids } },
+  /**
+   * Purge one expired file: drop the soft-deleted attachment rows still pinning it, then the
+   * file record itself, atomically. Callers must remove the storage object only *after* this
+   * resolves — the database is the source of truth, and deleting the object first is what
+   * previously left rows pointing at objects that no longer existed.
+   *
+   * Only rows whose `deletedAt` is set are removed; findExpiredUnusedFiles() has already
+   * established that no live reference remains, and the filter here keeps that guarantee
+   * local so a mistaken caller cannot detach a live attachment.
+   */
+  static async deleteExpiredFile(id: string): Promise<void> {
+    await database.$transaction(async (tx) => {
+      const referencing = { fileStorageId: id, deletedAt: { not: null } } as const;
+      await tx.dailyReportAttachment.deleteMany({ where: referencing });
+      await tx.tankAttachment.deleteMany({ where: referencing });
+      await tx.inspectionRequestAttachment.deleteMany({ where: referencing });
+      await tx.testRecordAttachment.deleteMany({ where: referencing });
+      await tx.fileStorage.delete({ where: { id } });
     });
-    return result.count;
   }
 
   static async markFileRecordsAsUnused(tx: Prisma.TransactionClient, id: string): Promise<void> {
