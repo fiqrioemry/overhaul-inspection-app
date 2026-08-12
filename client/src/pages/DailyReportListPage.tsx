@@ -1,7 +1,7 @@
 // src/pages/DailyReportListPage.tsx
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FileText, Pencil, Trash2, Eye, Printer, Plus } from "lucide-react";
+import { FileText, Pencil, Trash2, Eye, Printer, Plus, ArrowUp, ArrowDown } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +30,7 @@ export default function DailyReportListPage() {
   const [activityType, setActivityType] = useState<string>("ALL");
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
+  const [dateSort, setDateSort] = useState<"asc" | "desc">("desc");
   const [deleteTarget, setDeleteTarget] = useState<DailyReportSummary | null>(null);
 
   const debouncedSearch = useDebounce(search, 400);
@@ -38,11 +39,18 @@ export default function DailyReportListPage() {
   const { data, isLoading, isError, refetch } = useDailyReports({
     page,
     limit: 20,
+    orderBy: "reportDate",
+    sortBy: dateSort,
     ...(activityType !== "ALL" && { activityType: activityType as DailyActivityType }),
     ...(debouncedSearch && { search: debouncedSearch }),
     ...(startDate && { startDate }),
     ...(endDate && { endDate }),
   });
+
+  function toggleDateSort() {
+    setDateSort((prev) => (prev === "desc" ? "asc" : "desc"));
+    setPage(1);
+  }
 
   function handlePrintList() {
     const params = new URLSearchParams();
@@ -138,7 +146,12 @@ export default function DailyReportListPage() {
               <table className="w-full text-sm">
                 <thead className="border-b bg-muted/40">
                   <tr>
-                    <th className="px-4 py-3 text-left font-medium">Date</th>
+                    <th className="px-4 py-3 text-left font-medium">
+                      <button type="button" onClick={toggleDateSort} className="flex items-center gap-1 hover:text-foreground" title={`Sort by date (${dateSort === "asc" ? "ascending" : "descending"})`}>
+                        Date
+                        {dateSort === "asc" ? <ArrowUp className="h-3.5 w-3.5" /> : <ArrowDown className="h-3.5 w-3.5" />}
+                      </button>
+                    </th>
                     <th className="px-4 py-3 text-left font-medium">Tank</th>
                     <th className="px-4 py-3 text-left font-medium">Activity Type</th>
                     <th className="px-4 py-3 text-left font-medium">Title</th>

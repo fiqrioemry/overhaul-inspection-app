@@ -95,6 +95,8 @@ export interface ListDailyReportsParams {
   endDate?: string;
   search?: string;
   activityType?: DailyActivityType;
+  orderBy?: "reportDate";
+  sortBy?: "asc" | "desc";
   page?: number;
   limit?: number;
 }
