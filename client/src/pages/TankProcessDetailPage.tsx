@@ -128,7 +128,7 @@ export default function TankProcessDetailPage() {
   const submitForReviewBlocked = nextStatus === "WAITING_REVIEW" && (hasOpenFindings || hasUncheckedRequired);
 
   function handleStatusAdvance() {
-    if (!nextStatus) return;
+    if (!nextStatus || !process) return;
     if (process.status === "NOT_STARTED") {
       setDatesDialogMode("start");
       return;
