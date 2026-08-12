@@ -1,10 +1,12 @@
 // Builds the "download all attachments" ZIP for a single daily report.
 //
-// Object bytes are streamed out of MinIO and pushed straight into the archive, so no
-// attachment is ever fully buffered alongside the others. Entry and archive names are
-// derived from database values, which means every one of them is sanitised here — a
-// tank number or an uploaded filename must never be able to inject a path separator,
-// a control character, or a header break.
+// Object bytes are pulled out of MinIO one attachment at a time and pushed straight into the
+// archive; the finished archive is then handed to the caller as one buffer, because this
+// deployment cannot serve a chunked response (see buildAttachmentsArchiveBuffer).
+//
+// Entry and archive names are derived from database values, which means every one of them is
+// sanitised here — a tank number or an uploaded filename must never be able to inject a path
+// separator, a control character, or a header break.
 
 import { Zip, ZipPassThrough } from "fflate";
 import { minioClient, BUCKET } from "@/lib/minio";
@@ -133,6 +135,28 @@ export async function assertArchiveEntriesReadable(
   storage: AttachmentObjectStorage = minioAttachmentStorage,
 ): Promise<void> {
   await Promise.all(entries.map((entry) => storage.stat(entry.storageKey)));
+}
+
+/**
+ * Collect the archive into a single buffer.
+ *
+ * Deliberately *not* streamed to the client. This is the only binary response in the API and
+ * it sits behind Traefik (which stamps `Upgrade: websocket` onto every request) and
+ * Cloudflare; a chunked response through that chain never reached the browser intact. Just as
+ * importantly, buffering keeps every possible failure — a missing object, a storage timeout —
+ * *before* the first byte is written, so it can still surface as a normal JSON error with CORS
+ * headers instead of a mid-flight connection abort that the browser reports as a bare CORS
+ * failure.
+ *
+ * Memory is bounded by the per-report attachment cap (20) and the images are already
+ * webp-compressed, so the whole archive is single-digit megabytes.
+ */
+export async function buildAttachmentsArchiveBuffer(
+  entries: ArchiveEntry[],
+  storage: AttachmentObjectStorage = minioAttachmentStorage,
+): Promise<Uint8Array<ArrayBuffer>> {
+  const stream = createAttachmentsArchiveStream(entries, storage);
+  return new Uint8Array(await new Response(stream).arrayBuffer());
 }
 
 export function createAttachmentsArchiveStream(

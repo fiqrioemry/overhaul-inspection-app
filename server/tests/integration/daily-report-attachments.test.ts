@@ -57,8 +57,19 @@ function createFakeStorage(contents: Record<string, string>) {
   return { storage, readKeys, statKeys };
 }
 
-async function collect(stream: ReadableStream<Uint8Array>): Promise<Uint8Array> {
-  return new Uint8Array(await new Response(stream).arrayBuffer());
+/** Stats fine, then dies partway through the read — the mid-flight failure case. */
+function createFailingReadStorage(contents: Record<string, string>): AttachmentObjectStorage {
+  return {
+    async stat(key) {
+      if (!(key in contents)) throw new Error(`missing object: ${key}`);
+    },
+    async read() {
+      return (async function* () {
+        yield new TextEncoder().encode("partial");
+        throw new Error("connection reset mid-object");
+      })();
+    },
+  };
 }
 
 const TANK_NO = `TEST-DR-${crypto.randomUUID().slice(0, 8)}`;
@@ -245,8 +256,8 @@ describe("GET /daily-reports — attachment availability metadata", () => {
 describe("DailyReportService.buildAttachmentsArchive", () => {
   test("archives every active attachment, ordered by sortOrder (cases 3, 4)", async () => {
     const { storage } = createFakeStorage(storageContents);
-    const { body } = await DailyReportService.buildAttachmentsArchive(reportWithAttachmentsId, storage);
-    const files = unzipSync(await collect(body));
+    const { bytes } = await DailyReportService.buildAttachmentsArchive(reportWithAttachmentsId, storage);
+    const files = unzipSync(bytes);
     const names = Object.keys(files);
 
     expect(names).toEqual(["01-weld.webp", "02-weld.webp", "03-site.webp"]);
@@ -259,8 +270,8 @@ describe("DailyReportService.buildAttachmentsArchive", () => {
 
   test("duplicate original filenames stay separate entries (case 5)", async () => {
     const { storage } = createFakeStorage(storageContents);
-    const { body } = await DailyReportService.buildAttachmentsArchive(reportWithAttachmentsId, storage);
-    const files = unzipSync(await collect(body));
+    const { bytes } = await DailyReportService.buildAttachmentsArchive(reportWithAttachmentsId, storage);
+    const files = unzipSync(bytes);
 
     // Two attachments were both uploaded as "weld.jpg"; neither overwrote the other.
     expect(Object.keys(files).filter((n) => n.includes("weld"))).toHaveLength(2);
@@ -269,8 +280,8 @@ describe("DailyReportService.buildAttachmentsArchive", () => {
 
   test("unsafe original filenames are sanitised and the real extension is preserved (case 6)", async () => {
     const { storage } = createFakeStorage(storageContents);
-    const { body } = await DailyReportService.buildAttachmentsArchive(reportUnsafeFilenameId, storage);
-    const names = Object.keys(unzipSync(await collect(body)));
+    const { bytes } = await DailyReportService.buildAttachmentsArchive(reportUnsafeFilenameId, storage);
+    const names = Object.keys(unzipSync(bytes));
 
     expect(names).toHaveLength(2);
     for (const name of names) {
@@ -288,8 +299,8 @@ describe("DailyReportService.buildAttachmentsArchive", () => {
 
   test("a report with a single attachment still yields a ZIP (case 7)", async () => {
     const { storage } = createFakeStorage(storageContents);
-    const { body, filename } = await DailyReportService.buildAttachmentsArchive(reportSingleAttachmentId, storage);
-    const files = unzipSync(await collect(body));
+    const { bytes, filename } = await DailyReportService.buildAttachmentsArchive(reportSingleAttachmentId, storage);
+    const files = unzipSync(bytes);
 
     expect(Object.keys(files)).toEqual(["01-solo.webp"]);
     expect(filename).toBe(`daily-report-${TANK_NO}-2026-08-13-attachments.zip`);
@@ -312,8 +323,7 @@ describe("DailyReportService.buildAttachmentsArchive", () => {
 
   test("attachments belonging to another report are never included (case 11)", async () => {
     const { storage, readKeys, statKeys } = createFakeStorage(storageContents);
-    const { body } = await DailyReportService.buildAttachmentsArchive(reportWithAttachmentsId, storage);
-    await collect(body);
+    const { bytes } = await DailyReportService.buildAttachmentsArchive(reportWithAttachmentsId, storage);
 
     expect(readKeys).not.toContain(foreignAttachmentKey);
     expect(statKeys).not.toContain(foreignAttachmentKey);
@@ -324,6 +334,15 @@ describe("DailyReportService.buildAttachmentsArchive", () => {
     // Every object is missing from the fake bucket, so the pre-flight stat fails.
     const { storage } = createFakeStorage({});
     await expect(DailyReportService.buildAttachmentsArchive(reportWithAttachmentsId, storage)).rejects.toMatchObject({ status: 502 });
+  });
+
+  test("a read that dies partway through is still a reportable error, not a truncated archive (case 12)", async () => {
+    // The object exists (stat passes) but the transfer breaks mid-body. Because the archive is
+    // assembled before the handler responds, this stays a 502 the client can act on instead of
+    // an aborted download the browser reports as a bare CORS/network failure.
+    await expect(
+      DailyReportService.buildAttachmentsArchive(reportWithAttachmentsId, createFailingReadStorage(storageContents)),
+    ).rejects.toMatchObject({ status: 502 });
   });
 
   test("objects are read by trusted storage key, never by the stored attachmentUrl (case 13)", async () => {
@@ -339,8 +358,8 @@ describe("DailyReportService.buildAttachmentsArchive", () => {
 
     try {
       const { storage, readKeys, statKeys } = createFakeStorage(storageContents);
-      const { body } = await DailyReportService.buildAttachmentsArchive(reportSingleAttachmentId, storage);
-      const files = unzipSync(await collect(body));
+      const { bytes } = await DailyReportService.buildAttachmentsArchive(reportSingleAttachmentId, storage);
+      const files = unzipSync(bytes);
 
       // Content still came from the FileStorage.path object, untouched by the tampered URL.
       expect(new TextDecoder().decode(files["01-solo.webp"])).toBe("solo");
@@ -367,7 +386,13 @@ describe("GET /daily-reports/:id/attachments/download (HTTP layer)", () => {
       expect(res.headers.get("content-type")).toBe("application/zip");
       expect(res.headers.get("content-disposition")).toBe(`attachment; filename="daily-report-${TANK_NO}-2026-08-13-attachments.zip"`);
 
-      const files = unzipSync(new Uint8Array(await res.arrayBuffer()));
+      const buffer = new Uint8Array(await res.arrayBuffer());
+      // Length-delimited, not chunked: the deployment's Traefik + Cloudflare chain does not
+      // pass a chunked body through intact, and it drops the CORS headers when it fails.
+      expect(res.headers.get("content-length")).toBe(String(buffer.byteLength));
+      expect(res.headers.get("transfer-encoding")).toBeNull();
+
+      const files = unzipSync(buffer);
       expect(Object.keys(files)).toEqual(["01-weld.webp", "02-weld.webp", "03-site.webp"]);
     } finally {
       stat.mockRestore();

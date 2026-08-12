@@ -9,7 +9,7 @@ import {
   assertArchiveEntriesReadable,
   buildArchiveEntryName,
   buildArchiveFileName,
-  createAttachmentsArchiveStream,
+  buildAttachmentsArchiveBuffer,
   minioAttachmentStorage,
   sortAttachmentsForArchive,
   type ArchiveEntry,
@@ -229,13 +229,16 @@ export class DailyReportService {
    *
    * Attachments are resolved through their own `fileStorageId` -> FileStorage.path, so the
    * archive only ever reads objects this report actually owns and never dereferences the
-   * stored `attachmentUrl`. Storage availability is checked up front because the response
-   * becomes an unrecoverable binary stream the moment the first byte goes out.
+   * stored `attachmentUrl`.
+   *
+   * The archive is fully assembled before the handler responds, so a storage failure is still
+   * a reportable JSON error rather than a half-written download — see
+   * buildAttachmentsArchiveBuffer for why this is not streamed.
    */
   static async buildAttachmentsArchive(
     id: string,
     storage: AttachmentObjectStorage = minioAttachmentStorage,
-  ): Promise<{ filename: string; body: ReadableStream<Uint8Array> }> {
+  ): Promise<{ filename: string; bytes: Uint8Array<ArrayBuffer> }> {
     const report = await DailyReportRepository.findForAttachmentArchive(id);
     if (!report) throw new HTTPException(404, { message: "Daily report not found", cause: "REPORT_NOT_FOUND" });
 
@@ -260,8 +263,12 @@ export class DailyReportService {
       entries.push({ name: buildArchiveEntryName(attachment, index), storageKey });
     }
 
+    // stat first so an obviously-missing object fails fast, then assemble; a read that dies
+    // partway through is caught by the same handler and still becomes a clean 502.
+    let bytes: Uint8Array<ArrayBuffer>;
     try {
       await assertArchiveEntriesReadable(entries, storage);
+      bytes = await buildAttachmentsArchiveBuffer(entries, storage);
     } catch (err) {
       // Log the object keys (not credentials or signed URLs) so a missing object is traceable.
       console.error(`Daily report attachment storage unavailable: reportId=${id} keys=${entries.map((e) => e.storageKey).join(",")}`, err);
@@ -273,7 +280,7 @@ export class DailyReportService {
 
     return {
       filename: buildArchiveFileName(report.tank?.tankNo, report.reportDate, report.id),
-      body: createAttachmentsArchiveStream(entries, storage),
+      bytes,
     };
   }
 

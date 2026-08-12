@@ -58,13 +58,18 @@ export class DailyReportController {
     return responseOK(c, dailyReportSuccessMessage.GET_REPORT, report);
   }
 
-  // Binary endpoint: on success this bypasses the JSON envelope and streams a ZIP.
+  // Binary endpoint: on success this bypasses the JSON envelope and returns a ZIP.
   // Failures still throw HTTPException, so the standard error envelope applies.
+  //
+  // Sent as a fully-buffered body with an explicit Content-Length rather than a stream:
+  // chunked transfer-encoding does not survive this deployment's Traefik + Cloudflare chain,
+  // and a length-delimited response also lets the proxies pass the CORS headers through.
   static async downloadAttachments(c: Context) {
     const id = c.req.param("id");
-    const { filename, body } = await DailyReportService.buildAttachmentsArchive(id);
-    return c.body(body, 200, {
+    const { filename, bytes } = await DailyReportService.buildAttachmentsArchive(id);
+    return c.body(bytes, 200, {
       "Content-Type": "application/zip",
+      "Content-Length": String(bytes.byteLength),
       "Content-Disposition": `attachment; filename="${filename}"`,
       "Cache-Control": "no-store",
     });
