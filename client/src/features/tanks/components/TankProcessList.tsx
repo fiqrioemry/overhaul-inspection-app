@@ -1,7 +1,7 @@
 // src/features/tanks/components/TankProcessList.tsx
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ChevronRight, Plus, Trash2 } from "lucide-react";
+import { ChevronRight, Plus, Trash2, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ProcessStatusBadge from "@/components/common/ProcessStatusBadge";
 import LoadingState from "@/components/common/LoadingState";
@@ -10,11 +10,16 @@ import EmptyState from "@/components/common/EmptyState";
 import PermissionGate from "@/components/common/PermissionGate";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 import AddProcessDialog from "@/features/tank-projects/components/AddProcessDialog";
-import { useTankProcesses, useDeleteTankProcess } from "@/features/tank-processes/tank-processes.query";
-import type { TankProcessSummary } from "@/features/tank-processes/tank-processes.api";
+import { useTankProcesses, useDeleteTankProcess, useCompleteProcessDirect } from "@/features/tank-processes/tank-processes.query";
+import type { TankProcessSummary, ProcessStatus } from "@/features/tank-processes/tank-processes.api";
 import { PERMISSIONS } from "@/constants/permission.constant";
 import { ROUTES } from "@/constants/route.constant";
 import { format } from "date-fns";
+
+// Statuses eligible for the "Mark as Completed" shortcut — must mirror the server's
+// DIRECT_COMPLETE_ELIGIBLE_STATUSES (server/src/modules/tank-processes/tank-process.service.ts).
+// This is only a UX affordance; the server is the source of truth for what's actually allowed.
+const DIRECT_COMPLETE_ELIGIBLE_STATUSES: ProcessStatus[] = ["NOT_STARTED", "IN_PROGRESS", "WAITING_REVIEW", "REVIEWED"];
 
 interface TankProcessListProps {
   tankId: string;
@@ -24,8 +29,10 @@ interface TankProcessListProps {
 export default function TankProcessList({ tankId, projectId }: TankProcessListProps) {
   const { data: processes, isLoading, isError, refetch } = useTankProcesses(tankId);
   const deleteMutation = useDeleteTankProcess();
+  const completeMutation = useCompleteProcessDirect();
   const [addOpen, setAddOpen] = useState(false);
   const [removeTarget, setRemoveTarget] = useState<TankProcessSummary | null>(null);
+  const [completeTarget, setCompleteTarget] = useState<TankProcessSummary | null>(null);
 
   if (isLoading) return <LoadingState />;
   if (isError) return <ErrorState message="Failed to load processes." onRetry={() => refetch()} />;
@@ -89,6 +96,13 @@ export default function TankProcessList({ tankId, projectId }: TankProcessListPr
                             </Button>
                           </PermissionGate>
                         )}
+                        {DIRECT_COMPLETE_ELIGIBLE_STATUSES.includes(proc.status) && (
+                          <PermissionGate permission={PERMISSIONS.PROCESS_UPDATE}>
+                            <Button variant="ghost" size="xs" className="text-green-700 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-900/20" onClick={() => setCompleteTarget(proc)}>
+                              <CheckCircle2 className="h-3.5 w-3.5" /> Mark as Completed
+                            </Button>
+                          </PermissionGate>
+                        )}
                         <Link to={detailPath} className="inline-flex items-center text-xs text-primary hover:underline">
                           View <ChevronRight className="h-3 w-3" />
                         </Link>
@@ -115,6 +129,19 @@ export default function TankProcessList({ tankId, projectId }: TankProcessListPr
         onConfirm={() => {
           if (!removeTarget) return;
           deleteMutation.mutate(removeTarget.id, { onSuccess: () => setRemoveTarget(null) });
+        }}
+      />
+
+      <ConfirmDialog
+        open={Boolean(completeTarget)}
+        onOpenChange={(open) => !open && setCompleteTarget(null)}
+        title="Mark process as completed?"
+        description="This process will be completed immediately without requiring the remaining checklist or review stages. Incomplete checklist items will not be changed."
+        confirmLabel="Mark as Completed"
+        loading={completeMutation.isPending}
+        onConfirm={() => {
+          if (!completeTarget) return;
+          completeMutation.mutate(completeTarget.id, { onSuccess: () => setCompleteTarget(null) });
         }}
       />
     </div>

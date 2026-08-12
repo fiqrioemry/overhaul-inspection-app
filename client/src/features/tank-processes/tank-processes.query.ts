@@ -1,7 +1,7 @@
 // src/features/tank-processes/tank-processes.query.ts
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getTankProcesses, getTankProcessById, updateProcessStatus, updateProcessDates, getProcessEligibility, deleteTankProcess } from "./tank-processes.api";
+import { getTankProcesses, getTankProcessById, updateProcessStatus, updateProcessDates, completeProcessDirect, getProcessEligibility, deleteTankProcess } from "./tank-processes.api";
 import type { UpdateProcessStatusPayload, UpdateProcessDatesPayload } from "./tank-processes.api";
 
 export const PROCESS_KEYS = {
@@ -44,6 +44,22 @@ export function useUpdateProcessStatus() {
     mutationFn: ({ id, data }: { id: string; data: UpdateProcessStatusPayload }) => updateProcessStatus(id, data),
     onSuccess: () => {
       toast.success("Process status updated");
+      queryClient.invalidateQueries({ queryKey: PROCESS_KEYS.all });
+      queryClient.invalidateQueries({ queryKey: ["tanks"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+    },
+    onError: (err: { message: string }) => {
+      toast.error(err.message);
+    },
+  });
+}
+
+export function useCompleteProcessDirect() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => completeProcessDirect(id),
+    onSuccess: () => {
+      toast.success("Process marked as completed");
       queryClient.invalidateQueries({ queryKey: PROCESS_KEYS.all });
       queryClient.invalidateQueries({ queryKey: ["tanks"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });

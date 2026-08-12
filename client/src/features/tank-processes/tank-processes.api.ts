@@ -77,6 +77,13 @@ export async function updateProcessDates(id: string, data: UpdateProcessDatesPay
   return res.data.data!;
 }
 
+// Direct-completion shortcut: transitions NOT_STARTED/IN_PROGRESS/WAITING_REVIEW/REVIEWED
+// straight to COMPLETED in one call, bypassing checklist/review requirements.
+export async function completeProcessDirect(id: string): Promise<TankProcessDetail> {
+  const res = await api.patch<ResponseSuccess<TankProcessDetail>>(`/processes/${id}/complete`, {});
+  return res.data.data!;
+}
+
 export async function getProcessEligibility(id: string): Promise<EligibilityResult> {
   const res = await api.get<ResponseSuccess<EligibilityResult>>(`/processes/${id}/eligibility`);
   return res.data.data!;
