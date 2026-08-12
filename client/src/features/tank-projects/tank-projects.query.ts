@@ -1,8 +1,8 @@
 // src/features/tank-projects/tank-projects.query.ts
 import { toast } from "sonner";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { createTankProject, generateProjectProcesses, deleteTankProject } from "./tank-projects.api";
-import type { CreateTankProjectPayload } from "./tank-projects.api";
+import { createTankProject, updateTankProject, generateProjectProcesses, deleteTankProject } from "./tank-projects.api";
+import type { CreateTankProjectPayload, UpdateTankProjectPayload } from "./tank-projects.api";
 import { TANK_KEYS } from "@/features/tanks/tanks.query";
 
 export const TANK_PROJECT_KEYS = {
@@ -19,6 +19,23 @@ export function useCreateTankProject() {
       queryClient.invalidateQueries({ queryKey: TANK_KEYS.all });
       queryClient.invalidateQueries({ queryKey: TANK_KEYS.detail(project.tankId) });
       queryClient.invalidateQueries({ queryKey: TANK_PROJECT_KEYS.all });
+    },
+    onError: (err: { message: string }) => {
+      toast.error(err.message);
+    },
+  });
+}
+
+export function useUpdateTankProject() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: UpdateTankProjectPayload }) => updateTankProject(id, data),
+    onSuccess: (project) => {
+      toast.success("Overhaul project updated.");
+      queryClient.invalidateQueries({ queryKey: TANK_KEYS.all });
+      queryClient.invalidateQueries({ queryKey: TANK_KEYS.detail(project.tankId) });
+      queryClient.invalidateQueries({ queryKey: TANK_PROJECT_KEYS.all });
+      queryClient.invalidateQueries({ queryKey: TANK_PROJECT_KEYS.detail(project.id) });
     },
     onError: (err: { message: string }) => {
       toast.error(err.message);

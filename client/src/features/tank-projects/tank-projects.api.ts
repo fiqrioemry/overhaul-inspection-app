@@ -34,8 +34,20 @@ export interface CreateTankProjectPayload {
   processTemplateIds?: string[];
 }
 
+export interface UpdateTankProjectPayload {
+  contractorCompanyId?: string | null;
+  inspectionCompanyId?: string | null;
+  startDate?: string | null;
+  estimatedFinishDate?: string | null;
+}
+
 export async function createTankProject(data: CreateTankProjectPayload): Promise<TankProjectDetail> {
   const res = await api.post<ResponseSuccess<TankProjectDetail>>("/tank-projects", data);
+  return res.data.data!;
+}
+
+export async function updateTankProject(id: string, data: UpdateTankProjectPayload): Promise<TankProjectDetail> {
+  const res = await api.patch<ResponseSuccess<TankProjectDetail>>(`/tank-projects/${id}`, data);
   return res.data.data!;
 }
 

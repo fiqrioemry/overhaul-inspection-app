@@ -12,8 +12,9 @@ import StatusBadge from "@/components/common/StatusBadge";
 import PermissionGate from "@/components/common/PermissionGate";
 import TankProcessList from "@/features/tanks/components/TankProcessList";
 import CreateOverhaulProjectDialog from "@/features/tank-projects/components/CreateOverhaulProjectDialog";
+import EditOverhaulProjectDialog from "@/features/tank-projects/components/EditOverhaulProjectDialog";
 import { useTank } from "@/features/tanks/tanks.query";
-import type { ShellCourse } from "@/features/tanks/tanks.api";
+import type { ShellCourse, TankProjectSummary } from "@/features/tanks/tanks.api";
 import { PERMISSIONS } from "@/constants/permission.constant";
 import { ROUTES } from "@/constants/route.constant";
 import { format } from "date-fns";
@@ -64,6 +65,7 @@ export default function TankDetailPage() {
   const { data: tank, isLoading, isError, refetch } = useTank(tankId!);
   const [projectDialogOpen, setProjectDialogOpen] = useState(false);
   const [shellCoursesOpen, setShellCoursesOpen] = useState(false);
+  const [editingProject, setEditingProject] = useState<TankProjectSummary | null>(null);
 
   if (isLoading) return <LoadingState />;
   if (isError || !tank) return <ErrorState message="Failed to load tank." onRetry={() => refetch()} />;
@@ -160,6 +162,7 @@ export default function TankDetailPage() {
                     <th className="px-4 py-3 text-left font-medium">Est. Finish</th>
                     <th className="px-4 py-3 text-left font-medium">Contractor</th>
                     <th className="px-4 py-3 text-left font-medium">Processes</th>
+                    <th className="px-4 py-3 text-left font-medium">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
@@ -174,6 +177,13 @@ export default function TankDetailPage() {
                       <td className="px-4 py-3 text-xs text-muted-foreground">{p.estimatedFinishDate ? format(new Date(p.estimatedFinishDate), "dd MMM yyyy") : "—"}</td>
                       <td className="px-4 py-3 text-xs text-muted-foreground">{p.contractorCompany?.name ?? "—"}</td>
                       <td className="px-4 py-3 text-muted-foreground">{p.processes.length}</td>
+                      <td className="px-4 py-3">
+                        <PermissionGate permission={PERMISSIONS.TANK_PROJECT_UPDATE}>
+                          <Button variant="ghost" size="icon-sm" onClick={() => setEditingProject(p)} title="Edit project">
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                        </PermissionGate>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -190,6 +200,13 @@ export default function TankDetailPage() {
       </Tabs>
 
       <CreateOverhaulProjectDialog open={projectDialogOpen} onOpenChange={setProjectDialogOpen} tankId={tank.id} tankNo={tank.tankNo} />
+      <EditOverhaulProjectDialog
+        open={Boolean(editingProject)}
+        onOpenChange={(next) => {
+          if (!next) setEditingProject(null);
+        }}
+        project={editingProject}
+      />
     </div>
   );
 }
