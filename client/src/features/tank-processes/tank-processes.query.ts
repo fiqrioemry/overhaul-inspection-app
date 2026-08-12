@@ -1,7 +1,7 @@
 // src/features/tank-processes/tank-processes.query.ts
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getTankProcesses, getTankProcessById, updateProcessStatus, updateProcessDates, getProcessEligibility } from "./tank-processes.api";
+import { getTankProcesses, getTankProcessById, updateProcessStatus, updateProcessDates, getProcessEligibility, deleteTankProcess } from "./tank-processes.api";
 import type { UpdateProcessStatusPayload, UpdateProcessDatesPayload } from "./tank-processes.api";
 
 export const PROCESS_KEYS = {
@@ -61,6 +61,22 @@ export function useUpdateProcessDates() {
     onSuccess: () => {
       toast.success("Process dates updated");
       queryClient.invalidateQueries({ queryKey: PROCESS_KEYS.all });
+    },
+    onError: (err: { message: string }) => {
+      toast.error(err.message);
+    },
+  });
+}
+
+export function useDeleteTankProcess() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => deleteTankProcess(id),
+    onSuccess: (res) => {
+      toast.success(res.message || "Process removed from project");
+      queryClient.invalidateQueries({ queryKey: PROCESS_KEYS.all });
+      queryClient.invalidateQueries({ queryKey: ["tanks"] });
+      queryClient.invalidateQueries({ queryKey: ["tank-projects"] });
     },
     onError: (err: { message: string }) => {
       toast.error(err.message);

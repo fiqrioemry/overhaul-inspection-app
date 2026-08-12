@@ -214,7 +214,7 @@ export default function TankDetailPage() {
 
         {isUnderOverhaul && (
           <TabsContent value="processes" className="mt-4">
-            <TankProcessList tankId={tankId!} />
+            <TankProcessList tankId={tankId!} projectId={tank.activeProject?.id} />
           </TabsContent>
         )}
       </Tabs>

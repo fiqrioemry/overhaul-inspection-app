@@ -1,6 +1,6 @@
 // src/features/tank-processes/tank-processes.api.ts
 import api from "@/lib/axios";
-import type { ResponseSuccess } from "@/types/response.type";
+import type { ResponseSuccess, ResponseOK } from "@/types/response.type";
 
 export type ProcessStatus = "NOT_STARTED" | "WAITING_REVIEW" | "REVIEWED" | "IN_PROGRESS" | "COMPLETED";
 
@@ -80,4 +80,9 @@ export async function updateProcessDates(id: string, data: UpdateProcessDatesPay
 export async function getProcessEligibility(id: string): Promise<EligibilityResult> {
   const res = await api.get<ResponseSuccess<EligibilityResult>>(`/processes/${id}/eligibility`);
   return res.data.data!;
+}
+
+export async function deleteTankProcess(id: string): Promise<ResponseOK> {
+  const res = await api.delete<ResponseOK>(`/processes/${id}`);
+  return res.data;
 }

@@ -20,6 +20,7 @@ export const PERMISSIONS = {
 
   PROCESS_READ: "process.read",
   PROCESS_UPDATE: "process.update",
+  PROCESS_DELETE: "process.delete",
 
   DAILY_REPORT_CREATE: "daily_report.create",
   DAILY_REPORT_READ: "daily_report.read",

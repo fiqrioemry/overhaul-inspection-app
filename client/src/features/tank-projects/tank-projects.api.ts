@@ -52,12 +52,27 @@ export async function updateTankProject(id: string, data: UpdateTankProjectPaylo
   return res.data.data!;
 }
 
-export async function generateProjectProcesses(id: string): Promise<{ generated: number }> {
-  const res = await api.post<ResponseSuccess<{ generated: number }>>(`/tank-projects/${id}/generate-processes`, {});
+export async function generateProjectProcesses(id: string, processTemplateIds?: string[]): Promise<{ generated: number }> {
+  const res = await api.post<ResponseSuccess<{ generated: number }>>(`/tank-projects/${id}/generate-processes`, { processTemplateIds });
   return res.data.data!;
 }
 
 export async function deleteTankProject(id: string): Promise<ResponseOK> {
   const res = await api.delete<ResponseOK>(`/tank-projects/${id}`);
   return res.data;
+}
+
+export interface AvailableProcessTemplate {
+  id: string;
+  code: string;
+  name: string;
+  type: string;
+  sequenceOrder: number;
+  isOptional: boolean;
+  applicabilityRule: string | null;
+}
+
+export async function getAvailableProcessTemplates(projectId: string): Promise<AvailableProcessTemplate[]> {
+  const res = await api.get<ResponseSuccess<AvailableProcessTemplate[]>>(`/tank-projects/${projectId}/available-templates`);
+  return res.data.data!;
 }
