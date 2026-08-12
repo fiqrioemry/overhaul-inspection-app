@@ -98,8 +98,14 @@ export default function TankProcessList({ tankId, projectId }: TankProcessListPr
                         )}
                         {DIRECT_COMPLETE_ELIGIBLE_STATUSES.includes(proc.status) && (
                           <PermissionGate permission={PERMISSIONS.PROCESS_UPDATE}>
-                            <Button variant="ghost" size="xs" className="text-green-700 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-900/20" onClick={() => setCompleteTarget(proc)}>
-                              <CheckCircle2 className="h-3.5 w-3.5" /> Mark as Completed
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              onClick={() => setCompleteTarget(proc)}
+                              title="Mark as Completed"
+                              className="text-green-600 hover:text-green-700 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-900/20"
+                            >
+                              <CheckCircle2 className="h-3.5 w-3.5" />
                             </Button>
                           </PermissionGate>
                         )}
