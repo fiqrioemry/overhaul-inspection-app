@@ -3,7 +3,7 @@ import { pgsql } from "@/lib/database";
 import { ProcessStatusEnum, TankProjectStatusEnum, FindingStatusEnum, ChecklistStatusEnum, ChecklistSourceEnum } from "generated/prisma";
 import { TankProcessRepository } from "./tank-process.repository";
 import { ChecklistResultRepository } from "@/modules/checklist-results/checklist-result.repository";
-import { UpdateProcessStatusRequest } from "./tank-process.schema";
+import { UpdateProcessStatusRequest, UpdateProcessDatesRequest } from "./tank-process.schema";
 
 const ALLOWED_STATUS_TRANSITIONS: Partial<Record<ProcessStatusEnum, ProcessStatusEnum[]>> = {
   [ProcessStatusEnum.NOT_STARTED]: [ProcessStatusEnum.IN_PROGRESS],
@@ -109,8 +109,11 @@ export class TankProcessService {
         where: { id },
         data: {
           status: data.status,
-          ...(data.status === ProcessStatusEnum.IN_PROGRESS && !process.startDate && { startDate: now }),
-          ...(data.status === ProcessStatusEnum.COMPLETED && { finishDate: now }),
+          ...(data.status === ProcessStatusEnum.IN_PROGRESS &&
+            !process.startDate && { startDate: data.startDate ? new Date(data.startDate) : now }),
+          ...(data.finishDate !== undefined
+            ? { finishDate: data.finishDate ? new Date(data.finishDate) : null }
+            : data.status === ProcessStatusEnum.COMPLETED && { finishDate: now }),
           ...(data.remarks && { remarks: data.remarks }),
         },
       });
@@ -124,6 +127,24 @@ export class TankProcessService {
       }
 
       return updated;
+    });
+  }
+
+  static async updateDates(id: string, data: UpdateProcessDatesRequest) {
+    const process = await TankProcessRepository.findById(id);
+    if (!process) {
+      throw new HTTPException(404, { message: "Process not found", cause: "PROCESS_NOT_FOUND" });
+    }
+    if (!process.startDate) {
+      throw new HTTPException(422, {
+        message: "Cannot set dates before the process has started. Use the Start Process action first.",
+        cause: "PROCESS_NOT_STARTED",
+      });
+    }
+
+    return TankProcessRepository.updateDates(id, {
+      startDate: new Date(data.startDate),
+      finishDate: data.finishDate ? new Date(data.finishDate) : null,
     });
   }
 }

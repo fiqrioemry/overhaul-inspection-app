@@ -46,6 +46,10 @@ export class TankProcessRepository {
     return pgsql.tankProcess.update({ where: { id }, data });
   }
 
+  static async updateDates(id: string, data: Pick<Prisma.TankProcessUncheckedUpdateInput, "startDate" | "finishDate">) {
+    return pgsql.tankProcess.update({ where: { id }, data });
+  }
+
   static async getChecklistSummary(tankProcessId: string) {
     return pgsql.checklistResult.findMany({
       where: { tankProcessId },

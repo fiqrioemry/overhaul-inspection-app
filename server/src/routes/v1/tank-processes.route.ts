@@ -9,6 +9,7 @@ const tankProcesses = new Hono();
 
 tankProcesses.get("/:id", protect, requirePermission(PERMISSIONS.PROCESS_READ), ctrl.getProcessById);
 tankProcesses.patch("/:id/status", protect, requirePermission(PERMISSIONS.PROCESS_UPDATE), ctrl.updateStatus);
+tankProcesses.patch("/:id/dates", protect, requirePermission(PERMISSIONS.PROCESS_UPDATE), ctrl.updateDates);
 tankProcesses.get("/:id/eligibility", protect, requirePermission(PERMISSIONS.PROCESS_READ), ctrl.getEligibility);
 tankProcesses.get("/:id/checklist", protect, requirePermission(PERMISSIONS.CHECKLIST_READ), ctrl.getChecklist);
 
