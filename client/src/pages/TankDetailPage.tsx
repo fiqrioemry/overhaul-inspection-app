@@ -1,7 +1,7 @@
 // src/pages/TankDetailPage.tsx
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Pencil, Plus, ClipboardList, ChevronDown } from "lucide-react";
+import { ArrowLeft, Pencil, Plus, ClipboardList, ChevronDown, Ban, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PageHeader from "@/components/common/PageHeader";
@@ -10,15 +10,19 @@ import ErrorState from "@/components/common/ErrorState";
 import EmptyState from "@/components/common/EmptyState";
 import StatusBadge from "@/components/common/StatusBadge";
 import PermissionGate from "@/components/common/PermissionGate";
+import ConfirmDialog from "@/components/common/ConfirmDialog";
 import TankProcessList from "@/features/tanks/components/TankProcessList";
 import CreateOverhaulProjectDialog from "@/features/tank-projects/components/CreateOverhaulProjectDialog";
 import EditOverhaulProjectDialog from "@/features/tank-projects/components/EditOverhaulProjectDialog";
 import { useTank } from "@/features/tanks/tanks.query";
+import { useUpdateTankProject, useDeleteTankProject } from "@/features/tank-projects/tank-projects.query";
 import type { ShellCourse, TankProjectSummary } from "@/features/tanks/tanks.api";
 import { PERMISSIONS } from "@/constants/permission.constant";
 import { ROUTES } from "@/constants/route.constant";
 import { format } from "date-fns";
 import { TANK_LOCATION_LABEL, TANK_SERVICE_LABEL } from "@/schemas/tanks.schema";
+
+const CANCELLABLE_PROJECT_STATUSES = ["PLANNED", "IN_PROGRESS", "ON_HOLD"];
 
 function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
@@ -66,6 +70,10 @@ export default function TankDetailPage() {
   const [projectDialogOpen, setProjectDialogOpen] = useState(false);
   const [shellCoursesOpen, setShellCoursesOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<TankProjectSummary | null>(null);
+  const [cancelTarget, setCancelTarget] = useState<TankProjectSummary | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<TankProjectSummary | null>(null);
+  const updateMutation = useUpdateTankProject();
+  const deleteMutation = useDeleteTankProject();
 
   if (isLoading) return <LoadingState />;
   if (isError || !tank) return <ErrorState message="Failed to load tank." onRetry={() => refetch()} />;
@@ -178,11 +186,23 @@ export default function TankDetailPage() {
                       <td className="px-4 py-3 text-xs text-muted-foreground">{p.contractorCompany?.name ?? "—"}</td>
                       <td className="px-4 py-3 text-muted-foreground">{p.processes.length}</td>
                       <td className="px-4 py-3">
-                        <PermissionGate permission={PERMISSIONS.TANK_PROJECT_UPDATE}>
-                          <Button variant="ghost" size="icon-sm" onClick={() => setEditingProject(p)} title="Edit project">
-                            <Pencil className="h-3.5 w-3.5" />
-                          </Button>
-                        </PermissionGate>
+                        <div className="flex items-center gap-1">
+                          <PermissionGate permission={PERMISSIONS.TANK_PROJECT_UPDATE}>
+                            <Button variant="ghost" size="icon-sm" onClick={() => setEditingProject(p)} title="Edit project">
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                            {CANCELLABLE_PROJECT_STATUSES.includes(p.status) && (
+                              <Button variant="ghost" size="icon-sm" onClick={() => setCancelTarget(p)} title="Cancel project">
+                                <Ban className="h-3.5 w-3.5 text-amber-600" />
+                              </Button>
+                            )}
+                          </PermissionGate>
+                          <PermissionGate permission={PERMISSIONS.TANK_PROJECT_DELETE}>
+                            <Button variant="ghost" size="icon-sm" onClick={() => setDeleteTarget(p)} title="Delete project">
+                              <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                            </Button>
+                          </PermissionGate>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -206,6 +226,34 @@ export default function TankDetailPage() {
           if (!next) setEditingProject(null);
         }}
         project={editingProject}
+      />
+
+      <ConfirmDialog
+        open={Boolean(cancelTarget)}
+        onOpenChange={(open) => !open && setCancelTarget(null)}
+        title="Cancel Project"
+        description={`Cancel project "${cancelTarget?.projectNo ?? ""}"? Its status will be set to Cancelled and the tank will be freed up for a new project. This cannot be undone.`}
+        confirmLabel="Cancel Project"
+        variant="destructive"
+        loading={updateMutation.isPending}
+        onConfirm={() => {
+          if (!cancelTarget) return;
+          updateMutation.mutate({ id: cancelTarget.id, data: { status: "CANCELLED" } }, { onSuccess: () => setCancelTarget(null) });
+        }}
+      />
+
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title="Delete Project"
+        description={`Permanently delete project "${deleteTarget?.projectNo ?? ""}"? Use this only to correct a project that should never have been created. This cannot be undone.`}
+        confirmLabel="Delete"
+        variant="destructive"
+        loading={deleteMutation.isPending}
+        onConfirm={() => {
+          if (!deleteTarget) return;
+          deleteMutation.mutate(deleteTarget.id, { onSuccess: () => setDeleteTarget(null) });
+        }}
       />
     </div>
   );

@@ -35,6 +35,7 @@ export interface CreateTankProjectPayload {
 }
 
 export interface UpdateTankProjectPayload {
+  status?: TankProjectStatus;
   contractorCompanyId?: string | null;
   inspectionCompanyId?: string | null;
   startDate?: string | null;
