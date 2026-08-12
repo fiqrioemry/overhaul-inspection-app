@@ -45,6 +45,32 @@ export class DailyReportRepository {
     });
   }
 
+  /**
+   * Everything the attachment ZIP needs, in one query: the archive filename fields plus the
+   * active attachments joined to their trusted storage metadata (`path` is the object key —
+   * `attachmentUrl` is never used to fetch bytes). Ordering matches the report's own order.
+   */
+  static async findForAttachmentArchive(id: string) {
+    return pgsql.dailyReport.findFirst({
+      where: { id, deletedAt: null },
+      select: {
+        id: true,
+        reportDate: true,
+        tank: { select: { tankNo: true } },
+        attachments: {
+          where: { deletedAt: null },
+          select: {
+            id: true,
+            sortOrder: true,
+            createdAt: true,
+            fileStorage: { select: { path: true, mimeType: true, meta: true } },
+          },
+          orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+        },
+      },
+    });
+  }
+
   static async findMany(query: {
     tankId?: string;
     projectId?: string;

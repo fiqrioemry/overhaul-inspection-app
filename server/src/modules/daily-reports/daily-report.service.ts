@@ -5,9 +5,19 @@ import { ProcessStatusEnum } from "generated/prisma";
 import { DailyReportRepository } from "./daily-report.repository";
 import { DailyReportAttachmentRepository } from "./daily-report-attachment.repository";
 import { FileService } from "@/modules/files/file.service";
+import {
+  assertArchiveEntriesReadable,
+  buildArchiveEntryName,
+  buildArchiveFileName,
+  createAttachmentsArchiveStream,
+  minioAttachmentStorage,
+  sortAttachmentsForArchive,
+  type ArchiveEntry,
+  type AttachmentObjectStorage,
+} from "./daily-report-attachment-archive";
 import { sanitizeHtml } from "@/utils/sanitize-html";
 import type { CreateDailyReportRequest, UpdateDailyReportRequest, ListDailyReportsQuery } from "./daily-report.schema";
-import type { DailyReportListItem, DailyReportListResult } from "./daily-report.types";
+import type { DailyReportAttachmentItem, DailyReportListItem, DailyReportListResult } from "./daily-report.types";
 
 const MAX_ATTACHMENTS = 20;
 const MAX_FILE_SIZE = 8 * 1024 * 1024; // 8 MB
@@ -152,37 +162,44 @@ export class DailyReportService {
     // Resolved inspector brand for reports not tied to a project (see repository note).
     const defaultInspectionCompany = await DailyReportRepository.findDefaultInspectionCompany();
 
-    const data: DailyReportListItem[] = reports.map((r) => ({
-      id: r.id,
-      tankId: r.tankId,
-      projectId: r.projectId,
-      tankProcessId: r.tankProcessId,
-      reportDate: r.reportDate,
-      activityType: r.activityType,
-      title: r.title,
-      description: r.description,
-      recommendation: (r as any).recommendation ?? null,
-      inspectorId: r.inspectorId,
-      pertaminaPicId: r.pertaminaPicId,
-      aiSuggestedDescription: (r as any).aiSuggestedDescription ?? null,
-      createdAt: r.createdAt,
-      updatedAt: r.updatedAt,
-      inspectionCompany: r.project?.inspectionCompany ?? defaultInspectionCompany,
-      tank: r.tank,
-      project: r.project
-        ? {
-            id: r.project.id,
-            projectNo: r.project.projectNo,
-            type: r.project.type,
-            status: r.project.status,
-            inspectionCompany: r.project.inspectionCompany ?? null,
-            contractorCompany: r.project.contractorCompany ?? null,
-          }
-        : null,
-      tankProcess: r.tankProcess ?? null,
-      inspector: r.inspector ?? null,
-      attachments: (r as any).attachments ?? [],
-    }));
+    const data: DailyReportListItem[] = reports.map((r) => {
+      // The repository already eager-loads the active attachments in the same query,
+      // so the availability metadata costs no extra round trip (and no per-row lookup).
+      const attachments: DailyReportAttachmentItem[] = (r as any).attachments ?? [];
+      return {
+        id: r.id,
+        tankId: r.tankId,
+        projectId: r.projectId,
+        tankProcessId: r.tankProcessId,
+        reportDate: r.reportDate,
+        activityType: r.activityType,
+        title: r.title,
+        description: r.description,
+        recommendation: (r as any).recommendation ?? null,
+        inspectorId: r.inspectorId,
+        pertaminaPicId: r.pertaminaPicId,
+        aiSuggestedDescription: (r as any).aiSuggestedDescription ?? null,
+        createdAt: r.createdAt,
+        updatedAt: r.updatedAt,
+        inspectionCompany: r.project?.inspectionCompany ?? defaultInspectionCompany,
+        tank: r.tank,
+        project: r.project
+          ? {
+              id: r.project.id,
+              projectNo: r.project.projectNo,
+              type: r.project.type,
+              status: r.project.status,
+              inspectionCompany: r.project.inspectionCompany ?? null,
+              contractorCompany: r.project.contractorCompany ?? null,
+            }
+          : null,
+        tankProcess: r.tankProcess ?? null,
+        inspector: r.inspector ?? null,
+        attachments,
+        attachmentCount: attachments.length,
+        hasAttachments: attachments.length > 0,
+      };
+    });
 
     return {
       data,
@@ -205,6 +222,59 @@ export class DailyReportService {
     // even when the report is not linked to a project (see repository note).
     const inspectionCompany = report.project?.inspectionCompany ?? (await DailyReportRepository.findDefaultInspectionCompany());
     return { ...report, inspectionCompany };
+  }
+
+  /**
+   * Build the attachment ZIP for one daily report.
+   *
+   * Attachments are resolved through their own `fileStorageId` -> FileStorage.path, so the
+   * archive only ever reads objects this report actually owns and never dereferences the
+   * stored `attachmentUrl`. Storage availability is checked up front because the response
+   * becomes an unrecoverable binary stream the moment the first byte goes out.
+   */
+  static async buildAttachmentsArchive(
+    id: string,
+    storage: AttachmentObjectStorage = minioAttachmentStorage,
+  ): Promise<{ filename: string; body: ReadableStream<Uint8Array> }> {
+    const report = await DailyReportRepository.findForAttachmentArchive(id);
+    if (!report) throw new HTTPException(404, { message: "Daily report not found", cause: "REPORT_NOT_FOUND" });
+
+    const attachments = sortAttachmentsForArchive(report.attachments);
+    if (attachments.length === 0) {
+      throw new HTTPException(422, {
+        message: "This daily report has no attachments to download",
+        cause: "NO_DOWNLOADABLE_ATTACHMENTS",
+      });
+    }
+
+    const entries: ArchiveEntry[] = [];
+    for (const [index, attachment] of attachments.entries()) {
+      const storageKey = attachment.fileStorage?.path;
+      if (!storageKey) {
+        console.error(`Daily report attachment is missing storage metadata: reportId=${id} attachmentId=${attachment.id}`);
+        throw new HTTPException(422, {
+          message: "One or more attachments are missing storage metadata",
+          cause: "ATTACHMENT_STORAGE_METADATA_MISSING",
+        });
+      }
+      entries.push({ name: buildArchiveEntryName(attachment, index), storageKey });
+    }
+
+    try {
+      await assertArchiveEntriesReadable(entries, storage);
+    } catch (err) {
+      // Log the object keys (not credentials or signed URLs) so a missing object is traceable.
+      console.error(`Daily report attachment storage unavailable: reportId=${id} keys=${entries.map((e) => e.storageKey).join(",")}`, err);
+      throw new HTTPException(502, {
+        message: "Attachment storage is currently unavailable",
+        cause: "ATTACHMENT_STORAGE_UNAVAILABLE",
+      });
+    }
+
+    return {
+      filename: buildArchiveFileName(report.tank?.tankNo, report.reportDate, report.id),
+      body: createAttachmentsArchiveStream(entries, storage),
+    };
   }
 
   static async updateReport(c: Context, id: string, data: UpdateDailyReportRequest, newFiles: File[], userId: string) {

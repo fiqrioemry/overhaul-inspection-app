@@ -4,6 +4,7 @@ import {
   InspectionRequestStatusEnum,
   ProcessStatusEnum,
   TankAssetStatusEnum,
+  TankLocationEnum,
   TankProjectStatusEnum,
 } from "generated/prisma";
 import type {
@@ -12,6 +13,7 @@ import type {
   FindingSummary,
   InProcessInspectionRequests,
   TankProgressItem,
+  TanksByLocation,
   TestSummary,
 } from "./dashboard.types";
 
@@ -21,12 +23,47 @@ const ACTIVE_PROJECT_STATUSES: TankProjectStatusEnum[] = [
   TankProjectStatusEnum.ON_HOLD,
 ];
 
+/** Response key per TankLocationEnum member. Drives the zero-filled default below. */
+const LOCATION_RESPONSE_KEY: Record<TankLocationEnum, keyof TanksByLocation> = {
+  [TankLocationEnum.SUNGAI_GERONG]: "sungaiGerong",
+  [TankLocationEnum.PLADJU]: "pladju",
+};
+
+/**
+ * Fold grouped rows onto a zero-filled record, so a location with no tanks still reports 0
+ * rather than dropping out of the response entirely.
+ */
+export function foldTankLocationCounts(rows: Array<{ location: TankLocationEnum | null; _count: { _all: number } }>): TanksByLocation {
+  const byLocation: TanksByLocation = { sungaiGerong: 0, pladju: 0 };
+  for (const row of rows) {
+    if (!row.location) continue;
+    byLocation[LOCATION_RESPONSE_KEY[row.location]] = row._count._all;
+  }
+  return byLocation;
+}
+
+/**
+ * One grouped query for the whole fleet instead of a count per location. Counts every asset
+ * status — this is a site headcount, not an overhaul metric. Tanks with a NULL location are
+ * counted in `tanks.total` only, since they belong to neither site.
+ */
+async function countTanksByLocation(): Promise<TanksByLocation> {
+  const grouped = await pgsql.tank.groupBy({
+    by: ["location"],
+    where: { deletedAt: null, location: { not: null } },
+    _count: { _all: true },
+  });
+  return foldTankLocationCounts(grouped);
+}
+
 export class DashboardService {
   static async getSummary(): Promise<DashboardSummary> {
     const [
       totalTanks,
       operationalTanks,
       underOverhaulTanks,
+      completedTanks,
+      tanksByLocation,
       totalProjects,
       activeProjects,
       completedProjects,
@@ -40,6 +77,11 @@ export class DashboardService {
       pgsql.tank.count({ where: { deletedAt: null } }),
       pgsql.tank.count({ where: { deletedAt: null, assetStatus: TankAssetStatusEnum.OPERATIONAL } }),
       pgsql.tank.count({ where: { deletedAt: null, assetStatus: TankAssetStatusEnum.UNDER_OVERHAUL } }),
+      // Single EXISTS-style count — no per-tank round trip.
+      pgsql.tank.count({
+        where: { deletedAt: null, projects: { some: { deletedAt: null, status: TankProjectStatusEnum.COMPLETED } } },
+      }),
+      countTanksByLocation(),
       pgsql.tankProject.count({ where: { deletedAt: null } }),
       pgsql.tankProject.count({ where: { deletedAt: null, status: { in: ACTIVE_PROJECT_STATUSES } } }),
       pgsql.tankProject.count({ where: { deletedAt: null, status: TankProjectStatusEnum.COMPLETED } }),
@@ -58,7 +100,13 @@ export class DashboardService {
     ]);
 
     return {
-      tanks: { total: totalTanks, operational: operationalTanks, underOverhaul: underOverhaulTanks },
+      tanks: {
+        total: totalTanks,
+        operational: operationalTanks,
+        underOverhaul: underOverhaulTanks,
+        completed: completedTanks,
+        byLocation: tanksByLocation,
+      },
       projects: { total: totalProjects, active: activeProjects, completed: completedProjects, overdue: overdueProjects },
       processes: { total: totalProcesses, completed: completedProcesses },
       findings: { open: openFindings, critical: criticalFindings },

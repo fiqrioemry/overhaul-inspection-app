@@ -44,6 +44,10 @@ export interface DailyReportListItem {
   tankProcess: { id: string; name: string } | null;
   inspector: { id: string; name: string } | null;
   attachments: DailyReportAttachmentItem[];
+  /** Active (non-soft-deleted) attachments on this report. */
+  attachmentCount: number;
+  /** Convenience flag for `attachmentCount > 0`, so the list UI can gate the ZIP download action. */
+  hasAttachments: boolean;
 }
 
 export interface DailyReportListResult {

@@ -58,6 +58,18 @@ export class DailyReportController {
     return responseOK(c, dailyReportSuccessMessage.GET_REPORT, report);
   }
 
+  // Binary endpoint: on success this bypasses the JSON envelope and streams a ZIP.
+  // Failures still throw HTTPException, so the standard error envelope applies.
+  static async downloadAttachments(c: Context) {
+    const id = c.req.param("id");
+    const { filename, body } = await DailyReportService.buildAttachmentsArchive(id);
+    return c.body(body, 200, {
+      "Content-Type": "application/zip",
+      "Content-Disposition": `attachment; filename="${filename}"`,
+      "Cache-Control": "no-store",
+    });
+  }
+
   static async updateReport(c: Context) {
     const id = c.req.param("id");
     const body = await c.req.parseBody({ all: true });

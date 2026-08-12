@@ -13,6 +13,8 @@ dailyReports.get("/options/projects", protect, requirePermission(PERMISSIONS.DAI
 dailyReports.post("/", protect, requirePermission(PERMISSIONS.DAILY_REPORT_CREATE), ctrl.createReport);
 dailyReports.get("/", protect, requirePermission(PERMISSIONS.DAILY_REPORT_READ), ctrl.listReports);
 dailyReports.get("/:id", protect, requirePermission(PERMISSIONS.DAILY_REPORT_READ), ctrl.getReportById);
+// Same access policy as viewing the report and its attachments.
+dailyReports.get("/:id/attachments/download", protect, requirePermission(PERMISSIONS.DAILY_REPORT_READ), ctrl.downloadAttachments);
 dailyReports.patch("/:id", protect, requirePermission(PERMISSIONS.DAILY_REPORT_UPDATE), ctrl.updateReport);
 dailyReports.delete("/:id", protect, requirePermission(PERMISSIONS.DAILY_REPORT_DELETE), ctrl.deleteReport);
 

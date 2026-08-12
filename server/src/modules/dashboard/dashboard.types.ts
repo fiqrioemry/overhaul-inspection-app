@@ -1,5 +1,25 @@
+// Counts are always reported for every TankLocationEnum value, including zeros,
+// so the dashboard can render a stable set of rows.
+export interface TanksByLocation {
+  sungaiGerong: number;
+  pladju: number;
+}
+
 export interface DashboardSummary {
-  tanks: { total: number; operational: number; underOverhaul: number };
+  tanks: {
+    total: number;
+    operational: number;
+    /** Tanks currently in overhaul (Tank.assetStatus = UNDER_OVERHAUL). */
+    underOverhaul: number;
+    /**
+     * Tanks whose overhaul is finished: at least one non-deleted TankProject with
+     * status COMPLETED. Tank.assetStatus has no COMPLETED member — it flips back to
+     * OPERATIONAL once no active project remains (see recalculateTankAssetStatus) —
+     * so project status is the authoritative source for "overhaul done".
+     */
+    completed: number;
+    byLocation: TanksByLocation;
+  };
   projects: { total: number; active: number; completed: number; overdue: number };
   processes: { total: number; completed: number };
   findings: { open: number; critical: number };
