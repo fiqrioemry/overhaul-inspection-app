@@ -1,5 +1,6 @@
 // src/features/daily-reports/daily-reports.api.ts
 import api from "@/lib/axios";
+import { parseContentDispositionFilename } from "@/utils/downloadFile";
 import type { ResponseSuccess, ResponseList } from "@/types/response.type";
 import type { PaginatedResponse } from "@/types/pagination.type";
 
@@ -83,6 +84,10 @@ export interface DailyReportSummary {
   tankProcess: { id: string; name: string; type?: string } | null;
   inspector: { id: string; name: string } | null;
   attachments: DailyReportAttachment[];
+  /** Active (non-deleted) attachments on this report. */
+  attachmentCount: number;
+  /** `attachmentCount > 0` — gates the ZIP download action without a per-row detail request. */
+  hasAttachments: boolean;
 }
 
 export type DailyReportDetail = DailyReportSummary;
@@ -184,6 +189,16 @@ export async function updateDailyReport(id: string, payload: UpdateDailyReportPa
 
 export async function deleteDailyReport(id: string): Promise<void> {
   await api.delete(`/daily-reports/${id}`);
+}
+
+/**
+ * Fetch every attachment of one report as a single ZIP, through the authenticated client —
+ * the endpoint requires the session cookie, so the URL cannot simply be opened in a tab.
+ */
+export async function downloadDailyReportAttachments(id: string): Promise<{ blob: Blob; filename: string }> {
+  const res = await api.get<Blob>(`/daily-reports/${id}/attachments/download`, { responseType: "blob" });
+  const filename = parseContentDispositionFilename(res.headers["content-disposition"]) ?? `daily-report-${id}-attachments.zip`;
+  return { blob: res.data, filename };
 }
 
 export async function generateAIDailyReport(payload: AIGeneratePayload): Promise<AIGenerateResult> {

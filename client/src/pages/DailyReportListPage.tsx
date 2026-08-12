@@ -1,7 +1,7 @@
 // src/pages/DailyReportListPage.tsx
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FileText, Pencil, Trash2, Eye, Printer, Plus, ArrowUp, ArrowDown } from "lucide-react";
+import { FileText, Pencil, Trash2, Eye, Printer, Plus, ArrowUp, ArrowDown, Download, Loader2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,7 +14,7 @@ import Pagination from "@/components/common/Pagination";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 import PermissionGate from "@/components/common/PermissionGate";
 import { ACTIVITY_OPTIONS, ACTIVITY_LABEL } from "@/features/daily-reports/daily-report.constants";
-import { useDailyReports, useDeleteDailyReport } from "@/features/daily-reports/daily-reports.query";
+import { useDailyReports, useDeleteDailyReport, useDownloadDailyReportAttachments } from "@/features/daily-reports/daily-reports.query";
 import { useDebounce } from "@/hooks/useDebounce";
 import { format } from "date-fns";
 import { PERMISSIONS } from "@/constants/permission.constant";
@@ -35,6 +35,18 @@ export default function DailyReportListPage() {
 
   const debouncedSearch = useDebounce(search, 400);
   const deleteMutation = useDeleteDailyReport();
+  const downloadMutation = useDownloadDailyReportAttachments();
+
+  // Which row is downloading, so only that row's action is disabled.
+  const downloadingId = downloadMutation.isPending ? (downloadMutation.variables ?? null) : null;
+
+  function handleDownloadAttachments(event: React.MouseEvent, reportId: string) {
+    // The row itself is not clickable today, but keep the action self-contained so adding
+    // row navigation later cannot turn a download into a page change.
+    event.stopPropagation();
+    if (downloadingId) return; // one archive at a time; blocks a double-click re-request
+    downloadMutation.mutate(reportId);
+  }
 
   const { data, isLoading, isError, refetch } = useDailyReports({
     page,
@@ -187,6 +199,20 @@ export default function DailyReportListPage() {
                           <Button variant="ghost" size="icon-sm" onClick={() => navigate(ROUTES.DAILY_REPORT_DETAIL.replace(":id", report.id))} title="View Detail">
                             <Eye className="h-3.5 w-3.5 text-muted-foreground" />
                           </Button>
+                          {/* Only rendered when the report actually has attachments — no disabled placeholder. */}
+                          {report.hasAttachments && (
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              onClick={(e) => handleDownloadAttachments(e, report.id)}
+                              disabled={downloadingId === report.id}
+                              title={`Download Attachments (${report.attachmentCount})`}
+                              aria-label={`Download ${report.attachmentCount} attachment${report.attachmentCount === 1 ? "" : "s"} as ZIP`}
+                              aria-busy={downloadingId === report.id}
+                            >
+                              {downloadingId === report.id ? <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" /> : <Download className="h-3.5 w-3.5 text-muted-foreground" />}
+                            </Button>
+                          )}
                           <PermissionGate permission={PERMISSIONS.DAILY_REPORT_UPDATE}>
                             <Button variant="ghost" size="icon-sm" onClick={() => navigate(ROUTES.DAILY_REPORT_EDIT.replace(":id", report.id))} title="Edit">
                               <Pencil className="h-3.5 w-3.5 text-muted-foreground" />

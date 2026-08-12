@@ -1,7 +1,7 @@
 // src/pages/DashboardPage.tsx
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Container, AlertTriangle, CheckCircle, Clock, Activity, TrendingUp, Flame, ChevronRight, ClipboardList, ClipboardCheck, Paperclip, User } from "lucide-react";
+import { Container, AlertTriangle, CheckCircle, MapPin, Activity, TrendingUp, Flame, ChevronRight, ClipboardList, ClipboardCheck, Paperclip, User } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import PageHeader from "@/components/common/PageHeader";
 import LoadingState from "@/components/common/LoadingState";
@@ -9,6 +9,7 @@ import StatusBadge from "@/components/common/StatusBadge";
 import { useDashboardSummary, useTankProgress, useDashboardFindings, useDashboardDailyActivities, useDashboardInspectionRequests } from "@/features/dashboard/dashboard.query";
 import type { DashboardInspectionRequestObject } from "@/features/dashboard/dashboard.api";
 import { ROUTES } from "@/constants/route.constant";
+import { TANK_LOCATION_LABEL } from "@/schemas/tanks.schema";
 import { formatDistanceToNow } from "date-fns";
 
 const SEVERITY_CONFIG: Record<string, { label: string; color: string; dot: string }> = {
@@ -63,6 +64,31 @@ function SummaryCard({ title, value, sub, icon: Icon, iconBg, iconColor, highlig
   );
 }
 
+// Site headcount card. Both locations always render, including at zero, so the pair reads
+// as a fixed summary rather than a list that shrinks when a site empties out.
+function LocationCard({ title, locations, icon: Icon, iconBg, iconColor }: { title: string; locations: Array<{ label: string; value: number }>; icon: React.ElementType; iconBg: string; iconColor: string }) {
+  return (
+    <Card>
+      <CardContent className="p-5">
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-sm font-medium text-muted-foreground">{title}</span>
+          <div className={`rounded-lg p-2 ${iconBg}`}>
+            <Icon className={`h-4 w-4 ${iconColor}`} />
+          </div>
+        </div>
+        <div className="space-y-1.5">
+          {locations.map((location) => (
+            <div key={location.label} className="flex items-baseline justify-between gap-2">
+              <span className="text-xs text-muted-foreground truncate">{location.label}</span>
+              <span className="text-xl font-bold tabular-nums leading-none">{location.value}</span>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 function ProgressBar({ value }: { value: number }) {
   const color = value >= 100 ? "bg-green-500" : value >= 60 ? "bg-blue-500" : value >= 30 ? "bg-amber-500" : "bg-red-400";
   return (
@@ -99,7 +125,6 @@ export default function DashboardPage() {
 
   if (summaryLoading || tanksLoading || findingsLoading) return <LoadingState />;
 
-  const completedTanks = tanks?.filter((t) => t.status === "COMPLETED").length ?? 0;
   const processCompletionRate = summary ? Math.round((summary.processes.completed / Math.max(summary.processes.total, 1)) * 100) : 0;
 
   return (
@@ -109,10 +134,20 @@ export default function DashboardPage() {
       {/* Summary Cards */}
       {summary && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <SummaryCard title="Total Tanks" value={summary.tanks.total} sub={`${summary.tanks.underOverhaul} under overhaul · ${completedTanks} completed`} icon={Container} iconBg="bg-blue-100" iconColor="text-blue-600" />
+          {/* Headline number is the tanks currently under overhaul — the fleet-wide total is not the metric being monitored. */}
+          <SummaryCard title="Under Overhaul  " value={summary.tanks.underOverhaul} sub={`${summary.tanks.underOverhaul} in progress · ${summary.tanks.completed} completed`} icon={Container} iconBg="bg-blue-100" iconColor="text-blue-600" />
+          <LocationCard
+            title="Tanks by Location"
+            locations={[
+              { label: TANK_LOCATION_LABEL.SUNGAI_GERONG, value: summary.tanks.byLocation.sungaiGerong },
+              { label: TANK_LOCATION_LABEL.PLADJU, value: summary.tanks.byLocation.pladju },
+            ]}
+            icon={MapPin}
+            iconBg="bg-amber-100"
+            iconColor="text-amber-600"
+          />
           <SummaryCard title="Process Completion" value={summary.processes.completed} sub={`${processCompletionRate}% of ${summary.processes.total} total processes`} icon={CheckCircle} iconBg="bg-green-100" iconColor="text-green-600" />
           <SummaryCard title="Open Findings" value={summary.findings.open} sub={`${summary.findings.critical} critical`} icon={AlertTriangle} iconBg="bg-red-100" iconColor="text-red-600" highlight={summary.findings.critical > 0} />
-          <SummaryCard title="Pending Reviews" value={summary.inspectionRequests.pending} sub="awaiting inspector review" icon={Clock} iconBg="bg-amber-100" iconColor="text-amber-600" />
         </div>
       )}
 
@@ -175,11 +210,7 @@ export default function DashboardPage() {
                       const activeProcess = row.processes?.find((p) => p.status === "IN_PROGRESS" || p.status === "ACTIVE");
                       const tankId = row.tank?.id;
                       return (
-                        <tr
-                          key={row.id}
-                          className={`hover:bg-muted/20 transition-colors ${tankId ? "cursor-pointer" : ""}`}
-                          onClick={() => tankId && navigate(ROUTES.TANK_DETAIL.replace(":tankId", tankId))}
-                        >
+                        <tr key={row.id} className={`hover:bg-muted/20 transition-colors ${tankId ? "cursor-pointer" : ""}`} onClick={() => tankId && navigate(ROUTES.TANK_DETAIL.replace(":tankId", tankId))}>
                           <td className="px-4 py-3">
                             <div>
                               <span className="font-mono font-semibold text-xs">{row.tank?.tankNo ?? "—"}</span>
@@ -247,11 +278,7 @@ export default function DashboardPage() {
                   {dailyActivities.items.map((a) => {
                     const type = ACTIVITY_TYPE_CONFIG[a.activityType] ?? { label: a.activityType, color: "bg-muted text-muted-foreground" };
                     return (
-                      <button
-                        key={a.id}
-                        onClick={() => navigate(ROUTES.DAILY_REPORT_DETAIL.replace(":id", a.id))}
-                        className="w-full text-left px-4 py-3 hover:bg-muted/20 transition-colors"
-                      >
+                      <button key={a.id} onClick={() => navigate(ROUTES.DAILY_REPORT_DETAIL.replace(":id", a.id))} className="w-full text-left px-4 py-3 hover:bg-muted/20 transition-colors">
                         <div className="flex items-start justify-between gap-2">
                           <p className="text-sm font-medium line-clamp-1 min-w-0">{a.title}</p>
                           <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${type.color}`}>{type.label}</span>
@@ -276,9 +303,7 @@ export default function DashboardPage() {
                       </button>
                     );
                   })}
-                  {dailyActivities.total > dailyActivities.items.length && (
-                    <p className="px-4 py-2 text-[11px] text-muted-foreground">+{dailyActivities.total - dailyActivities.items.length} more today</p>
-                  )}
+                  {dailyActivities.total > dailyActivities.items.length && <p className="px-4 py-2 text-[11px] text-muted-foreground">+{dailyActivities.total - dailyActivities.items.length} more today</p>}
                 </div>
               )}
             </CardContent>
@@ -286,47 +311,47 @@ export default function DashboardPage() {
 
           {findingsData && (
             <>
-            {/* By Severity */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                  <Flame className="h-4 w-4 text-muted-foreground" />
-                  Findings by Severity
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {findingsData.bySeverity.length === 0 ? (
-                  <p className="text-xs text-muted-foreground">No findings recorded.</p>
-                ) : (
-                  findingsData.bySeverity.map((item) => {
-                    const cfg = SEVERITY_CONFIG[item.severity] ?? {
-                      label: item.severity,
-                      color: "text-muted-foreground",
-                      dot: "bg-muted-foreground",
-                    };
-                    const total = findingsData.bySeverity.reduce((s, i) => s + i.count, 0);
-                    const pct = Math.round((item.count / Math.max(total, 1)) * 100);
-                    return (
-                      <div key={item.severity} className="space-y-1">
-                        <div className="flex items-center justify-between text-xs">
-                          <div className="flex items-center gap-1.5">
-                            <span className={`h-2 w-2 rounded-full ${cfg.dot}`} />
-                            <span className={`font-medium ${cfg.color}`}>{cfg.label}</span>
+              {/* By Severity */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                    <Flame className="h-4 w-4 text-muted-foreground" />
+                    Findings by Severity
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {findingsData.bySeverity.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">No findings recorded.</p>
+                  ) : (
+                    findingsData.bySeverity.map((item) => {
+                      const cfg = SEVERITY_CONFIG[item.severity] ?? {
+                        label: item.severity,
+                        color: "text-muted-foreground",
+                        dot: "bg-muted-foreground",
+                      };
+                      const total = findingsData.bySeverity.reduce((s, i) => s + i.count, 0);
+                      const pct = Math.round((item.count / Math.max(total, 1)) * 100);
+                      return (
+                        <div key={item.severity} className="space-y-1">
+                          <div className="flex items-center justify-between text-xs">
+                            <div className="flex items-center gap-1.5">
+                              <span className={`h-2 w-2 rounded-full ${cfg.dot}`} />
+                              <span className={`font-medium ${cfg.color}`}>{cfg.label}</span>
+                            </div>
+                            <span className="tabular-nums text-muted-foreground">
+                              {item.count}
+                              <span className="ml-1 opacity-60">({pct}%)</span>
+                            </span>
                           </div>
-                          <span className="tabular-nums text-muted-foreground">
-                            {item.count}
-                            <span className="ml-1 opacity-60">({pct}%)</span>
-                          </span>
+                          <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                            <div className={`h-full rounded-full ${cfg.dot}`} style={{ width: `${pct}%` }} />
+                          </div>
                         </div>
-                        <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                          <div className={`h-full rounded-full ${cfg.dot}`} style={{ width: `${pct}%` }} />
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-              </CardContent>
-            </Card>
+                      );
+                    })
+                  )}
+                </CardContent>
+              </Card>
             </>
           )}
         </div>
@@ -361,24 +386,14 @@ export default function DashboardPage() {
               </thead>
               <tbody className="divide-y">
                 {inspectionRequests.items.map((req) => (
-                  <tr
-                    key={req.id}
-                    className="hover:bg-muted/20 transition-colors cursor-pointer"
-                    onClick={() => navigate(ROUTES.INSPECTION_REQUEST_DETAIL.replace(":id", req.id))}
-                  >
+                  <tr key={req.id} className="hover:bg-muted/20 transition-colors cursor-pointer" onClick={() => navigate(ROUTES.INSPECTION_REQUEST_DETAIL.replace(":id", req.id))}>
                     <td className="px-4 py-3">
                       <span className="font-mono font-semibold text-xs">{req.requestNo}</span>
                     </td>
                     <td className="px-4 py-3">
                       <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">{req.testType.replace(/_/g, " ")}</span>
                     </td>
-                    <td className="px-4 py-3 hidden md:table-cell">
-                      {req.tank ? (
-                        <span className="font-mono text-xs">{req.tank.tankNo}</span>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">—</span>
-                      )}
-                    </td>
+                    <td className="px-4 py-3 hidden md:table-cell">{req.tank ? <span className="font-mono text-xs">{req.tank.tankNo}</span> : <span className="text-xs text-muted-foreground">—</span>}</td>
                     <td className="px-4 py-3 hidden md:table-cell">
                       {req.items.length > 0 ? (
                         <div className="space-y-0.5">

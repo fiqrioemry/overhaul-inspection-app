@@ -143,7 +143,7 @@ export default function TankProcessList({ tankId, projectId }: TankProcessListPr
         onOpenChange={(open) => !open && setCompleteTarget(null)}
         title="Mark process as completed?"
         description="This process will be completed immediately without requiring the remaining checklist or review stages. Incomplete checklist items will not be changed."
-        confirmLabel="Mark as Completed"
+        confirmLabel="Confirm"
         loading={completeMutation.isPending}
         onConfirm={() => {
           if (!completeTarget) return;

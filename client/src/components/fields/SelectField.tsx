@@ -23,16 +23,7 @@ type SelectFieldProps<T extends FieldValues> = {
   searchPlaceholder?: string;
 };
 
-export default function SelectField<T extends FieldValues>({
-  control,
-  name,
-  label,
-  options,
-  placeholder = "Pilih...",
-  description,
-  searchable,
-  searchPlaceholder = "Cari...",
-}: SelectFieldProps<T>) {
+export default function SelectField<T extends FieldValues>({ control, name, label, options, placeholder = "Pilih...", description, searchable, searchPlaceholder = "Cari..." }: SelectFieldProps<T>) {
   const isSearchable = searchable ?? options.length > 8;
 
   return (
@@ -44,14 +35,7 @@ export default function SelectField<T extends FieldValues>({
           <FieldLabel>{label}</FieldLabel>
           {description && <FieldDescription>{description}</FieldDescription>}
           {isSearchable ? (
-            <SearchableSelect
-              value={field.value}
-              onChange={field.onChange}
-              options={options}
-              placeholder={placeholder}
-              searchPlaceholder={searchPlaceholder}
-              invalid={!!fieldState.error}
-            />
+            <SearchableSelect value={field.value} onChange={field.onChange} options={options} placeholder={placeholder} searchPlaceholder={searchPlaceholder} invalid={!!fieldState.error} />
           ) : (
             <Select value={field.value} onValueChange={field.onChange}>
               <SelectTrigger>
@@ -120,13 +104,7 @@ function SearchableSelect({ value, onChange, options, placeholder, searchPlaceho
       <PopoverContent align="start" className="w-(--radix-popover-trigger-width) gap-0 p-0">
         <div className="flex items-center gap-2 border-b px-3">
           <Search className="size-4 shrink-0 opacity-50" />
-          <Input
-            autoFocus
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder={searchPlaceholder}
-            className="h-9 border-0 bg-transparent px-0 shadow-none focus-visible:ring-0"
-          />
+          <Input autoFocus value={query} onChange={(e) => setQuery(e.target.value)} placeholder={searchPlaceholder} className="h-9 border-0 bg-transparent px-0 shadow-none focus-visible:ring-0" />
         </div>
         <div className="max-h-60 overflow-y-auto p-1">
           {filtered.length === 0 ? (
@@ -141,10 +119,7 @@ function SearchableSelect({ value, onChange, options, placeholder, searchPlaceho
                   setOpen(false);
                   setQuery("");
                 }}
-                className={cn(
-                  "flex w-full items-center justify-between gap-2 rounded-sm px-2 py-1.5 text-left text-sm outline-none hover:bg-accent hover:text-accent-foreground",
-                  opt.value === value && "bg-accent/50 font-medium",
-                )}
+                className={cn("flex w-full items-center justify-between gap-2 rounded-sm px-2 py-1.5 text-left text-sm outline-none hover:bg-accent hover:text-accent-foreground", opt.value === value && "bg-accent/50 font-medium")}
               >
                 <span className="truncate">{opt.label}</span>
                 {opt.value === value && <Check className="size-4 shrink-0" />}

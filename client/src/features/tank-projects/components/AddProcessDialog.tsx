@@ -43,10 +43,10 @@ export default function AddProcessDialog({ open, onOpenChange, projectId }: AddP
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="xl:w-110!">
+      <DialogContent className="xl:w-110! h-56!">
         <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4 p-4">
           <DialogHeader>
-            <DialogTitle>Add Process</DialogTitle>
+            <DialogTitle className="text-lg font-semibold">Add Process</DialogTitle>
           </DialogHeader>
 
           {noneAvailable ? (

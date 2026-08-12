@@ -1,8 +1,9 @@
 // src/features/daily-reports/daily-reports.query.ts
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { listDailyReports, getDailyReportById, createDailyReport, updateDailyReport, deleteDailyReport, generateAIDailyReport, listTankOptions, listTankProcessOptions } from "./daily-reports.api";
+import { listDailyReports, getDailyReportById, createDailyReport, updateDailyReport, deleteDailyReport, downloadDailyReportAttachments, generateAIDailyReport, listTankOptions, listTankProcessOptions } from "./daily-reports.api";
 import type { ListDailyReportsParams, CreateDailyReportPayload, UpdateDailyReportPayload, AIGeneratePayload } from "./daily-reports.api";
+import { triggerBrowserDownload } from "@/utils/downloadFile";
 
 export const DAILY_REPORT_KEYS = {
   all: ["daily-reports"] as const,
@@ -81,6 +82,24 @@ export function useDeleteDailyReport() {
     },
     onError: () => {
       toast.error("Failed to delete daily report");
+    },
+  });
+}
+
+/**
+ * Downloads one report's attachments as a ZIP. Nothing is cached: the blob is handed to the
+ * browser and dropped, and `variables` carries the report id so the list can disable only
+ * the row being downloaded.
+ */
+export function useDownloadDailyReportAttachments() {
+  return useMutation({
+    mutationFn: (id: string) => downloadDailyReportAttachments(id),
+    onSuccess: ({ blob, filename }) => {
+      triggerBrowserDownload(blob, filename);
+      toast.success("Attachments downloaded");
+    },
+    onError: (err: { message: string }) => {
+      toast.error(err.message || "Failed to download attachments");
     },
   });
 }

@@ -238,6 +238,29 @@
   color: var(--primary);
   text-decoration: underline;
 }
+/*
+ * Daily-report rich text sits on the report "paper" surface, which is hard-coded to white
+ * (.report-page uses bg-white) in both themes. Without this the content would inherit the
+ * dark-theme --foreground and render near-white on white. Pin it to the light-theme
+ * foreground instead, and force nested nodes too, since stored HTML can carry its own
+ * elements that would otherwise keep the inherited colour.
+ *
+ * Deliberately scoped to .report-rich-text (description + recommendation only) — this must
+ * not become a global typography override. Light mode is untouched: it already inherits
+ * rgb(51, 51, 51), the same value applied here.
+ */
+.dark .report-rich-text,
+.dark .report-rich-text * {
+  color: rgb(23, 23, 23);
+}
+.dark .report-rich-text li::marker {
+  color: rgb(23, 23, 23);
+}
+/* Links keep a distinct hue; --primary is a mid blue that stays legible on white. */
+.dark .report-rich-text a {
+  color: rgb(29, 78, 216);
+}
+
 /* Placeholder shown by TipTap's Placeholder extension on an empty editor. */
 .rich-text p.is-editor-empty:first-child::before {
   content: attr(data-placeholder);
