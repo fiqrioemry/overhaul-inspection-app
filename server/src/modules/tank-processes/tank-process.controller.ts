@@ -21,6 +21,12 @@ export class TankProcessController {
     return responseOK(c, tankProcessSuccessMessage.UPDATE_PROCESS_STATUS, updated);
   }
 
+  static async completeDirect(c: Context) {
+    const id = c.req.param("id");
+    const updated = await TankProcessService.completeDirect(id);
+    return responseOK(c, tankProcessSuccessMessage.COMPLETE_PROCESS_DIRECT, updated);
+  }
+
   static async updateDates(c: Context) {
     const id = c.req.param("id");
     const body = await c.req.json();

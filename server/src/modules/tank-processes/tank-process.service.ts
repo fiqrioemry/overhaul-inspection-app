@@ -13,6 +13,17 @@ const ALLOWED_STATUS_TRANSITIONS: Partial<Record<ProcessStatusEnum, ProcessStatu
   [ProcessStatusEnum.COMPLETED]: [],
 };
 
+// Statuses that may skip the normal review workflow and complete a process directly.
+// This is an intentional bypass (checklist/finding/review requirements are NOT re-validated
+// here) — it exists only for the "Mark as Completed" shortcut and must never be widened to
+// include a status the normal ALLOWED_STATUS_TRANSITIONS flow wouldn't eventually allow.
+export const DIRECT_COMPLETE_ELIGIBLE_STATUSES: ProcessStatusEnum[] = [
+  ProcessStatusEnum.NOT_STARTED,
+  ProcessStatusEnum.IN_PROGRESS,
+  ProcessStatusEnum.WAITING_REVIEW,
+  ProcessStatusEnum.REVIEWED,
+];
+
 // Findings with these statuses + isBlocking=true block review/completion
 const BLOCKING_FINDING_STATUSES = [FindingStatusEnum.OPEN, FindingStatusEnum.IN_REPAIR];
 
@@ -120,6 +131,52 @@ export class TankProcessService {
 
       // When the first process starts, move the owning project PLANNED → IN_PROGRESS.
       if (data.status === ProcessStatusEnum.IN_PROGRESS && process.project?.status === TankProjectStatusEnum.PLANNED) {
+        await tx.tankProject.update({
+          where: { id: process.projectId },
+          data: { status: TankProjectStatusEnum.IN_PROGRESS },
+        });
+      }
+
+      return updated;
+    });
+  }
+
+  // Direct-completion shortcut: transitions NOT_STARTED / IN_PROGRESS / WAITING_REVIEW / REVIEWED
+  // straight to COMPLETED in one operation, bypassing checklist and blocking-finding validation.
+  // Unlike updateStatus, this intentionally does NOT call countUncheckedRequired/countBlockingFindings.
+  static async completeDirect(id: string) {
+    const process = await TankProcessRepository.findById(id);
+    if (!process) {
+      throw new HTTPException(404, { message: "Process not found", cause: "PROCESS_NOT_FOUND" });
+    }
+
+    // Idempotent: retrying an already-completed process returns its current state unchanged
+    // instead of erroring, so a duplicate/replayed request never overwrites the original completedAt.
+    if (process.status === ProcessStatusEnum.COMPLETED) {
+      return process;
+    }
+
+    if (!DIRECT_COMPLETE_ELIGIBLE_STATUSES.includes(process.status)) {
+      throw new HTTPException(422, {
+        message: `Cannot directly complete process: status is ${process.status}.`,
+        cause: "INVALID_STATUS_TRANSITION",
+      });
+    }
+
+    return pgsql.$transaction(async (tx) => {
+      const now = new Date();
+      const updated = await tx.tankProcess.update({
+        where: { id },
+        data: {
+          status: ProcessStatusEnum.COMPLETED,
+          startDate: process.startDate ?? now,
+          finishDate: now,
+        },
+      });
+
+      // Mirrors the same side effect updateStatus applies when a process starts, so a process
+      // completed via this shortcut still leaves its owning project in a consistent state.
+      if (process.project?.status === TankProjectStatusEnum.PLANNED) {
         await tx.tankProject.update({
           where: { id: process.projectId },
           data: { status: TankProjectStatusEnum.IN_PROGRESS },
