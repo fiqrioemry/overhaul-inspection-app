@@ -33,8 +33,8 @@ export interface DashboardSummary {
   };
 }
 
-// A row is an active TankProject; the physical tank is nested under `tank`.
-// `id` is the project id — navigate to tank detail with `tank.id`, not `id`.
+// A row is a TankProject the tank is currently engaged in, or has just finished; the physical
+// tank is nested under `tank`. `id` is the project id — navigate to tank detail with `tank.id`.
 export interface TankProgressRow {
   id: string;
   projectNo: string;
@@ -55,6 +55,14 @@ export interface TankProgressRow {
     status: string;
   }>;
   _count: { findings: number };
+  /** True when the project has at least one process and every one of them is COMPLETED. */
+  allProcessesCompleted: boolean;
+  /**
+   * The process this row should name, resolved by the server: the current in-progress process
+   * while work is running, the highest-sequenceOrder process once everything is completed, and
+   * null when there is nothing to show.
+   */
+  displayProcess: { id: string; name: string; sequenceOrder: number; status: string } | null;
 }
 
 export interface FindingSummaryData {

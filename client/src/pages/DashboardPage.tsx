@@ -196,7 +196,8 @@ export default function DashboardPage() {
                     <tr>
                       <th className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground">Tank</th>
                       <th className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground">Status</th>
-                      <th className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground hidden md:table-cell">Active Process</th>
+                      {/* Holds the running process, or the final one once the project is done. */}
+                      <th className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground hidden md:table-cell">Process</th>
                       <th className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground w-44">Progress</th>
                       <th className="px-4 py-2.5 text-right text-xs font-medium text-muted-foreground">Findings</th>
                     </tr>
@@ -210,7 +211,9 @@ export default function DashboardPage() {
                       </tr>
                     )}
                     {filteredTanks.map((row) => {
-                      const activeProcess = row.processes?.find((p) => p.status === "IN_PROGRESS" || p.status === "ACTIVE");
+                      // Resolved server-side: the running process, or the final one (highest
+                      // sequenceOrder) once every process is completed.
+                      const displayProcess = row.displayProcess;
                       const tankId = row.tank?.id;
                       return (
                         <tr key={row.id} className={`hover:bg-muted/20 transition-colors ${tankId ? "cursor-pointer" : ""}`} onClick={() => tankId && navigate(ROUTES.TANK_DETAIL.replace(":tankId", tankId))}>
@@ -225,10 +228,10 @@ export default function DashboardPage() {
                             <StatusBadge status={row.status} />
                           </td>
                           <td className="px-4 py-3 hidden md:table-cell">
-                            {activeProcess ? (
+                            {displayProcess ? (
                               <div className="flex items-center gap-1.5">
-                                <Activity className="h-3 w-3 text-blue-500 shrink-0" />
-                                <span className="text-xs text-muted-foreground line-clamp-1">{activeProcess.name}</span>
+                                {row.allProcessesCompleted ? <CheckCircle className="h-3 w-3 text-green-500 shrink-0" /> : <Activity className="h-3 w-3 text-blue-500 shrink-0" />}
+                                <span className="text-xs text-muted-foreground line-clamp-1">{displayProcess.name}</span>
                               </div>
                             ) : (
                               <span className="text-xs text-muted-foreground">—</span>

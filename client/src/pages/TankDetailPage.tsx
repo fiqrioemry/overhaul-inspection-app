@@ -81,6 +81,10 @@ export default function TankDetailPage() {
   const editPath = ROUTES.TANK_EDIT.replace(":tankId", tankId!);
 
   const isUnderOverhaul = tank.assetStatus === "UNDER_OVERHAUL";
+  // The tab follows the processes, not the tank's asset status: a project that completes flips
+  // the tank back to OPERATIONAL, and hiding the tab then would remove the only way to reopen a
+  // process that was completed by mistake.
+  const hasProcesses = tank.projects.some((p) => p.processes.length > 0);
   const isDecommissioned = tank.assetStatus === "DECOMMISSIONED";
   const hasActiveProject = Boolean(tank.activeProject) || tank.assetStatus === "UNDER_OVERHAUL";
   const canCreateProject = !isDecommissioned && !hasActiveProject;
@@ -114,7 +118,7 @@ export default function TankDetailPage() {
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="projects">Projects</TabsTrigger>
-          {isUnderOverhaul && <TabsTrigger value="processes">Processes</TabsTrigger>}
+          {(isUnderOverhaul || hasProcesses) && <TabsTrigger value="processes">Processes</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="overview" className="mt-4">
@@ -212,8 +216,10 @@ export default function TankDetailPage() {
           )}
         </TabsContent>
 
-        {isUnderOverhaul && (
+        {(isUnderOverhaul || hasProcesses) && (
           <TabsContent value="processes" className="mt-4">
+            {/* projectId stays the *active* project only: "Add Process" is rejected by the
+                server for a completed one, so the button correctly disappears with it. */}
             <TankProcessList tankId={tankId!} projectId={tank.activeProject?.id} />
           </TabsContent>
         )}

@@ -11,6 +11,19 @@ export const PROCESS_KEYS = {
   eligibility: (id: string) => ["tank-processes", "eligibility", id] as const,
 };
 
+/**
+ * A process-status change can complete or reopen its owning project on the server
+ * (reconcileProjectStatusFromProcesses), so every mutation that moves a process refreshes the
+ * project-shaped views too: the tank detail query backing the Projects tab, the tank-project
+ * queries, and the dashboard's Tank Progress. Scoped key prefixes, never a blanket clear.
+ */
+function invalidateProcessAndProjectQueries(queryClient: ReturnType<typeof useQueryClient>) {
+  queryClient.invalidateQueries({ queryKey: PROCESS_KEYS.all });
+  queryClient.invalidateQueries({ queryKey: ["tanks"] });
+  queryClient.invalidateQueries({ queryKey: ["tank-projects"] });
+  queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+}
+
 export function useTankProcesses(tankId: string) {
   return useQuery({
     queryKey: PROCESS_KEYS.byTank(tankId),
@@ -44,9 +57,7 @@ export function useUpdateProcessStatus() {
     mutationFn: ({ id, data }: { id: string; data: UpdateProcessStatusPayload }) => updateProcessStatus(id, data),
     onSuccess: () => {
       toast.success("Process status updated");
-      queryClient.invalidateQueries({ queryKey: PROCESS_KEYS.all });
-      queryClient.invalidateQueries({ queryKey: ["tanks"] });
-      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      invalidateProcessAndProjectQueries(queryClient);
     },
     onError: (err: { message: string }) => {
       toast.error(err.message);
@@ -60,9 +71,7 @@ export function useCompleteProcessDirect() {
     mutationFn: (id: string) => completeProcessDirect(id),
     onSuccess: () => {
       toast.success("Process marked as completed");
-      queryClient.invalidateQueries({ queryKey: PROCESS_KEYS.all });
-      queryClient.invalidateQueries({ queryKey: ["tanks"] });
-      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      invalidateProcessAndProjectQueries(queryClient);
     },
     onError: (err: { message: string }) => {
       toast.error(err.message);
@@ -76,9 +85,7 @@ export function useCorrectProcessStatus() {
     mutationFn: ({ tankId, processId, data }: { tankId: string; processId: string; data: CorrectProcessStatusPayload }) => correctProcessStatus(tankId, processId, data),
     onSuccess: () => {
       toast.success("Process status updated");
-      queryClient.invalidateQueries({ queryKey: PROCESS_KEYS.all });
-      queryClient.invalidateQueries({ queryKey: ["tanks"] });
-      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      invalidateProcessAndProjectQueries(queryClient);
     },
     onError: (err: { message: string; status?: number }) => {
       toast.error(err.message);
@@ -109,9 +116,9 @@ export function useDeleteTankProcess() {
     mutationFn: (id: string) => deleteTankProcess(id),
     onSuccess: (res) => {
       toast.success(res.message || "Process removed from project");
-      queryClient.invalidateQueries({ queryKey: PROCESS_KEYS.all });
-      queryClient.invalidateQueries({ queryKey: ["tanks"] });
-      queryClient.invalidateQueries({ queryKey: ["tank-projects"] });
+      // Removing a process can complete the project it belonged to, so this refreshes the same
+      // project-shaped views as a status change.
+      invalidateProcessAndProjectQueries(queryClient);
     },
     onError: (err: { message: string }) => {
       toast.error(err.message);
