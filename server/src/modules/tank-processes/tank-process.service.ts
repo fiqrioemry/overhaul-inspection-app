@@ -1,9 +1,11 @@
 import { HTTPException } from "hono/http-exception";
 import { pgsql } from "@/lib/database";
-import { ProcessStatusEnum, TankProjectStatusEnum, FindingStatusEnum, ChecklistStatusEnum, ChecklistSourceEnum } from "generated/prisma";
+import { Prisma, ProcessStatusEnum, TankProjectStatusEnum, FindingStatusEnum, ChecklistStatusEnum, ChecklistSourceEnum } from "generated/prisma";
 import { TankProcessRepository } from "./tank-process.repository";
 import { ChecklistResultRepository } from "@/modules/checklist-results/checklist-result.repository";
-import { UpdateProcessStatusRequest, UpdateProcessDatesRequest } from "./tank-process.schema";
+import { UserRepository } from "@/modules/users/user.repository";
+import { tankProcessAction, tankProcessErrorMessage } from "@/config/constant/tank-process.constant";
+import { UpdateProcessStatusRequest, UpdateProcessDatesRequest, CorrectProcessStatusRequest } from "./tank-process.schema";
 
 const ALLOWED_STATUS_TRANSITIONS: Partial<Record<ProcessStatusEnum, ProcessStatusEnum[]>> = {
   [ProcessStatusEnum.NOT_STARTED]: [ProcessStatusEnum.IN_PROGRESS],
@@ -26,6 +28,34 @@ export const DIRECT_COMPLETE_ELIGIBLE_STATUSES: ProcessStatusEnum[] = [
 
 // Findings with these statuses + isBlocking=true block review/completion
 const BLOCKING_FINDING_STATUSES = [FindingStatusEnum.OPEN, FindingStatusEnum.IN_REPAIR];
+
+/**
+ * Timestamps a manually corrected process must end up with, derived entirely on the server —
+ * the correction endpoint accepts no dates from the client.
+ *
+ * TankProcess carries only startDate/finishDate; there are no separate submission/review
+ * columns, so "clear the timestamps incompatible with this target" reduces to finishDate.
+ *
+ *   NOT_STARTED                            -> both cleared, the process never ran
+ *   IN_PROGRESS / WAITING_REVIEW / REVIEWED -> keep startDate (or stamp it now), clear finishDate
+ *   COMPLETED                              -> keep startDate (or stamp it now), finishDate = now
+ *
+ * `now` is passed in so one timestamp is shared by every field written in the same correction.
+ */
+export function resolveCorrectedTimestamps(
+  targetStatus: ProcessStatusEnum,
+  current: { startDate: Date | null; finishDate: Date | null },
+  now: Date,
+): { startDate: Date | null; finishDate: Date | null } {
+  if (targetStatus === ProcessStatusEnum.NOT_STARTED) {
+    return { startDate: null, finishDate: null };
+  }
+  const startDate = current.startDate ?? now;
+  if (targetStatus === ProcessStatusEnum.COMPLETED) {
+    return { startDate, finishDate: now };
+  }
+  return { startDate, finishDate: null };
+}
 
 async function countBlockingFindings(tankProcessId: string) {
   return pgsql.finding.count({
@@ -185,6 +215,84 @@ export class TankProcessService {
 
       return updated;
     });
+  }
+
+  /**
+   * Manual status correction for one tank process — an administrative repair for a status that
+   * was recorded wrongly, not a workflow step. It intentionally allows any transition between
+   * the five workflow statuses, including backwards ones such as COMPLETED -> IN_PROGRESS, and
+   * therefore skips the checklist / blocking-finding / dependency guards that updateStatus
+   * enforces. Those guards remain in force for the normal workflow.
+   *
+   * Scope is deliberately narrow: this touches the selected process row and nothing else.
+   * Checklist results, findings, other processes and the owning project are all left as they
+   * are — including the PLANNED -> IN_PROGRESS project nudge that updateStatus/completeDirect
+   * apply, which would be a side effect on a record the operator did not ask to change.
+   */
+  static async correctStatusManually(tankId: string, processId: string, data: CorrectProcessStatusRequest, actorUserId: string) {
+    const process = await TankProcessRepository.findByIdWithOwner(processId);
+    if (!process) {
+      throw new HTTPException(404, { message: "Process not found", cause: "PROCESS_NOT_FOUND" });
+    }
+    // A process reached through the wrong tank, or one whose tank/project has been soft-deleted,
+    // is treated as absent rather than as a different error — from this route it does not exist.
+    if (process.project.tankId !== tankId) {
+      throw new HTTPException(404, { message: "Process not found for this tank", cause: "PROCESS_TANK_MISMATCH" });
+    }
+    if (process.project.deletedAt || process.project.tank.deletedAt) {
+      throw new HTTPException(404, { message: "Process not found for this tank", cause: "PROCESS_NOT_ACTIVE" });
+    }
+
+    // Stale read: the row moved on after the client rendered the dialog. Reject rather than
+    // clobber the newer value; the client refreshes and the operator decides again.
+    if (process.status !== data.expectedCurrentStatus) {
+      throw new HTTPException(409, {
+        message: tankProcessErrorMessage.STALE_PROCESS_STATUS,
+        cause: "PROCESS_STATUS_CONFLICT",
+      });
+    }
+
+    // Duplicate/retried submission of a correction that already landed. Return the row untouched
+    // so a replay cannot re-stamp finishDate — same idempotency convention as completeDirect.
+    if (process.status === data.targetStatus) {
+      return TankProcessService.getProcessById(processId);
+    }
+
+    await pgsql.$transaction(async (tx: Prisma.TransactionClient) => {
+      const now = new Date();
+      const timestamps = resolveCorrectedTimestamps(data.targetStatus, process, now);
+
+      // Compare-and-set: between the read above and this write another request may have changed
+      // the status, and updateMany matching zero rows is how that race surfaces.
+      const written = await TankProcessRepository.updateStatusIfCurrent(tx, processId, data.expectedCurrentStatus, {
+        status: data.targetStatus,
+        ...timestamps,
+      });
+      if (written === 0) {
+        throw new HTTPException(409, {
+          message: tankProcessErrorMessage.STALE_PROCESS_STATUS,
+          cause: "PROCESS_STATUS_CONFLICT",
+        });
+      }
+
+      // Same transaction as the write: a correction is never recorded without its audit entry,
+      // and an audit entry never survives a rolled-back correction.
+      await UserRepository.createActivityLog(tx, {
+        userId: actorUserId,
+        action: tankProcessAction.MANUAL_STATUS_CORRECTION,
+        metadata: {
+          source: "MANUAL_STATUS_CORRECTION",
+          tankProcessId: processId,
+          tankId,
+          projectId: process.projectId,
+          previousStatus: data.expectedCurrentStatus,
+          newStatus: data.targetStatus,
+          changedAt: now.toISOString(),
+        },
+      });
+    });
+
+    return TankProcessService.getProcessById(processId);
   }
 
   static async updateDates(id: string, data: UpdateProcessDatesRequest) {

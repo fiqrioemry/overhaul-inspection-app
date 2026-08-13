@@ -3,7 +3,7 @@ import { responseOK } from "@/utils/response";
 import { EligibilityService } from "@/services/eligibility.service";
 import { ChecklistResultService } from "@/modules/checklist-results/checklist-result.service";
 import { TankProcessService } from "./tank-process.service";
-import { updateProcessStatusRequest, updateProcessDatesRequest } from "./tank-process.schema";
+import { updateProcessStatusRequest, updateProcessDatesRequest, correctProcessStatusRequest } from "./tank-process.schema";
 import { tankProcessSuccessMessage } from "@/config/constant/tank-process.constant";
 
 export class TankProcessController {
@@ -19,6 +19,18 @@ export class TankProcessController {
     const data = updateProcessStatusRequest.parse(body);
     const updated = await TankProcessService.updateStatus(id, data);
     return responseOK(c, tankProcessSuccessMessage.UPDATE_PROCESS_STATUS, updated);
+  }
+
+  // Tank-scoped manual correction: PATCH /tanks/:id/processes/:processId/status.
+  // Separate from updateStatus above, which is the normal guarded workflow transition.
+  static async correctStatus(c: Context) {
+    const tankId = c.req.param("id");
+    const processId = c.req.param("processId");
+    const body = await c.req.json();
+    const data = correctProcessStatusRequest.parse(body);
+    const user = c.get("user");
+    const updated = await TankProcessService.correctStatusManually(tankId, processId, data, user.id);
+    return responseOK(c, tankProcessSuccessMessage.CORRECT_PROCESS_STATUS, updated);
   }
 
   static async completeDirect(c: Context) {

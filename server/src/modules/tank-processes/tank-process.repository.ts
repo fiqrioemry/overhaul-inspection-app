@@ -1,5 +1,5 @@
 import { pgsql } from "@/lib/database";
-import { Prisma } from "generated/prisma";
+import { Prisma, ProcessStatusEnum } from "generated/prisma";
 
 export class TankProcessRepository {
   static async findById(id: string) {
@@ -17,6 +17,31 @@ export class TankProcessRepository {
         },
         processTemplate: true,
         _count: { select: { checklistResults: true, findings: true, inspectionRequests: true } },
+      },
+    });
+  }
+
+  // Ownership lookup for the tank-scoped routes: carries the owning project's tankId and both
+  // soft-delete markers so the service can tell "no such process" apart from "belongs to another
+  // tank" and from "its tank/project is soft-deleted" without a second round trip.
+  static async findByIdWithOwner(id: string) {
+    return pgsql.tankProcess.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        projectId: true,
+        status: true,
+        startDate: true,
+        finishDate: true,
+        project: {
+          select: {
+            id: true,
+            tankId: true,
+            status: true,
+            deletedAt: true,
+            tank: { select: { id: true, deletedAt: true } },
+          },
+        },
       },
     });
   }
@@ -40,6 +65,19 @@ export class TankProcessRepository {
 
   static async updateStatus(id: string, data: Prisma.TankProcessUpdateInput) {
     return pgsql.tankProcess.update({ where: { id }, data });
+  }
+
+  // Conditional (compare-and-set) status write: the WHERE carries the expected status, so a row
+  // another request already moved on simply matches nothing and reports count 0 instead of being
+  // overwritten. Returns the number of rows written.
+  static async updateStatusIfCurrent(
+    tx: Prisma.TransactionClient,
+    id: string,
+    expectedStatus: ProcessStatusEnum,
+    data: Prisma.TankProcessUncheckedUpdateManyInput,
+  ) {
+    const result = await tx.tankProcess.updateMany({ where: { id, status: expectedStatus }, data });
+    return result.count;
   }
 
   static async updateResult(id: string, data: Prisma.TankProcessUpdateInput) {
