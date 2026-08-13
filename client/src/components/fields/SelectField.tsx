@@ -21,9 +21,11 @@ type SelectFieldProps<T extends FieldValues> = {
   searchable?: boolean;
   /** Placeholder for the search input (only used when searchable). */
   searchPlaceholder?: string;
+  /** Blocks interaction, e.g. while a submit is in flight. */
+  disabled?: boolean;
 };
 
-export default function SelectField<T extends FieldValues>({ control, name, label, options, placeholder = "Pilih...", description, searchable, searchPlaceholder = "Cari..." }: SelectFieldProps<T>) {
+export default function SelectField<T extends FieldValues>({ control, name, label, options, placeholder = "Pilih...", description, searchable, searchPlaceholder = "Cari...", disabled }: SelectFieldProps<T>) {
   const isSearchable = searchable ?? options.length > 8;
 
   return (
@@ -35,9 +37,9 @@ export default function SelectField<T extends FieldValues>({ control, name, labe
           <FieldLabel>{label}</FieldLabel>
           {description && <FieldDescription>{description}</FieldDescription>}
           {isSearchable ? (
-            <SearchableSelect value={field.value} onChange={field.onChange} options={options} placeholder={placeholder} searchPlaceholder={searchPlaceholder} invalid={!!fieldState.error} />
+            <SearchableSelect value={field.value} onChange={field.onChange} options={options} placeholder={placeholder} searchPlaceholder={searchPlaceholder} invalid={!!fieldState.error} disabled={disabled} />
           ) : (
-            <Select value={field.value} onValueChange={field.onChange}>
+            <Select value={field.value} onValueChange={field.onChange} disabled={disabled}>
               <SelectTrigger>
                 <SelectValue placeholder={placeholder} />
               </SelectTrigger>
@@ -64,9 +66,10 @@ type SearchableSelectProps = {
   placeholder: string;
   searchPlaceholder: string;
   invalid?: boolean;
+  disabled?: boolean;
 };
 
-function SearchableSelect({ value, onChange, options, placeholder, searchPlaceholder, invalid }: SearchableSelectProps) {
+function SearchableSelect({ value, onChange, options, placeholder, searchPlaceholder, invalid, disabled }: SearchableSelectProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
 
@@ -90,11 +93,13 @@ function SearchableSelect({ value, onChange, options, placeholder, searchPlaceho
           type="button"
           role="combobox"
           aria-expanded={open}
+          disabled={disabled}
           data-invalid={invalid || undefined}
           className={cn(
             "flex h-9 w-full items-center justify-between gap-2 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none transition-[color,box-shadow]",
             "focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50",
             "data-[invalid=true]:border-destructive data-[invalid=true]:ring-destructive/20",
+            "disabled:cursor-not-allowed disabled:opacity-50",
           )}
         >
           <span className={cn("truncate", !selected && "text-muted-foreground")}>{selected ? selected.label : placeholder}</span>

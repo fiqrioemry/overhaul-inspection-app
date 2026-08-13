@@ -1,8 +1,8 @@
 // src/features/tank-processes/tank-processes.query.ts
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getTankProcesses, getTankProcessById, updateProcessStatus, updateProcessDates, completeProcessDirect, getProcessEligibility, deleteTankProcess } from "./tank-processes.api";
-import type { UpdateProcessStatusPayload, UpdateProcessDatesPayload } from "./tank-processes.api";
+import { getTankProcesses, getTankProcessById, updateProcessStatus, updateProcessDates, completeProcessDirect, correctProcessStatus, getProcessEligibility, deleteTankProcess } from "./tank-processes.api";
+import type { UpdateProcessStatusPayload, UpdateProcessDatesPayload, CorrectProcessStatusPayload } from "./tank-processes.api";
 
 export const PROCESS_KEYS = {
   all: ["tank-processes"] as const,
@@ -66,6 +66,25 @@ export function useCompleteProcessDirect() {
     },
     onError: (err: { message: string }) => {
       toast.error(err.message);
+    },
+  });
+}
+
+export function useCorrectProcessStatus() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ tankId, processId, data }: { tankId: string; processId: string; data: CorrectProcessStatusPayload }) => correctProcessStatus(tankId, processId, data),
+    onSuccess: () => {
+      toast.success("Process status updated");
+      queryClient.invalidateQueries({ queryKey: PROCESS_KEYS.all });
+      queryClient.invalidateQueries({ queryKey: ["tanks"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+    },
+    onError: (err: { message: string; status?: number }) => {
+      toast.error(err.message);
+      // 409 means the row moved on after the dialog was opened. Refetch so the list and the
+      // dialog show the status the server actually holds before the operator retries.
+      if (err.status === 409) queryClient.invalidateQueries({ queryKey: PROCESS_KEYS.all });
     },
   });
 }

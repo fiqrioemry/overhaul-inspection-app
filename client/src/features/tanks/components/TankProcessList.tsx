@@ -1,7 +1,7 @@
 // src/features/tanks/components/TankProcessList.tsx
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ChevronRight, Plus, Trash2, CheckCircle2 } from "lucide-react";
+import { ChevronRight, Plus, Trash2, CheckCircle2, PencilLine } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ProcessStatusBadge from "@/components/common/ProcessStatusBadge";
 import LoadingState from "@/components/common/LoadingState";
@@ -10,6 +10,7 @@ import EmptyState from "@/components/common/EmptyState";
 import PermissionGate from "@/components/common/PermissionGate";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 import AddProcessDialog from "@/features/tank-projects/components/AddProcessDialog";
+import ProcessStatusEditDialog from "@/features/tank-processes/components/ProcessStatusEditDialog";
 import { useTankProcesses, useDeleteTankProcess, useCompleteProcessDirect } from "@/features/tank-processes/tank-processes.query";
 import type { TankProcessSummary, ProcessStatus } from "@/features/tank-processes/tank-processes.api";
 import { PERMISSIONS } from "@/constants/permission.constant";
@@ -33,9 +34,15 @@ export default function TankProcessList({ tankId, projectId }: TankProcessListPr
   const [addOpen, setAddOpen] = useState(false);
   const [removeTarget, setRemoveTarget] = useState<TankProcessSummary | null>(null);
   const [completeTarget, setCompleteTarget] = useState<TankProcessSummary | null>(null);
+  // Held by id, not by value: after a stale-status 409 the list refetches, and the dialog has to
+  // pick up the refreshed row so its "current status" — and the expectedCurrentStatus it sends —
+  // are the server's, not the snapshot taken when the dialog was opened.
+  const [editStatusId, setEditStatusId] = useState<string | null>(null);
 
   if (isLoading) return <LoadingState />;
   if (isError) return <ErrorState message="Failed to load processes." onRetry={() => refetch()} />;
+
+  const editStatusProcess = editStatusId ? (processes?.find((proc) => proc.id === editStatusId) ?? null) : null;
 
   return (
     <div className="space-y-3">
@@ -109,6 +116,13 @@ export default function TankProcessList({ tankId, projectId }: TankProcessListPr
                             </Button>
                           </PermissionGate>
                         )}
+                        {/* Manual correction of a wrongly-recorded status — available at every
+                            status, including COMPLETED, which no workflow action can leave. */}
+                        <PermissionGate permission={PERMISSIONS.PROCESS_UPDATE}>
+                          <Button variant="ghost" size="icon-sm" onClick={() => setEditStatusId(proc.id)} title="Edit Status">
+                            <PencilLine className="h-3.5 w-3.5" />
+                          </Button>
+                        </PermissionGate>
                         <Link to={detailPath} className="inline-flex items-center text-xs text-primary hover:underline">
                           View <ChevronRight className="h-3 w-3" />
                         </Link>
@@ -123,6 +137,8 @@ export default function TankProcessList({ tankId, projectId }: TankProcessListPr
       )}
 
       {projectId && <AddProcessDialog open={addOpen} onOpenChange={setAddOpen} projectId={projectId} />}
+
+      {editStatusProcess && <ProcessStatusEditDialog open onOpenChange={(open) => !open && setEditStatusId(null)} tankId={tankId} process={editStatusProcess} />}
 
       <ConfirmDialog
         open={Boolean(removeTarget)}

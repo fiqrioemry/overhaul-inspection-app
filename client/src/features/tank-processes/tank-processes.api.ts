@@ -57,6 +57,14 @@ export interface UpdateProcessDatesPayload {
   finishDate?: string | null;
 }
 
+// Manual status correction. Carries no dates — the server derives every timestamp from
+// targetStatus. expectedCurrentStatus is the status shown when the dialog was opened; the
+// server rejects the write with 409 if the row no longer holds it.
+export interface CorrectProcessStatusPayload {
+  targetStatus: ProcessStatus;
+  expectedCurrentStatus: ProcessStatus;
+}
+
 export async function getTankProcesses(tankId: string): Promise<TankProcessSummary[]> {
   const res = await api.get<ResponseSuccess<TankProcessSummary[]>>(`/tanks/${tankId}/processes`);
   return res.data.data!;
@@ -81,6 +89,13 @@ export async function updateProcessDates(id: string, data: UpdateProcessDatesPay
 // straight to COMPLETED in one call, bypassing checklist/review requirements.
 export async function completeProcessDirect(id: string): Promise<TankProcessDetail> {
   const res = await api.patch<ResponseSuccess<TankProcessDetail>>(`/processes/${id}/complete`, {});
+  return res.data.data!;
+}
+
+// Administrative correction of a wrongly-recorded status, e.g. COMPLETED -> IN_PROGRESS.
+// Separate endpoint from updateProcessStatus, which performs the guarded workflow transition.
+export async function correctProcessStatus(tankId: string, processId: string, data: CorrectProcessStatusPayload): Promise<TankProcessDetail> {
+  const res = await api.patch<ResponseSuccess<TankProcessDetail>>(`/tanks/${tankId}/processes/${processId}/status`, data);
   return res.data.data!;
 }
 
