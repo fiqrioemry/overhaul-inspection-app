@@ -3,6 +3,12 @@
 export interface TanksByLocation {
   sungaiGerong: number;
   pladju: number;
+  /**
+   * Tanks under overhaul with no location set. Keeps the breakdown summing to
+   * `tanks.underOverhaul` instead of silently losing unsited tanks — Tank.location
+   * is optional, so this is reachable.
+   */
+  unassigned: number;
 }
 
 export interface DashboardSummary {
@@ -18,6 +24,7 @@ export interface DashboardSummary {
      * so project status is the authoritative source for "overhaul done".
      */
     completed: number;
+    /** The `underOverhaul` count split per site; its values sum to `underOverhaul`. */
     byLocation: TanksByLocation;
   };
   projects: { total: number; active: number; completed: number; overdue: number };

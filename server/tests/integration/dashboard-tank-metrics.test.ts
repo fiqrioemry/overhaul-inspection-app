@@ -1,5 +1,5 @@
 // Integration tests for the dashboard tank metrics: under-overhaul / completed counts and
-// the Sungai Gerong / Pladju site headcount.
+// the Sungai Gerong / Pladju split of the tanks under overhaul.
 //
 // Run with the local dev database (see server/CLAUDE.md — bun auto-loads .env.local, which
 // points at the wrong DB host; use .env.development instead):
@@ -87,6 +87,8 @@ beforeAll(async () => {
     location: TankLocationEnum.PLADJU,
     project: { status: TankProjectStatusEnum.COMPLETED, deleted: true },
   });
+  // 10: under overhaul but sited nowhere — belongs to `unassigned`, never to a site.
+  await createTank({ assetStatus: TankAssetStatusEnum.UNDER_OVERHAUL, location: null });
 
   after = await DashboardService.getSummary();
 });
@@ -99,8 +101,8 @@ afterAll(async () => {
 
 describe("DashboardService.getSummary — tank metrics", () => {
   test("under-overhaul count includes only tanks whose asset status is UNDER_OVERHAUL (case 1)", () => {
-    // Fixtures 1, 2 and 8. Fixture 6 matches the status but is soft-deleted.
-    expect(after.tanks.underOverhaul - baseline.tanks.underOverhaul).toBe(3);
+    // Fixtures 1, 2, 8 and 10. Fixture 6 matches the status but is soft-deleted.
+    expect(after.tanks.underOverhaul - baseline.tanks.underOverhaul).toBe(4);
   });
 
   test("the 'in progress' figure is the same count as the card's primary value (case 2)", async () => {
@@ -117,61 +119,73 @@ describe("DashboardService.getSummary — tank metrics", () => {
   });
 
   test("soft-deleted tanks are excluded from every tank count (case 4)", () => {
-    // Nine tanks created, one of them soft-deleted.
-    expect(after.tanks.total - baseline.tanks.total).toBe(8);
+    // Ten tanks created, one of them soft-deleted.
+    expect(after.tanks.total - baseline.tanks.total).toBe(9);
     // Fixture 6 would otherwise have added to underOverhaul, completed and Sungai Gerong.
-    expect(after.tanks.underOverhaul - baseline.tanks.underOverhaul).toBe(3);
+    expect(after.tanks.underOverhaul - baseline.tanks.underOverhaul).toBe(4);
     expect(after.tanks.completed - baseline.tanks.completed).toBe(2);
-    expect(after.tanks.byLocation.sungaiGerong - baseline.tanks.byLocation.sungaiGerong).toBe(3);
+    expect(after.tanks.byLocation.sungaiGerong - baseline.tanks.byLocation.sungaiGerong).toBe(1);
   });
 
   test("Sungai Gerong count is correct (case 5)", () => {
-    // Fixtures 1, 3, 5.
-    expect(after.tanks.byLocation.sungaiGerong - baseline.tanks.byLocation.sungaiGerong).toBe(3);
+    // Only fixture 1 — fixtures 3 and 5 sit at the same site but are not under overhaul.
+    expect(after.tanks.byLocation.sungaiGerong - baseline.tanks.byLocation.sungaiGerong).toBe(1);
   });
 
   test("Pladju count is correct (case 6)", () => {
-    // Fixtures 2, 4, 8, 9.
-    expect(after.tanks.byLocation.pladju - baseline.tanks.byLocation.pladju).toBe(4);
+    // Fixtures 2 and 8 — fixtures 4 and 9 sit at the same site but are not under overhaul.
+    expect(after.tanks.byLocation.pladju - baseline.tanks.byLocation.pladju).toBe(2);
   });
 
-  test("location counts span every asset status, not just tanks under overhaul (case 7)", async () => {
-    const sungaiGerong = await pgsql.tank.count({ where: { deletedAt: null, location: TankLocationEnum.SUNGAI_GERONG } });
-    const pladju = await pgsql.tank.count({ where: { deletedAt: null, location: TankLocationEnum.PLADJU } });
+  test("location counts cover only tanks under overhaul (case 7)", async () => {
+    const where = { deletedAt: null, assetStatus: TankAssetStatusEnum.UNDER_OVERHAUL };
+    const sungaiGerong = await pgsql.tank.count({ where: { ...where, location: TankLocationEnum.SUNGAI_GERONG } });
+    const pladju = await pgsql.tank.count({ where: { ...where, location: TankLocationEnum.PLADJU } });
 
     expect(after.tanks.byLocation.sungaiGerong).toBe(sungaiGerong);
     expect(after.tanks.byLocation.pladju).toBe(pladju);
 
-    // The fixtures deliberately include OPERATIONAL, OUT_OF_SERVICE and DECOMMISSIONED tanks,
-    // so the site headcount must exceed the under-overhaul count contributed by the fixtures.
-    const sgDelta = after.tanks.byLocation.sungaiGerong - baseline.tanks.byLocation.sungaiGerong;
-    const sgUnderOverhaul = 1; // only fixture 1
-    expect(sgDelta).toBeGreaterThan(sgUnderOverhaul);
+    // The fixtures deliberately include OPERATIONAL, OUT_OF_SERVICE and DECOMMISSIONED tanks
+    // at both sites; none of them may reach the breakdown.
+    const sited = await pgsql.tank.count({ where: { deletedAt: null, location: { not: null } } });
+    expect(sungaiGerong + pladju).toBeLessThan(sited);
   });
 
-  test("both locations are always present as numbers, including in the live response (case 8)", () => {
+  test("the breakdown sums to the Under Overhaul card's value (case 8)", () => {
+    const { sungaiGerong, pladju, unassigned } = after.tanks.byLocation;
+    expect(sungaiGerong + pladju + unassigned).toBe(after.tanks.underOverhaul);
+  });
+
+  test("a tank under overhaul with no location is kept under `unassigned` (case 9)", () => {
+    // Fixture 10 only — fixture 7 has no location either but is not under overhaul.
+    expect(after.tanks.byLocation.unassigned - baseline.tanks.byLocation.unassigned).toBe(1);
+  });
+
+  test("every bucket is always present as a number, including in the live response (case 10)", () => {
     expect(after.tanks.byLocation).toEqual({
       sungaiGerong: expect.any(Number),
       pladju: expect.any(Number),
+      unassigned: expect.any(Number),
     });
   });
 });
 
 describe("foldTankLocationCounts", () => {
-  test("reports zero for a location with no rows instead of dropping it (case 8)", () => {
-    expect(foldTankLocationCounts([])).toEqual({ sungaiGerong: 0, pladju: 0 });
+  test("reports zero for a location with no rows instead of dropping it (case 10)", () => {
+    expect(foldTankLocationCounts([])).toEqual({ sungaiGerong: 0, pladju: 0, unassigned: 0 });
     expect(foldTankLocationCounts([{ location: TankLocationEnum.PLADJU, _count: { _all: 4 } }])).toEqual({
       sungaiGerong: 0,
       pladju: 4,
+      unassigned: 0,
     });
   });
 
-  test("ignores tanks with no location rather than attributing them to a site", () => {
+  test("keeps tanks with no location under `unassigned` rather than attributing them to a site", () => {
     expect(
       foldTankLocationCounts([
         { location: null, _count: { _all: 7 } },
         { location: TankLocationEnum.SUNGAI_GERONG, _count: { _all: 2 } },
       ]),
-    ).toEqual({ sungaiGerong: 2, pladju: 0 });
+    ).toEqual({ sungaiGerong: 2, pladju: 0, unassigned: 7 });
   });
 });

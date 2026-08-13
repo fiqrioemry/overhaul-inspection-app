@@ -31,26 +31,31 @@ const LOCATION_RESPONSE_KEY: Record<TankLocationEnum, keyof TanksByLocation> = {
 
 /**
  * Fold grouped rows onto a zero-filled record, so a location with no tanks still reports 0
- * rather than dropping out of the response entirely.
+ * rather than dropping out of the response entirely. Rows with a NULL location land on
+ * `unassigned` so no tank is lost from the breakdown.
  */
 export function foldTankLocationCounts(rows: Array<{ location: TankLocationEnum | null; _count: { _all: number } }>): TanksByLocation {
-  const byLocation: TanksByLocation = { sungaiGerong: 0, pladju: 0 };
+  const byLocation: TanksByLocation = { sungaiGerong: 0, pladju: 0, unassigned: 0 };
   for (const row of rows) {
-    if (!row.location) continue;
+    if (!row.location) {
+      byLocation.unassigned = row._count._all;
+      continue;
+    }
     byLocation[LOCATION_RESPONSE_KEY[row.location]] = row._count._all;
   }
   return byLocation;
 }
 
 /**
- * One grouped query for the whole fleet instead of a count per location. Counts every asset
- * status — this is a site headcount, not an overhaul metric. Tanks with a NULL location are
- * counted in `tanks.total` only, since they belong to neither site.
+ * One grouped query instead of a count per location. Scoped to UNDER_OVERHAUL so the
+ * breakdown is the `tanks.underOverhaul` figure split per site — the dashboard shows the two
+ * side by side and they must agree. Tanks with a NULL location are kept under `unassigned`
+ * rather than dropped, so the values always sum back to `underOverhaul`.
  */
-async function countTanksByLocation(): Promise<TanksByLocation> {
+async function countUnderOverhaulTanksByLocation(): Promise<TanksByLocation> {
   const grouped = await pgsql.tank.groupBy({
     by: ["location"],
-    where: { deletedAt: null, location: { not: null } },
+    where: { deletedAt: null, assetStatus: TankAssetStatusEnum.UNDER_OVERHAUL },
     _count: { _all: true },
   });
   return foldTankLocationCounts(grouped);
@@ -63,7 +68,7 @@ export class DashboardService {
       operationalTanks,
       underOverhaulTanks,
       completedTanks,
-      tanksByLocation,
+      underOverhaulByLocation,
       totalProjects,
       activeProjects,
       completedProjects,
@@ -81,7 +86,7 @@ export class DashboardService {
       pgsql.tank.count({
         where: { deletedAt: null, projects: { some: { deletedAt: null, status: TankProjectStatusEnum.COMPLETED } } },
       }),
-      countTanksByLocation(),
+      countUnderOverhaulTanksByLocation(),
       pgsql.tankProject.count({ where: { deletedAt: null } }),
       pgsql.tankProject.count({ where: { deletedAt: null, status: { in: ACTIVE_PROJECT_STATUSES } } }),
       pgsql.tankProject.count({ where: { deletedAt: null, status: TankProjectStatusEnum.COMPLETED } }),
@@ -105,7 +110,7 @@ export class DashboardService {
         operational: operationalTanks,
         underOverhaul: underOverhaulTanks,
         completed: completedTanks,
-        byLocation: tanksByLocation,
+        byLocation: underOverhaulByLocation,
       },
       projects: { total: totalProjects, active: activeProjects, completed: completedProjects, overdue: overdueProjects },
       processes: { total: totalProcesses, completed: completedProcesses },
