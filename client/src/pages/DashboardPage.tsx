@@ -64,8 +64,9 @@ function SummaryCard({ title, value, sub, icon: Icon, iconBg, iconColor, highlig
   );
 }
 
-// Site headcount card. Both locations always render, including at zero, so the pair reads
-// as a fixed summary rather than a list that shrinks when a site empties out.
+// Per-site split of the tanks under overhaul; the rows sum to the "Under Overhaul" card.
+// Both locations always render, including at zero, so the pair reads as a fixed summary
+// rather than a list that shrinks when a site empties out.
 function LocationCard({ title, locations, icon: Icon, iconBg, iconColor }: { title: string; locations: Array<{ label: string; value: number }>; icon: React.ElementType; iconBg: string; iconColor: string }) {
   return (
     <Card>
@@ -141,6 +142,8 @@ export default function DashboardPage() {
             locations={[
               { label: TANK_LOCATION_LABEL.SUNGAI_GERONG, value: summary.tanks.byLocation.sungaiGerong },
               { label: TANK_LOCATION_LABEL.PLADJU, value: summary.tanks.byLocation.pladju },
+              // Only shown when a tank under overhaul has no location, so the rows still add up.
+              ...(summary.tanks.byLocation.unassigned > 0 ? [{ label: "No location", value: summary.tanks.byLocation.unassigned }] : []),
             ]}
             icon={MapPin}
             iconBg="bg-amber-100"

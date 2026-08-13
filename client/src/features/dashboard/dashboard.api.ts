@@ -10,10 +10,14 @@ export interface DashboardSummary {
     underOverhaul: number;
     /** Tanks whose overhaul is finished: at least one non-deleted COMPLETED project. */
     completed: number;
-    /** Site headcount across every asset status; both keys are always present, zero included. */
+    /**
+     * `underOverhaul` split per site — the values sum back to it. `unassigned` holds tanks
+     * under overhaul with no location set. All keys are always present, zero included.
+     */
     byLocation: {
       sungaiGerong: number;
       pladju: number;
+      unassigned: number;
     };
   };
   processes: {
