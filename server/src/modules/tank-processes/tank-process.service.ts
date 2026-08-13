@@ -4,6 +4,7 @@ import { Prisma, ProcessStatusEnum, TankProjectStatusEnum, FindingStatusEnum, Ch
 import { TankProcessRepository } from "./tank-process.repository";
 import { ChecklistResultRepository } from "@/modules/checklist-results/checklist-result.repository";
 import { UserRepository } from "@/modules/users/user.repository";
+import { reconcileProjectStatusFromProcesses } from "@/services/project-status.service";
 import { tankProcessAction, tankProcessErrorMessage } from "@/config/constant/tank-process.constant";
 import { UpdateProcessStatusRequest, UpdateProcessDatesRequest, CorrectProcessStatusRequest } from "./tank-process.schema";
 
@@ -94,7 +95,7 @@ export class TankProcessService {
     return TankProcessRepository.findByProjectId(projectId);
   }
 
-  static async updateStatus(id: string, data: UpdateProcessStatusRequest) {
+  static async updateStatus(id: string, data: UpdateProcessStatusRequest, actorUserId?: string | null) {
     const process = await TankProcessRepository.findById(id);
     if (!process) {
       throw new HTTPException(404, { message: "Process not found", cause: "PROCESS_NOT_FOUND" });
@@ -167,6 +168,14 @@ export class TankProcessService {
         });
       }
 
+      // Same transaction, after the process write: completing the last outstanding process
+      // completes the project (and reopening one reopens it).
+      await reconcileProjectStatusFromProcesses(process.projectId, tx, {
+        actorUserId,
+        triggerProcessId: id,
+        triggerProcessStatus: data.status,
+      });
+
       return updated;
     });
   }
@@ -174,7 +183,7 @@ export class TankProcessService {
   // Direct-completion shortcut: transitions NOT_STARTED / IN_PROGRESS / WAITING_REVIEW / REVIEWED
   // straight to COMPLETED in one operation, bypassing checklist and blocking-finding validation.
   // Unlike updateStatus, this intentionally does NOT call countUncheckedRequired/countBlockingFindings.
-  static async completeDirect(id: string) {
+  static async completeDirect(id: string, actorUserId?: string | null) {
     const process = await TankProcessRepository.findById(id);
     if (!process) {
       throw new HTTPException(404, { message: "Process not found", cause: "PROCESS_NOT_FOUND" });
@@ -213,6 +222,12 @@ export class TankProcessService {
         });
       }
 
+      await reconcileProjectStatusFromProcesses(process.projectId, tx, {
+        actorUserId,
+        triggerProcessId: id,
+        triggerProcessStatus: ProcessStatusEnum.COMPLETED,
+      });
+
       return updated;
     });
   }
@@ -225,9 +240,12 @@ export class TankProcessService {
    * enforces. Those guards remain in force for the normal workflow.
    *
    * Scope is deliberately narrow: this touches the selected process row and nothing else.
-   * Checklist results, findings, other processes and the owning project are all left as they
-   * are — including the PLANNED -> IN_PROGRESS project nudge that updateStatus/completeDirect
-   * apply, which would be a side effect on a record the operator did not ask to change.
+   * Checklist results, findings and sibling processes are all left as they are. The owning
+   * project's status is the one derived value that follows, through the shared
+   * reconcileProjectStatusFromProcesses — completing the last outstanding process completes the
+   * project, and reopening a process reopens it. The PLANNED -> IN_PROGRESS nudge that
+   * updateStatus/completeDirect apply is still NOT applied here: a correction on a process of a
+   * project that never started must not start the project.
    */
   static async correctStatusManually(tankId: string, processId: string, data: CorrectProcessStatusRequest, actorUserId: string) {
     const process = await TankProcessRepository.findByIdWithOwner(processId);
@@ -275,6 +293,12 @@ export class TankProcessService {
         });
       }
 
+      await reconcileProjectStatusFromProcesses(process.projectId, tx, {
+        actorUserId,
+        triggerProcessId: processId,
+        triggerProcessStatus: data.targetStatus,
+      });
+
       // Same transaction as the write: a correction is never recorded without its audit entry,
       // and an audit entry never survives a rolled-back correction.
       await UserRepository.createActivityLog(tx, {
@@ -318,7 +342,7 @@ export class TankProcessService {
   // (see ChecklistResultService), so NOT_STARTED guarantees no checklist work exists yet.
   // Findings/inspection requests/test records/daily reports are additionally checked
   // directly since those only SetNull on delete (they would otherwise be silently orphaned).
-  static async deleteProcess(id: string) {
+  static async deleteProcess(id: string, actorUserId?: string | null) {
     const process = await TankProcessRepository.findById(id);
     if (!process) {
       throw new HTTPException(404, { message: "Process not found", cause: "PROCESS_NOT_FOUND" });
@@ -345,6 +369,11 @@ export class TankProcessService {
       });
     }
 
-    await TankProcessRepository.delete(id);
+    // Removing the last outstanding process changes whether every remaining process is
+    // completed, so the same reconciliation runs — in one transaction with the delete.
+    await pgsql.$transaction(async (tx: Prisma.TransactionClient) => {
+      await tx.tankProcess.delete({ where: { id } });
+      await reconcileProjectStatusFromProcesses(process.projectId, tx, { actorUserId, triggerProcessId: id });
+    });
   }
 }

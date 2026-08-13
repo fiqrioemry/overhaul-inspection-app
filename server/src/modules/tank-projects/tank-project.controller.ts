@@ -46,7 +46,7 @@ export class TankProjectController {
     const id = c.req.param("id");
     const body = await c.req.json().catch(() => ({}));
     const data = generateProjectProcessesRequest.parse(body);
-    const result = await TankProjectService.generateProcesses(id, data.processTemplateIds);
+    const result = await TankProjectService.generateProcesses(id, data.processTemplateIds, c.get("user")?.id);
     return responseOK(c, tankProjectSuccessMessage.GENERATE_PROCESSES, result);
   }
 

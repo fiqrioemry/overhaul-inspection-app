@@ -41,6 +41,18 @@ export interface TankProgressProcess {
   status: string;
 }
 
+/**
+ * The process the dashboard row should name. Resolved on the server so the client renders one
+ * unambiguous value instead of re-deriving it: the current in-progress process while work is
+ * running, and the highest-sequenceOrder process once every process is completed.
+ */
+export interface TankProgressDisplayProcess {
+  id: string;
+  name: string;
+  sequenceOrder: number;
+  status: string;
+}
+
 // One progress row = one TankProject (engagement), not a tank.
 export interface TankProgressItem {
   id: string;
@@ -56,6 +68,9 @@ export interface TankProgressItem {
   processes: TankProgressProcess[];
   _count: { findings: number };
   progress: number;
+  /** True when the project has at least one process and every one of them is COMPLETED. */
+  allProcessesCompleted: boolean;
+  displayProcess: TankProgressDisplayProcess | null;
 }
 
 export interface FindingStatusCount {

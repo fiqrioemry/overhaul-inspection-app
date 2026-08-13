@@ -12,7 +12,9 @@ import type {
   DashboardSummary,
   FindingSummary,
   InProcessInspectionRequests,
+  TankProgressDisplayProcess,
   TankProgressItem,
+  TankProgressProcess,
   TanksByLocation,
   TestSummary,
 } from "./dashboard.types";
@@ -22,6 +24,53 @@ const ACTIVE_PROJECT_STATUSES: TankProjectStatusEnum[] = [
   TankProjectStatusEnum.IN_PROGRESS,
   TankProjectStatusEnum.ON_HOLD,
 ];
+
+/**
+ * Projects listed in the Tank Progress table. COMPLETED is included alongside the active
+ * statuses: a project now completes automatically once its last process does (see
+ * reconcileProjectStatusFromProcesses), and dropping it from the table at that moment would
+ * hide the finished work the row exists to report. CANCELLED stays out.
+ */
+const TANK_PROGRESS_PROJECT_STATUSES: TankProjectStatusEnum[] = [...ACTIVE_PROJECT_STATUSES, TankProjectStatusEnum.COMPLETED];
+
+/**
+ * The process a Tank Progress row names, resolved server-side so the client renders one value
+ * rather than re-deriving it.
+ *
+ * - Every process completed -> the process with the highest sequenceOrder, i.e. the last step
+ *   of the workflow. Ties break on id so the pick is stable across requests; ordering never
+ *   depends on updatedAt, completion time or the order the database happened to return.
+ * - Otherwise -> the first process still in progress, in sequence order. This is exactly the
+ *   rule the dashboard already applied client-side.
+ * - No processes, or none in progress -> null, and the row renders its existing empty state.
+ *
+ * sequenceOrder is NOT NULL on tank_processes, but a missing value is still sorted last rather
+ * than allowed to poison the comparison.
+ */
+export function resolveDisplayProcess(processes: TankProgressProcess[]): TankProgressDisplayProcess | null {
+  if (processes.length === 0) return null;
+
+  const toDisplay = (p: TankProgressProcess): TankProgressDisplayProcess => ({
+    id: p.id,
+    name: p.name,
+    sequenceOrder: p.sequenceOrder,
+    status: p.status,
+  });
+
+  const allCompleted = processes.every((p) => p.status === ProcessStatusEnum.COMPLETED);
+  if (allCompleted) {
+    const final = processes.reduce((best, candidate) => {
+      const bestOrder = Number.isFinite(best.sequenceOrder) ? best.sequenceOrder : -Infinity;
+      const candidateOrder = Number.isFinite(candidate.sequenceOrder) ? candidate.sequenceOrder : -Infinity;
+      if (candidateOrder !== bestOrder) return candidateOrder > bestOrder ? candidate : best;
+      return candidate.id > best.id ? candidate : best;
+    });
+    return toDisplay(final);
+  }
+
+  const current = processes.find((p) => p.status === ProcessStatusEnum.IN_PROGRESS);
+  return current ? toDisplay(current) : null;
+}
 
 /** Response key per TankLocationEnum member. Drives the zero-filled default below. */
 const LOCATION_RESPONSE_KEY: Record<TankLocationEnum, keyof TanksByLocation> = {
@@ -121,7 +170,7 @@ export class DashboardService {
 
   static async getTankProgress(): Promise<TankProgressItem[]> {
     const projects = await pgsql.tankProject.findMany({
-      where: { deletedAt: null, status: { in: ACTIVE_PROJECT_STATUSES }, tank: { deletedAt: null } },
+      where: { deletedAt: null, status: { in: TANK_PROGRESS_PROJECT_STATUSES }, tank: { deletedAt: null } },
       orderBy: { createdAt: "desc" },
       take: 50,
       include: {
@@ -140,6 +189,7 @@ export class DashboardService {
       const total = project.processes.length;
       const completed = project.processes.filter((p) => p.status === ProcessStatusEnum.COMPLETED).length;
       const progress = total > 0 ? Math.round((completed / total) * 100) : 0;
+      const allProcessesCompleted = total > 0 && completed === total;
       return {
         id: project.id,
         projectNo: project.projectNo,
@@ -154,6 +204,8 @@ export class DashboardService {
         processes: project.processes,
         _count: project._count,
         progress,
+        allProcessesCompleted,
+        displayProcess: resolveDisplayProcess(project.processes),
       };
     });
   }

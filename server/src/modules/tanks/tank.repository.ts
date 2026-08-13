@@ -92,13 +92,27 @@ export class TankRepository {
     return pgsql.tank.update({ where: { id }, data: { deletedAt: new Date() } });
   }
 
-  /** Resolve processes via the tank's most recent active project (legacy /tanks/:id/processes). */
+  /**
+   * Resolve processes via the tank's most recent active project (/tanks/:id/processes).
+   *
+   * Falls back to the most recent non-deleted project when none is active. A project now
+   * completes automatically once its last process does, which drops it out of
+   * ACTIVE_PROJECT_STATUSES — without the fallback the tank's Processes tab would empty itself
+   * at the moment the work finished, taking the "Edit Status" action needed to reopen a
+   * wrongly-completed process with it.
+   */
   static async findActiveProjectProcesses(tankId: string) {
-    const project = await pgsql.tankProject.findFirst({
-      where: { tankId, deletedAt: null, status: { in: ACTIVE_PROJECT_STATUSES } },
-      orderBy: { createdAt: "desc" },
-      select: { id: true },
-    });
+    const project =
+      (await pgsql.tankProject.findFirst({
+        where: { tankId, deletedAt: null, status: { in: ACTIVE_PROJECT_STATUSES } },
+        orderBy: { createdAt: "desc" },
+        select: { id: true },
+      })) ??
+      (await pgsql.tankProject.findFirst({
+        where: { tankId, deletedAt: null },
+        orderBy: { createdAt: "desc" },
+        select: { id: true },
+      }));
     if (!project) return { projectId: null, processes: [] };
 
     const processes = await pgsql.tankProcess.findMany({

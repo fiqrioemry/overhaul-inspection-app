@@ -21,4 +21,10 @@ export const TANK_PROJECT_NO_PREFIX: Record<string, string> = {
 /** Project types that generate the full overhaul workflow by default. */
 export const DEFAULT_GENERATE_PROCESS_TYPES = new Set<string>(["NEW_BUILD", "OVERHAUL", "REPAIR"]);
 
-export { tankProjectSuccessMessage };
+// UserActivityLog.action values. Lowercase snake_case to match userAction
+// (src/config/constant/user.constant.ts), which is what the activity log already stores.
+const tankProjectAction = {
+  PROCESS_STATUS_RECONCILIATION: "project_status_reconciliation",
+};
+
+export { tankProjectSuccessMessage, tankProjectAction };

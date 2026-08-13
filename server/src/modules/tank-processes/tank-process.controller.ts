@@ -17,7 +17,7 @@ export class TankProcessController {
     const id = c.req.param("id");
     const body = await c.req.json();
     const data = updateProcessStatusRequest.parse(body);
-    const updated = await TankProcessService.updateStatus(id, data);
+    const updated = await TankProcessService.updateStatus(id, data, c.get("user")?.id);
     return responseOK(c, tankProcessSuccessMessage.UPDATE_PROCESS_STATUS, updated);
   }
 
@@ -35,7 +35,7 @@ export class TankProcessController {
 
   static async completeDirect(c: Context) {
     const id = c.req.param("id");
-    const updated = await TankProcessService.completeDirect(id);
+    const updated = await TankProcessService.completeDirect(id, c.get("user")?.id);
     return responseOK(c, tankProcessSuccessMessage.COMPLETE_PROCESS_DIRECT, updated);
   }
 
@@ -61,7 +61,7 @@ export class TankProcessController {
 
   static async deleteProcess(c: Context) {
     const id = c.req.param("id");
-    await TankProcessService.deleteProcess(id);
+    await TankProcessService.deleteProcess(id, c.get("user")?.id);
     return responseOK(c, tankProcessSuccessMessage.DELETE_PROCESS, null);
   }
 }

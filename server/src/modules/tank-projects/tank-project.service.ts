@@ -3,6 +3,7 @@ import { pgsql } from "@/lib/database";
 import { TankAssetStatusEnum, TankProjectStatusEnum, TankProjectTypeEnum, ProcessStatusEnum } from "generated/prisma";
 import { ProcessGenerationService } from "@/services/process-generation.service";
 import { recalculateTankAssetStatus } from "@/services/tank-asset-status.service";
+import { reconcileProjectStatusFromProcesses } from "@/services/project-status.service";
 import { TankProjectRepository } from "./tank-project.repository";
 import { CreateTankProjectRequest, ListTankProjectsQuery, UpdateTankProjectRequest } from "./tank-project.schema";
 import { TANK_PROJECT_NO_PREFIX, DEFAULT_GENERATE_PROCESS_TYPES } from "@/config/constant/tank-project.constant";
@@ -191,7 +192,7 @@ export class TankProjectService {
   // With processTemplateIds omitted, generates the full applicable set (used by the
   // legacy "generate remaining" action); with it provided, generates exactly those
   // templates — this is what backs the single-process "Add Process" UI action.
-  static async generateProcesses(id: string, processTemplateIds?: string[]) {
+  static async generateProcesses(id: string, processTemplateIds?: string[], actorUserId?: string | null) {
     const project = await TankProjectRepository.findById(id);
     if (!project) {
       throw new HTTPException(404, { message: "Tank project not found", cause: "PROJECT_NOT_FOUND" });
@@ -202,9 +203,14 @@ export class TankProjectService {
         cause: "PROJECT_NOT_ACTIVE",
       });
     }
-    const created = await pgsql.$transaction((tx) =>
-      ProcessGenerationService.generateProcessesForProject(tx, id, project.tank?.hasSteamCoil ?? false, processTemplateIds),
-    );
+    const created = await pgsql.$transaction(async (tx) => {
+      const generated = await ProcessGenerationService.generateProcessesForProject(tx, id, project.tank?.hasSteamCoil ?? false, processTemplateIds);
+      // Adding a NOT_STARTED process changes whether every process is completed, so the same
+      // reconciliation runs here as on a status change. The guard above already refuses a
+      // COMPLETED project, so in practice this only repairs an out-of-sync IN_PROGRESS one.
+      await reconcileProjectStatusFromProcesses(id, tx, { actorUserId });
+      return generated;
+    });
     return { generated: created };
   }
 
