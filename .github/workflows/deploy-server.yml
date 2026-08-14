@@ -17,7 +17,8 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.VPS_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan -p ${{ secrets.VPS_PORT }} ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+          printf 'Host %s\n\tStrictHostKeyChecking no\n\tUserKnownHostsFile /dev/null\n' "${{ secrets.VPS_HOST }}" > ~/.ssh/config
+          chmod 600 ~/.ssh/config
 
       - name: Check if first deploy
         id: check_init
