@@ -25,7 +25,9 @@ import { errorHandler } from "@/middlewares/error.middleware";
 function buildTestApp(role: RoleEnum) {
   const app = new Hono();
   app.use("*", async (c: Context, next: () => Promise<void>) => {
-    c.set("user", { id: "test-user", role, permissions: getPermissionsForRole(role) });
+    // A real user row: completing a process can reconcile its project, and that transition is
+    // written to user_activity_logs, which carries a foreign key to users.
+    c.set("user", { id: actorUserId, role, permissions: getPermissionsForRole(role) });
     await next();
   });
   app.patch("/processes/:id/complete", requirePermission(PERMISSIONS.PROCESS_UPDATE), TankProcessController.completeDirect);
@@ -34,9 +36,12 @@ function buildTestApp(role: RoleEnum) {
 }
 
 const TEST_TEMPLATE_CODE = "TEST-DIRECT-COMPLETE";
+const TEST_TEMPLATE_CODE_2 = "TEST-DIRECT-COMPLETE-2";
 
 let tankId: string;
 let templateId: string;
+let secondTemplateId: string;
+let actorUserId: string;
 
 async function createProject(status: TankProjectStatusEnum = TankProjectStatusEnum.PLANNED) {
   return pgsql.tankProject.create({
@@ -59,6 +64,11 @@ async function createProcess(projectId: string, status: ProcessStatusEnum, start
 }
 
 beforeAll(async () => {
+  const user = await pgsql.user.create({
+    data: { email: `test-direct-complete-${crypto.randomUUID()}@example.test`, name: "Direct Complete Tester", role: RoleEnum.ADMIN },
+  });
+  actorUserId = user.id;
+
   const tank = await pgsql.tank.create({ data: { tankNo: `TEST-TANK-${crypto.randomUUID()}` } });
   tankId = tank.id;
 
@@ -68,11 +78,21 @@ beforeAll(async () => {
     create: { code: TEST_TEMPLATE_CODE, name: "Direct Complete Test Template", type: ProcessType.WORK, sequenceOrder: 999 },
   });
   templateId = template.id;
+
+  // Second template so a project can hold two processes (@@unique([projectId, processTemplateId])).
+  const template2 = await pgsql.processTemplate.upsert({
+    where: { code: TEST_TEMPLATE_CODE_2 },
+    update: {},
+    create: { code: TEST_TEMPLATE_CODE_2, name: "Direct Complete Test Template 2", type: ProcessType.WORK, sequenceOrder: 1000 },
+  });
+  secondTemplateId = template2.id;
 });
 
 afterAll(async () => {
   await pgsql.tank.delete({ where: { id: tankId } }); // cascades TankProject -> TankProcess -> ChecklistResult
+  await pgsql.user.delete({ where: { id: actorUserId } }).catch(() => {}); // cascades activity logs
   await pgsql.processTemplate.delete({ where: { id: templateId } }).catch(() => {});
+  await pgsql.processTemplate.delete({ where: { id: secondTemplateId } }).catch(() => {});
   await pgsql.$disconnect();
 });
 
@@ -97,9 +117,33 @@ describe("TankProcessService.completeDirect", () => {
     expect(updated.finishDate).not.toBeNull();
     expect(updated.startDate!.getTime()).toBe(updated.finishDate!.getTime());
 
-    // Bonus: mirrors the same PLANNED -> IN_PROGRESS side effect the normal workflow applies.
+    // The project moves PLANNED -> IN_PROGRESS as the process starts, then straight on to
+    // COMPLETED: this was its only process, and reconcileProjectStatusFromProcesses runs in the
+    // same transaction (src/services/project-status.service.ts).
+    const refreshedProject = await pgsql.tankProject.findUniqueOrThrow({ where: { id: project.id } });
+    expect(refreshedProject.status).toBe(TankProjectStatusEnum.COMPLETED);
+    expect(refreshedProject.actualFinishDate).not.toBeNull();
+  });
+
+  test("a project keeps running while another process is still outstanding", async () => {
+    const project = await createProject(TankProjectStatusEnum.PLANNED);
+    const first = await createProcess(project.id, ProcessStatusEnum.NOT_STARTED, null);
+    await pgsql.tankProcess.create({
+      data: {
+        projectId: project.id,
+        processTemplateId: secondTemplateId,
+        name: "Outstanding Process",
+        type: ProcessType.WORK,
+        sequenceOrder: 2,
+        status: ProcessStatusEnum.NOT_STARTED,
+      },
+    });
+
+    await TankProcessService.completeDirect(first.id);
+
     const refreshedProject = await pgsql.tankProject.findUniqueOrThrow({ where: { id: project.id } });
     expect(refreshedProject.status).toBe(TankProjectStatusEnum.IN_PROGRESS);
+    expect(refreshedProject.actualFinishDate).toBeNull();
   });
 
   test("IN_PROGRESS -> COMPLETED succeeds and preserves existing startDate (cases 2, 8)", async () => {
