@@ -8,14 +8,7 @@ export class CompanyController {
   static async createCompany(c: Context) {
     const logoFile = c.get("logo") as File | undefined;
     const body = await c.req.parseBody({ all: true });
-    const request = createCompanyRequest.parse({
-      name: body["name"] || undefined,
-      type: body["type"] || undefined,
-      address: body["address"] || undefined,
-      phone: body["phone"] || undefined,
-      email: body["email"] || undefined,
-      isActive: body["isActive"] ?? undefined,
-    });
+    const request = xs;
     const company = await CompanyService.createCompany(c, request, logoFile);
     return responseCreated(c, companySuccessMessage.CREATE_COMPANY, company);
   }
