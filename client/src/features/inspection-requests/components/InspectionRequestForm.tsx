@@ -254,10 +254,7 @@ export default function InspectionRequestForm({ request }: InspectionRequestForm
         remarks: values.remarks || null,
         items: itemsPayload,
       };
-      updateMutation.mutate(
-        { id: request.id, data: payload },
-        { onSuccess: () => navigate(ROUTES.INSPECTION_REQUEST_DETAIL.replace(":id", request.id)) },
-      );
+      updateMutation.mutate({ id: request.id, data: payload }, { onSuccess: () => navigate(ROUTES.INSPECTION_REQUEST_DETAIL.replace(":id", request.id)) });
       return;
     }
 
@@ -310,39 +307,6 @@ export default function InspectionRequestForm({ request }: InspectionRequestForm
         </div>
 
         {/* Execution & signatories */}
-        <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
-          <span className="text-sm font-medium">Execution &amp; Signatories</span>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {loadingCompanies ? (
-              <p className="text-xs text-muted-foreground">Loading companies…</p>
-            ) : executionCompanies.length === 0 ? (
-              <p className="text-xs text-muted-foreground">No inspector company available</p>
-            ) : (
-              <SelectField control={form.control} name="executionCompanyId" label="Execution / 3rd Party" placeholder="Select inspector company..." options={executionCompanyOptions} />
-            )}
-            {loadingInspectorUsers ? (
-              <p className="text-xs text-muted-foreground">Loading inspectors…</p>
-            ) : receivedByUsers.length === 0 ? (
-              <p className="text-xs text-muted-foreground">No inspector company user available</p>
-            ) : (
-              <SelectField control={form.control} name="receivedById" label="Received By" placeholder="Select inspector..." options={receivedByOptions} />
-            )}
-            {loadingOwnerUsers ? (
-              <p className="text-xs text-muted-foreground">Loading owner users…</p>
-            ) : ownerUsers.length === 0 ? (
-              <p className="text-xs text-muted-foreground">No owner user available</p>
-            ) : (
-              <SelectField control={form.control} name="preparedById" label="Prepared By" placeholder="Select preparer..." options={preparedByOptions} />
-            )}
-            {loadingOwnerUsers ? (
-              <p className="text-xs text-muted-foreground">Loading owner users…</p>
-            ) : ownerUsers.length === 0 ? (
-              <p className="text-xs text-muted-foreground">No owner user available</p>
-            ) : (
-              <SelectField control={form.control} name="approvedById" label="Approved By" placeholder="Select approver..." options={approvedByOptions} />
-            )}
-          </div>
-        </div>
 
         <LongTextField control={form.control} name="description" label="Description (optional)" placeholder="Leave empty to auto-generate from objects" rows={4} />
         <LongTextField control={form.control} name="remarks" label="Additional Remarks (optional)" rows={2} />
@@ -352,99 +316,92 @@ export default function InspectionRequestForm({ request }: InspectionRequestForm
       {!objectsRequired ? (
         <div className="rounded-lg border border-dashed p-4">
           <h2 className="text-sm font-medium">Inspection Objects</h2>
-          <p className="text-xs text-muted-foreground mt-1">
-            Not required for {TEST_TYPE_LABELS[selectedTestType] ?? selectedTestType} — this request applies to the tank/system as a whole.
-          </p>
+          <p className="text-xs text-muted-foreground mt-1">Not required for {TEST_TYPE_LABELS[selectedTestType] ?? selectedTestType} — this request applies to the tank/system as a whole.</p>
         </div>
       ) : (
-      <div className="rounded-lg border p-5 space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-sm font-medium">Inspection Objects</h2>
-            <p className="text-xs text-muted-foreground mt-0.5">Add one or more objects to inspect/test.</p>
-          </div>
-          <Button type="button" variant="outline" size="sm" onClick={() => append({ ...emptyItem })}>
-            <Plus className="h-4 w-4 mr-1" /> Add Object
-          </Button>
-        </div>
-
-        {form.formState.errors.items?.message && <p className="text-xs text-destructive">{form.formState.errors.items.message}</p>}
-
-        <div className="space-y-3">
-          {fields.map((field, idx) => (
-            <div key={field.id} className="rounded-md border bg-card p-3 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-muted-foreground">Object #{idx + 1}</span>
-                <div className="flex items-center gap-1">
-                  <Button type="button" variant="ghost" size="icon-sm" title="Duplicate" onClick={() => insert(idx + 1, { ...form.getValues(`items.${idx}`) })}>
-                    <Copy className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button type="button" variant="ghost" size="icon-sm" title="Remove" disabled={fields.length === 1} onClick={() => remove(idx)}>
-                    <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                  </Button>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                <div className="col-span-2 sm:col-span-1">
-                  <SelectField control={form.control} name={`items.${idx}.objectType`} label="Type" options={OBJECT_TYPE_OPTIONS} />
-                </div>
-                <div className="col-span-2 sm:col-span-1">
-                  <ShortTextField control={form.control} name={`items.${idx}.objectName`} label="Name / No." placeholder="e.g. T90 / Manhole 24in" />
-                </div>
-                <div>
-                  <ShortTextField control={form.control} name={`items.${idx}.quantity`} label="Qty" type="number" min={1} />
-                </div>
-                <div>
-                  <ShortTextField control={form.control} name={`items.${idx}.unit`} label="Unit" placeholder="Pcs" />
-                </div>
-                <div className="col-span-2">
-                  <ShortTextField control={form.control} name={`items.${idx}.locationDetail`} label="Location / Detail" placeholder="e.g. Shell plate course 1" />
-                </div>
-                <div className="col-span-2">
-                  <ShortTextField control={form.control} name={`items.${idx}.remarks`} label="Remarks" placeholder="Optional remarks" />
-                </div>
-              </div>
+        <div className="rounded-lg border p-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-sm font-medium">Inspection Objects</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">Add one or more objects to inspect/test.</p>
             </div>
-          ))}
+            <Button type="button" variant="outline" size="sm" onClick={() => append({ ...emptyItem })}>
+              <Plus className="h-4 w-4 mr-1" /> Add Object
+            </Button>
+          </div>
+
+          {form.formState.errors.items?.message && <p className="text-xs text-destructive">{form.formState.errors.items.message}</p>}
+
+          <div className="space-y-3">
+            {fields.map((field, idx) => (
+              <div key={field.id} className="rounded-md border bg-card p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-muted-foreground">Object #{idx + 1}</span>
+                  <div className="flex items-center gap-1">
+                    <Button type="button" variant="ghost" size="icon-sm" title="Duplicate" onClick={() => insert(idx + 1, { ...form.getValues(`items.${idx}`) })}>
+                      <Copy className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button type="button" variant="ghost" size="icon-sm" title="Remove" disabled={fields.length === 1} onClick={() => remove(idx)}>
+                      <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                    </Button>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  <div className="col-span-2 sm:col-span-1">
+                    <SelectField control={form.control} name={`items.${idx}.objectType`} label="Type" options={OBJECT_TYPE_OPTIONS} />
+                  </div>
+                  <div className="col-span-2 sm:col-span-1">
+                    <ShortTextField control={form.control} name={`items.${idx}.objectName`} label="Name / No." placeholder="e.g. T90 / Manhole 24in" />
+                  </div>
+                  <div>
+                    <ShortTextField control={form.control} name={`items.${idx}.quantity`} label="Qty" type="number" min={1} />
+                  </div>
+                  <div>
+                    <ShortTextField control={form.control} name={`items.${idx}.unit`} label="Unit" placeholder="Pcs" />
+                  </div>
+                  <div className="col-span-2">
+                    <ShortTextField control={form.control} name={`items.${idx}.locationDetail`} label="Location / Detail" placeholder="e.g. Shell plate course 1" />
+                  </div>
+                  <div className="col-span-2">
+                    <ShortTextField control={form.control} name={`items.${idx}.remarks`} label="Remarks" placeholder="Optional remarks" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
       )}
 
       {/* Supporting documents — attachments are managed on the detail page in edit mode */}
       {!isEdit && (
-      <div className="rounded-lg border p-5 space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-medium">Supporting Documents (optional)</h2>
-          <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={files.length >= 15}>
-            <Plus className="h-4 w-4 mr-1" /> Add Files
-          </Button>
-          <input ref={fileInputRef} type="file" multiple accept="image/jpeg,image/png,image/webp,application/pdf" className="hidden" onChange={handleFiles} />
-        </div>
-        {files.length === 0 ? (
-          <p className="text-xs text-muted-foreground">JPEG, PNG, WebP, or PDF — max 15 files, 15 MB each.</p>
-        ) : (
-          <div className="space-y-1.5">
-            {files.map((f, i) => (
-              <div key={i} className="flex items-center gap-2 rounded border px-2 py-1.5 text-xs">
-                <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                <span className="truncate flex-1">{f.name}</span>
-                <button type="button" onClick={() => setFiles((prev) => prev.filter((_, idx) => idx !== i))}>
-                  <X className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
-                </button>
-              </div>
-            ))}
+        <div className="rounded-lg border p-5 space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-medium">Supporting Documents (optional)</h2>
+            <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={files.length >= 15}>
+              <Plus className="h-4 w-4 mr-1" /> Add Files
+            </Button>
+            <input ref={fileInputRef} type="file" multiple accept="image/jpeg,image/png,image/webp,application/pdf" className="hidden" onChange={handleFiles} />
           </div>
-        )}
-      </div>
+          {files.length === 0 ? (
+            <p className="text-xs text-muted-foreground">JPEG, PNG, WebP, or PDF — max 15 files, 15 MB each.</p>
+          ) : (
+            <div className="space-y-1.5">
+              {files.map((f, i) => (
+                <div key={i} className="flex items-center gap-2 rounded border px-2 py-1.5 text-xs">
+                  <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                  <span className="truncate flex-1">{f.name}</span>
+                  <button type="button" onClick={() => setFiles((prev) => prev.filter((_, idx) => idx !== i))}>
+                    <X className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       )}
 
       <div className="flex items-center justify-end gap-3">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => navigate(isEdit && request ? ROUTES.INSPECTION_REQUEST_DETAIL.replace(":id", request.id) : ROUTES.INSPECTION_REQUESTS)}
-          disabled={isPending}
-        >
+        <Button type="button" variant="outline" onClick={() => navigate(isEdit && request ? ROUTES.INSPECTION_REQUEST_DETAIL.replace(":id", request.id) : ROUTES.INSPECTION_REQUESTS)} disabled={isPending}>
           Cancel
         </Button>
         <Button type="submit" disabled={isPending}>
