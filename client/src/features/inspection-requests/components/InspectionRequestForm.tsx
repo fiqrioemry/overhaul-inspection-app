@@ -307,6 +307,39 @@ export default function InspectionRequestForm({ request }: InspectionRequestForm
         </div>
 
         {/* Execution & signatories */}
+        <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
+          <span className="text-sm font-medium">Execution &amp; Signatories</span>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {loadingCompanies ? (
+              <p className="text-xs text-muted-foreground">Loading companies…</p>
+            ) : executionCompanies.length === 0 ? (
+              <p className="text-xs text-muted-foreground">No inspector company available</p>
+            ) : (
+              <SelectField control={form.control} name="executionCompanyId" label="Execution / 3rd Party" placeholder="Select inspector company..." options={executionCompanyOptions} />
+            )}
+            {loadingInspectorUsers ? (
+              <p className="text-xs text-muted-foreground">Loading inspectors…</p>
+            ) : receivedByUsers.length === 0 ? (
+              <p className="text-xs text-muted-foreground">No inspector company user available</p>
+            ) : (
+              <SelectField control={form.control} name="receivedById" label="Received By" placeholder="Select inspector..." options={receivedByOptions} />
+            )}
+            {loadingOwnerUsers ? (
+              <p className="text-xs text-muted-foreground">Loading owner users…</p>
+            ) : ownerUsers.length === 0 ? (
+              <p className="text-xs text-muted-foreground">No owner user available</p>
+            ) : (
+              <SelectField control={form.control} name="preparedById" label="Prepared By" placeholder="Select preparer..." options={preparedByOptions} />
+            )}
+            {loadingOwnerUsers ? (
+              <p className="text-xs text-muted-foreground">Loading owner users…</p>
+            ) : ownerUsers.length === 0 ? (
+              <p className="text-xs text-muted-foreground">No owner user available</p>
+            ) : (
+              <SelectField control={form.control} name="approvedById" label="Approved By" placeholder="Select approver..." options={approvedByOptions} />
+            )}
+          </div>
+        </div>
 
         <LongTextField control={form.control} name="description" label="Description (optional)" placeholder="Leave empty to auto-generate from objects" rows={4} />
         <LongTextField control={form.control} name="remarks" label="Additional Remarks (optional)" rows={2} />
