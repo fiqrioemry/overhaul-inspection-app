@@ -133,6 +133,11 @@ export default function TankForm(props: TankFormProps) {
           <ShortTextField control={editForm.control} name="tankName" label="Tank Name" placeholder="Optional name" />
         </div>
         <div className="grid grid-cols-2 gap-4">
+          {" "}
+          <div className="grid grid-cols-2 gap-4">
+            <ShortTextField control={editForm.control} name="diameterMm" label="Diameter (mm)" type="text" placeholder="e.g. 18000" />
+            <ShortTextField control={editForm.control} name="heightMm" label="Height (mm)" type="text" placeholder="e.g. 12000" />
+          </div>
           <SelectField control={editForm.control} name="location" label="Location" options={[...TANK_LOCATION_OPTIONS]} placeholder="Select location" />
           <SelectField control={editForm.control} name="service" label="Service / Product" options={[...TANK_SERVICE_OPTIONS]} placeholder="Select service" />
         </div>
