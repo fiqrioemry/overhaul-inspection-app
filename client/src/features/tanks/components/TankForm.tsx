@@ -11,13 +11,7 @@ import SelectField from "@/components/fields/SelectField";
 import SwitchField from "@/components/fields/SwitchField";
 import { Field, FieldLabel } from "@/components/ui/field";
 import StatusBadge from "@/components/common/StatusBadge";
-import {
-  createTankSchema,
-  updateTankSchema,
-  TANK_LOCATION_OPTIONS,
-  TANK_SERVICE_OPTIONS,
-  TANK_ASSET_STATUS_MANUAL_OPTIONS,
-} from "@/schemas/tanks.schema";
+import { createTankSchema, updateTankSchema, TANK_LOCATION_OPTIONS, TANK_SERVICE_OPTIONS, TANK_ASSET_STATUS_MANUAL_OPTIONS } from "@/schemas/tanks.schema";
 import type { CreateTankFormValues, UpdateTankFormValues } from "@/schemas/tanks.schema";
 import TankDocumentSection from "./TankDocumentSection";
 import type { TankDetail, TankExtractResult } from "../tanks.api";
@@ -143,10 +137,7 @@ export default function TankForm(props: TankFormProps) {
           <SelectField control={editForm.control} name="service" label="Service / Product" options={[...TANK_SERVICE_OPTIONS]} placeholder="Select service" />
         </div>
         <ShortTextField control={editForm.control} name="capacityM3" label="Capacity (m³)" type="text" placeholder="e.g. 5000" />
-        <div className="grid grid-cols-2 gap-4">
-          <ShortTextField control={editForm.control} name="diameterMm" label="Diameter (mm)" type="text" placeholder="e.g. 18000" />
-          <ShortTextField control={editForm.control} name="heightMm" label="Height (mm)" type="text" placeholder="e.g. 12000" />
-        </div>
+
         {props.tank.assetStatus === "UNDER_OVERHAUL" ? (
           <Field>
             <FieldLabel>Asset Status</FieldLabel>
