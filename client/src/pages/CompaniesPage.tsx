@@ -135,69 +135,6 @@ export default function CompaniesPage() {
       {isLoading && <LoadingState />}
       {isError && <ErrorState message="Failed to load companies." onRetry={() => refetch()} />}
 
-      {!isLoading && !isError && (
-        <>
-          {data && data.items.length === 0 ? (
-            <EmptyState title="No companies found" description="Add a company to get started." icon={Building2} />
-          ) : (
-            <div className="rounded-lg border overflow-hidden">
-              <table className="w-full text-sm">
-                <thead className="border-b bg-muted/40">
-                  <tr>
-                    <th className="px-4 py-3 text-left font-medium">Name</th>
-                    <th className="px-4 py-3 text-left font-medium">Type</th>
-                    <th className="px-4 py-3 text-left font-medium">Phone</th>
-                    <th className="px-4 py-3 text-left font-medium">Email</th>
-                    <th className="px-4 py-3 text-left font-medium">Status</th>
-                    <th className="px-4 py-3 text-left font-medium">Created</th>
-                    <th className="px-4 py-3 text-right font-medium">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {data?.items.map((company) => (
-                    <tr key={company.id} className="hover:bg-muted/20">
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2.5">
-                          <div className="size-8 shrink-0 rounded-md border bg-muted flex items-center justify-center overflow-hidden">
-                            {company.logoUrl ? <img src={company.logoUrl} alt={company.name} className="size-full object-cover" /> : <Building2 className="size-4 text-muted-foreground" />}
-                          </div>
-                          <span className="font-medium">{company.name}</span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-muted-foreground">{TYPE_LABEL[company.type] ?? company.type}</td>
-                      <td className="px-4 py-3 text-muted-foreground">{company.phone ?? "—"}</td>
-                      <td className="px-4 py-3 text-muted-foreground">{company.email ?? "—"}</td>
-                      <td className="px-4 py-3">
-                        <Badge variant="outline" className={company.isActive ? "border-0 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "border-0 bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"}>
-                          {company.isActive ? "Active" : "Inactive"}
-                        </Badge>
-                      </td>
-                      <td className="px-4 py-3 text-muted-foreground">{format(new Date(company.createdAt), "dd MMM yyyy")}</td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center justify-end gap-2">
-                          <PermissionGate permission={PERMISSIONS.COMPANY_UPDATE}>
-                            <Button variant="ghost" size="icon-sm" onClick={() => openEdit(company)}>
-                              <Pencil />
-                            </Button>
-                          </PermissionGate>
-                          <PermissionGate permission={PERMISSIONS.COMPANY_CREATE}>
-                            <Button variant="ghost" size="icon-sm" onClick={() => setDeleteTarget(company)}>
-                              <Trash2 className="text-destructive" />
-                            </Button>
-                          </PermissionGate>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {data?.meta && data.meta.totalPages > 1 && <Pagination meta={data.meta} onPageChange={setPage} />}
-        </>
-      )}
-
       <CompanyFormDialog open={formOpen} onOpenChange={setFormOpen} company={selectedCompany} />
 
       <ConfirmDialog
