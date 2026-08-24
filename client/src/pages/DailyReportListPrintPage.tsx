@@ -193,6 +193,10 @@ export default function DailyReportListPrintPage() {
               {/* <p className="font-semibold uppercase tracking-wide text-gray-700" style={{ fontSize: "12px" }}>
                 Mengetahui / Acknowledged by
               </p> */}
+              <div className=" flex items-center justify-between gap-4 p-8">
+                <SignatureBox label="Inspector" />
+                <SignatureBox label="PIC Pertamina" />
+              </div>
             </div>
           </>
         )}
