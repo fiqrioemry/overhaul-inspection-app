@@ -100,7 +100,44 @@ export default function FindingListPage() {
     <div className="space-y-6">
       <PageHeader title="Findings" description="All inspection findings across tanks and processes" />
 
-x
+      <div className="flex items-center gap-3 flex-wrap">
+        <Input
+          placeholder="Search findings..."
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(1);
+          }}
+          className="max-w-xs"
+        />
+        <Select
+          value={status}
+          onValueChange={(v) => {
+            setStatus(v);
+            setPage(1);
+          }}
+        >
+          <SelectTrigger className="w-40">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {STATUS_OPTIONS.map((opt) => (
+              <SelectItem key={opt.value} value={opt.value}>
+                {opt.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {someSelected && (
+          <PermissionGate permission={PERMISSIONS.FINDING_UPDATE}>
+            <Button size="sm" variant="outline" className="text-green-700 border-green-300 hover:bg-green-50" onClick={() => setBulkCloseOpen(true)}>
+              <CheckCheck className="h-4 w-4 mr-1" />
+              Close Selected ({selectedIds.size})
+            </Button>
+          </PermissionGate>
+        )}
+      </div>
 
       {isLoading && <LoadingState />}
       {isError && <ErrorState message="Failed to load findings." onRetry={() => refetch()} />}
