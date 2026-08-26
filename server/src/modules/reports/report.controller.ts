@@ -65,7 +65,7 @@ export class ReportController {
         createdByUser: { select: { id: true, name: true } },
       },
     });
-    if (!record) throw new HTTPException(404, { message: "Test record not found", cause: "TEST_RECORD_NOT_FOUND" });
+
     const attachments = await FileRepository.getFileRecordsByTargetId(id, "TEST_RECORD");
     return responseOK(c, "Print data retrieved successfully", { record, attachments });
   }
