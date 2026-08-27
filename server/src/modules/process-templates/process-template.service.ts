@@ -88,9 +88,7 @@ export class ProcessTemplateService {
       throw new HTTPException(404, { message: "Process template not found", cause: "PROCESS_TEMPLATE_NOT_FOUND" });
     }
     const criteria = await AcceptanceCriteriaRepository.findById(request.criteriaId);
-    if (!criteria) {
-      throw new HTTPException(404, { message: "Acceptance criteria not found", cause: "CRITERIA_NOT_FOUND" });
-    }
+
     const existing = await ProcessTemplateRepository.findCriteriaMapping(processTemplateId, request.criteriaId);
     if (existing) {
       throw new HTTPException(409, { message: "This criteria is already mapped to the process template", cause: "CRITERIA_MAPPING_EXISTS" });
