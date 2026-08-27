@@ -13,9 +13,7 @@ function buildAcceptanceDisplay(criteria: ChecklistCriteriaDetail | null, custom
   if (criteria.acceptanceText) return criteria.acceptanceText;
   const { minValue, maxValue, unit } = criteria;
   const u = unit ? ` ${unit}` : "";
-  if (minValue != null && maxValue != null) return `${minValue} - ${maxValue}${u}`;
-  if (minValue != null) return `min ${minValue}${u}`;
-  if (maxValue != null) return `max ${maxValue}${u}`;
+
   return criteria.name;
 }
 
