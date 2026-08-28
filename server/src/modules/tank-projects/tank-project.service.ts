@@ -68,13 +68,6 @@ export class TankProjectService {
       throw new HTTPException(404, { message: "Tank not found", cause: "TANK_NOT_FOUND" });
     }
 
-    // A decommissioned tank is permanently retired — no new engagement of any type.
-    if (tank.assetStatus === TankAssetStatusEnum.DECOMMISSIONED) {
-      throw new HTTPException(422, {
-        message: "Cannot create project for a decommissioned tank.",
-        cause: "TANK_DECOMMISSIONED",
-      });
-    }
 
     // One active project per tank: block a second engagement while one is still open,
     // so progress tracking stays unambiguous.
