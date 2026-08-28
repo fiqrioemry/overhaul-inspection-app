@@ -10,11 +10,7 @@ import { TANK_PROJECT_NO_PREFIX, DEFAULT_GENERATE_PROCESS_TYPES } from "@/config
 import type { TankProjectListItem, TankProjectListResult, TankProjectProgress } from "./tank-project.types";
 
 /** A project in one of these statuses keeps the tank "busy" (only one allowed per tank). */
-const ACTIVE_PROJECT_STATUSES: TankProjectStatusEnum[] = [
-  TankProjectStatusEnum.PLANNED,
-  TankProjectStatusEnum.IN_PROGRESS,
-  TankProjectStatusEnum.ON_HOLD,
-];
+const ACTIVE_PROJECT_STATUSES: TankProjectStatusEnum[] = [TankProjectStatusEnum.PLANNED, TankProjectStatusEnum.IN_PROGRESS, TankProjectStatusEnum.ON_HOLD];
 
 function toDate(value?: string | null): Date | null | undefined {
   if (value === undefined) return undefined;
@@ -22,21 +18,12 @@ function toDate(value?: string | null): Date | null | undefined {
   return new Date(value);
 }
 
-function computeProgress(
-  processes: { id: string; name: string; status: string; sequenceOrder: number }[],
-): TankProjectProgress {
+function computeProgress(processes: { id: string; name: string; status: string; sequenceOrder: number }[]): TankProjectProgress {
   const totalProcesses = processes.length;
   const completedProcesses = processes.filter((p) => p.status === ProcessStatusEnum.COMPLETED).length;
   const progress = totalProcesses > 0 ? Math.round((completedProcesses / totalProcesses) * 100) : 0;
-  const inProgressStatuses: ProcessStatusEnum[] = [
-    ProcessStatusEnum.IN_PROGRESS,
-    ProcessStatusEnum.WAITING_REVIEW,
-    ProcessStatusEnum.REVIEWED,
-  ];
-  const current =
-    processes.find((p) => inProgressStatuses.includes(p.status as ProcessStatusEnum)) ??
-    processes.find((p) => p.status === ProcessStatusEnum.NOT_STARTED) ??
-    null;
+  const inProgressStatuses: ProcessStatusEnum[] = [ProcessStatusEnum.IN_PROGRESS, ProcessStatusEnum.WAITING_REVIEW, ProcessStatusEnum.REVIEWED];
+  const current = processes.find((p) => inProgressStatuses.includes(p.status as ProcessStatusEnum)) ?? processes.find((p) => p.status === ProcessStatusEnum.NOT_STARTED) ?? null;
   return {
     totalProcesses,
     completedProcesses,
@@ -68,6 +55,13 @@ export class TankProjectService {
       throw new HTTPException(404, { message: "Tank not found", cause: "TANK_NOT_FOUND" });
     }
 
+    // A decommissioned tank is permanently retired — no new engagement of any type.
+    if (tank.assetStatus === TankAssetStatusEnum.DECOMMISSIONED) {
+      throw new HTTPException(422, {
+        message: "Cannot create project for a decommissioned tank.",
+        cause: "TANK_DECOMMISSIONED",
+      });
+    }
 
     // One active project per tank: block a second engagement while one is still open,
     // so progress tracking stays unambiguous.
