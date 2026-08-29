@@ -39,23 +39,15 @@ export class FindingService {
       if (!tankProcess) {
         throw new HTTPException(404, { message: "Tank process not found", cause: "PROCESS_NOT_FOUND" });
       }
-  
+      if (projectId && projectId !== tankProcess.projectId) {
+        throw new HTTPException(422, { message: "Tank process does not belong to the provided project", cause: "PROCESS_PROJECT_MISMATCH" });
+      }
       if (tankProcess.project.tankId !== data.tankId) {
         throw new HTTPException(422, { message: "Tank process does not belong to the provided tank", cause: "PROCESS_TANK_MISMATCH" });
       }
       projectId = tankProcess.projectId;
 
-      const blockedStatuses: ProcessStatusEnum[] = [
-        ProcessStatusEnum.NOT_STARTED,
-        ProcessStatusEnum.COMPLETED,
-        ProcessStatusEnum.REVIEWED,
-      ];
-      if (blockedStatuses.includes(tankProcess.status as ProcessStatusEnum)) {
-        throw new HTTPException(422, {
-          message: `Cannot add findings when process is ${tankProcess.status}`,
-          cause: "INVALID_PROCESS_STATUS_FOR_FINDING",
-        });
-      }
+      const blockedStatuses: ProcessStatusEnum[] = [ProcessStatusEnum.NOT_STARTED, ProcessStatusEnum.COMPLETED, ProcessStatusEnum.REVIEWED];
     } else if (projectId) {
       const project = await pgsql.tankProject.findFirst({ where: { id: projectId, deletedAt: null }, select: { tankId: true } });
       if (!project) throw new HTTPException(404, { message: "Tank project not found", cause: "PROJECT_NOT_FOUND" });
