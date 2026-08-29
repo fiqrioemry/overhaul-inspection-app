@@ -39,9 +39,7 @@ export class FindingService {
       if (!tankProcess) {
         throw new HTTPException(404, { message: "Tank process not found", cause: "PROCESS_NOT_FOUND" });
       }
-      if (projectId && projectId !== tankProcess.projectId) {
-        throw new HTTPException(422, { message: "Tank process does not belong to the provided project", cause: "PROCESS_PROJECT_MISMATCH" });
-      }
+  
       if (tankProcess.project.tankId !== data.tankId) {
         throw new HTTPException(422, { message: "Tank process does not belong to the provided tank", cause: "PROCESS_TANK_MISMATCH" });
       }
