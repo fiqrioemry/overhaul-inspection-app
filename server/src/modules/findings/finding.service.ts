@@ -48,6 +48,12 @@ export class FindingService {
       projectId = tankProcess.projectId;
 
       const blockedStatuses: ProcessStatusEnum[] = [ProcessStatusEnum.NOT_STARTED, ProcessStatusEnum.COMPLETED, ProcessStatusEnum.REVIEWED];
+      if (blockedStatuses.includes(tankProcess.status as ProcessStatusEnum)) {
+        throw new HTTPException(422, {
+          message: `Cannot add findings when process is ${tankProcess.status}`,
+          cause: "INVALID_PROCESS_STATUS_FOR_FINDING",
+        });
+      }
     } else if (projectId) {
       const project = await pgsql.tankProject.findFirst({ where: { id: projectId, deletedAt: null }, select: { tankId: true } });
       if (!project) throw new HTTPException(404, { message: "Tank project not found", cause: "PROJECT_NOT_FOUND" });
