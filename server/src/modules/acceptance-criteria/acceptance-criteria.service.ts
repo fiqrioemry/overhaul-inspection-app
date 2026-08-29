@@ -80,9 +80,6 @@ export class AcceptanceCriteriaService {
     // Prevent activating criteria without reference documents
     if (request.status === MasterDataStatus.ACTIVE) {
       const refCount = await AcceptanceCriteriaRepository.countReferences(id);
-      if (refCount === 0) {
-        throw new HTTPException(422, { message: "Cannot activate criteria without at least one reference document", cause: "CRITERIA_NO_REFERENCE" });
-      }
     }
     return AcceptanceCriteriaRepository.update(id, request);
   }
