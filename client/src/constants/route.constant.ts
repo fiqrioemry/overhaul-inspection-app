@@ -29,6 +29,7 @@ export const ROUTES = {
   INSPECTION_REQUEST_PRINT: "/inspection-requests/:id/print",
   NOTIFICATIONS: "/notifications",
   USERS: "/users",
+  USER_AUDIT_LOG: "/users/:id/audit-log",
 
   MASTER_DATA: "/master-data",
   MASTER_PROCESS: "/master-data/processes",

@@ -7,6 +7,7 @@ export const PERMISSIONS = {
   USER_READ: "user.read",
   USER_UPDATE: "user.update",
   USER_DELETE: "user.delete",
+  USER_AUDIT_LOG_READ: "user.audit_log.read",
 
   TANK_CREATE: "tank.create",
   TANK_READ: "tank.read",
