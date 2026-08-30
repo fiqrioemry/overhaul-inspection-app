@@ -7,6 +7,7 @@ export const PERMISSIONS = {
   USER_READ: "user.read",
   USER_UPDATE: "user.update",
   USER_DELETE: "user.delete",
+  USER_AUDIT_LOG_READ: "user.audit_log.read",
 
   TANK_CREATE: "tank.create",
   TANK_READ: "tank.read",
@@ -158,6 +159,7 @@ const ADMIN_PERMISSIONS: Permission[] = [
   PERMISSIONS.PROCESS_DEPENDENCY_UPDATE,
   PERMISSIONS.PROCESS_DEPENDENCY_DELETE,
   PERMISSIONS.NOTIFICATION_CREATE,
+  // USER_AUDIT_LOG_READ intentionally omitted here: SUPER_ADMIN only, granted via the "*" wildcard.
 ];
 
 export const ROLE_PERMISSIONS: Record<RoleEnum, Permission[] | ["*"]> = {

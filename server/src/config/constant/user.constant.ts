@@ -2,6 +2,7 @@ const userSuccessMessage = {
   CREATE_USER_SUCCESS: "User created successfully",
   GET_USERS_SUCCESS: "Users fetched successfully",
   GET_USER_SUCCESS: "User retrieved successfully",
+  GET_USER_AUDIT_LOG_SUCCESS: "User audit log fetched successfully",
   UPDATE_USER_SUCCESS: "User updated successfully",
   UPDATE_USER_STATUS_SUCCESS: "User status updated successfully",
   UPDATE_USER_PASSWORD_SUCCESS: "User password updated successfully",
@@ -35,6 +36,7 @@ const userAction = {
 
 const userLimit = {
   GET_USERS: { limit: 60, windowSec: 60 },
+  GET_USER_AUDIT_LOG: { limit: 60, windowSec: 60 },
   GET_PROFILE: { limit: 20, windowSec: 60 },
   UPDATE_PROFILE: { limit: 10, windowSec: 60 },
   UPDATE_AVATAR: { limit: 5, windowSec: 60 },
