@@ -1,7 +1,8 @@
 // src/pages/UserManagementPage.tsx
 import { useState } from "react";
 import { format } from "date-fns";
-import { Users, Plus, Pencil, Trash2, ShieldCheck } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Users, Plus, Pencil, Trash2, ShieldCheck, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +20,7 @@ import UserStatusDialog from "@/features/users/components/UserStatusDialog";
 import { useUsers, useDeleteUser } from "@/features/users/users.query";
 import type { UserListItem } from "@/features/users/users.api";
 import { PERMISSIONS } from "@/constants/permission.constant";
+import { ROUTES } from "@/constants/route.constant";
 import { useDebounce } from "@/hooks/useDebounce";
 
 const ROLE_OPTIONS = [
@@ -36,6 +38,7 @@ const ROLE_LABEL: Record<string, string> = {
 };
 
 export default function UserManagementPage() {
+  const navigate = useNavigate();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [role, setRole] = useState("");
@@ -163,6 +166,11 @@ export default function UserManagementPage() {
                       <td className="px-4 py-3 text-muted-foreground text-xs">{user.lastLogin ? format(new Date(user.lastLogin), "dd MMM yyyy HH:mm") : "Never"}</td>
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-end gap-2">
+                          <PermissionGate permission={PERMISSIONS.USER_AUDIT_LOG_READ}>
+                            <Button variant="ghost" size="icon-sm" title="View audit log" onClick={() => navigate(ROUTES.USER_AUDIT_LOG.replace(":id", user.id))}>
+                              <History />
+                            </Button>
+                          </PermissionGate>
                           <PermissionGate permission={PERMISSIONS.USER_UPDATE}>
                             <Button variant="ghost" size="icon-sm" title="Change status" onClick={() => openStatus(user)}>
                               <ShieldCheck />

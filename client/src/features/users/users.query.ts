@@ -1,14 +1,15 @@
 // src/features/users/users.query.ts
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { listUsers, getUserById, createUser, updateUser, updateUserStatus, deleteUser, getUserOptions } from "@/features/users/users.api";
-import type { ListUsersParams, CreateUserPayload, UpdateUserPayload, UpdateUserStatusPayload, UserOptionsParams } from "@/features/users/users.api";
+import { listUsers, getUserById, createUser, updateUser, updateUserStatus, deleteUser, getUserOptions, getUserAuditLog } from "@/features/users/users.api";
+import type { ListUsersParams, CreateUserPayload, UpdateUserPayload, UpdateUserStatusPayload, UserOptionsParams, ListUserAuditLogParams } from "@/features/users/users.api";
 
 export const USER_KEYS = {
   all: ["users"] as const,
   list: (params: ListUsersParams) => ["users", "list", params] as const,
   options: (params: UserOptionsParams) => ["users", "options", params] as const,
   detail: (id: string) => ["users", "detail", id] as const,
+  auditLog: (id: string, params: ListUserAuditLogParams) => ["users", "audit-log", id, params] as const,
 };
 
 export function useUserOptions(params: UserOptionsParams, enabled = true) {
@@ -34,6 +35,15 @@ export function useUserById(id: string) {
     queryFn: () => getUserById(id),
     enabled: Boolean(id),
     staleTime: 1000 * 60,
+  });
+}
+
+export function useUserAuditLog(id: string, params: ListUserAuditLogParams) {
+  return useQuery({
+    queryKey: USER_KEYS.auditLog(id, params),
+    queryFn: () => getUserAuditLog(id, params),
+    enabled: Boolean(id),
+    staleTime: 1000 * 30,
   });
 }
 

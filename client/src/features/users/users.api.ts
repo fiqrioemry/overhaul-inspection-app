@@ -88,6 +88,23 @@ export async function deleteUser(id: string): Promise<ResponseOK> {
   return res.data;
 }
 
+export interface UserActivityLogItem {
+  id: string;
+  action: string;
+  metadata: Record<string, unknown> | null;
+  createdAt: string;
+}
+
+export interface ListUserAuditLogParams {
+  page?: number;
+  limit?: number;
+}
+
+export async function getUserAuditLog(id: string, params: ListUserAuditLogParams): Promise<PaginatedResponse<UserActivityLogItem>> {
+  const res = await api.get<ResponseList<UserActivityLogItem>>(`/users/${id}/audit-log`, { params });
+  return { items: res.data.data, meta: res.data.meta };
+}
+
 export type CompanyTypeFilter = "OWNER" | "INSPECTOR_COMPANY" | "CONTRACTOR";
 
 export interface UserOption {
