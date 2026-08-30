@@ -21,6 +21,7 @@ import UnauthorizedPage from "@/pages/UnauthorizedPage";
 
 import DashboardPage from "@/pages/DashboardPage";
 import UserManagementPage from "@/pages/UserManagementPage";
+import UserAuditLogPage from "@/pages/UserAuditLogPage";
 import NotificationPage from "@/pages/NotificationPage";
 import CompaniesPage from "@/pages/CompaniesPage";
 import ReferenceDocumentsPage from "@/pages/ReferenceDocumentsPage";
@@ -86,6 +87,9 @@ export default function AppRouter() {
             {/* User management */}
             <Route element={<PermissionRoute permission={PERMISSIONS.USER_READ} />}>
               <Route path={ROUTES.USERS} element={<UserManagementPage />} />
+            </Route>
+            <Route element={<PermissionRoute permission={PERMISSIONS.USER_AUDIT_LOG_READ} />}>
+              <Route path={ROUTES.USER_AUDIT_LOG} element={<UserAuditLogPage />} />
             </Route>
 
             {/* Companies */}
