@@ -15,6 +15,7 @@ user.post("/", protect, requirePermission(PERMISSIONS.USER_CREATE), ctrl.createU
 user.get("/", protect, requirePermission(PERMISSIONS.USER_READ), limitter(userLimit.GET_USERS), ctrl.listUsers);
 user.get("/options", protect, requirePermission(PERMISSIONS.USER_READ), ctrl.getUserOptions);
 user.get("/:id", protect, requirePermission(PERMISSIONS.USER_READ), ctrl.getUserById);
+user.get("/:id/audit-log", protect, requirePermission(PERMISSIONS.USER_AUDIT_LOG_READ), limitter(userLimit.GET_USER_AUDIT_LOG), ctrl.getUserAuditLog);
 user.patch("/:id", protect, requirePermission(PERMISSIONS.USER_UPDATE), optionalFile(fileLimit.AVATAR_OPTIONS, "avatar"), ctrl.updateUser);
 user.patch("/:id/status", protect, requirePermission(PERMISSIONS.USER_UPDATE), ctrl.updateUserStatus);
 user.patch("/:id/password", protect, requirePermission(PERMISSIONS.USER_UPDATE), ctrl.updateUserPassword);
