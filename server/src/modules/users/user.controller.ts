@@ -1,7 +1,7 @@
 import { Context } from "hono";
 import { UserService } from "@/modules/users/user.service";
 import { responseCreated, responseError, responseOK } from "@/utils/response";
-import { updateProfileRequest, createUserRequest, updateUserRequest, updateUserStatusRequest, updateUserPasswordRequest, listUsersQuery, userOptionsQuery } from "@/modules/users/user.schema";
+import { updateProfileRequest, createUserRequest, updateUserRequest, updateUserStatusRequest, updateUserPasswordRequest, listUsersQuery, userOptionsQuery, listUserActivityLogQuery } from "@/modules/users/user.schema";
 import { userSuccessMessage } from "@/config/constant/user.constant";
 import { fileErrorCode, fileErrorMessage } from "@/config/constant/file.constant";
 
@@ -28,6 +28,13 @@ export class UserController {
     const id = c.req.param("id");
     const response = await UserService.getUserById(id);
     return responseOK(c, userSuccessMessage.GET_USER_SUCCESS, response);
+  }
+
+  static async getUserAuditLog(c: Context) {
+    const id = c.req.param("id");
+    const query = listUserActivityLogQuery.parse(c.req.query());
+    const response = await UserService.listUserActivityLogs(id, query);
+    return responseOK(c, userSuccessMessage.GET_USER_AUDIT_LOG_SUCCESS, response.data, response.meta);
   }
 
   static async updateUser(c: Context) {
