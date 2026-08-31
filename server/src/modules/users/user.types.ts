@@ -66,6 +66,13 @@ type createUserData = {
   isVerified: boolean;
 };
 
+type userActivityLogResponse = {
+  id: string;
+  action: string;
+  metadata: Record<string, any> | null;
+  createdAt: Date;
+};
+
 type paginationMeta = {
   page: number;
   limit: number;
@@ -94,4 +101,18 @@ export type UpsertOAuthAccountData = {
   expiresAt?: Date;
 };
 
-export { metaResponse, paginationMeta, filterMeta, verificationType, loginResponse, createUserData, userCredential, createVerificationData, userVerificationData, userResponse, userStatus, updateUserActiveData };
+export {
+  metaResponse,
+  paginationMeta,
+  filterMeta,
+  verificationType,
+  loginResponse,
+  createUserData,
+  userCredential,
+  createVerificationData,
+  userVerificationData,
+  userResponse,
+  userStatus,
+  updateUserActiveData,
+  userActivityLogResponse,
+};

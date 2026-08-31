@@ -1,6 +1,6 @@
 import { pgsql as database } from "@/lib/database";
 import { Prisma, OAuthProvider, RoleEnum } from "generated/prisma/edge";
-import { CreateUserActivityLogRequest, ListUsersQuery, UserOptionsQuery } from "@/modules/users/user.schema";
+import { CreateUserActivityLogRequest, ListUserActivityLogQuery, ListUsersQuery, UserOptionsQuery } from "@/modules/users/user.schema";
 import { createUserData, verificationType, createVerificationData, updateUserActiveData, UpsertOAuthAccountData, userCredential } from "@/modules/users/user.types";
 
 export class UserRepository {
@@ -299,6 +299,24 @@ export class UserRepository {
       where: { id: userId },
       data: { name: request.name },
     });
+  }
+
+  static async findActivityLogsByUserId(userId: string, query: ListUserActivityLogQuery) {
+    const { page, limit } = query;
+    const where: Prisma.UserActivityLogWhereInput = { userId };
+
+    const [logs, total] = await Promise.all([
+      database.userActivityLog.findMany({
+        where,
+        select: { id: true, action: true, metadata: true, createdAt: true },
+        orderBy: { createdAt: "desc" },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      database.userActivityLog.count({ where }),
+    ]);
+
+    return { logs, total };
   }
 
   static async createActivityLog(tx: Prisma.TransactionClient | null, request: CreateUserActivityLogRequest): Promise<void> {

@@ -12,8 +12,8 @@ import { UserRepository } from "@/modules/users/user.repository";
 import { FileRepository } from "@/modules/files/file.repository";
 import { authLimit } from "@/config/constant/auth.constant";
 import { mailConfig, databaseConfig } from "@/config/env";
-import { userResponse } from "@/modules/users/user.types";
-import { CreateUserRequest, ListUsersQuery, UpdateUserPasswordRequest, UpdateUserRequest, UpdateUserStatusRequest, UpdateProfileRequest, UserOptionsQuery } from "@/modules/users/user.schema";
+import { userResponse, userActivityLogResponse } from "@/modules/users/user.types";
+import { CreateUserRequest, ListUserActivityLogQuery, ListUsersQuery, UpdateUserPasswordRequest, UpdateUserRequest, UpdateUserStatusRequest, UpdateProfileRequest, UserOptionsQuery } from "@/modules/users/user.schema";
 
 export class UserService {
   private static async assertCompanyExists(companyId: string) {
@@ -197,6 +197,28 @@ export class UserService {
     }
     const hashed = await hashPassword(request.password);
     await UserRepository.updatePassword(id, hashed);
+  }
+
+  static async listUserActivityLogs(id: string, query: ListUserActivityLogQuery) {
+    const user = await UserRepository.findById(id);
+    if (!user) {
+      throw new HTTPException(404, { message: "User not found", cause: "USER_NOT_FOUND" });
+    }
+
+    const { logs, total } = await UserRepository.findActivityLogsByUserId(id, query);
+    const totalPages = total > 0 ? Math.ceil(total / query.limit) : 0;
+
+    return {
+      data: logs as userActivityLogResponse[],
+      meta: {
+        page: query.page,
+        limit: query.limit,
+        total,
+        totalPages,
+        hasNextPage: query.page < totalPages,
+        hasPreviousPage: query.page > 1,
+      },
+    };
   }
 
   static async deleteUser(id: string) {

@@ -66,6 +66,12 @@ export const updateProfileRequest = z.object({
 });
 export type UpdateProfileRequest = z.infer<typeof updateProfileRequest>;
 
+export const listUserActivityLogQuery = z.object({
+  page: z.string().default("1").transform(Number),
+  limit: z.string().default("20").transform(Number),
+});
+export type ListUserActivityLogQuery = z.infer<typeof listUserActivityLogQuery>;
+
 export const createUserActivityLogRequest = z.object({
   userId: z.string(),
   action: z.string(),
