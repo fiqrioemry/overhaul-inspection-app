@@ -184,12 +184,7 @@ export class TankProjectService {
     if (!project) {
       throw new HTTPException(404, { message: "Tank project not found", cause: "PROJECT_NOT_FOUND" });
     }
-    if (project.status === TankProjectStatusEnum.COMPLETED || project.status === TankProjectStatusEnum.CANCELLED) {
-      throw new HTTPException(422, {
-        message: "Cannot generate processes for a completed or cancelled project.",
-        cause: "PROJECT_NOT_ACTIVE",
-      });
-    }
+ 
     const created = await pgsql.$transaction(async (tx) => {
       const generated = await ProcessGenerationService.generateProcessesForProject(tx, id, project.tank?.hasSteamCoil ?? false, processTemplateIds);
       // Adding a NOT_STARTED process changes whether every process is completed, so the same
