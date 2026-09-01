@@ -70,13 +70,6 @@ export class TankProjectService {
       select: { id: true, projectNo: true },
     });
 
-    if (data.projectNo) {
-      const existing = await TankProjectRepository.findByProjectNo(data.projectNo);
-      if (existing) {
-        throw new HTTPException(409, { message: "Project number already exists", cause: "PROJECT_NO_EXISTS" });
-      }
-    }
-
     const projectNo = data.projectNo ?? (await this.generateProjectNo(tank.tankNo, data.type, toDate(data.startDate)));
     const status = data.status ?? TankProjectStatusEnum.PLANNED;
     const generateProcesses = data.generateProcesses ?? DEFAULT_GENERATE_PROCESS_TYPES.has(data.type);
