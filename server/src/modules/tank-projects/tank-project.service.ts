@@ -69,6 +69,19 @@ export class TankProjectService {
       where: { tankId: data.tankId, deletedAt: null, status: { in: ACTIVE_PROJECT_STATUSES } },
       select: { id: true, projectNo: true },
     });
+    if (activeProject) {
+      throw new HTTPException(409, {
+        message: "Tank already has an active project. Complete or cancel the existing project before creating a new one.",
+        cause: "TANK_HAS_ACTIVE_PROJECT",
+      });
+    }
+
+    if (data.projectNo) {
+      const existing = await TankProjectRepository.findByProjectNo(data.projectNo);
+      if (existing) {
+        throw new HTTPException(409, { message: "Project number already exists", cause: "PROJECT_NO_EXISTS" });
+      }
+    }
 
     const projectNo = data.projectNo ?? (await this.generateProjectNo(tank.tankNo, data.type, toDate(data.startDate)));
     const status = data.status ?? TankProjectStatusEnum.PLANNED;
