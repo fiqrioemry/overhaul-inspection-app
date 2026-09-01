@@ -126,6 +126,27 @@ export default function DailyReportCreatePage() {
   const totalCount = localFiles.length;
   const hasNewFiles = localFiles.length > 0;
 
+  const handleDrop = useCallback(
+    (files: File[]) => {
+      setFileError(null);
+      const available = MAX_ATTACHMENTS - totalCount;
+      const valid: LocalFile[] = [];
+      for (const file of files.slice(0, available)) {
+        if (!ALLOWED_TYPES.has(file.type)) {
+          setFileError(`"${file.name}" is not a supported image type (jpeg/png/webp).`);
+          continue;
+        }
+        if (file.size > MAX_FILE_SIZE) {
+          setFileError(`"${file.name}" exceeds 8 MB.`);
+          continue;
+        }
+        valid.push({ file, previewUrl: URL.createObjectURL(file) });
+      }
+      if (valid.length) setLocalFiles((prev) => [...prev, ...valid]);
+    },
+    [totalCount],
+  );
+
   function removeLocal(idx: number) {
     setLocalFiles((prev) => {
       const removed = prev[idx];
