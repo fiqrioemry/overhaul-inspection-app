@@ -43,7 +43,10 @@ interface LocalFile {
 }
 
 function htmlToText(html: string): string {
-  return html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  return html
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 export default function DailyReportCreatePage() {
@@ -86,28 +89,14 @@ export default function DailyReportCreatePage() {
 
   const selectedTankValue = form.watch("tankId") ?? "";
   const selectedProcessValue = form.watch("tankProcessId") ?? "";
-  const effectiveTankId = selectable
-    ? selectedTankValue && selectedTankValue !== NO_TANK_VALUE
-      ? selectedTankValue
-      : undefined
-    : lockedTankId;
-  const effectiveProcessId = selectable
-    ? selectedProcessValue && selectedProcessValue !== NO_PROCESS_VALUE
-      ? selectedProcessValue
-      : undefined
-    : lockedProcessId;
+  const effectiveTankId = selectable ? (selectedTankValue && selectedTankValue !== NO_TANK_VALUE ? selectedTankValue : undefined) : lockedTankId;
+  const effectiveProcessId = selectable ? (selectedProcessValue && selectedProcessValue !== NO_PROCESS_VALUE ? selectedProcessValue : undefined) : lockedProcessId;
 
   const { data: tankOptions = [] } = useTankOptions();
   const { data: tankProcessOptions = [] } = useTankProcessOptions(effectiveTankId ?? "");
 
-  const tankSelectOptions = [
-    { label: "General — no tank", value: NO_TANK_VALUE },
-    ...tankOptions.map((t) => ({ label: t.tankName ? `${t.tankNo} — ${t.tankName}` : t.tankNo, value: t.id })),
-  ];
-  const processSelectOptions = [
-    { label: "No specific process", value: NO_PROCESS_VALUE },
-    ...tankProcessOptions.map((p) => ({ label: p.name, value: p.id })),
-  ];
+  const tankSelectOptions = [{ label: "General — no tank", value: NO_TANK_VALUE }, ...tankOptions.map((t) => ({ label: t.tankName ? `${t.tankNo} — ${t.tankName}` : t.tankNo, value: t.id }))];
+  const processSelectOptions = [{ label: "No specific process", value: NO_PROCESS_VALUE }, ...tankProcessOptions.map((p) => ({ label: p.name, value: p.id }))];
   const effectiveProcessName = selectable ? tankProcessOptions.find((p) => p.id === selectedProcessValue)?.name : undefined;
 
   // Reset process when tank changes
@@ -136,27 +125,6 @@ export default function DailyReportCreatePage() {
 
   const totalCount = localFiles.length;
   const hasNewFiles = localFiles.length > 0;
-
-  const handleDrop = useCallback(
-    (files: File[]) => {
-      setFileError(null);
-      const available = MAX_ATTACHMENTS - totalCount;
-      const valid: LocalFile[] = [];
-      for (const file of files.slice(0, available)) {
-        if (!ALLOWED_TYPES.has(file.type)) {
-          setFileError(`"${file.name}" is not a supported image type (jpeg/png/webp).`);
-          continue;
-        }
-        if (file.size > MAX_FILE_SIZE) {
-          setFileError(`"${file.name}" exceeds 8 MB.`);
-          continue;
-        }
-        valid.push({ file, previewUrl: URL.createObjectURL(file) });
-      }
-      if (valid.length) setLocalFiles((prev) => [...prev, ...valid]);
-    },
-    [totalCount],
-  );
 
   function removeLocal(idx: number) {
     setLocalFiles((prev) => {
@@ -256,15 +224,7 @@ export default function DailyReportCreatePage() {
 
   const isGenerating = generateAI.isPending;
   const hasTankChoice = selectedTankValue !== "";
-  const contextLabel = !selectable
-    ? "Process context"
-    : !hasTankChoice
-      ? null
-      : !effectiveTankId
-        ? "General activity"
-        : effectiveProcessId
-          ? "Tank + process"
-          : "Tank only";
+  const contextLabel = !selectable ? "Process context" : !hasTankChoice ? null : !effectiveTankId ? "General activity" : effectiveProcessId ? "Tank + process" : "Tank only";
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-12">
@@ -284,9 +244,7 @@ export default function DailyReportCreatePage() {
         <div className="rounded-lg border p-5 space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-medium">Report Details</h2>
-            {contextLabel && (
-              <span className="inline-flex items-center rounded-full bg-muted border px-2 py-0.5 text-[11px] font-medium text-muted-foreground">{contextLabel}</span>
-            )}
+            {contextLabel && <span className="inline-flex items-center rounded-full bg-muted border px-2 py-0.5 text-[11px] font-medium text-muted-foreground">{contextLabel}</span>}
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <DateField control={form.control} name="reportDate" label="Report Date" />
@@ -329,7 +287,9 @@ export default function DailyReportCreatePage() {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-sm font-medium">Photo Attachments</h2>
-              <p className="text-xs text-muted-foreground mt-0.5">{totalCount}/{MAX_ATTACHMENTS} — JPEG, PNG, WebP (max 8 MB each)</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {totalCount}/{MAX_ATTACHMENTS} — JPEG, PNG, WebP (max 8 MB each)
+              </p>
             </div>
             <Button
               type="button"
@@ -345,9 +305,7 @@ export default function DailyReportCreatePage() {
             </Button>
           </div>
 
-          {totalCount < MAX_ATTACHMENTS && (
-            <ImageDropzone onDrop={handleDrop} maxFiles={MAX_ATTACHMENTS} currentCount={totalCount} />
-          )}
+          {totalCount < MAX_ATTACHMENTS && <ImageDropzone onDrop={handleDrop} maxFiles={MAX_ATTACHMENTS} currentCount={totalCount} />}
           {fileError && <p className="text-xs text-destructive">{fileError}</p>}
 
           {/* AI progress */}
@@ -369,12 +327,16 @@ export default function DailyReportCreatePage() {
           {aiWarning && (
             <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
               <AlertTriangle className="size-3.5 shrink-0 mt-0.5" />
-              <span><strong>Perhatian:</strong> Foto yang diunggah tampaknya tidak berhubungan dengan kegiatan inspeksi tangki. Pastikan foto adalah dokumentasi pekerjaan inspeksi/overhaul untuk hasil AI yang akurat.</span>
+              <span>
+                <strong>Perhatian:</strong> Foto yang diunggah tampaknya tidak berhubungan dengan kegiatan inspeksi tangki. Pastikan foto adalah dokumentasi pekerjaan inspeksi/overhaul untuk hasil AI yang akurat.
+              </span>
             </div>
           )}
           {aiNotes.length > 0 && (
             <ul className="rounded-md border bg-muted/30 px-3 py-2 text-[11px] text-muted-foreground list-disc pl-6 space-y-0.5">
-              {aiNotes.map((n, i) => <li key={i}>{n}</li>)}
+              {aiNotes.map((n, i) => (
+                <li key={i}>{n}</li>
+              ))}
             </ul>
           )}
 
@@ -385,9 +347,15 @@ export default function DailyReportCreatePage() {
                 <Sparkles className="size-3.5" /> Hasil AI siap. Editor sudah berisi data — pilih cara menerapkan:
               </p>
               <div className="flex gap-2">
-                <Button type="button" size="sm" variant="outline" className="h-7 text-xs" onClick={() => applyAi(pendingAi, "replace")}>Replace</Button>
-                <Button type="button" size="sm" variant="outline" className="h-7 text-xs" onClick={() => applyAi(pendingAi, "append")}>Append</Button>
-                <Button type="button" size="sm" variant="ghost" className="h-7 text-xs text-muted-foreground" onClick={() => setPendingAi(null)}>Cancel</Button>
+                <Button type="button" size="sm" variant="outline" className="h-7 text-xs" onClick={() => applyAi(pendingAi, "replace")}>
+                  Replace
+                </Button>
+                <Button type="button" size="sm" variant="outline" className="h-7 text-xs" onClick={() => applyAi(pendingAi, "append")}>
+                  Append
+                </Button>
+                <Button type="button" size="sm" variant="ghost" className="h-7 text-xs text-muted-foreground" onClick={() => setPendingAi(null)}>
+                  Cancel
+                </Button>
               </div>
             </div>
           )}
@@ -399,7 +367,11 @@ export default function DailyReportCreatePage() {
                 <div key={lf.previewUrl} className="space-y-1">
                   <div className="relative w-full aspect-square rounded-lg overflow-hidden border bg-muted group">
                     <img src={lf.previewUrl} alt={lf.file.name} className="w-full h-full object-contain" />
-                    <button type="button" onClick={() => removeLocal(idx)} className="absolute top-1 right-1 flex size-5 items-center justify-center rounded-full bg-black/70 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive">
+                    <button
+                      type="button"
+                      onClick={() => removeLocal(idx)}
+                      className="absolute top-1 right-1 flex size-5 items-center justify-center rounded-full bg-black/70 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive"
+                    >
                       <X className="size-3" />
                     </button>
                   </div>
@@ -423,14 +395,18 @@ export default function DailyReportCreatePage() {
 
         {/* Description (rich editor) */}
         <div className="space-y-1.5">
-          <Label className="text-sm font-medium">Uraian Kegiatan / Activity Description <span className="text-destructive">*</span></Label>
+          <Label className="text-sm font-medium">
+            Uraian Kegiatan / Activity Description <span className="text-destructive">*</span>
+          </Label>
           <RichTextEditor ref={descRef} placeholder="Uraian kegiatan inspeksi harian..." onChange={setDescriptionHtml} />
           {descError && <p className="text-xs text-destructive">Uraian kegiatan wajib diisi.</p>}
         </div>
 
         {/* Recommendation (rich editor) */}
         <div className="space-y-1.5">
-          <Label className="text-sm font-medium">Rekomendasi / Recommendation <span className="text-muted-foreground font-normal">(opsional)</span></Label>
+          <Label className="text-sm font-medium">
+            Rekomendasi / Recommendation <span className="text-muted-foreground font-normal">(opsional)</span>
+          </Label>
           <RichTextEditor ref={recRef} placeholder="Rekomendasi tindak lanjut (opsional)..." onChange={setRecommendationHtml} />
         </div>
 
