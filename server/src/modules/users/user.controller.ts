@@ -56,7 +56,7 @@ export class UserController {
   static async updateUserStatus(c: Context) {
     const id = c.req.param("id");
     const request = updateUserStatusRequest.parse(await c.req.json());
-    const response = await UserService.updateUserStatus(id, request);
+    const response = await UserService.updateUserStatus(c, id, request);
     return responseOK(c, userSuccessMessage.UPDATE_USER_STATUS_SUCCESS, response);
   }
 
@@ -69,7 +69,7 @@ export class UserController {
 
   static async deleteUser(c: Context) {
     const id = c.req.param("id");
-    await UserService.deleteUser(id);
+    await UserService.deleteUser(c, id);
     return responseOK(c, userSuccessMessage.DELETE_USER_SUCCESS);
   }
 

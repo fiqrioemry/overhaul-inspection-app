@@ -155,6 +155,15 @@ export class UserService {
 
     if (request.companyId) await this.assertCompanyExists(request.companyId);
 
+    const actorUserId = c.get("user").userId as string;
+
+    const changes: Record<string, unknown> = {};
+    if (request.name !== undefined && request.name !== user.name) changes.name = { from: user.name, to: request.name };
+    if (request.role !== undefined && request.role !== user.role) changes.role = { from: user.role, to: request.role };
+    if (request.position !== undefined && request.position !== (user.position ?? null)) changes.position = { from: user.position ?? null, to: request.position };
+    if (request.companyId !== undefined && request.companyId !== (user.companyId ?? null)) changes.companyId = { from: user.companyId ?? null, to: request.companyId };
+    if (avatarFile) changes.avatar = true;
+
     return await pgsql.$transaction(async (tx: Prisma.TransactionClient) => {
       let avatarFileStorageId = user.avatarFileStorageId!;
 
@@ -168,7 +177,7 @@ export class UserService {
         avatarFileStorageId = newFileRecord.id!;
       }
 
-      return await UserRepository.update(
+      const updated = await UserRepository.update(
         id,
         {
           name: request.name,
@@ -179,15 +188,38 @@ export class UserService {
         },
         tx,
       );
+
+      if (Object.keys(changes).length > 0) {
+        await UserRepository.createActivityLog(tx, {
+          userId: id,
+          action: userAction.UPDATE_USER,
+          metadata: { actorUserId, changes },
+        });
+      }
+
+      return updated;
     });
   }
 
-  static async updateUserStatus(id: string, request: UpdateUserStatusRequest) {
+  static async updateUserStatus(c: Context, id: string, request: UpdateUserStatusRequest) {
     const user = await UserRepository.findById(id);
     if (!user) {
       throw new HTTPException(404, { message: "User not found", cause: "USER_NOT_FOUND" });
     }
-    return await UserRepository.updateStatus(id, request.status);
+
+    const actorUserId = c.get("user").userId as string;
+
+    return await pgsql.$transaction(async (tx: Prisma.TransactionClient) => {
+      const updated = await UserRepository.updateStatus(id, request.status, tx);
+
+      await UserRepository.createActivityLog(tx, {
+        userId: id,
+        action: userAction.UPDATE_STATUS,
+        metadata: { actorUserId, previousStatus: user.status, newStatus: request.status },
+      });
+
+      return updated;
+    });
   }
 
   static async updateUserPassword(id: string, request: UpdateUserPasswordRequest) {
@@ -221,12 +253,23 @@ export class UserService {
     };
   }
 
-  static async deleteUser(id: string) {
+  static async deleteUser(c: Context, id: string) {
     const user = await UserRepository.findById(id);
     if (!user) {
       throw new HTTPException(404, { message: "User not found", cause: "USER_NOT_FOUND" });
     }
-    await UserRepository.softDelete(id);
+
+    const actorUserId = c.get("user").userId as string;
+
+    await pgsql.$transaction(async (tx: Prisma.TransactionClient) => {
+      await UserRepository.softDelete(id, tx);
+
+      await UserRepository.createActivityLog(tx, {
+        userId: id,
+        action: userAction.DELETE_USER,
+        metadata: { actorUserId, email: user.email },
+      });
+    });
   }
 
   static async updateProfile(c: Context, payload: UpdateProfileRequest) {

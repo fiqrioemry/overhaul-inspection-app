@@ -199,16 +199,18 @@ export class UserRepository {
       },
     });
   }
-  static async updateStatus(id: string, status: string) {
-    return await database.user.update({
+  static async updateStatus(id: string, status: string, tx: Prisma.TransactionClient | null = null) {
+    const db = tx ?? database;
+    return await db.user.update({
       where: { id, deletedAt: null },
       data: { status: status as any },
       select: { id: true, status: true },
     });
   }
 
-  static async softDelete(id: string) {
-    return await database.user.update({
+  static async softDelete(id: string, tx: Prisma.TransactionClient | null = null) {
+    const db = tx ?? database;
+    return await db.user.update({
       where: { id, deletedAt: null },
       data: { deletedAt: new Date() },
     });
