@@ -28,6 +28,7 @@ const userAction = {
   LOGIN: "login",
   LOGOUT: "logout",
   CREATE_USER: "create_user",
+  UPDATE_USER: "update_user",
   UPDATE_AVATAR: "update_avatar",
   UPDATE_PROFILE: "update_profile",
   UPDATE_STATUS: "update_status",
