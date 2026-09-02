@@ -52,7 +52,7 @@ function DialogContent({
           "fixed inset-0 z-50 bg-popover text-sm text-popover-foreground outline-none",
           "sm:inset-4 sm:rounded-xl sm:ring-1 sm:ring-foreground/10",
           "lg:inset-8",
-          "xl:left-1/2 xl:top-1/2 xl:h-[90vh] xl:w-[min(95vw,1200px)] xl:max-w-none xl:-translate-x-1/2 xl:-translate-y-1/2",
+          "xl:left-1/2 xl:top-1/2 xl:right-auto xl:bottom-auto xl:h-[90vh] xl:w-[min(95vw,1200px)] xl:max-w-none xl:-translate-x-1/2 xl:-translate-y-1/2",
 
           // Animation
           "duration-200",
