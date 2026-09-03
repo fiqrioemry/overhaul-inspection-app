@@ -51,7 +51,7 @@ export default function NdeClearancePrintForm({ req }: Props) {
   const checklistValues: InspectionRequestFormChecklistValue[] = Array.isArray(req.formData?.checklist) ? req.formData.checklist : [];
 
   const title = template?.title || DEFAULT_TITLE;
-  const contractor = req.contractorCompany?.name;
+  const contractor = req.contractorCompany?.name || "PT. ________________";
   // Contractor PT for the "Requested By" signature block: TankProject →
   // contractorCompany relation; req.contractorCompany is the server-resolved
   // fallback (tank's most recent project) for requests without a project link.
@@ -110,13 +110,7 @@ export default function NdeClearancePrintForm({ req }: Props) {
                 {inspectionLogo ? <img src={inspectionLogo} alt="logo" className="h-16 w-full object-contain" /> : <p className="text-base font-bold text-red-600">PERTAMINA</p>}
               </div>
               <p className="flex-1 self-center px-3 py-2 text-center text-lg font-bold uppercase tracking-wide">{title}</p>
-              <div className="flex w-44 shrink-0 flex-col justify-center border-l border-black px-2 py-1 text-[9px]">
-                <span>Form No. : {template?.code ?? "-"}</span>
-                <span>Rev. : {template?.revision ?? "0"}</span>
-                <span>
-                  Request No. : <span className="font-semibold">{req.requestNo}</span>
-                </span>
-              </div>
+              <div className="flex w-44 shrink-0 flex-col justify-center border-l border-black px-2 py-1 text-[9px]"></div>
             </div>
 
             {/* General information */}
