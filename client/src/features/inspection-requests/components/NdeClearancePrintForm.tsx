@@ -21,7 +21,7 @@ const BLANK_CHECKLIST_ROWS = 8;
 // templates fall back to blank fill-in rows.
 function resolveChecklistLabels(template: InspectionFormTemplateInfo | null): string[] {
   const items = Array.isArray(template?.checklistItems) ? template.checklistItems : [];
-  const labels = items.map((item) => (typeof item === "string" ? item : item?.label ?? ""));
+  const labels = items.map((item) => (typeof item === "string" ? item : (item?.label ?? "")));
   return labels.length > 0 ? labels : Array.from({ length: BLANK_CHECKLIST_ROWS }, () => "");
 }
 
@@ -51,7 +51,7 @@ export default function NdeClearancePrintForm({ req }: Props) {
   const checklistValues: InspectionRequestFormChecklistValue[] = Array.isArray(req.formData?.checklist) ? req.formData.checklist : [];
 
   const title = template?.title || DEFAULT_TITLE;
-  const contractor = req.executionCompany?.name || req.executionParty || "-";
+  const contractor = req.contractorCompany?.name;
   // Contractor PT for the "Requested By" signature block: TankProject →
   // contractorCompany relation; req.contractorCompany is the server-resolved
   // fallback (tank's most recent project) for requests without a project link.
