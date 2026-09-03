@@ -86,6 +86,43 @@ export default function UserManagementPage() {
         }
       />
 
+      <div className="flex items-center gap-3">
+        <Input
+          placeholder="Search users..."
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(1);
+          }}
+          className="max-w-xs"
+        />
+        <div className="ml-auto flex items-center gap-2">
+          <FilterSelect
+            value={role}
+            onChange={(v) => {
+              setRole(v);
+              setPage(1);
+            }}
+            options={ROLE_OPTIONS}
+            placeholder="Role"
+            allLabel="All Roles"
+          />
+          {(search || role) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setSearch("");
+                setRole("");
+                setPage(1);
+              }}
+            >
+              Reset
+            </Button>
+          )}
+        </div>
+      </div>
+
       {isLoading && <LoadingState />}
       {isError && <ErrorState message="Failed to load users." onRetry={() => refetch()} />}
 
