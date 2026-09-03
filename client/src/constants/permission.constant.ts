@@ -67,6 +67,7 @@ export const PERMISSIONS = {
   COMPANY_CREATE: "company.create",
   COMPANY_READ: "company.read",
   COMPANY_UPDATE: "company.update",
+  COMPANY_DELETE: "company.delete",
 
   NOTIFICATION_CREATE: "notification.create",
   NOTIFICATION_READ: "notification.read",

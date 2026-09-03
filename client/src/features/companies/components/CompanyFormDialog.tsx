@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Camera } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import ImageCropDialog from "@/components/fields/ImageCropDialog";
 import ShortTextField from "@/components/fields/ShortTextField";
 import SelectField from "@/components/fields/SelectField";
 import SwitchField from "@/components/fields/SwitchField";
@@ -36,6 +37,10 @@ export default function CompanyFormDialog({ open, onOpenChange, company }: Compa
 
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  // The raw, unpositioned file picked from disk. Kept around (not just handed to the crop
+  // dialog and discarded) so "Reposition" can reopen the crop tool on it without a re-pick.
+  const [pendingLogoSource, setPendingLogoSource] = useState<File | null>(null);
+  const [cropDialogOpen, setCropDialogOpen] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<CreateCompanyFormValues>({
@@ -63,6 +68,8 @@ export default function CompanyFormDialog({ open, onOpenChange, company }: Compa
     if (logoPreview) URL.revokeObjectURL(logoPreview);
     setLogoFile(null);
     setLogoPreview(null);
+    setPendingLogoSource(null);
+    setCropDialogOpen(false);
   }
 
   function handleDialogChange(nextOpen: boolean) {
@@ -73,9 +80,18 @@ export default function CompanyFormDialog({ open, onOpenChange, company }: Compa
   function handleLogoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    // Position it before it ever becomes the file that gets uploaded — onCropConfirm is what
+    // actually sets logoFile/logoPreview.
+    setPendingLogoSource(file);
+    setCropDialogOpen(true);
+    // Reset so picking the same file again (e.g. after Cancel) still fires onChange.
+    e.target.value = "";
+  }
+
+  function handleCropConfirm(cropped: File) {
     if (logoPreview) URL.revokeObjectURL(logoPreview);
-    setLogoFile(file);
-    setLogoPreview(URL.createObjectURL(file));
+    setLogoFile(cropped);
+    setLogoPreview(URL.createObjectURL(cropped));
   }
 
   function onSubmit(values: CreateCompanyFormValues) {
@@ -97,45 +113,56 @@ export default function CompanyFormDialog({ open, onOpenChange, company }: Compa
   const displayLogo = logoPreview ?? company?.logoUrl ?? undefined;
 
   return (
-    <Dialog open={open} onOpenChange={handleDialogChange}>
-      <DialogContent className="xl:h-138 xl:w-110!">
-        <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4 p-4">
-          <DialogHeader>
-            <DialogTitle>{isEdit ? "Edit Company" : "Add Company"}</DialogTitle>
-          </DialogHeader>
+    <>
+      <Dialog open={open} onOpenChange={handleDialogChange}>
+        <DialogContent className="xl:h-138 xl:w-110!">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4 p-4">
+            <DialogHeader>
+              <DialogTitle>{isEdit ? "Edit Company" : "Add Company"}</DialogTitle>
+            </DialogHeader>
 
-          <div className="flex items-center gap-3">
-            <div className="relative shrink-0">
-              <div className="h-14 w-14 rounded-lg border bg-muted flex items-center justify-center overflow-hidden">
-                {displayLogo ? <img src={displayLogo} alt="Logo" className="h-full w-full object-cover" /> : <span className="text-xs text-muted-foreground">Logo</span>}
+            <div className="flex items-center gap-3">
+              <div className="relative shrink-0">
+                <div className="h-14 w-14 rounded-lg border bg-muted flex items-center justify-center overflow-hidden">
+                  {displayLogo ? <img src={displayLogo} alt="Logo" className="h-full w-full object-cover" /> : <span className="text-xs text-muted-foreground">Logo</span>}
+                </div>
+                <button type="button" onClick={() => logoInputRef.current?.click()} className="absolute -bottom-0.5 -right-0.5 rounded-full bg-primary p-1 text-primary-foreground shadow">
+                  <Camera className="h-3 w-3" />
+                </button>
+                <input ref={logoInputRef} type="file" accept="image/jpeg,image/png" className="hidden" onChange={handleLogoChange} />
               </div>
-              <button type="button" onClick={() => logoInputRef.current?.click()} className="absolute -bottom-0.5 -right-0.5 rounded-full bg-primary p-1 text-primary-foreground shadow">
-                <Camera className="h-3 w-3" />
-              </button>
-              <input ref={logoInputRef} type="file" accept="image/jpeg,image/png" className="hidden" onChange={handleLogoChange} />
+              <div className="flex flex-col gap-0.5">
+                <p className="text-xs text-muted-foreground">{logoFile ? logoFile.name : "JPEG or PNG, max 1 MB"}</p>
+                {pendingLogoSource && (
+                  <button type="button" onClick={() => setCropDialogOpen(true)} className="w-fit text-xs font-medium text-primary hover:underline">
+                    Reposition
+                  </button>
+                )}
+              </div>
             </div>
-            <p className="text-xs text-muted-foreground">{logoFile ? logoFile.name : "JPEG or PNG, max 1 MB"}</p>
-          </div>
 
-          <ShortTextField control={form.control} name="name" label="Company Name" placeholder="PT. Example" />
-          <SelectField control={form.control} name="type" label="Type" options={COMPANY_TYPE_OPTIONS} />
-          <ShortTextField control={form.control} name="address" label="Address" placeholder="Optional" />
-          <div className="grid grid-cols-2 gap-4">
-            <ShortTextField control={form.control} name="phone" label="Phone" placeholder="Optional" />
-            <ShortTextField control={form.control} name="email" label="Email" type="email" placeholder="Optional" />
-          </div>
-          <SwitchField control={form.control} name="isActive" label="Active" description="Company is available for assignment" />
+            <ShortTextField control={form.control} name="name" label="Company Name" placeholder="PT. Example" />
+            <SelectField control={form.control} name="type" label="Type" options={COMPANY_TYPE_OPTIONS} />
+            <ShortTextField control={form.control} name="address" label="Address" placeholder="Optional" />
+            <div className="grid grid-cols-2 gap-4">
+              <ShortTextField control={form.control} name="phone" label="Phone" placeholder="Optional" />
+              <ShortTextField control={form.control} name="email" label="Email" type="email" placeholder="Optional" />
+            </div>
+            <SwitchField control={form.control} name="isActive" label="Active" description="Company is available for assignment" />
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => handleDialogChange(false)} disabled={isPending}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isPending}>
-              {isPending ? "Saving..." : isEdit ? "Save Changes" : "Add Company"}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => handleDialogChange(false)} disabled={isPending}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isPending}>
+                {isPending ? "Saving..." : isEdit ? "Save Changes" : "Add Company"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <ImageCropDialog open={cropDialogOpen} onOpenChange={setCropDialogOpen} file={pendingLogoSource} aspect={1} onConfirm={handleCropConfirm} />
+    </>
   );
 }
