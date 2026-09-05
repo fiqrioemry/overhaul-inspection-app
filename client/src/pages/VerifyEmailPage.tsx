@@ -43,7 +43,7 @@ export default function VerifyEmailPage() {
               <CheckCircle className="size-8 text-green-600 dark:text-green-400" />
             </div>
             <div className="space-y-2">
-              <h1 className="text-2xl font-semibold">Email verified</h1>
+              <h1 className="text-2xl font-semibold">Email Verified Successfully</h1>
               <p className="text-sm text-muted-foreground">{message}</p>
             </div>
             <Button asChild className="w-full">
