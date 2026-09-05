@@ -27,51 +27,5 @@ export default function VerifyEmailPage() {
       });
   }, [token]);
 
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-6">
-      <div className="w-full max-w-sm text-center space-y-6">
-        {state === "loading" && (
-          <>
-            <Loader2 className="size-12 mx-auto animate-spin text-primary" />
-            <p className="text-muted-foreground">Verifying your email...</p>
-          </>
-        )}
-
-        {state === "success" && (
-          <>
-            <div className="mx-auto flex size-16 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/20">
-              <CheckCircle className="size-8 text-green-600 dark:text-green-400" />
-            </div>
-            <div className="space-y-2">
-              <h1 className="text-2xl font-semibold">Email verified</h1>
-              <p className="text-sm text-muted-foreground">{message}</p>
-            </div>
-            <Button asChild className="w-full">
-              <Link to={ROUTES.LOGIN}>Go to Login</Link>
-            </Button>
-          </>
-        )}
-
-        {state === "error" && (
-          <>
-            <div className="mx-auto flex size-16 items-center justify-center rounded-full bg-destructive/10">
-              <XCircle className="size-8 text-destructive" />
-            </div>
-            <div className="space-y-2">
-              <h1 className="text-2xl font-semibold">Verification failed</h1>
-              <p className="text-sm text-muted-foreground">{message}</p>
-            </div>
-            <div className="space-y-2">
-              <Button asChild className="w-full">
-                <Link to={ROUTES.LOGIN}>Back to Login</Link>
-              </Button>
-              <Button asChild variant="outline" className="w-full">
-                <Link to={ROUTES.FORGOT_PASSWORD}>Request new link</Link>
-              </Button>
-            </div>
-          </>
-        )}
-      </div>
-    </div>
-  );
+  return <div className="min-h-screen flex items-center justify-center bg-background p-6"></div>;
 }
