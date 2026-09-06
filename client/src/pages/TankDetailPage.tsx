@@ -37,7 +37,30 @@ function ShellCoursesTable({ shellCourses }: { shellCourses: ShellCourse[] }) {
   if (shellCourses.length === 0) {
     return <p className="text-sm text-muted-foreground">No shell course data recorded.</p>;
   }
-  return <div className="rounded-lg border overflow-hidden"></div>;
+  return (
+    <div className="rounded-lg border overflow-hidden">
+      <table className="w-full text-sm">
+        <thead className="border-b bg-muted/40">
+          <tr>
+            <th className="px-4 py-3 text-left font-medium">Course No.</th>
+            <th className="px-4 py-3 text-left font-medium">Thickness (mm)</th>
+            <th className="px-4 py-3 text-left font-medium">Plate Dimension</th>
+            <th className="px-4 py-3 text-left font-medium">Remarks</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y">
+          {shellCourses.map((sc) => (
+            <tr key={sc.id} className="hover:bg-muted/20">
+              <td className="px-4 py-3">{sc.courseNo}</td>
+              <td className="px-4 py-3">{sc.thicknessMm}</td>
+              <td className="px-4 py-3 text-muted-foreground">{sc.plateDimension ?? "—"}</td>
+              <td className="px-4 py-3 text-muted-foreground">{sc.remarks ?? "—"}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 }
 
 export default function TankDetailPage() {
