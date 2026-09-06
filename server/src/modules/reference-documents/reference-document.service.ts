@@ -55,12 +55,7 @@ export class ReferenceDocumentService {
     if (!doc) {
       throw new HTTPException(404, { message: "Reference document not found", cause: "REF_DOC_NOT_FOUND" });
     }
-    if (request.code && request.code !== doc.code) {
-      const existing = await ReferenceDocumentRepository.findByCode(request.code);
-      if (existing) {
-        throw new HTTPException(409, { message: "Reference document with this code already exists", cause: "REF_DOC_CODE_EXISTS" });
-      }
-    }
+
     return ReferenceDocumentRepository.update(id, request);
   }
 
