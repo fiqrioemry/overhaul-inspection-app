@@ -57,13 +57,7 @@ function buildRequestDescription(testType: InspectionRequestTypeEnum, items: Ins
     return tankNo ? `Lakukan ${label} pada tangki ${tankNo}.` : `Lakukan ${label}.`;
   }
   const head = tankNo ? `Lakukan ${label} pada tangki ${tankNo}:` : `Lakukan ${label} pada objek berikut:`;
-  const lines = items.map((item, idx) => {
-    const objectLabel = OBJECT_TYPE_LABELS[item.objectType] ?? item.objectType;
-    const name = item.objectName ? ` ${item.objectName}` : "";
-    const qty = `${item.quantity} ${item.unit ?? "Pcs"}`;
-    const loc = item.locationDetail ? ` (${item.locationDetail})` : "";
-    return `${idx + 1}. Lakukan ${label} pada ${objectLabel}${name} ${qty}${loc}.`;
-  });
+
   return [head, ...lines].join("\n");
 }
 
