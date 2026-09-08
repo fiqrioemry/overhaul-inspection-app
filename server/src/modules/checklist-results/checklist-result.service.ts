@@ -107,12 +107,7 @@ export class ChecklistResultService {
 
   static async checkOne(tankProcessId: string, checklistId: string, data: CheckChecklistRequest, userId: string) {
     const process = await requireProcess(tankProcessId);
-    if (process.status !== ProcessStatusEnum.IN_PROGRESS) {
-      throw new HTTPException(409, {
-        message: `Cannot check checklist: process status is ${process.status}. Must be IN_PROGRESS.`,
-        cause: "INVALID_PROCESS_STATUS",
-      });
-    }
+
     const item = await ChecklistResultRepository.findById(checklistId);
     if (!item || item.tankProcess.id !== tankProcessId) {
       throw new HTTPException(404, { message: "Checklist item not found", cause: "CHECKLIST_NOT_FOUND" });
