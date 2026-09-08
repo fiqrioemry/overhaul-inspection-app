@@ -131,7 +131,12 @@ export class ChecklistResultService {
     }
     const items = await ChecklistResultRepository.findManyByIds(data.checklistIds);
     const outsiders = items.filter((i) => i.tankProcessId !== tankProcessId);
-
+    if (outsiders.length > 0) {
+      throw new HTTPException(422, {
+        message: "Some checklist IDs do not belong to this process",
+        cause: "CHECKLIST_PROCESS_MISMATCH",
+      });
+    }
     const rows = await ChecklistResultRepository.bulkCheck(data.checklistIds, userId);
     return rows.map((r) => mapToItem(r as RawRow));
   }
