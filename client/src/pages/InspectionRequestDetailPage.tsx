@@ -89,21 +89,6 @@ export default function InspectionRequestDetailPage() {
             <p className="text-xs text-muted-foreground">{TEST_TYPE_LABELS[req.testType] ?? req.testType}</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => navigate(ROUTES.INSPECTION_REQUEST_PRINT.replace(":id", req.id))}>
-            <Printer className="h-4 w-4 mr-1" /> Print Request Form
-          </Button>
-          {canUpdate && req.status === "NOT_STARTED" && (
-            <>
-              <Button variant="outline" size="sm" onClick={() => navigate(ROUTES.INSPECTION_REQUEST_EDIT.replace(":id", req.id))}>
-                <Pencil className="h-4 w-4 mr-1" /> Edit
-              </Button>
-              <Button variant="ghost" size="sm" onClick={() => setDeleteOpen(true)} title="Delete">
-                <Trash2 className="h-4 w-4 text-destructive" />
-              </Button>
-            </>
-          )}
-        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
