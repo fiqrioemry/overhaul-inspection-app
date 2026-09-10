@@ -70,9 +70,7 @@ export class ReferenceDocumentService {
       throw new HTTPException(404, { message: "Reference document not found", cause: "REF_DOC_NOT_FOUND" });
     }
     const usageCount = await ReferenceDocumentRepository.countCriteriaUsing(id);
-    if (usageCount > 0) {
-      throw new HTTPException(409, { message: "Cannot delete document that is referenced by acceptance criteria", cause: "REF_DOC_IN_USE" });
-    }
+
     await ReferenceDocumentRepository.softDelete(id);
   }
 }
