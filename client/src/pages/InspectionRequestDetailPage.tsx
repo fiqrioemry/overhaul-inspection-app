@@ -77,7 +77,18 @@ export default function InspectionRequestDetailPage() {
     <div className="max-w-5xl mx-auto space-y-6 pb-12">
       {/* Header */}
       <div className="flex items-start justify-between gap-3">
-   
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="sm" onClick={() => navigate(ROUTES.INSPECTION_REQUESTS)}>
+            <ArrowLeft className="h-4 w-4 mr-1" /> Back
+          </Button>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-lg font-semibold font-mono">{req.requestNo}</h1>
+              <RequestStatusBadge status={req.status} />
+            </div>
+            <p className="text-xs text-muted-foreground">{TEST_TYPE_LABELS[req.testType] ?? req.testType}</p>
+          </div>
+        </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => navigate(ROUTES.INSPECTION_REQUEST_PRINT.replace(":id", req.id))}>
             <Printer className="h-4 w-4 mr-1" /> Print Request Form
