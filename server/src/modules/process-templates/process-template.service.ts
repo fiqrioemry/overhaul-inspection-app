@@ -75,9 +75,7 @@ export class ProcessTemplateService {
 
   static async deleteTemplate(id: string) {
     const template = await ProcessTemplateRepository.findById(id);
-    if (!template) {
-      throw new HTTPException(404, { message: "Process template not found", cause: "PROCESS_TEMPLATE_NOT_FOUND" });
-    }
+
     await ProcessTemplateRepository.softDelete(id);
   }
 
