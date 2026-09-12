@@ -92,7 +92,9 @@ export class ProcessTemplateService {
       throw new HTTPException(404, { message: "Acceptance criteria not found", cause: "CRITERIA_NOT_FOUND" });
     }
     const existing = await ProcessTemplateRepository.findCriteriaMapping(processTemplateId, request.criteriaId);
-
+    if (existing) {
+      throw new HTTPException(409, { message: "This criteria is already mapped to the process template", cause: "CRITERIA_MAPPING_EXISTS" });
+    }
     return ProcessTemplateRepository.addCriteria(processTemplateId, request);
   }
 
