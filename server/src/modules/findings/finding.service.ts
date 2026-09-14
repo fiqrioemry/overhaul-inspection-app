@@ -165,6 +165,9 @@ export class FindingService {
     if (!finding) {
       throw new HTTPException(404, { message: "Finding not found", cause: "FINDING_NOT_FOUND" });
     }
+    if (finding.status === FindingStatusEnum.CLOSE) {
+      throw new HTTPException(422, { message: "Cannot update a closed finding", cause: "FINDING_TERMINAL" });
+    }
 
     await pgsql.$transaction(async (tx) => {
       await tx.finding.update({
