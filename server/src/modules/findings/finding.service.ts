@@ -57,9 +57,6 @@ export class FindingService {
     } else if (projectId) {
       const project = await pgsql.tankProject.findFirst({ where: { id: projectId, deletedAt: null }, select: { tankId: true } });
       if (!project) throw new HTTPException(404, { message: "Tank project not found", cause: "PROJECT_NOT_FOUND" });
-      if (project.tankId !== data.tankId) {
-        throw new HTTPException(422, { message: "Project does not belong to the provided tank", cause: "PROJECT_TANK_MISMATCH" });
-      }
     }
 
     const count = await FindingRepository.countByTankNo(tank.tankNo);
