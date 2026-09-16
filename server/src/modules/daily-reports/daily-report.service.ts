@@ -32,12 +32,6 @@ function validateFiles(files: File[]) {
         cause: "INVALID_FILE_TYPE",
       });
     }
-    if (file.size > MAX_FILE_SIZE) {
-      throw new HTTPException(400, {
-        message: `File "${file.name}" exceeds the 8 MB size limit.`,
-        cause: "FILE_TOO_LARGE",
-      });
-    }
   }
 }
 
@@ -95,9 +89,7 @@ export class DailyReportService {
     validateFiles(files);
 
     // Process + upload to MinIO outside transaction
-    const fileRecords = files.length > 0
-      ? await Promise.all(files.map((f) => FileService.generateFileRecord(f, "DAILY_REPORT")))
-      : [];
+    const fileRecords = files.length > 0 ? await Promise.all(files.map((f) => FileService.generateFileRecord(f, "DAILY_REPORT"))) : [];
     if (fileRecords.length > 0) {
       await Promise.all(fileRecords.map((fr) => FileService.uploadFileToStorage(c, fr)));
     }
@@ -235,10 +227,7 @@ export class DailyReportService {
    * a reportable JSON error rather than a half-written download — see
    * buildAttachmentsArchiveBuffer for why this is not streamed.
    */
-  static async buildAttachmentsArchive(
-    id: string,
-    storage: AttachmentObjectStorage = minioAttachmentStorage,
-  ): Promise<{ filename: string; bytes: Uint8Array<ArrayBuffer> }> {
+  static async buildAttachmentsArchive(id: string, storage: AttachmentObjectStorage = minioAttachmentStorage): Promise<{ filename: string; bytes: Uint8Array<ArrayBuffer> }> {
     const report = await DailyReportRepository.findForAttachmentArchive(id);
     if (!report) throw new HTTPException(404, { message: "Daily report not found", cause: "REPORT_NOT_FOUND" });
 
@@ -344,15 +333,11 @@ export class DailyReportService {
     validateFiles(newFiles);
 
     // Get fileStorageIds for files being removed
-    const removedAttachments = removedIds.length > 0
-      ? await DailyReportAttachmentRepository.findActiveByIds(removedIds, id)
-      : [];
+    const removedAttachments = removedIds.length > 0 ? await DailyReportAttachmentRepository.findActiveByIds(removedIds, id) : [];
     const removedFileStorageIds = removedAttachments.map((a) => a.fileStorageId);
 
     // Process + upload new files outside transaction
-    const fileRecords = newFiles.length > 0
-      ? await Promise.all(newFiles.map((f) => FileService.generateFileRecord(f, "DAILY_REPORT")))
-      : [];
+    const fileRecords = newFiles.length > 0 ? await Promise.all(newFiles.map((f) => FileService.generateFileRecord(f, "DAILY_REPORT"))) : [];
     if (fileRecords.length > 0) {
       await Promise.all(fileRecords.map((fr) => FileService.uploadFileToStorage(c, fr)));
     }
