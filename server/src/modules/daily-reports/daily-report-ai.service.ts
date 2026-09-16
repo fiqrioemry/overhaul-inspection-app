@@ -9,11 +9,7 @@ import { sanitizeHtml } from "@/utils/sanitize-html";
  *  Targets ~90% file-size reduction while retaining sufficient detail for OCR/vision. */
 async function compressForAI(file: File): Promise<{ base64: string; mimeType: string }> {
   const inputBuffer = Buffer.from(await file.arrayBuffer());
-  const compressed = await sharp(inputBuffer)
-    .rotate()
-    .resize({ width: 1024, height: 1024, fit: "inside", withoutEnlargement: true })
-    .webp({ quality: 75 })
-    .toBuffer();
+  const compressed = await sharp(inputBuffer).rotate().resize({ width: 1024, height: 1024, fit: "inside", withoutEnlargement: true }).webp({ quality: 75 }).toBuffer();
   return { base64: compressed.toString("base64"), mimeType: "image/webp" };
 }
 
@@ -129,7 +125,7 @@ function toBulletHtml(value: string | null | undefined): string | null {
     .map((l) => l.replace(/^[\s•\-*\d.)]+/, "").trim())
     .filter(Boolean);
   if (items.length === 0) return null;
-  const li = items.map((i) => `<li>${i.replace(/[<>&]/g, (m) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;" }[m]!))}</li>`).join("");
+  const li = items.map((i) => `<li>${i.replace(/[<>&]/g, (m) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;" })[m]!)}</li>`).join("");
   return `<ul>${li}</ul>`;
 }
 
@@ -142,13 +138,6 @@ export class DailyReportAIService {
 
     // tankId is optional: general daily reports are documented without tank context.
     let tank: { tankNo: string; tankName: string | null; location: string | null; service: string | null; capacityM3: number | null } | null = null;
-    if (tankId) {
-      tank = await pgsql.tank.findUnique({
-        where: { id: tankId },
-        select: { tankNo: true, tankName: true, location: true, service: true, capacityM3: true },
-      });
-      if (!tank) throw new HTTPException(404, { message: "Tank not found" });
-    }
 
     const imageContents = await Promise.all(
       files.map(async (file) => {
@@ -202,7 +191,12 @@ export class DailyReportAIService {
       const description = toBulletHtml(parsed.description) ?? "<ul><li>Dokumentasi kegiatan inspeksi harian.</li></ul>";
       const recommendation = toBulletHtml(parsed.recommendation ?? null);
       // Title is plain text: strip any stray HTML, collapse whitespace, cap length.
-      const title = (parsed.title ?? "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 300) || "Kegiatan Inspeksi Harian";
+      const title =
+        (parsed.title ?? "")
+          .replace(/<[^>]+>/g, " ")
+          .replace(/\s+/g, " ")
+          .trim()
+          .slice(0, 300) || "Kegiatan Inspeksi Harian";
 
       return {
         title,
