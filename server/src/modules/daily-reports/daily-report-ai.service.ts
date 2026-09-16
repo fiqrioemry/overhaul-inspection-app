@@ -136,7 +136,7 @@ export class DailyReportAIService {
       throw new HTTPException(400, { message: "Minimal satu foto diperlukan untuk generate AI" });
     }
 
-    // tankId is optional: general daily reports are documented without tank context.
+    // tankId is optional: general daily reports are documented without tankgit  context.
     let tank: { tankNo: string; tankName: string | null; location: string | null; service: string | null; capacityM3: number | null } | null = null;
     if (tankId) {
       tank = await pgsql.tank.findUnique({
