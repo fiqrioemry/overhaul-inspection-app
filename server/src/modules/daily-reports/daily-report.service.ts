@@ -32,6 +32,12 @@ function validateFiles(files: File[]) {
         cause: "INVALID_FILE_TYPE",
       });
     }
+    if (file.size > MAX_FILE_SIZE) {
+      throw new HTTPException(400, {
+        message: `File "${file.name}" exceeds the 8 MB size limit.`,
+        cause: "FILE_TOO_LARGE",
+      });
+    }
   }
 }
 
