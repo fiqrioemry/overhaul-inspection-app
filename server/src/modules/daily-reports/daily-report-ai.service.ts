@@ -138,6 +138,13 @@ export class DailyReportAIService {
 
     // tankId is optional: general daily reports are documented without tank context.
     let tank: { tankNo: string; tankName: string | null; location: string | null; service: string | null; capacityM3: number | null } | null = null;
+    if (tankId) {
+      tank = await pgsql.tank.findUnique({
+        where: { id: tankId },
+        select: { tankNo: true, tankName: true, location: true, service: true, capacityM3: true },
+      });
+      if (!tank) throw new HTTPException(404, { message: "Tank not found" });
+    }
 
     const imageContents = await Promise.all(
       files.map(async (file) => {
